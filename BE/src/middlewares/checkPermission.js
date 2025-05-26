@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import User from "../models/User.js";
-import Role from "../models/Role.js";
+import User from "../model/User.js";
+// import Role from "../model/Role.js";
+
+
 dotenv.config();
 
 const { SECRET_KEY } = process.env;
@@ -35,18 +37,18 @@ export const checkPermission = (perrmisson) => {
                     message: "User is not active",
                 });
             }
-            const userPermission = await Role.findOne({ name: user.role });
-            if (!userPermission) {
-                return res.status(403).json({
-                    message: "User role does not exist",
-                });
-            }
-            const value = userPermission[perrmisson]
-            if (!value) {
-                return res.status(403).json({
-                    message: "You are not have permission to access this route",
-                });
-            }
+            // const userPermission = await Role.findOne({ name: user.role });
+            // if (!userPermission) {
+            //     return res.status(403).json({
+            //         message: "User role does not exist",
+            //     });
+            // }
+            // const value = userPermission[perrmisson]
+            // if (!value) {
+            //     return res.status(403).json({
+            //         message: "You are not have permission to access this route",
+            //     });
+            // }
             next();
         } catch (error) {
             next(error);

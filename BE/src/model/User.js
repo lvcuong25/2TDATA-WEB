@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema(
     otpCreatedAt: {
       type: Date,
     },
+    service: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Service'
+    }]
   },
   { timestamps: true, versionKey: false }
 );

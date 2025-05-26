@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from 'react-toastify';
 import instance from "../utils/axiosInstance";
 
+
 const signinSchema = Joi.object({
   email: Joi.string()
     .email({ tlds: false })
@@ -44,13 +45,19 @@ const SignIn = () => {
     mutationFn: async (signinData) => {
       const { data } = await instance.post('auth/sign-in', signinData);
       return data;
+
     },
     onSuccess: (data) => {
+      
+      
       toast.success('Đăng nhập thành công!');
       localStorage.setItem('accessToken', data.accessToken);
-      navigate('/service-use');
+      // localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Use window.location.href to refresh the page after redirect
+      window.location.href = data.redirectPath;
     },
-    onError: () => {
+    onError: (error) => {
       toast.error('Email hoặc mật khẩu không đúng!');
     },
   });

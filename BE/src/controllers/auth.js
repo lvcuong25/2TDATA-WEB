@@ -1,4 +1,5 @@
 import User from "../model/User.js";
+import Service from "../model/Service.js";
 import { token } from "../utils/jwt.js";
 import { comparePassword, hashPassword } from "../utils/password.js";
 import sendEmail from "../utils/sendEmail.js";
@@ -6,8 +7,7 @@ import sendEmail from "../utils/sendEmail.js";
 
 export const signUp = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
-        console.log(email, password);
+        const { email, password,  } = req.body;
         const userExist = await User.findOne({ email });
         if (userExist) {
             return res.status(400).json({
@@ -15,10 +15,26 @@ export const signUp = async (req, res, next) => {
             });
         }
 
+        // // Kiểm tra xem service đã được gán cho user khác chưa
+        // const serviceInUse = await User.findOne({ service: serviceId });
+        // if (serviceInUse) {
+        //     return res.status(400).json({
+        //         message: "Dịch vụ này đã được gán cho người dùng khác",
+        //     });
+        // }
+
+        // const service = await Service.findById(serviceId);
+        // if (!service) {
+        //     return res.status(400).json({
+        //         message: "Dịch vụ không tồn tại",
+        //     });
+        // }
+
         const hashPasswordUser = await hashPassword(password);
         const user = await User.create({
             email,
             password: hashPasswordUser,
+            // service: serviceId
         });
 
         const accessToken = token({ _id: user._id }, "365d");
@@ -34,7 +50,7 @@ export const signUp = async (req, res, next) => {
 export const signIn = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const userExist = await User.findOne({ email });
+        const userExist = await User.findOne({ email }).populate('service');
         if (!userExist) {
             return res.status(400).json({
                 message: "Email không tồn tại",
@@ -53,9 +69,61 @@ export const signIn = async (req, res, next) => {
         }
 
         const accessToken = token({ _id: userExist._id }, "365d");
+        
+        // Nếu là admin, chuyển hướng đến trang admin
+        if (userExist.role === 'admin') {
+            return res.status(200).json({
+                message: "Đăng nhập thành công!",
+                accessToken,
+                user: {
+                    _id: userExist._id,
+                    email: userExist.email,
+                    role: userExist.role,
+                    name: userExist.name,
+                    phone: userExist.phone,
+                    address: userExist.address,
+                    age: userExist.age,
+                    avatar: userExist.avatar
+                },
+                redirectPath: '/admin'
+            });
+        }
+
+        // Nếu là user thường và chưa có service
+        if (!userExist.service) {
+            return res.status(200).json({
+                message: "Đăng nhập thành công!",
+                accessToken,
+                user: {
+                    _id: userExist._id,
+                    email: userExist.email,
+                    role: userExist.role,
+                    name: userExist.name,
+                    phone: userExist.phone,
+                    address: userExist.address,
+                    age: userExist.age,
+                    avatar: userExist.avatar
+                },
+                redirectPath: '/service/service-use'
+            });
+        }
+
+        // Nếu là user thường và đã có service
         return res.status(200).json({
             message: "Đăng nhập thành công!",
             accessToken,
+            user: {
+                _id: userExist._id,
+                email: userExist.email,
+                role: userExist.role,
+                name: userExist.name,
+                phone: userExist.phone,
+                address: userExist.address,
+                age: userExist.age,
+                avatar: userExist.avatar
+            },
+            service: userExist.service,
+            redirectPath: `/service/my-service`
         });
     } catch (error) {
         next(error);

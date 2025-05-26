@@ -1,5 +1,6 @@
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useMutation } from "@tanstack/react-query";
+import React, { useEffect, useState } from "react";
 
 import Joi from "joi";
 import { useForm } from "react-hook-form";
@@ -34,7 +35,6 @@ const signupChema = Joi.object({
       'string.empty': 'Cần xác nhận mật khẩu',
       'any.only': 'Mật khẩu xác nhận không khớp',
     }),
-
   role: Joi.string().default('member'),
 });
 
@@ -50,6 +50,7 @@ const SignUp = () => {
       email: "",
       password: "",
       confirmPassword: "",
+   
       role: "member"
     },
   });

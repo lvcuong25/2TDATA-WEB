@@ -8,15 +8,13 @@ const Logout = () => {
     try {
       // Clear authentication data
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
       
       // Show success message
       toast.success('Đăng xuất thành công!');
       
       // Redirect to login page
       navigate('/');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 3000);
       
     } catch (error) {
       toast.error('Có lỗi xảy ra khi đăng xuất!');
