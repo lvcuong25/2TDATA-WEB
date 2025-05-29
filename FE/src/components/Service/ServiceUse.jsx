@@ -1,7 +1,7 @@
 import React from "react";
-import Header from "./Header";
-import image9 from "../image/image9.png";
-import Footer from "./Footer";
+import Header from "../Header";
+import image9 from "../../image/image9.png";
+import Footer from "../Footer";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 

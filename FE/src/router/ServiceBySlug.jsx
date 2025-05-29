@@ -1,7 +1,7 @@
 import { useParams, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import ServiceFacebook from "../components/ServiceFacebook";
-import ServiceTiktok from "../components/ServiceTiktok";
+import ServiceFacebook from "../components/Service/ServiceFacebook";
+import ServiceTiktok from "../components/Service/ServiceTiktok";
 import instance from "../utils/axiosInstance";
 import { toast } from "react-toastify";
 import { useContext } from "react";

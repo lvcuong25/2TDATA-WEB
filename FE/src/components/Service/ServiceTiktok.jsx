@@ -1,10 +1,11 @@
 import React from "react";
-import Header from "./Header";
-import image9 from "../image/image9.png";
-import Footer from "./Footer";
-const ServiceFacebook = () => {
+import Header from "../Header";
+import image9 from "../../image/image9.png";
+import Footer from "../Footer";
+
+const ServiceTiktok = () => {
   return (
-    <div>
+      <div>
       <Header />
       <section className="relative">
         <div>
@@ -12,13 +13,11 @@ const ServiceFacebook = () => {
         </div>
 
         <div className="absolute inset-0">
-            
           <div className="max-w-screen-xl mx-auto px-4 py-8">
             <div className="text-center mb-8 mt-20">
               <h1 className="text-2xl font-bold mb-4">
-                HƯỚNG DẪN SỬ DỤNG CÁC DỊCH VỤ DATA FUSION FACEBOOK
+                HƯỚNG DẪN SỬ DỤNG CÁC DỊCH VỤ DATA FUSION TIK TOKTOK
               </h1>
-              
               <p className="text-gray-600">
                 Cảm ơn bạn đã đăng ký dịch vụ của 2T DATA. Vui lòng thực hiện
                 theo các bước dưới đây để bắt đầu sử dụng hệ thống:
@@ -314,4 +313,4 @@ const ServiceFacebook = () => {
   )
 }
 
-export default ServiceFacebook
+export default ServiceTiktok

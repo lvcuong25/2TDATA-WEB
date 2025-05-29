@@ -1,11 +1,12 @@
-import Header from "./Header";
-import Footer from "./Footer";  
+import Header from "../Header";
+import Footer from "../Footer";  
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useNavigate } from 'react-router-dom';
-import instance from '../utils/axiosInstance';
-import { AuthContext } from './core/Auth';
+
 import { useContext, useState } from "react";
 import { Modal, Form, Input, Button, message, Select, Tag, Checkbox } from 'antd';
+import { AuthContext } from "../core/Auth";
+import instance from "../../utils/axiosInstance";
 
 const { Option } = Select;
 

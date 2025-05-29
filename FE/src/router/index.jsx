@@ -12,15 +12,16 @@ import BlogForm from '../components/admin/Blog/BlogForm.jsx';
 import BlogEdit from '../components/admin/Blog/BlogEdit.jsx';
 import AllBlogPage from '../components/Blog/AllBlogPage.js';
 import DetailBlogPage from '../components/Blog/DetailBlogPage.js';
-import ServiceUse from '../components/ServiceUse.jsx';
 import MyService from '../components/MyService.jsx';
-import Service from '../components/Service.jsx';
+
 import UsersList from '../components/admin/Users/UsersList.jsx';
 import UsersForm from '../components/admin/Users/UsersForm.jsx';
 import UsersEdit from '../components/admin/Users/UsersEdit.jsx';
 import ServiceList from '../components/admin/Service/ServiceList.jsx';
 import ServiceForm from '../components/admin/Service/ServiceForm.jsx';
 import ServiceEdit from '../components/admin/Service/ServiceEdit.jsx';
+import Service from '../components/Service/Service.jsx';
+import ServiceUse from '../components/Service/ServiceUse.jsx';
 
 
 
