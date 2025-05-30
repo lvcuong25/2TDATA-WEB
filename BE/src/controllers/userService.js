@@ -103,38 +103,52 @@ export const approveUserService = async (req, res, next) => {
 export const addServiceToUser = async (req, res, next) => {
     try {
         const { serviceId } = req.body;
-        const userId = req.user._id; // Lấy userId từ token
+        const userId = req.user._id;
 
-        // Kiểm tra xem đã có yêu cầu tương tự chưa
-        const existingRequest = await UserService.findOne({
-            user: userId,
-            service: serviceId,
-            status: 'waiting'
-        });
+        // Chuyển đổi serviceId thành mảng nếu là string
+        const serviceIds = Array.isArray(serviceId) ? serviceId : [serviceId];
+        
+        const results = [];
+        const errors = [];
 
-        if (existingRequest) {
-            return res.status(400).json({ message: "Đã có yêu cầu thêm service này đang chờ xác nhận" });
+        for (const sid of serviceIds) {
+            // Kiểm tra xem đã có yêu cầu tương tự chưa
+            const existingRequest = await UserService.findOne({
+                user: userId,
+                service: sid,
+                status: 'waiting'
+            });
+
+            if (existingRequest) {
+                errors.push({
+                    serviceId: sid,
+                    message: "Đã có yêu cầu thêm service này đang chờ xác nhận"
+                });
+                continue;
+            }
+
+            // Tạo instance mới và lưu để trigger pre-save hook
+            const userService = new UserService({
+                user: userId,
+                service: sid,
+                status: 'waiting'
+            });
+            await userService.save();
+
+            // Cập nhật service vào user
+            await User.findByIdAndUpdate(
+                userId,
+                { $addToSet: { service: userService._id } }
+            );
+
+            // Populate thông tin đầy đủ
+            const populatedUserService = await UserService.findById(userService._id)
+                .populate('user', 'name email phone address avatar')
+                .populate('service', 'name slug image status description')
+                .populate('approvedBy', 'name email avatar');
+
+            results.push(populatedUserService);
         }
-
-        // Tạo instance mới và lưu để trigger pre-save hook
-        const userService = new UserService({
-            user: userId,
-            service: serviceId,
-            status: 'waiting'
-        });
-        await userService.save();
-
-        // Cập nhật service vào user
-        await User.findByIdAndUpdate(
-            userId,
-            { $addToSet: { service: userService._id } }
-        );
-
-        // Populate thông tin đầy đủ trước khi trả về
-        const populatedUserService = await UserService.findById(userService._id)
-            .populate('user', 'name email phone address avatar')
-            .populate('service', 'name slug image status description')
-            .populate('approvedBy', 'name email avatar');
 
         // Lấy thông tin user đã cập nhật
         const updatedUser = await User.findById(userId)
@@ -148,10 +162,13 @@ export const addServiceToUser = async (req, res, next) => {
 
         return res.status(201).json({
             data: {
-                userService: populatedUserService,
-                user: updatedUser
+                userServices: results,
+                user: updatedUser,
+                errors: errors.length > 0 ? errors : undefined
             },
-            message: "Yêu cầu thêm service đã được gửi, đang chờ xác nhận"
+            message: errors.length === 0 
+                ? "Tất cả yêu cầu thêm service đã được gửi, đang chờ xác nhận"
+                : "Một số yêu cầu thêm service đã được gửi, một số yêu cầu đã tồn tại"
         });
     } catch (error) {
         next(error);
