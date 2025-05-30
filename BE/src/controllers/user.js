@@ -11,7 +11,10 @@ export const getAllUser = async (req, res, next) => {
             sort: req.query.sort ? req.query.sort : { createdAt: -1 },
             populate: {
                 path: 'service',
-                select: 'image name slug'
+                populate: [
+                    { path: 'service', select: 'name slug image status description' },
+                    { path: 'approvedBy', select: 'name email avatar' }
+                ]
             }
         };
         let query = {};
@@ -43,7 +46,13 @@ export const getAllUser = async (req, res, next) => {
 export const getUserById = async (req, res, next) => {
     try {
         const data = await User.findById(req.params.id)
-        .populate('service', 'image name slug');
+            .populate({
+                path: 'service',
+                populate: [
+                    { path: 'service', select: 'name slug image status description' },
+                    { path: 'approvedBy', select: 'name email avatar' }
+                ]
+            });
         return !data ? res.status(500).json({ message: "Get user by id failed" }) : res.status(200).json({ data });
     }
     catch (error) {
@@ -101,7 +110,13 @@ export const updateUser = async (req, res, next) => {
             req.params.id, 
             req.body, 
             { new: true }
-        ).populate('service', 'name status slug');
+        ).populate({
+            path: 'service',
+            populate: [
+                { path: 'service', select: 'name slug image status description' },
+                { path: 'approvedBy', select: 'name email avatar' }
+            ]
+        });
 
         return !data ? 
             res.status(500).json({ message: "Cập nhật thông tin thất bại!" }) : 
@@ -160,7 +175,13 @@ export const updateUserProfile = async (req, res, next) => {
             req.user._id, 
             req.body, 
             { new: true }
-        ).populate('service', 'name status slug');
+        ).populate({
+            path: 'service',
+            populate: [
+                { path: 'service', select: 'name slug image status description' },
+                { path: 'approvedBy', select: 'name email avatar' }
+            ]
+        });
         
         return !data ? 
             res.status(500).json({ message: "Update profile failed" }) : 
@@ -175,65 +196,69 @@ export const updateUserProfile = async (req, res, next) => {
 // Xóa dịch vụ khỏi user theo userId truyền params
 export const removeServiceFromUser = async (req, res, next) => {
     try {
-      const userId = req.params.id;      // userId từ URL param
-      const { serviceId } = req.body;    // serviceId từ body
-  
-      // Validate ObjectId
-      if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(serviceId)) {
-        return res.status(400).json({ message: "Invalid userId or serviceId" });
-      }
-  
-      // Tìm user theo id
-      const user = await User.findById(userId);
-      if (!user) return res.status(404).json({ message: "User not found" });
-  
-      // Lọc bỏ service có serviceId cần xóa
-      user.service = user.service.filter(s => s.toString() !== serviceId);
-  
-      // Lưu lại user
-      const updatedUser = await user.save();
-  
-      // Populate service thông tin đầy đủ
-      const populatedUser = await User.findById(updatedUser._id).populate('service', 'name status slug');
-  
-      return res.status(200).json({
-        data: populatedUser,
-        message: "Xóa dịch vụ khỏi tài khoản thành công"
-      });
+        const userId = req.params.id;
+        const { serviceId } = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(serviceId)) {
+            return res.status(400).json({ message: "Invalid userId or serviceId" });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        user.service = user.service.filter(s => s.toString() !== serviceId);
+
+        const updatedUser = await user.save();
+
+        const populatedUser = await User.findById(updatedUser._id)
+            .populate({
+                path: 'service',
+                populate: [
+                    { path: 'service', select: 'name slug image status description' },
+                    { path: 'approvedBy', select: 'name email avatar' }
+                ]
+            });
+
+        return res.status(200).json({
+            data: populatedUser,
+            message: "Xóa dịch vụ khỏi tài khoản thành công"
+        });
     } catch (error) {
-      next(error);
+        next(error);
     }
-  }
-  
-  // Xóa dịch vụ khỏi user đang đăng nhập (profile)
- export const removeServiceFromProfile = async (req, res, next) => {
-  try {
-    const userId = req.user._id;
-    const { serviceId } = req.body;
+}
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(serviceId)) {
-      return res.status(400).json({ message: "Invalid userId or serviceId" });
+// Xóa dịch vụ khỏi user đang đăng nhập (profile)
+export const removeServiceFromProfile = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        const { serviceId } = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(serviceId)) {
+            return res.status(400).json({ message: "Invalid userId or serviceId" });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        user.service = user.service.filter(s => s.toString() !== serviceId);
+
+        const updatedUser = await user.save();
+
+        const populatedUser = await User.findById(updatedUser._id)
+            .populate({
+                path: 'service',
+                populate: [
+                    { path: 'service', select: 'name slug image status description' },
+                    { path: 'approvedBy', select: 'name email avatar' }
+                ]
+            });
+
+        return res.status(200).json({
+            data: populatedUser,
+            message: "Xóa dịch vụ khỏi tài khoản thành công"
+        });
+    } catch (error) {
+        next(error);
     }
-
-    // Tìm user theo id
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    // Lọc bỏ service có serviceId cần xóa
-    user.service = user.service.filter(s => s.toString() !== serviceId);
-
-    // Lưu lại user
-    const updatedUser = await user.save();
-
-    // Populate service thông tin đầy đủ
-    const populatedUser = await User.findById(updatedUser._id).populate('service', 'name status slug');
-
-    return res.status(200).json({
-      data: populatedUser,
-      message: "Xóa dịch vụ khỏi tài khoản thành công"
-    });
-  } catch (error) {
-    next(error);
-  }
 };

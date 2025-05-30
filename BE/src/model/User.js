@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema(
     },
     service: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Service'
+      ref: 'UserService'
     }]
   },
   { timestamps: true, versionKey: false }

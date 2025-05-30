@@ -17,7 +17,7 @@ const Service = () => {
   const [selectedServices, setSelectedServices] = useState([]);
   const [form] = Form.useForm();
 
-  const { data, refetch } = useQuery({
+  const { data } = useQuery({
     queryKey: ['userServices'],
     queryFn: async () => {
       const { data } = await instance.get('service');

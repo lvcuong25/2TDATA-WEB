@@ -17,8 +17,23 @@ const serviceSchema = new mongoose.Schema(
       type: String,
     },
     status: {
-      type: Boolean,
-      default: true,
+      type: String,
+      enum: ['waiting', 'approved', 'rejected'],
+      default: 'waiting',
+      description: "Trạng thái của service: waiting (chờ admin xác nhận), approved (đã được xác nhận), rejected (bị từ chối)"
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      description: "Admin đã xác nhận service"
+    },
+    approvedAt: {
+      type: Date,
+      description: "Thời gian xác nhận"
+    },
+    rejectedReason: {
+      type: String,
+      description: "Lý do từ chối (nếu bị rejected)"
     },
     image: {
       type: String,
