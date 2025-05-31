@@ -137,9 +137,9 @@ const UsersList = () => {
       width: 200,
       render: (services) => (
         <Space wrap size={[4, 4]}>
-          {services?.map((service) => (
-            <Tag key={service._id} color="purple">
-              {service.name}
+          {services?.map((serviceItem) => (
+            <Tag key={serviceItem._id} color="purple">
+              {serviceItem.service.name}
             </Tag>
           ))}
         </Space>

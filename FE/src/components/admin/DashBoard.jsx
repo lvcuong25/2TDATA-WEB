@@ -50,6 +50,10 @@ const DashBoard = () => {
         <Menu.Item key="/admin/blogs" icon={<FileTextOutlined />} onClick={() => handleLinkClick('/admin/blogs')}>
             <Link to="/admin/blogs">Quản lý blogs</Link>
           </Menu.Item>
+
+          <Menu.Item key="/admin/status" icon={<FileTextOutlined />} onClick={() => handleLinkClick('/admin/status')}>
+            <Link to="/admin/status">Quản lý trạng thái</Link>
+          </Menu.Item>
        
           <Menu.Item key="/" icon={<HeartOutlined />} onClick={() => handleLinkClick('/')}>
             <Link to="/">Website</Link>

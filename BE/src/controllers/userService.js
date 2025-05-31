@@ -7,6 +7,7 @@ export const getPendingServices = async (req, res, next) => {
         const options = {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
+            sort: { createdAt: -1 }, // Sắp xếp theo thời gian tạo mới nhất
             populate: [
                 { 
                     path: 'user', 
@@ -23,7 +24,8 @@ export const getPendingServices = async (req, res, next) => {
             ]
         };
 
-        const data = await UserService.paginate({ status: 'waiting' }, options);
+        // Lấy tất cả services, không filter theo status
+        const data = await UserService.paginate({}, options);
         return res.status(200).json({ data });
     } catch (error) {
         next(error);

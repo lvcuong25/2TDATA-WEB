@@ -22,6 +22,9 @@ import ServiceForm from '../components/admin/Service/ServiceForm.jsx';
 import ServiceEdit from '../components/admin/Service/ServiceEdit.jsx';
 import Service from '../components/Service/Service.jsx';
 import ServiceUse from '../components/Service/ServiceUse.jsx';
+import StatusList from '../components/admin/Status/StatusList.jsx';
+import StatusForm from '../components/admin/Status/StatusForm.jsx';
+import StatusEdit from '../components/admin/Status/StatusEdit.jsx';
 
 
 
@@ -61,11 +64,15 @@ const Router = () => {
             <Route path="add" element={<BlogForm />} />
             <Route path="edit/:id" element={<BlogEdit />} />
           </Route>
-
           <Route path="services">
             <Route index element={<ServiceList />} />
             <Route path="add" element={<ServiceForm />} />
             <Route path="edit/:id" element={<ServiceEdit />} />
+          </Route>
+          <Route path="status">
+            <Route index element={<StatusList />} />
+            <Route path="add" element={<StatusForm />} />
+            <Route path="edit/:id" element={<StatusEdit />} />
           </Route>
         </Route>
 

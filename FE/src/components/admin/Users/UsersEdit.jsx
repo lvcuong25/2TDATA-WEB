@@ -22,6 +22,7 @@ const UsersEdit = () => {
         queryKey: ['user', id],
         queryFn: async () => {
             const { data } = await instance.get(`/user/${id}`);
+            console.log(data.data)
             return data.data;
         },
     });
@@ -43,7 +44,10 @@ const UsersEdit = () => {
                 phone: userData.phone,
                 role: userData.role,
                 active: userData.active,
-                service: userData.service?.map(s => s._id) || [],
+                service: userData.service?.map(s => ({
+                    id: s.service._id,
+                    status: s.status
+                })) || [],
                 address: userData.address
             });
             if (userData.avatar) setAvatar(userData.avatar);
@@ -245,7 +249,14 @@ const UsersEdit = () => {
                                         <Select
                                             mode="multiple"
                                             placeholder="Chọn dịch vụ"
-                                            {...field}
+                                            value={field.value?.map(s => s.id)}
+                                            onChange={(values) => {
+                                                const newServices = values.map(id => ({
+                                                    id,
+                                                    status: field.value?.find(s => s.id === id)?.status || 'waiting'
+                                                }));
+                                                field.onChange(newServices);
+                                            }}
                                         >
                                             {servicesData?.map(service => (
                                                 <Option key={service._id} value={service._id}>
@@ -256,15 +267,15 @@ const UsersEdit = () => {
                                         <div className="mt-4 p-4 border rounded-lg bg-gray-50">
                                             <h3 className="text-lg font-semibold mb-3">Thông tin dịch vụ đã chọn:</h3>
                                             <div className="space-y-4">
-                                                {field.value?.map(serviceId => {
-                                                    const service = servicesData?.find(s => s._id === serviceId);
-                                                    return service ? (
-                                                        <div key={service._id} className="p-4 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
+                                                {field.value?.map(service => {
+                                                    const serviceInfo = servicesData?.find(s => s._id === service.id);
+                                                    return serviceInfo ? (
+                                                        <div key={serviceInfo._id} className="p-4 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
                                                             <div className="flex gap-4">
                                                                 <div className="w-24 h-24 flex-shrink-0">
                                                                     <img 
-                                                                        src={service.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
-                                                                        alt={service.name}
+                                                                        src={serviceInfo.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
+                                                                        alt={serviceInfo.name}
                                                                         className="w-full h-full object-cover rounded-lg"
                                                                     />
                                                                 </div>
@@ -272,27 +283,33 @@ const UsersEdit = () => {
                                                                     <div className="grid grid-cols-2 gap-3">
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="font-medium text-gray-700">ID:</span>
-                                                                            <span className="text-gray-600 text-sm">{service._id}</span>
+                                                                            <span className="text-gray-600 text-sm">{serviceInfo._id}</span>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="font-medium text-gray-700">Tên:</span>
-                                                                            <Tag color="blue" className="text-sm">{service.name}</Tag>
+                                                                            <Tag color="blue" className="text-sm">{serviceInfo.name}</Tag>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="font-medium text-gray-700">Trạng thái:</span>
-                                                                            <Tag color={service.status ? "green" : "red"} className="text-sm">
-                                                                                {service.status ? "Hoạt động" : "Không hoạt động"}
+                                                                            <Tag color={serviceInfo.status ? "green" : "red"} className="text-sm">
+                                                                                {serviceInfo.status ? "Hoạt động" : "Không hoạt động"}
+                                                                            </Tag>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="font-medium text-gray-700">Xác nhận:</span>
+                                                                            <Tag color={service.status === "waiting" ? "orange" : "green"} className="text-sm">
+                                                                                {service.status === "waiting" ? "Chưa xác nhận" : "Đã xác nhận"}
                                                                             </Tag>
                                                                         </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="font-medium text-gray-700">Đường dẫn:</span>
                                                                             <a 
-                                                                                href={`/service/slug/${service.slug}`}
+                                                                                href={`/service/slug/${serviceInfo.slug}`}
                                                                                 target="_blank"
                                                                                 rel="noopener noreferrer"
                                                                                 className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
                                                                             >
-                                                                                {service.slug}
+                                                                                {serviceInfo.slug}
                                                                             </a>
                                                                         </div>
                                                                     </div>

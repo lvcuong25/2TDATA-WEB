@@ -88,22 +88,39 @@ export const updateUser = async (req, res, next) => {
                 return res.status(404).json({ message: "User not found" });
             }
 
-            // Ensure service is an array
+            // Ensure service is an array of objects with id and status
             const newServices = Array.isArray(req.body.service) ? req.body.service : [req.body.service];
             
-            // Validate each service ID
-            const validServices = newServices.filter(serviceId => 
-                mongoose.Types.ObjectId.isValid(serviceId)
-            );
-
-            if (validServices.length !== newServices.length) {
-                return res.status(400).json({ 
-                    message: "One or more service IDs are invalid" 
+            // Create UserService documents for each service
+            const UserService = mongoose.model('UserService');
+            const servicePromises = newServices.map(async (service) => {
+                // Check if service already exists for this user
+                const existingService = await UserService.findOne({
+                    user: req.params.id,
+                    service: service.id
                 });
-            }
 
-            // Update the services array
-            req.body.service = validServices;
+                if (existingService) {
+                    // Update existing service status if provided
+                    if (service.status) {
+                        existingService.status = service.status;
+                        await existingService.save();
+                    }
+                    return existingService._id;
+                } else {
+                    // Create new service with default 'waiting' status
+                    const newUserService = await UserService.create({
+                        user: req.params.id,
+                        service: service.id,
+                        status: service.status || 'waiting'
+                    });
+                    return newUserService._id;
+                }
+            });
+
+            // Wait for all service operations to complete
+            const serviceIds = await Promise.all(servicePromises);
+            req.body.service = serviceIds;
         }
 
         const data = await User.findByIdAndUpdate(

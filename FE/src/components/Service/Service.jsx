@@ -1,95 +1,113 @@
 import Header from "../Header";
 import Footer from "../Footer";  
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useNavigate } from 'react-router-dom';
-
-import { useContext, useState } from "react";
-import { Modal, Form, Input, Button, message, Select, Tag, Checkbox } from 'antd';
+import { Modal, Form, Input, Button, Spin, Checkbox } from 'antd';
+import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from "../core/Auth";
 import instance from "../../utils/axiosInstance";
-
-const { Option } = Select;
+import { useForm, Controller } from "react-hook-form";
+import { toast } from "react-toastify";
 
 const Service = () => {
-  const navigate = useNavigate();
   const { currentUser } = useContext(AuthContext);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
-  const [form] = Form.useForm();
+  const [isLoading, setIsLoading] = useState(false);
+  const { control, handleSubmit, reset, formState: { errors } } = useForm();
 
-  const { data } = useQuery({
+  const { data: services } = useQuery({
     queryKey: ['userServices'],
     queryFn: async () => {
       const { data } = await instance.get('service');
+      console.log(data)
       return data;
     },
   });
 
-  // Get user's registered service IDs
-  const registeredServiceIds = currentUser?.service?.map(s => s.serviceId?._id || s._id) || [];
+  const { data: userInfo, isLoading: isFetchingUser } = useQuery({
+    queryKey: ['userInfo', currentUser?._id],
+    queryFn: async () => {
+      const { data } = await instance.get(`/user/${currentUser?._id}`);
+      return data.data;
+    }
+  });
 
-  const registerMutation = useMutation({
-    mutationFn: async (formData) => {
-      // First update user profile
-      await instance.put(`/user/${currentUser._id}`, formData);
-      
-      // Get current user's services
-      const currentServices = currentUser?.service || [];
-      const currentServiceIds = currentServices.map(s => s.serviceId?._id || s._id);
-
-      // Combine current services with new ones
-      const allServiceIds = [...currentServiceIds, ...selectedServices.map(s => s._id)];
-      
-      // Update user with all services
-      const { data } = await instance.put(`/user/${currentUser._id}`, {
-        service: allServiceIds
+  useEffect(() => {
+    if (userInfo) {
+      reset({
+        name: userInfo.name,
+        phone: userInfo.phone,
+        address: userInfo.address
       });
-      return data;
+    }
+  }, [userInfo, reset]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (values) => {
+      const response = await instance.put(`/user/${currentUser._id}`, values);
+      return response.data;
     },
     onSuccess: () => {
-      message.success(`Đăng ký ${selectedServices.length} dịch vụ thành công! Vui lòng chờ admin duyệt.`);
+      toast.success('Cập nhật thông tin thành công!');
       setIsModalVisible(false);
-      form.resetFields();
-      setSelectedServices([]);
-      // Refresh the page to update the user's services
-      window.location.reload();
+      reset();
     },
     onError: (error) => {
-      console.error("Error registering services:", error);
-      message.error(error.response?.data?.message || 'Đăng ký dịch vụ thất bại!');
-    },
+      toast.error('Cập nhật thông tin thất bại: ' + error.message);
+    }
   });
 
-  const handleSubmit = (values) => {
-    if (selectedServices.length === 0) {
-      message.warning('Vui lòng chọn ít nhất một dịch vụ!');
+  const registerServiceMutation = useMutation({
+    mutationFn: async (serviceIds) => {
+      const promises = serviceIds.map(serviceId => 
+        instance.post('/requests/add', { serviceId })
+      );
+      await Promise.all(promises);
+    },
+    onSuccess: () => {
+      toast.success('Đăng ký dịch vụ thành công! Vui lòng chờ admin xác nhận.');
+      setIsModalVisible(false);
+      setSelectedServices([]);
+    },
+    onError: (error) => {
+      toast.error('Đăng ký dịch vụ thất bại: ' + error.message);
+    }
+  });
+
+  const handleRegister = () => {
+    if (!currentUser) {
+      toast.warning('Vui lòng đăng nhập để đăng ký dịch vụ!');
       return;
     }
-    registerMutation.mutate(values);
-  };
-
-  const handleServiceSelect = (service, checked) => {
-    if (checked) {
-      setSelectedServices([...selectedServices, service]);
-    } else {
-      setSelectedServices(selectedServices.filter(s => s._id !== service._id));
-    }
-  };
-
-  const handleRegisterClick = (service) => {
-    if (registeredServiceIds.includes(service._id)) {
-      message.info('Bạn đã đăng ký dịch vụ này rồi!');
-      return;
-    }
-    setSelectedServices([service]);
     setIsModalVisible(true);
-    // Pre-fill form with user data if available
-    form.setFieldsValue({
-      name: currentUser?.name || '',
-      phone: currentUser?.phone || '',
-      address: currentUser?.address || ''
-    });
   };
+
+  const handleServiceSelect = (serviceId, checked) => {
+    if (checked) {
+      setSelectedServices(prev => [...prev, serviceId]);
+      toast.info('Đã thêm dịch vụ vào danh sách đăng ký');
+    } else {
+      setSelectedServices(prev => prev.filter(id => id !== serviceId));
+      toast.info('Đã xóa dịch vụ khỏi danh sách đăng ký');
+    }
+  };
+
+  const onSubmit = (data) => {
+    setIsLoading(true);
+    if (selectedServices.length > 0) {
+      registerServiceMutation.mutate(selectedServices, {
+        onSettled: () => setIsLoading(false)
+      });
+    } else {
+      updateProfileMutation.mutate(data, {
+        onSettled: () => setIsLoading(false)
+      });
+    }
+  };
+
+  if (isFetchingUser) {
+    return <Spin size="large" />;
+  }
 
   return (
     <div>
@@ -98,47 +116,47 @@ const Service = () => {
         <section className="bg-gray-100 rounded-[32px] max-w-6xl mx-auto mt-8 p-8">
           <h2 className="text-2xl font-bold text-center mb-8">Các dịch vụ triển khai</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {data?.map((service) => (
+            {services?.map((service) => (
               <div 
-                key={service._id}
+                key={service?._id}
                 className="bg-white rounded-2xl p-6 flex flex-col items-center shadow hover:shadow-lg transition-shadow"
               >
                 <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
                   <img 
-                    src={service.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
-                    alt={service.name}
+                    src={service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
+                    alt={service?.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="font-semibold mb-4 capitalize">{service.name}</div>
                 <div className="flex items-center gap-2 mb-4">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    service.status 
+                    service?.status 
                       ? 'bg-green-100 text-green-800 border border-green-200' 
                       : 'bg-red-100 text-red-800 border border-red-200'
                   }`}>
-                    {service.status ? 'Hoạt động' : 'Không hoạt động'}
+                    {service?.status ? 'Hoạt động' : 'Không hoạt động'}
                   </span>
-                  {registeredServiceIds.includes(service._id) && (
-                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                      Đã đăng ký
-                    </span>
-                  )}
                 </div>
-                <button 
-                  onClick={() => handleRegisterClick(service)}
-                  className={`rounded-full px-8 py-2 font-semibold flex items-center gap-2 transition ${
-                    registeredServiceIds.includes(service._id)
-                      ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                      : 'bg-red-500 text-white hover:bg-red-600'
-                  }`}
-                  disabled={registeredServiceIds.includes(service._id)}
+                <Checkbox
+                  onChange={(e) => handleServiceSelect(service?._id, e.target.checked)}
+                  disabled={!service?.status}
                 >
-                  {registeredServiceIds.includes(service._id) ? 'Đã đăng ký' : 'Đăng ký dịch vụ'} 
-                  {!registeredServiceIds.includes(service._id) && <span>→</span>}
-                </button>
+                  Chọn dịch vụ
+                </Checkbox>
               </div>
             ))}
+          </div>
+          <div className="mt-8 text-center">
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleRegister}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={selectedServices?.length === 0}
+            >
+              Đăng ký dịch vụ đã chọn ({selectedServices?.length})
+            </Button>
           </div>
         </section>
       </div>
@@ -149,77 +167,62 @@ const Service = () => {
         onCancel={() => {
           setIsModalVisible(false);
           setSelectedServices([]);
+          reset();
         }}
         footer={null}
         width={600}
       >
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold mb-4">Chọn dịch vụ</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {data?.filter(service => !registeredServiceIds.includes(service._id)).map((service) => (
-              <div key={service._id} className="flex items-center gap-2 p-2 border rounded-lg">
-                <Checkbox
-                  checked={selectedServices.some(s => s._id === service._id)}
-                  onChange={(e) => handleServiceSelect(service, e.target.checked)}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full overflow-hidden">
-                      <img 
-                        src={service.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
-                        alt={service.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="font-medium">{service.name}</span>
-                  </div>
-                </Checkbox>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
+        <Form onFinish={handleSubmit(onSubmit)} layout="vertical">
           <Form.Item
-            name="name"
-            label="Tên"
-            rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}
+            label="Họ và tên"
+            required
+            validateStatus={errors.name ? "error" : ""}
+            help={errors.name?.message}
           >
-            <Input 
-              placeholder="Nhập tên của bạn" 
+            <Controller
+              name="name"
+              control={control}
+              rules={{
+                required: 'Vui lòng nhập họ và tên!',
+                minLength: { value: 2, message: 'Tên phải có ít nhất 2 ký tự' }
+              }}
+              render={({ field }) => <Input {...field} placeholder="Nhập họ và tên của bạn" />}
             />
           </Form.Item>
 
           <Form.Item
-            name="phone"
             label="Số điện thoại"
-            rules={[
-              { required: true, message: 'Vui lòng nhập số điện thoại!' },
-              { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ!' }
-            ]}
+            validateStatus={errors.phone ? "error" : ""}
+            help={errors.phone?.message}
           >
-            <Input 
-              placeholder="Nhập số điện thoại" 
+            <Controller
+              name="phone"
+              control={control}
+              rules={{
+                pattern: {
+                  value: /^[0-9]{10}$/,
+                  message: 'Số điện thoại không hợp lệ'
+                }
+              }}
+              render={({ field }) => <Input {...field} placeholder="Nhập số điện thoại" />}
             />
           </Form.Item>
 
           <Form.Item
-            name="address"
             label="Địa chỉ"
-            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}
+            validateStatus={errors.address ? "error" : ""}
+            help={errors.address?.message}
           >
-            <Input 
-              placeholder="Nhập địa chỉ của bạn" 
+            <Controller
+              name="address"
+              control={control}
+              render={({ field }) => <Input {...field} placeholder="Nhập địa chỉ của bạn" />}
             />
           </Form.Item>
 
           <div className="bg-blue-50 p-4 rounded-lg mb-4">
             <p className="text-blue-800 text-sm">
-              Thông tin cá nhân sẽ được cập nhật vào tài khoản của bạn khi đăng ký dịch vụ.
-              Sau khi đăng ký, admin sẽ xem xét và duyệt yêu cầu của bạn.
+              Thông tin của bạn sẽ được gửi đến admin để xác nhận đăng ký {selectedServices.length} dịch vụ.
             </p>
           </div>
 
@@ -228,16 +231,18 @@ const Service = () => {
               <Button onClick={() => {
                 setIsModalVisible(false);
                 setSelectedServices([]);
+                reset();
               }}>
                 Hủy
               </Button>
               <Button 
                 type="primary" 
                 htmlType="submit"
-                loading={registerMutation.isPending}
+                loading={isLoading || registerServiceMutation.isPending}
+                disabled={isLoading || registerServiceMutation.isPending}
                 className="bg-red-500 hover:bg-red-600"
               >
-                Đăng ký ({selectedServices.length} dịch vụ)
+                {isLoading || registerServiceMutation.isPending ? "Đang xử lý..." : "Đăng ký"}
               </Button>
             </div>
           </Form.Item>
