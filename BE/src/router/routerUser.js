@@ -12,7 +12,8 @@
             routerUser.get('/email/:email', checkPermission(), getUserByEmail);
             routerUser.delete('/:id', checkPermission(), removeUserById);
             routerUser.delete('/restore/:id', checkPermission(), restoreUserById);
-            // routerUser.use(checkRequestBody(userSchema));
+            routerUser.use(checkRequestBody(userSchema));
+            routerUser.use(getUser);
             routerUser.post('/', checkPermission(), createUser);
             routerUser.put('/:id', checkPermission(), updateUser);
             routerUser.patch('/', getUser, updateUserProfile);

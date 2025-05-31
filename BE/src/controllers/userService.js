@@ -296,6 +296,7 @@ export const updateUserServiceLinks = async (req, res, next) => {
                 return {
                     url: link.url || '',
                     title: link.title || 'Link không có tiêu đề',
+                    description: link.description || '',
                     type: link.type || 'authority' // Default type
                 };
             });

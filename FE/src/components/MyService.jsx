@@ -5,7 +5,7 @@ import { useContext } from 'react';
 import { AuthContext } from './core/Auth';
 import { useQuery } from '@tanstack/react-query';
 import instance from '../utils/axiosInstance';
-import { Tag, Table, Space, Card, Button } from 'antd';
+import { Tag, Table, Space, Card, Button, Tooltip } from 'antd';
 import { LinkOutlined } from "@ant-design/icons";
 
 const MyService = () => {
@@ -79,12 +79,16 @@ const MyService = () => {
           <Space direction="vertical">
             {resultLinks.map((link, index) => (
               <div key={index} className="flex items-center gap-2">
-                <Tag color="green">
-                  {link.title}
-                </Tag>
-                <a href={link.url} target="_blank" rel="noopener noreferrer">
-                  <LinkOutlined />
-                </a>
+                <Tooltip title={link.description || 'Không có mô tả'}>
+                  <a 
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {link.title}
+                  </a>
+                </Tooltip>
               </div>
             ))}
           </Space>

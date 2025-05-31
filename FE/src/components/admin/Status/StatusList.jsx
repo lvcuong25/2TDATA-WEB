@@ -10,25 +10,26 @@ const StatusList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [form] = Form.useForm();
-  const [links, setLinks] = useState([{ url: '', title: '', type: 'authority' }]);
+  const [links, setLinks] = useState([{ url: '', title: '', type: 'authority', description: '' }]);
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     if (isModalOpen && selectedService) {
-      const initialLinks = selectedService.link || [{ url: '', title: '', type: 'authority' }];
+      const initialLinks = selectedService.link || [{ url: '', title: '', type: 'authority', description: '' }];
       setLinks(initialLinks);
       const formValues = {};
       initialLinks.forEach((link, index) => {
         formValues[`url${index}`] = link.url || '';
         formValues[`title${index}`] = link.title || '';
         formValues[`type${index}`] = link.type || 'authority';
+        formValues[`description${index}`] = link.description || '';
       });
       form.setFieldsValue(formValues);
     } else if (!isModalOpen) {
       setSelectedService(null);
       setIsEditMode(false);
       form.resetFields();
-      setLinks([{ url: '', title: '', type: 'authority' }]);
+      setLinks([{ url: '', title: '', type: 'authority', description: '' }]);
     }
   }, [isModalOpen, selectedService, form]);
 
@@ -57,7 +58,7 @@ const StatusList = () => {
       queryClient.invalidateQueries(["PENDING_SERVICES"]);
       toast.success("Đã cập nhật link thành công!");
       setIsModalOpen(false);
-      setLinks([{ url: '', title: '', type: 'authority' }]);
+      setLinks([{ url: '', title: '', type: 'authority', description: '' }]);
       form.resetFields();
       setIsEditMode(false);
     },
@@ -141,12 +142,13 @@ const StatusList = () => {
   };
 
   const addLinkField = () => {
-    const newLinks = [...links, { url: '', title: '', type: 'authority' }];
+    const newLinks = [...links, { url: '', title: '', type: 'authority', description: '' }];
     setLinks(newLinks);
     form.setFieldsValue({ 
       [`url${newLinks.length - 1}`]: '',
       [`title${newLinks.length - 1}`]: '',
-      [`type${newLinks.length - 1}`]: 'authority'
+      [`type${newLinks.length - 1}`]: 'authority',
+      [`description${newLinks.length - 1}`]: ''
     });
   };
 
@@ -159,6 +161,7 @@ const StatusList = () => {
       updatedFormValues[`url${idx}`] = link.url;
       updatedFormValues[`title${idx}`] = link.title;
       updatedFormValues[`type${idx}`] = link.type;
+      updatedFormValues[`description${idx}`] = link.description;
     });
     form.setFieldsValue(updatedFormValues);
   };
@@ -383,6 +386,17 @@ const StatusList = () => {
                       />
                     </Form.Item>
                   </div>
+                  <Form.Item
+                    name={`description${index}`}
+                    className="mb-0"
+                  >
+                    <Input.TextArea
+                      placeholder="Nhập mô tả chi tiết về link"
+                      value={link.description}
+                      onChange={(e) => updateLink(index, 'description', e.target.value)}
+                      rows={2}
+                    />
+                  </Form.Item>
                 </div>
                 <div className="flex gap-2 mt-2">
                   {link.url && link.url.trim() !== '' && (
