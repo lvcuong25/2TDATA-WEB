@@ -36,7 +36,25 @@ const userServiceSchema = new mongoose.Schema(
       type: String,
       unique: true,
       // required: true
-    }
+    },
+    link: [{
+      url: {
+        type: String,
+        required: true,
+        description: "URL của service"
+      },
+      title: {
+        type: String,
+        required: true,
+        description: "Tiêu đề hoặc mô tả của link"
+      },
+      type: {
+        type: String,
+        enum: ['authority', 'result'],
+        required: true,
+        description: "Loại link: authority (uy quyền) hoặc result (kết quả)"
+      }
+    }]
   },
   { timestamps: true, versionKey: false }
 );

@@ -248,7 +248,7 @@ const ServiceFacebook = () => {
       </section>
 
   
-     
+      <Footer />
     </div>
   );
 };

@@ -61,7 +61,7 @@ export const getUserServices = async (req, res, next) => {
 export const approveUserService = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { status, reason } = req.body;
+        const { status, reason, links } = req.body;
 
         const userService = await UserService.findById(id);
         if (!userService) {
@@ -74,6 +74,26 @@ export const approveUserService = async (req, res, next) => {
                 userService.user,
                 { $addToSet: { services: userService._id } }
             );
+
+            // Cập nhật links nếu có
+            if (links && Array.isArray(links)) {
+                // Validate và format links
+                const formattedLinks = links.map(link => {
+                    if (typeof link === 'string') {
+                        return {
+                            url: link,
+                            title: 'Link không có tiêu đề',
+                            type: 'authority' // Default type
+                        };
+                    }
+                    return {
+                        url: link.url || '',
+                        title: link.title || 'Link không có tiêu đề',
+                        type: link.type || 'authority' // Default type
+                    };
+                });
+                userService.link = formattedLinks;
+            }
         }
 
         // Cập nhật trạng thái xác nhận
@@ -239,6 +259,60 @@ export const removeUserService = async (req, res, next) => {
         return res.status(200).json({
             data: updatedUser,
             message: "Xóa service thành công"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Cập nhật link cho user service
+export const updateUserServiceLinks = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { links } = req.body;
+        const userId = req.user._id;
+
+        // Tìm UserService
+        const userService = await UserService.findById(id);
+        if (!userService) {
+            return res.status(404).json({ message: "Không tìm thấy thông tin service" });
+        }
+
+        // Kiểm tra quyền cập nhật (chỉ user sở hữu hoặc admin mới được cập nhật)
+        if (userService.user.toString() !== userId.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ message: "Bạn không có quyền cập nhật service này" });
+        }
+
+        // Validate và format links
+        if (links && Array.isArray(links)) {
+            const formattedLinks = links.map(link => {
+                if (typeof link === 'string') {
+                    return {
+                        url: link,
+                        title: 'Link không có tiêu đề',
+                        type: 'authority' // Default type
+                    };
+                }
+                return {
+                    url: link.url || '',
+                    title: link.title || 'Link không có tiêu đề',
+                    type: link.type || 'authority' // Default type
+                };
+            });
+            userService.link = formattedLinks;
+        }
+
+        await userService.save();
+
+        // Populate thông tin đầy đủ trước khi trả về
+        const updatedUserService = await UserService.findById(userService._id)
+            .populate('user', 'name email phone address avatar')
+            .populate('service', 'name slug image status description')
+            .populate('approvedBy', 'name email avatar');
+
+        return res.status(200).json({
+            data: updatedUserService,
+            message: "Cập nhật link thành công"
         });
     } catch (error) {
         next(error);

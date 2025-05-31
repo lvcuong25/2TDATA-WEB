@@ -7,7 +7,8 @@ import {
     addServiceToUser, 
     getUserServices,
     getUserServiceDetail,
-    removeUserService 
+    removeUserService,
+    updateUserServiceLinks
 } from "../controllers/userService.js";
 
 const routerUserService = Router();
@@ -29,5 +30,8 @@ routerUserService.get('/:id', getUserServiceDetail);
 
 // Xóa service khỏi user
 routerUserService.delete('/:id', getUser, removeUserService);
+
+// Cập nhật link cho user service
+routerUserService.put('/:id/links', getUser, updateUserServiceLinks);
 
 export default routerUserService;

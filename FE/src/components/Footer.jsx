@@ -1,5 +1,7 @@
 import React from 'react'
 import image from "../image/image.jpg";
+import hcw from "../image/hcw.jpg";
+import remobpo from "../image/remobpo.jpg";
 const Footer = () => {
   return (
     <div>
@@ -51,7 +53,15 @@ const Footer = () => {
                       <li><a href="#" className="hover:text-blue-600">Chính sách bán hàng</a></li>
                       <li><a href="#" className="hover:text-blue-600">Liên hệ</a></li>
                     </ul>
+                    <div className="mt-4">
+                    <p className="font-semibold">Công ty đối tác:</p>
+                  <div className='flex'>
+                  <img src={hcw} alt="2T DATA" className="h-[100px] w-[120px]" />
+                  <img src={remobpo} alt="2T DATA" className="h-[100px] w-[140px]" />
                   </div>
+                  </div>
+                  </div>
+                  
                 </div>
               </div>
             </div>
