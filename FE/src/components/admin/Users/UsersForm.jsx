@@ -48,7 +48,7 @@ const UsersForm = () => {
         },
         onSuccess: () => {
             toast.success(`Người dùng đã được ${id ? 'cập nhật' : 'thêm'} thành công!`);
-            navigate("/admin/users");
+            navigate("/admin");
         },
         onError: (error) => {
             console.error("Error:", error);

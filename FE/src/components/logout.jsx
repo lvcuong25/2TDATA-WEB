@@ -13,10 +13,14 @@ const Logout = () => {
       // Show success message
       toast.success('Đăng xuất thành công!');
       
+      // Reload the page
+      window.location.reload();
+      
       // Redirect to login page
       navigate('/');
       
     } catch (error) {
+      console.error('Logout error:', error);
       toast.error('Có lỗi xảy ra khi đăng xuất!');
     }
   };

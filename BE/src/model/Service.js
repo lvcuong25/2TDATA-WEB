@@ -37,7 +37,23 @@ const serviceSchema = new mongoose.Schema(
     },
     image: {
       type: String,
-    }
+    },
+    authorizedLinks: [{
+      url: {
+        type: String,
+        required: true,
+        description: "URL của service"
+      },
+      title: {
+        type: String,
+        required: true,
+        description: "Tiêu đề hoặc mô tả của link"
+      },
+      description:{
+        type: String,
+        description: "Mô tả chi tiết về link" 
+      }
+    }]
   },
   { timestamps: true, versionKey: false }
 );

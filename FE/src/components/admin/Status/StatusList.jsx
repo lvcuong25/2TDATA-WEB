@@ -371,20 +371,7 @@ const StatusList = () => {
                         onChange={(e) => updateLink(index, 'title', e.target.value)}
                       />
                     </Form.Item>
-                    <Form.Item
-                      name={`type${index}`}
-                      rules={[{ required: true, message: 'Vui lòng chọn loại link!' }]}
-                      className="w-40 mb-0"
-                    >
-                      <Select
-                        value={link.type}
-                        onChange={(value) => updateLink(index, 'type', value)}
-                        options={[
-                          { value: 'authority', label: 'Link uy quyền' },
-                          { value: 'result', label: 'Link kết quả' }
-                        ]}
-                      />
-                    </Form.Item>
+                  
                   </div>
                   <Form.Item
                     name={`description${index}`}
@@ -400,7 +387,7 @@ const StatusList = () => {
                 </div>
                 <div className="flex gap-2 mt-2">
                   {link.url && link.url.trim() !== '' && (
-                    <Tag color={link.type === 'authority' ? 'blue' : 'green'} style={{ cursor: 'pointer' }}>
+                    <Tag color='blue' style={{ cursor: 'pointer' }}>
                       <a href={link.url} target="_blank" rel="noopener noreferrer"><LinkOutlined /></a>
                     </Tag>
                   )}

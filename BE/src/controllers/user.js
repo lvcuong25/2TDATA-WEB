@@ -12,7 +12,7 @@ export const getAllUser = async (req, res, next) => {
             populate: {
                 path: 'service',
                 populate: [
-                    { path: 'service', select: 'name slug image status description' },
+                    { path: 'service', select: 'name slug image status description authorizedLinks' },
                     { path: 'approvedBy', select: 'name email avatar' }
                 ]
             }
@@ -49,7 +49,7 @@ export const getUserById = async (req, res, next) => {
             .populate({
                 path: 'service',
                 populate: [
-                    { path: 'service', select: 'name slug image status description' },
+                    { path: 'service', select: 'name slug image status description authorizedLinks' },
                     { path: 'approvedBy', select: 'name email avatar' }
                 ]
             });
@@ -130,7 +130,7 @@ export const updateUser = async (req, res, next) => {
         ).populate({
             path: 'service',
             populate: [
-                { path: 'service', select: 'name slug image status description' },
+                { path: 'service', select: 'name slug image status description authorizedLinks' },
                 { path: 'approvedBy', select: 'name email avatar' }
             ]
         });
@@ -195,7 +195,7 @@ export const updateUserProfile = async (req, res, next) => {
         ).populate({
             path: 'service',
             populate: [
-                { path: 'service', select: 'name slug image status description' },
+                { path: 'service', select: 'name slug image status description authorizedLinks' },
                 { path: 'approvedBy', select: 'name email avatar' }
             ]
         });
@@ -231,7 +231,7 @@ export const removeServiceFromUser = async (req, res, next) => {
             .populate({
                 path: 'service',
                 populate: [
-                    { path: 'service', select: 'name slug image status description' },
+                    { path: 'service', select: 'name slug image status description authorizedLinks' },
                     { path: 'approvedBy', select: 'name email avatar' }
                 ]
             });
@@ -266,7 +266,7 @@ export const removeServiceFromProfile = async (req, res, next) => {
             .populate({
                 path: 'service',
                 populate: [
-                    { path: 'service', select: 'name slug image status description' },
+                    { path: 'service', select: 'name slug image status description authorizedLinks' },
                     { path: 'approvedBy', select: 'name email avatar' }
                 ]
             });

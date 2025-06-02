@@ -35,9 +35,9 @@ const Home = () => {
   return (
     <div>
      <Header/>
-
+   {/* 
       <section className="relative pt-[30px]">
-        {/* Background image */}
+        
         <img
           src={image9}
           alt=""
@@ -45,9 +45,8 @@ const Home = () => {
         />
 
         <div className="relative container mx-auto h-[737px]">
-          {/* Main content wrapper */}
+         
           <div className="absolute inset-0 flex items-center">
-            {/* Left side - Large building image */}
             <div className="relative w-[55%]">
               <img
                 src={image6}
@@ -56,9 +55,9 @@ const Home = () => {
               />
             </div>
 
-            {/* Right side content */}
+           
             <div className="relative w-[45%] -ml-20">
-              {/* Top images overlapping */}
+          
               <div className="flex gap-4 mb-8 relative top-3.5 ">
                 <div className="">
                   <img
@@ -76,7 +75,6 @@ const Home = () => {
                 </div>
               </div>
 
-              {/* Blue content box */}
               <div className="bg-[#003399] text-white p-8 mr-[96px]   -ml-10 shadow-xl">
                 <h2 className="text-2xl font-bold mb-4">
                   Data Fusion – Biến Dữ Liệu Thành Lợi Thế Cạnh Tranh
@@ -113,12 +111,12 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Three cards section */}
+       
         <div className="max-w-[1200px] mx-auto">
           <div className="flex justify-center items-stretch gap-[122px]">
-            {/* Card 1 */}
+      
             <div className="relative flex flex-col w-[300px]">
-              {/* Ảnh phía trên */}
+        
               <div className="bg-white p-2 rounded shadow-md flex items-center justify-center h-[210px] w-[160px] mx-auto">
                 <img
                   src={image2}
@@ -127,9 +125,9 @@ const Home = () => {
                 />
               </div>
 
-              {/* Box + Mũi tên tam giác khít liền */}
+            
               <div className="relative mt-5 flex-1">
-                {/* Mũi tên tam giác */}
+
                 <div
                   className="absolute -top-[20px] left-1/2 -translate-x-1/2 w-[40px] h-[20px] bg-[#000080] z-10"
                   style={{
@@ -137,7 +135,7 @@ const Home = () => {
                   }}
                 ></div>
 
-                {/* Box nội dung */}
+                
                 <div className="bg-[#000080] text-white p-5 pt-6 rounded shadow-xl h-full text-center">
                   <h3 className="text-lg font-bold mb-2">Tầm nhìn</h3>
                   <p className="text-sm leading-relaxed">
@@ -149,9 +147,9 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Card 2 */}
+         
             <div className="relative flex flex-col w-[300px]">
-              {/* Ảnh phía trên */}
+           
               <div className="bg-white p-2 rounded shadow-md flex items-center justify-center h-[210px] w-[160px] mx-auto">
                 <img
                   src={image17}
@@ -160,9 +158,9 @@ const Home = () => {
                 />
               </div>
 
-              {/* Box + Mũi tên tam giác khít liền */}
+              
               <div className="relative mt-5 flex-1">
-                {/* Mũi tên tam giác */}
+           
                 <div
                   className="absolute -top-[20px] left-1/2 -translate-x-1/2 w-[40px] h-[20px] bg-[#000080] z-10"
                   style={{
@@ -170,7 +168,6 @@ const Home = () => {
                   }}
                 ></div>
 
-                {/* Box nội dung */}
                 <div className="bg-[#000080] text-white p-5 pt-6 rounded shadow-xl h-full text-center">
                   <h3 className="text-lg font-bold mb-2">Sứ mệnh</h3>
                   <p className="text-sm leading-relaxed">
@@ -181,9 +178,8 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Card 3 */}
             <div className="relative flex flex-col w-[300px]">
-              {/* Ảnh phía trên */}
+             
               <div className="bg-white p-2 rounded shadow-md flex items-center justify-center h-[210px] w-[160px] mx-auto">
                 <img
                   src={image15}
@@ -192,9 +188,8 @@ const Home = () => {
                 />
               </div>
 
-              {/* Box + Mũi tên tam giác khít liền */}
               <div className="relative mt-5 flex-1">
-                {/* Mũi tên tam giác */}
+           
                 <div
                   className="absolute -top-[20px] left-1/2 -translate-x-1/2 w-[40px] h-[20px] bg-[#000080] z-10"
                   style={{
@@ -202,7 +197,7 @@ const Home = () => {
                   }}
                 ></div>
 
-                {/* Box nội dung */}
+              
                 <div className="bg-[#000080] text-white p-5 pt-6 rounded shadow-xl h-full text-center">
                   <h3 className="text-lg font-bold mb-2">Giá trị cốt lõi</h3>
                   <p className="text-sm leading-relaxed">
@@ -220,7 +215,7 @@ const Home = () => {
       <section className="container mx-auto py-20">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-center gap-20">
-            {/* Left side - Image */}
+          
             <div className="w-[500px] h-[400px]">
               <img 
                 src={image13} 
@@ -229,7 +224,6 @@ const Home = () => {
               />
             </div>
 
-            {/* Right side - Content */}
             <div className="w-[500px] h-[400px] flex flex-col justify-between py-4">
               <h2 className="text-4xl font-bold">
                 Vì Sao Doanh Nghiệp<br />
@@ -306,7 +300,7 @@ const Home = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-6 max-w-5xl mx-auto">
-              {/* Box 1 */}
+     
               <div className="bg-[#003399] p-8 text-white relative">
                 <div className="bg-yellow-300 w-12 h-12 rounded-full flex items-center justify-center text-black font-bold text-xl absolute -top-6 left-8">
                   1
@@ -320,7 +314,7 @@ const Home = () => {
                 </ul>
               </div>
 
-              {/* Box 2 */}
+        
               <div className="bg-[#003399] p-8 text-white relative">
                 <div className="bg-yellow-300 w-12 h-12 rounded-full flex items-center justify-center text-black font-bold text-xl absolute -top-6 left-8">
                   2
@@ -332,7 +326,7 @@ const Home = () => {
                 </ul>
               </div>
 
-              {/* Box 3 */}
+          
               <div className="bg-[#003399] p-8 text-white relative">
                 <div className="bg-yellow-300 w-12 h-12 rounded-full flex items-center justify-center text-black font-bold text-xl absolute -top-6 left-8">
                   3
@@ -344,7 +338,7 @@ const Home = () => {
                 </ul>
               </div>
 
-              {/* Box 4 */}
+         
               <div className="bg-[#003399] p-8 text-white relative">
                 <div className="bg-yellow-300 w-12 h-12 rounded-full flex items-center justify-center text-black font-bold text-xl absolute -top-6 left-8">
                   4
@@ -373,7 +367,6 @@ const Home = () => {
         </p>
 
         <div className="flex items-center gap-8">
-          {/* Left side - Images */}
           <div className="w-1/2 relative overflow-visible">
             <img 
               src={image1} 
@@ -387,7 +380,6 @@ const Home = () => {
             />
           </div>
 
-          {/* Right side - Content */}
           <div className="w-1/2 space-y-8">
             <div>
               <h3 className="text-2xl font-bold text-gray-800 mb-4">
@@ -424,11 +416,11 @@ const Home = () => {
     
       </div>
     </section>
-
-    
+    */}
+     {/* 
     <section className="container mx-auto py-20">
       <div className="max-w-6xl mx-auto relative">
-        {/* Background image */}
+        
         <div className="relative pl-48">
           <img 
             src={image16} 
@@ -436,7 +428,7 @@ const Home = () => {
             className="w-full h-[500px] shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] object-cover"
           />
           
-          {/* Blue box overlaying the image */}
+       
           <div className="absolute left-0 bottom-0 w-[400px] h-[500px]   bg-[#003399] text-white p-16 translate-y-1/2">
             <h2 className="text-4xl font-bold mb-6">3. AI CHATBOT</h2>
             <p className="text-lg leading-relaxed">
@@ -445,7 +437,7 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Description text below */}
+       
         <div className="mt-16 ml-[450px]">
           <p className="text-gray-700 leading-relaxed">
             Chatbot AI hỗ trợ doanh nghiệp tự động hóa giao tiếp, tư vấn, chăm sóc khách hàng 24/7 trên các nền tảng như Facebook, Zalo, Website, đồng thời tối ưu hóa chuyển đổi và quy trình bán hàng. Hệ thống thông minh giúp quản lý công việc hiệu quả, tự động cập nhật tiến độ, nhắc nhở nhiệm vụ và nâng cao hiệu suất kinh doanh. Với khả năng tích hợp linh hoạt, Chatbot AI còn phân tích dữ liệu khách hàng, đưa ra insight giá trị để tối ưu chiến lược marketing, giúp doanh nghiệp tăng trưởng bền vững.
@@ -453,23 +445,24 @@ const Home = () => {
         </div>
       </div>
     </section>
+    */}
   
-  
+        {/* 
     <section className="container mx-auto py-20">
     <div className="max-w-7xl mx-auto">
       <div className="flex gap-8">
-        {/* Left column - Content */}
+        
         <div className="w-[70%]">
-          {/* Top section with gray background */}
+       
           <div className="bg-gray-50 p-8 mb-8">
             <div className="flex gap-8">
-              {/* Title section */}
+              
               <div className="w-1/2">
                 <h2 className="text-4xl font-bold text-gray-800 mb-2">4. GIẢI PHÁP</h2>
                 <h2 className="text-4xl font-bold text-red-600">QUẢN LÝ DOANH</h2>
                 <h2 className="text-4xl font-bold text-red-600">NGHIỆP</h2>
               </div>
-              {/* Quote section */}
+         
               <div className="w-1/2">
                 <p className="text-gray-800 text-lg">
                   "2T Data Solution cung cấp dịch vụ thiết kế ứng dụng quản lý doanh nghiệp trên nền tảng No-Code như AppSheet, Google Sheets, giúp doanh nghiệp tự động hóa quy trình và tích hợp dữ liệu thông minh."
@@ -484,7 +477,7 @@ const Home = () => {
           </div>
 
         
-          {/* Bottom section - Image and Description */}
+          
           <div className="flex gap-8">
             <div className="w-[45%] relative">
               <div className="relative">
@@ -504,7 +497,6 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Right column - Network Background */}
         <div className="w-[30%]">
           <img 
             src={image10} 
@@ -514,26 +506,27 @@ const Home = () => {
         </div>
       </div>
     </div>
+    
 
     
-  </section>
-
+  </section>*/}
+{/*  
     <section className="bg-[#FFDE59] py-32 relative overflow-hidden">
     
 
       <div className="container mx-auto">
       <svg width="200" height="200" className="absolute  top-0" viewBox="0 0 200 200">
-      {/* Đường thẳng từ trên xuống */}
+   
       <rect x="94" y="0" width="12" height="60" fill="#003893" />
     
-      {/* Ba vòng tròn xếp hình tam giác ngược */}
+    
       <circle cx="100" cy="100" r="25" stroke="#003893" strokeWidth="10" fill="none" />
       <circle cx="30" cy="150" r="25" stroke="#003893" strokeWidth="10" fill="none" />
       <circle cx="160" cy="160" r="30" stroke="#003893" strokeWidth="10" fill="none" />
     </svg>
-      
+     
         <div className="flex items-center justify-between">
-          {/* Left side content */}
+     
           <div className="w-[45%]">
             <h2 className="text-3xl text-[#003399] font-bold mb-12">NỀN TẢNG CỦA 2T DATA</h2>
             <div className="flex items-center gap-4 mb-8">
@@ -555,14 +548,14 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Right side image with floating circles */}
+          
           <div className="w-[45%] relative">
             <img 
               src={image13} 
               alt="Business Analytics" 
               className="w-[500px] object-cover h-[500px] rounded-full"
             />
-            {/* Floating feature circles */}
+           
             <div className="absolute -right-4 top-4">
               <div className=" p-4 rounded-full shadow-lg flex items-center gap-4">
                 <img src={image10} alt="" className="rounded-full w-[100px] h-[100px]"/>
@@ -592,10 +585,12 @@ const Home = () => {
       </div>
     </section>
 
+    */}    
+          {/* 
     <section className="container mx-auto py-20">
       <div className="max-w-[1000px] mx-auto">
         <div className="flex items-center justify-between gap-12">
-          {/* Left side - Registration Form */}
+         
           <div className="w-[500px] bg-[#1a237e] p-12 rounded-lg">
             <div className="bg-[#FFE17B] p-8 rounded-lg">
               <h3 className="text-[#003399] text-2xl font-bold text-center mb-4">
@@ -627,8 +622,7 @@ const Home = () => {
               </form>
             </div>
           </div>
-
-          {/* Right side - Content */}
+ 
           <div className="w-[500px]">
             <h2 className="text-[#003399] text-3xl font-bold text-center mb-4">
               2T Data Solution – Kết nối dữ liệu, tối ưu vận hành,<br/>
@@ -654,10 +648,18 @@ const Home = () => {
         </div>
       </div>
     </section>
+    */}
+    <iframe 
+      src="https://www.hcwvietnam.com/2tdata_soltuion"
+      title="2T Data Solution" 
+      className="w-full h-screen border-0"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+    />
+ 
 
-   <Footer/>
-
-    
+    <footer/>
     </div>
   );
 };

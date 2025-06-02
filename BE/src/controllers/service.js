@@ -1,5 +1,6 @@
 import Service from "../model/Service.js";
 import User from "../model/User.js";
+import UserService from "../model/UserService.js";
 
 // Lấy danh sách dịch vụ
 export const getServices = async (req, res, next) => {
@@ -94,7 +95,7 @@ export const getServiceBySlug = async (req, res, next) => {
 // Tạo dịch vụ mới
 export const createService = async (req, res, next) => {
     try {
-        const { name, description, image, slug } = req.body;
+        const { name, description, image, slug, authorizedLinks } = req.body;
         
         // Kiểm tra dịch vụ đã tồn tại
         const serviceExist = await Service.findOne({ name });
@@ -104,11 +105,28 @@ export const createService = async (req, res, next) => {
             });
         }
 
+        // Validate link data
+        if (authorizedLinks && !Array.isArray(authorizedLinks)) {
+            return res.status(400).json({
+                message: "Link phải là một mảng",
+            });
+        }
+
+        // Filter out empty links and format link data
+        const filteredLinks = authorizedLinks ? authorizedLinks
+            .filter(link => link.url && link.url.trim() !== '')
+            .map(link => ({
+                url: link.url.trim(),
+                title: link.title?.trim() || '',
+                description: link.description?.trim() || ''
+            })) : [];
+
         const service = await Service.create({
             name,
             description,
             image,
-            slug
+            slug,
+            authorizedLinks: filteredLinks
         });
 
         return res.status(201).json({
@@ -123,7 +141,7 @@ export const createService = async (req, res, next) => {
 // Cập nhật dịch vụ
 export const updateService = async (req, res, next) => {
     try {
-        const { name, description, image, status, slug } = req.body;
+        const { name, description, image, status, slug, authorizedLinks } = req.body;
         
         const service = await Service.findByIdAndUpdate(
             req.params.id,
@@ -132,7 +150,8 @@ export const updateService = async (req, res, next) => {
                 description,
                 image,
                 status,
-                slug
+                slug,
+                authorizedLinks
             },
             { new: true }
         );
@@ -165,6 +184,84 @@ export const deleteService = async (req, res, next) => {
 
         return res.status(200).json({
             message: "Xóa dịch vụ thành công"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Thêm service vào user (sẽ ở trạng thái chờ xác nhận)
+export const addServiceToUser = async (req, res, next) => {
+    try {
+        const { serviceId, customSlug, link } = req.body;
+        const userId = req.user._id;
+
+        // Chuyển đổi serviceId thành mảng nếu là string
+        const serviceIds = Array.isArray(serviceId) ? serviceId : [serviceId];
+        
+        const results = [];
+        const errors = [];
+
+        for (const sid of serviceIds) {
+            // Kiểm tra xem đã có yêu cầu tương tự chưa
+            const existingRequest = await UserService.findOne({
+                user: userId,
+                service: sid,
+                status: 'waiting'
+            });
+
+            if (existingRequest) {
+                errors.push({
+                    serviceId: sid,
+                    message: "Đã có yêu cầu thêm service này đang chờ xác nhận"
+                });
+                continue;
+            }
+
+            // Tạo instance mới và lưu để trigger pre-save hook
+            const userService = new UserService({
+                user: userId,
+                service: sid,
+                status: 'waiting',
+                customSlug: customSlug, // Nếu có customSlug được cung cấp
+                link: link || [] // Thêm link nếu có
+            });
+            await userService.save();
+
+            // Cập nhật service vào user
+            await User.findByIdAndUpdate(
+                userId,
+                { $addToSet: { service: userService._id } }
+            );
+
+            // Populate thông tin đầy đủ
+            const populatedUserService = await UserService.findById(userService._id)
+                .populate('user', 'name email phone address avatar')
+                .populate('service', 'name slug image status description')
+                .populate('approvedBy', 'name email avatar');
+
+            results.push(populatedUserService);
+        }
+
+        // Lấy thông tin user đã cập nhật
+        const updatedUser = await User.findById(userId)
+            .populate({
+                path: 'service',
+                populate: {
+                    path: 'service',
+                    select: 'name slug image status description'
+                }
+            });
+
+        return res.status(201).json({
+            data: {
+                userServices: results,
+                user: updatedUser,
+                errors: errors.length > 0 ? errors : undefined
+            },
+            message: errors.length === 0 
+                ? "Tất cả yêu cầu thêm service đã được gửi, đang chờ xác nhận"
+                : "Một số yêu cầu thêm service đã được gửi, một số yêu cầu đã tồn tại"
         });
     } catch (error) {
         next(error);

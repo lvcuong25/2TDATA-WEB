@@ -1,7 +1,7 @@
 import React from 'react'
 import image from "../image/image.jpg";
-import hcw from "../image/hcw.jpg";
-import remobpo from "../image/remobpo.jpg";
+import hcw from "../image/hcw.png";
+import remobpo from "../image/remobpo.png";
 const Footer = () => {
   return (
     <div>
@@ -53,19 +53,19 @@ const Footer = () => {
                       <li><a href="#" className="hover:text-blue-600">Chính sách bán hàng</a></li>
                       <li><a href="#" className="hover:text-blue-600">Liên hệ</a></li>
                     </ul>
-                    <div className="mt-4">
-                    <p className="font-semibold">Công ty đối tác:</p>
-                  <div className='flex'>
-                  <img src={hcw} alt="2T DATA" className="h-[100px] w-[120px]" />
-                  <img src={remobpo} alt="2T DATA" className="h-[100px] w-[140px]" />
-                  </div>
-                  </div>
+                    <div className="mt-6">
+                      <div className="font-semibold text-lg mb-2">Công ty đối tác:</div><br/>
+                      <div className="flex items-center gap-6">
+                        <img src={hcw} alt="HCW" className="h-[60px] w-auto object-contain" />
+                        <img src={remobpo} alt="REMOBPO" className="h-[60px] w-auto object-contain" />
+                      </div>
+                    </div>
                   </div>
                   
                 </div>
               </div>
             </div>
-            <div className="bg-[#003399] text-white text-center py-4 mt-8">
+            <div className="bg-[#003399] text-white text-center py-2 mt-8">
               <p>Copyright © 2025 2T Data Solution | Powered by 2T Data Solution</p>
             </div>
           </footer>

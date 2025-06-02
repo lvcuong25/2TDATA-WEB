@@ -7,7 +7,7 @@ export const getPendingServices = async (req, res, next) => {
         const options = {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
-            sort: { createdAt: -1 }, // Sắp xếp theo thời gian tạo mới nhất
+            sort: { createdAt: -1 },
             populate: [
                 { 
                     path: 'user', 
@@ -24,8 +24,8 @@ export const getPendingServices = async (req, res, next) => {
             ]
         };
 
-        // Lấy tất cả services, không filter theo status
-        const data = await UserService.paginate({}, options);
+        // Lấy các service có trạng thái waiting
+        const data = await UserService.paginate({ }, options);
         return res.status(200).json({ data });
     } catch (error) {
         next(error);
@@ -38,6 +38,7 @@ export const getUserServices = async (req, res, next) => {
         const options = {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
+            sort: { createdAt: -1 },
             populate: [
                 { 
                     path: 'service', 
@@ -61,7 +62,11 @@ export const getUserServices = async (req, res, next) => {
 export const approveUserService = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { status, reason, links } = req.body;
+        const { status, reason } = req.body;
+
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ message: "Trạng thái không hợp lệ" });
+        }
 
         const userService = await UserService.findById(id);
         if (!userService) {
@@ -74,26 +79,6 @@ export const approveUserService = async (req, res, next) => {
                 userService.user,
                 { $addToSet: { services: userService._id } }
             );
-
-            // Cập nhật links nếu có
-            if (links && Array.isArray(links)) {
-                // Validate và format links
-                const formattedLinks = links.map(link => {
-                    if (typeof link === 'string') {
-                        return {
-                            url: link,
-                            title: 'Link không có tiêu đề',
-                            type: 'authority' // Default type
-                        };
-                    }
-                    return {
-                        url: link.url || '',
-                        title: link.title || 'Link không có tiêu đề',
-                        type: link.type || 'authority' // Default type
-                    };
-                });
-                userService.link = formattedLinks;
-            }
         }
 
         // Cập nhật trạng thái xác nhận
@@ -124,7 +109,7 @@ export const approveUserService = async (req, res, next) => {
 // Thêm service vào user (sẽ ở trạng thái chờ xác nhận)
 export const addServiceToUser = async (req, res, next) => {
     try {
-        const { serviceId } = req.body;
+        const { serviceId, customSlug } = req.body;
         const userId = req.user._id;
 
         // Chuyển đổi serviceId thành mảng nếu là string
@@ -153,7 +138,8 @@ export const addServiceToUser = async (req, res, next) => {
             const userService = new UserService({
                 user: userId,
                 service: sid,
-                status: 'waiting'
+                status: 'waiting',
+                customSlug: customSlug // Nếu có customSlug được cung cấp
             });
             await userService.save();
 
@@ -290,14 +276,13 @@ export const updateUserServiceLinks = async (req, res, next) => {
                     return {
                         url: link,
                         title: 'Link không có tiêu đề',
-                        type: 'authority' // Default type
+                        description: ''
                     };
                 }
                 return {
                     url: link.url || '',
                     title: link.title || 'Link không có tiêu đề',
-                    description: link.description || '',
-                    type: link.type || 'authority' // Default type
+                    description: link.description || ''
                 };
             });
             userService.link = formattedLinks;

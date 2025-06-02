@@ -51,12 +51,6 @@ const userServiceSchema = new mongoose.Schema(
       description:{
         type: String,
         description: "Mô tả chi tiết về link"
-      },
-      type: {
-        type: String,
-        enum: ['authority', 'result'],
-        required: true,
-        description: "Loại link: authority (uy quyền) hoặc result (kết quả)"
       }
     }]
   },

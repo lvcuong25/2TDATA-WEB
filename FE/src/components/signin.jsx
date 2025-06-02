@@ -1,10 +1,11 @@
 import Joi from "joi";
-import { useNavigate } from "react-router-dom";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from 'react-toastify';
 import instance from "../utils/axiosInstance";
+import { useState, useEffect } from "react";
+import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 
 
 const signinSchema = Joi.object({
@@ -27,12 +28,15 @@ const signinSchema = Joi.object({
 });
 
 const SignIn = () => {
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    getValues
   } = useForm({
     resolver: joiResolver(signinSchema),
     defaultValues: {
@@ -41,23 +45,45 @@ const SignIn = () => {
     },
   });
 
+  // Load saved credentials on component mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    const savedPassword = localStorage.getItem('rememberedPassword');
+    const savedRememberMe = localStorage.getItem('rememberMe');
+
+    if (savedRememberMe === 'true' && savedEmail && savedPassword) {
+      setValue('email', savedEmail);
+      setValue('password', savedPassword);
+      setRememberMe(true);
+    }
+  }, [setValue]);
+
   const { mutate, isLoading } = useMutation({
     mutationFn: async (signinData) => {
       const { data } = await instance.post('auth/sign-in', signinData);
       return data;
-
     },
     onSuccess: (data) => {
-      
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        const formData = getValues();
+        localStorage.setItem('rememberedEmail', formData.email);
+        localStorage.setItem('rememberedPassword', formData.password);
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        // Clear saved credentials if remember me is unchecked
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
+        localStorage.removeItem('rememberMe');
+      }
       
       toast.success('Đăng nhập thành công!');
       localStorage.setItem('accessToken', data.accessToken);
-      // localStorage.setItem('user', JSON.stringify(data.user));
       
       // Use window.location.href to refresh the page after redirect
       window.location.href = data.redirectPath;
     },
-    onError: (error) => {
+    onError: () => {
       toast.error('Email hoặc mật khẩu không đúng!');
     },
   });
@@ -96,19 +122,34 @@ const SignIn = () => {
           {/* Password Input */}
           <div className="mb-4">
             <label htmlFor="password" className="block text-gray-800">Mật khẩu</label>
-            <input
-              {...register('password')}
-              type="password"
-              id="password"
-              className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                {...register('password')}
+                type={showPassword ? "text" : "password"}
+                id="password"
+                className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </button>
+            </div>
             {errors?.password && <span className="text-red-500 text-sm">{errors?.password?.message}</span>}
           </div>
 
           {/* Remember Me Checkbox */}
           <div className="mb-4 flex items-center">
-            <input type="checkbox" id="remember" className="text-red-500" />
+            <input 
+              type="checkbox" 
+              id="remember" 
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="text-red-500" 
+            />
             <label htmlFor="remember" className="text-green-900 ml-2">Ghi nhớ đăng nhập</label>
           </div>
 
