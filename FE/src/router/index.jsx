@@ -25,6 +25,8 @@ import ServiceUse from '../components/Service/ServiceUse.jsx';
 import StatusList from '../components/admin/Status/StatusList.jsx';
 import StatusForm from '../components/admin/Status/StatusForm.jsx';
 import StatusEdit from '../components/admin/Status/StatusEdit.jsx';
+import About from '../components/About.jsx';
+import ThankYou from '../components/ThankYou.jsx';
 
 
 
@@ -38,10 +40,12 @@ const Router = () => {
           <Route path='/logup' element={<SignUp />} />
           <Route path='/rest-password' element={<ResetPassword />} />
           <Route path='/service' element={<Service />} />
+          <Route path="about" element={<About />} />
           <Route path='/service/slug/:slug' element={<ServiceBySlug />} />
           <Route path='/service/service-use' element={<ServiceUse />} />
           <Route path='/service/my-service' element={<MyService />} />
           <Route path="blogs" element={<AllBlogPage />} />
+          <Route path="thankyou" element={<ThankYou />} />
           <Route path="/blogs/:id" element={<DetailBlogPage />} />
         </Route>
 
