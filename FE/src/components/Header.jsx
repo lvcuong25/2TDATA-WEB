@@ -1,26 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import image from "../image/image.jpg";
 import Logout from "./logout";
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [userService, setUserService] = useState(null);
+
+    const location = useLocation();
 
     useEffect(() => {
       const checkAuth = () => {
         const token = localStorage.getItem("accessToken");
-        const userStr = localStorage.getItem("user");
         setIsLoggedIn(!!token);
-        
-        if (userStr) {
-          try {
-            const userData = JSON.parse(userStr);
-            setUserService(userData.service);
-          } catch (error) {
-            console.error('Error parsing user data:', error);
-          }
-        }
       };
       checkAuth();
     }, []);
@@ -37,7 +28,6 @@ const Header = () => {
               {isLoggedIn ? (
                 <Logout onLogoutSuccess={() => {
                   setIsLoggedIn(false);
-                  setUserService(null);
                 }} />
               ) : (
                 <Link
@@ -80,26 +70,19 @@ const Header = () => {
                 <li>
                   <Link
                     to="/"
-                    class="block py-2 px-3 text-white bg-blue-700 rounded-sm md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500"
-                    aria-current="page"
+                    class={`block py-2 px-3 rounded-sm md:p-0 ${location.pathname === '/' ? 'text-blue-700 md:text-blue-700' : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'}`}
+                    aria-current={location.pathname === '/' ? 'page' : undefined}
                   >
                     Trang chủ
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    to="/about"
-                    class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
-                  >
-                    Giới thiệu
-                  </Link>
-                </li>
+                
              
                 {isLoggedIn && (
                   <li>
                     <Link
                       to="/service/my-service"
-                      class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+                      class={`block py-2 px-3 rounded-sm md:p-0 ${location.pathname === '/service/my-service' ? 'text-blue-700 md:text-blue-700' : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'}`}
                     >
                       Dịch vụ của tôi
                     </Link>
@@ -108,7 +91,7 @@ const Header = () => {
                 <li>
                   <Link
                     to="/service"
-                    class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+                    class={`block py-2 px-3 rounded-sm md:p-0 ${location.pathname === '/service' ? 'text-blue-700 md:text-blue-700' : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'}`}
                   >
                     Dịch vụ
                   </Link>
@@ -116,7 +99,7 @@ const Header = () => {
                 <li>
                   <Link
                     to="/blogs"
-                    class="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+                    class={`block py-2 px-3 rounded-sm md:p-0 ${location.pathname === '/blogs' ? 'text-blue-700 md:text-blue-700' : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'}`}
                   >
                     Bài viết
                   </Link>

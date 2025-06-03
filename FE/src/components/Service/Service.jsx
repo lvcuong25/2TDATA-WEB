@@ -15,7 +15,7 @@ const Service = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { control, handleSubmit, reset, formState: { errors } } = useForm();
 
-  const { data: services } = useQuery({
+  const { data: services, isLoading: isLoadingServices } = useQuery({
     queryKey: ['userServices'],
     queryFn: async () => {
       const { data } = await instance.get('service');
@@ -29,7 +29,8 @@ const Service = () => {
     queryFn: async () => {
       const { data } = await instance.get(`/user/${currentUser?._id}`);
       return data.data;
-    }
+    },
+    enabled: !!currentUser,
   });
 
   useEffect(() => {
@@ -108,7 +109,7 @@ const Service = () => {
   return (
     <div>
       <Header />
-      {isFetchingUser ? (
+      {isLoadingServices || (currentUser && isFetchingUser) ? (
         <div className="flex justify-center items-center h-screen">
           <Spin size="large" />
         </div>
@@ -149,107 +150,111 @@ const Service = () => {
                   </div>
                 ))}
               </div>
-              <div className="mt-8 text-center">
-                <Button
-                  type="primary"
-                  size="large"
-                  onClick={handleRegister}
-                  className="bg-red-500 hover:bg-red-600"
-                  disabled={selectedServices?.length === 0}
-                >
-                  Đăng ký dịch vụ đã chọn ({selectedServices?.length})
-                </Button>
-              </div>
+              {currentUser && (
+                <div className="mt-8 text-center">
+                  <Button
+                    type="primary"
+                    size="large"
+                    onClick={handleRegister}
+                    className="bg-red-500 hover:bg-red-600"
+                    disabled={selectedServices?.length === 0}
+                  >
+                    Đăng ký dịch vụ đã chọn ({selectedServices?.length})
+                  </Button>
+                </div>
+              )}
             </section>
           </div>
 
-          <Modal
-            title="Đăng ký dịch vụ"
-            open={isModalVisible}
-            onCancel={() => {
-              setIsModalVisible(false);
-              setSelectedServices([]);
-              reset();
-            }}
-            footer={null}
-            width={600}
-          >
-            <Form onFinish={handleSubmit(onSubmit)} layout="vertical">
-              <Form.Item
-                label="Họ và tên"
-                required
-                validateStatus={errors.name ? "error" : ""}
-                help={errors.name?.message}
-              >
-                <Controller
-                  name="name"
-                  control={control}
-                  rules={{
-                    required: 'Vui lòng nhập họ và tên!',
-                    minLength: { value: 2, message: 'Tên phải có ít nhất 2 ký tự' }
-                  }}
-                  render={({ field }) => <Input {...field} placeholder="Nhập họ và tên của bạn" />}
-                />
-              </Form.Item>
+          {currentUser && (
+            <Modal
+              title="Đăng ký dịch vụ"
+              open={isModalVisible}
+              onCancel={() => {
+                setIsModalVisible(false);
+                setSelectedServices([]);
+                reset();
+              }}
+              footer={null}
+              width={600}
+            >
+              <Form onFinish={handleSubmit(onSubmit)} layout="vertical">
+                <Form.Item
+                  label="Họ và tên"
+                  required
+                  validateStatus={errors.name ? "error" : ""}
+                  help={errors.name?.message}
+                >
+                  <Controller
+                    name="name"
+                    control={control}
+                    rules={{
+                      required: 'Vui lòng nhập họ và tên!',
+                      minLength: { value: 2, message: 'Tên phải có ít nhất 2 ký tự' }
+                    }}
+                    render={({ field }) => <Input {...field} placeholder="Nhập họ và tên của bạn" />}
+                  />
+                </Form.Item>
 
-              <Form.Item
-                label="Số điện thoại"
-                validateStatus={errors.phone ? "error" : ""}
-                help={errors.phone?.message}
-              >
-                <Controller
-                  name="phone"
-                  control={control}
-                  rules={{
-                    pattern: {
-                      value: /^[0-9]{10}$/,
-                      message: 'Số điện thoại không hợp lệ'
-                    }
-                  }}
-                  render={({ field }) => <Input {...field} placeholder="Nhập số điện thoại" />}
-                />
-              </Form.Item>
+                <Form.Item
+                  label="Số điện thoại"
+                  validateStatus={errors.phone ? "error" : ""}
+                  help={errors.phone?.message}
+                >
+                  <Controller
+                    name="phone"
+                    control={control}
+                    rules={{
+                      pattern: {
+                        value: /^[0-9]{10}$/,
+                        message: 'Số điện thoại không hợp lệ'
+                      }
+                    }}
+                    render={({ field }) => <Input {...field} placeholder="Nhập số điện thoại" />}
+                  />
+                </Form.Item>
 
-              <Form.Item
-                label="Địa chỉ"
-                validateStatus={errors.address ? "error" : ""}
-                help={errors.address?.message}
-              >
-                <Controller
-                  name="address"
-                  control={control}
-                  render={({ field }) => <Input {...field} placeholder="Nhập địa chỉ của bạn" />}
-                />
-              </Form.Item>
+                <Form.Item
+                  label="Địa chỉ"
+                  validateStatus={errors.address ? "error" : ""}
+                  help={errors.address?.message}
+                >
+                  <Controller
+                    name="address"
+                    control={control}
+                    render={({ field }) => <Input {...field} placeholder="Nhập địa chỉ của bạn" />}
+                  />
+                </Form.Item>
 
-              <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                <p className="text-blue-800 text-sm">
-                  Thông tin của bạn sẽ được gửi đến admin để xác nhận đăng ký {selectedServices.length} dịch vụ.
-                </p>
-              </div>
-
-              <Form.Item>
-                <div className="flex justify-end gap-2">
-                  <Button onClick={() => {
-                    setIsModalVisible(false);
-                    setSelectedServices([]);
-                    reset();
-                  }}>
-                    Hủy
-                  </Button>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit"
-                    loading={isLoading || registerServiceMutation.isPending}
-                    disabled={isLoading || registerServiceMutation.isPending}
-                    className="bg-red-500 hover:bg-red-600"
-                  >
-                    {isLoading || registerServiceMutation.isPending ? "Đang xử lý..." : "Đăng ký"}
-                  </Button>
+                <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                  <p className="text-blue-800 text-sm">
+                    Thông tin của bạn sẽ được gửi đến admin để xác nhận đăng ký {selectedServices.length} dịch vụ.
+                  </p>
                 </div>
-              </Form.Item>
-            </Form>
-          </Modal>
+
+                <Form.Item>
+                  <div className="flex justify-end gap-2">
+                    <Button onClick={() => {
+                      setIsModalVisible(false);
+                      setSelectedServices([]);
+                      reset();
+                    }}>
+                      Hủy
+                    </Button>
+                    <Button 
+                      type="primary" 
+                      htmlType="submit"
+                      loading={isLoading || registerServiceMutation.isPending}
+                      disabled={isLoading || registerServiceMutation.isPending}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      {isLoading || registerServiceMutation.isPending ? "Đang xử lý..." : "Đăng ký"}
+                    </Button>
+                  </div>
+                </Form.Item>
+              </Form>
+            </Modal>
+          )}
         </>
       )}
       <Footer />
