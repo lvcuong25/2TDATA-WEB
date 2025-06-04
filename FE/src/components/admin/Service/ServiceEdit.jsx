@@ -20,7 +20,7 @@ const ServiceEdit = () => {
     const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
             status: true,
-            authorizedLinks: []
+            authorizedLinks: [{ url: '', title: '', description: '' }]
         }
     });
 
@@ -28,6 +28,13 @@ const ServiceEdit = () => {
         control,
         name: "authorizedLinks"
     });
+
+    // Add default link field when component mounts if none exists
+    useEffect(() => {
+        if (fields.length === 0) {
+            append({ url: '', title: '', description: '' });
+        }
+    }, [fields.length, append]);
 
     const name = watch('name');
 
@@ -251,18 +258,18 @@ const ServiceEdit = () => {
                                             className="self-end"
                                         >
                                             Xóa link
-                                        </Button>*/}
+                                        </Button>*/ }
                                     </Space>
                                 </div>
                             ))}
-                          {/*  <Button 
+                        {/*     <Button 
                                 type="dashed" 
                                 onClick={() => append({ url: '', title: '', description: '' })} 
                                 block 
                                 icon={<PlusOutlined />}
                             >
                                 Thêm link
-                            </Button>*/}
+                            </Button>*/ }
                         </Form.Item>
 
                         <Form.Item 

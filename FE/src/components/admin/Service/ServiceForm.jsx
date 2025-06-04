@@ -225,7 +225,7 @@ const ServiceForm = () => {
                                                 />
                                             )}
                                         />
-                                        <Button 
+                                        {/*   <Button 
                                             type="text" 
                                             danger 
                                             icon={<MinusCircleOutlined />} 
@@ -233,18 +233,18 @@ const ServiceForm = () => {
                                             className="self-end"
                                         >
                                             Xóa link
-                                        </Button>
+                                        </Button>*/ }
                                     </Space>
                                 </div>
                             ))}
-                            <Button 
+                          {/*     <Button 
                                 type="dashed" 
                                 onClick={() => append({ url: '', title: '', description: '' })} 
                                 block 
                                 icon={<PlusOutlined />}
                             >
                                 Thêm link
-                            </Button>
+                            </Button>*/ }
                         </Card>
 
                         <Form.Item>
