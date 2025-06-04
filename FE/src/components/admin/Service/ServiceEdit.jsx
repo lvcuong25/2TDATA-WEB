@@ -243,7 +243,7 @@ const ServiceEdit = () => {
                                                 />
                                             )}
                                         />
-                                        <Button 
+                                      {/*  <Button 
                                             type="text" 
                                             danger 
                                             icon={<MinusCircleOutlined />} 
@@ -251,18 +251,18 @@ const ServiceEdit = () => {
                                             className="self-end"
                                         >
                                             Xóa link
-                                        </Button>
+                                        </Button>*/}
                                     </Space>
                                 </div>
                             ))}
-                            <Button 
+                          {/*  <Button 
                                 type="dashed" 
                                 onClick={() => append({ url: '', title: '', description: '' })} 
                                 block 
                                 icon={<PlusOutlined />}
                             >
                                 Thêm link
-                            </Button>
+                            </Button>*/}
                         </Form.Item>
 
                         <Form.Item 

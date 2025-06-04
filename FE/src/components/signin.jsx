@@ -6,7 +6,21 @@ import { toast } from 'react-toastify';
 import instance from "../utils/axiosInstance";
 import { useState, useEffect } from "react";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
+import CryptoJS from 'crypto-js';
+import { useNavigate } from 'react-router-dom';
 
+// Secret key for encryption (in production, this should be stored securely)
+const SECRET_KEY = 'your-secret-key-here';
+
+// Encryption functions
+const encryptData = (data) => {
+  return CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
+};
+
+const decryptData = (encryptedData) => {
+  const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
 
 const signinSchema = Joi.object({
   email: Joi.string()
@@ -30,6 +44,7 @@ const signinSchema = Joi.object({
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
 
   const {
     register,
@@ -52,9 +67,19 @@ const SignIn = () => {
     const savedRememberMe = localStorage.getItem('rememberMe');
 
     if (savedRememberMe === 'true' && savedEmail && savedPassword) {
-      setValue('email', savedEmail);
-      setValue('password', savedPassword);
-      setRememberMe(true);
+      try {
+        const decryptedEmail = decryptData(savedEmail);
+        const decryptedPassword = decryptData(savedPassword);
+        setValue('email', decryptedEmail);
+        setValue('password', decryptedPassword);
+        setRememberMe(true);
+      } catch (error) {
+        console.error('Error decrypting saved credentials:', error);
+        // Clear invalid saved credentials
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberedPassword');
+        localStorage.removeItem('rememberMe');
+      }
     }
   }, [setValue]);
 
@@ -64,11 +89,13 @@ const SignIn = () => {
       return data;
     },
     onSuccess: (data) => {
-      // Save credentials if remember me is checked
+      // Save encrypted credentials if remember me is checked
       if (rememberMe) {
         const formData = getValues();
-        localStorage.setItem('rememberedEmail', formData.email);
-        localStorage.setItem('rememberedPassword', formData.password);
+        const encryptedEmail = encryptData(formData.email);
+        const encryptedPassword = encryptData(formData.password);
+        localStorage.setItem('rememberedEmail', encryptedEmail);
+        localStorage.setItem('rememberedPassword', encryptedPassword);
         localStorage.setItem('rememberMe', 'true');
       } else {
         // Clear saved credentials if remember me is unchecked
@@ -80,8 +107,9 @@ const SignIn = () => {
       toast.success('Đăng nhập thành công!');
       localStorage.setItem('accessToken', data.accessToken);
       
-      // Use window.location.href to refresh the page after redirect
-      window.location.href = data.redirectPath;
+      // Use redirectPath from server response
+      navigate('/service');
+      // navigate(data.redirectPath);
     },
     onError: () => {
       toast.error('Email hoặc mật khẩu không đúng!');
@@ -127,6 +155,7 @@ const SignIn = () => {
                 {...register('password')}
                 type={showPassword ? "text" : "password"}
                 id="password"
+                autoComplete="current-password"
                 className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
                 placeholder="••••••••"
               />
