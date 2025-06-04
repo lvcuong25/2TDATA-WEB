@@ -161,7 +161,9 @@ const MyService = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userData.data.service.map((userService) => {
+              {userData.data.service
+                .filter(userService => userService.status !== "rejected")
+                .map((userService) => {
                 const authorizedLink = findAuthorizedLink(userService);
                 return (
                   <div
@@ -223,7 +225,7 @@ const MyService = () => {
           ) : (
             <Table
               columns={columns}
-              dataSource={userData.data.service}
+              dataSource={userData.data.service.filter(service => service.status !== "rejected")}
               rowKey="_id"
               pagination={{ pageSize: 10 }}
             />

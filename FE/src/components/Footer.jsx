@@ -58,7 +58,7 @@ const Footer = () => {
                   
                 </div>
 
-                <div className="font-semibold text-2xl mb-2">THÀNH VIÊN CỦA 2T GROUP</div>
+                <div className="font-semibold text-2xl  mt-6">THÀNH VIÊN CỦA 2T GROUP</div>
                 <div className="mt-6 flex flex-col items-center text-center">
                 
               

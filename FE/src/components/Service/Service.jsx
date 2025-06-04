@@ -7,6 +7,7 @@ import { AuthContext } from "../core/Auth";
 import instance from "../../utils/axiosInstance";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "react-toastify";
+import { useNavigate } from 'react-router-dom';
 
 const Service = () => {
   const { currentUser } = useContext(AuthContext);
@@ -14,6 +15,7 @@ const Service = () => {
   const [selectedServices, setSelectedServices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const { control, handleSubmit, reset, formState: { errors } } = useForm();
+  const navigate = useNavigate();
 
   const { data: services, isLoading: isLoadingServices } = useQuery({
     queryKey: ['userServices'],
@@ -161,6 +163,16 @@ const Service = () => {
                   >
                     Đăng ký dịch vụ đã chọn ({selectedServices?.length})
                   </Button>
+                  <div className="mt-4">
+                    <Button
+                      type="primary"
+                      size="large"
+                      onClick={() => navigate('/service/my-service')}
+                      className="bg-blue-500 hover:bg-blue-600"
+                    >
+                      Xem dịch vụ của tôi
+                    </Button>
+                  </div>
                 </div>
               )}
             </section>
