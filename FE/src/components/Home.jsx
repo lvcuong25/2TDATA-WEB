@@ -87,9 +87,13 @@ const Home = () => {
                   nguồn, trực quan hóa thông tin và tối ưu quá trình ra quyết
                   định."
                 </p>
-                <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-8 lg:py-3 lg:px-8 md:py-2 md:px-6 sm:py-2 sm:px-4 rounded-full transition-colors text-sm lg:text-sm md:text-xs">
-                  TÌM HIỂU THÊM
-                </button>
+                <div className="mt-6 sm:mt-8">
+                  <button 
+                    className="w-full py-3 px-6 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50"
+                  >
+                    2T DATA TỰ TIN LÀ ĐƠN VỊ CUNG CẤP DỊCH VỤ TƯ VẤN
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -217,7 +221,7 @@ const Home = () => {
 
      
 
-      <section className="container mx-auto py-10 md:py-20 px-4">
+      <section className="container mx-auto py-10 md:py-20 px-4 ">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-center gap-20 lg:gap-20 md:gap-10 sm:gap-5 mt-8 sm:mt-12">
           {/* Left side - Image */}
@@ -243,10 +247,12 @@ const Home = () => {
               <p className="lg:text-base md:text-sm sm:text-xs sm:mt-2">Năng cấp linh hoạt, sẵn sàng mở rộng theo sự phát triển.</p>
             </div>
 
-            <div className="bg-yellow-200 p-4 lg:p-4 md:p-3 sm:p-2 rounded-lg sm:mt-6">
-              <p className="text-center font-medium lg:text-base md:text-sm sm:text-xs">
+            <div className="bg-yellow-300 p-4 lg:p-4 md:p-3 sm:p-2 rounded-lg sm:mt-6">
+              <button 
+                className="w-full text-center font-medium lg:text-base md:text-sm sm:text-xs hover:bg-yellow-300 focus:ring-4  focus:outline-none transition-colors duration-200 rounded-lg"
+              >
                 "2T DATA TỰ TIN LÀ ĐƠN VỊ CUNG CẤP DỊCH VỤ TƯ VẤN"
-              </p>
+              </button>
             </div>
           </div>
         </div>
