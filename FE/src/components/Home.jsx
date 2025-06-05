@@ -577,36 +577,36 @@ const Home = () => {
       </div>
     </section>
 
-    <section className="container mx-auto py-20">
+    <section className="container mx-auto py-10 md:py-16 lg:py-20 px-4">
       <div className="max-w-[1000px] mx-auto">
-        <div className="flex items-center justify-between gap-12">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
           {/* Left side - Registration Form */}
-          <div className="w-[500px] bg-[#1a237e] p-12 rounded-lg">
-            <div className="bg-[#FFE17B] p-8 rounded-lg">
-              <h3 className="text-[#003399] text-2xl font-bold text-center mb-4">
+          <div className="w-full lg:w-[500px] bg-[#1a237e] p-6 md:p-8 lg:p-12 rounded-lg">
+            <div className="bg-[#FFE17B] p-6 md:p-8 rounded-lg">
+              <h3 className="text-[#003399] text-xl md:text-2xl font-bold text-center mb-3 md:mb-4">
                 Nhận thông tin khuyến mãi
               </h3>
-              <p className="text-center text-gray-600 mb-8">
+              <p className="text-center text-gray-600 mb-6 md:mb-8 text-sm md:text-base">
                 Nhanh tay để nhận được ưu đãi nhất!
               </p>
               
-              <form className="space-y-4">
+              <form className="space-y-3 md:space-y-4">
                 <input
                   type="text"
                   placeholder="Họ và tên"
-                  className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500"
+                  className="w-full p-2 md:p-3 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500 text-sm md:text-base"
                 />
                 <input
                   type="email"
                   placeholder="Nhập Email"
-                  className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500"
+                  className="w-full p-2 md:p-3 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500 text-sm md:text-base"
                 />
                 <input
                   type="tel"
                   placeholder="Nhập Số điện thoại"
-                  className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500"
+                  className="w-full p-2 md:p-3 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500 text-sm md:text-base"
                 />
-                <button className="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700 transition-colors">
+                <button className="w-full bg-red-600 text-white py-2 md:py-3 rounded-lg font-bold hover:bg-red-700 transition-colors text-sm md:text-base">
                   GỬI ĐĂNG KÝ NGAY!
                 </button>
               </form>
@@ -614,25 +614,25 @@ const Home = () => {
           </div>
 
           {/* Right side - Content */}
-          <div className="w-[500px]">
-            <h2 className="text-[#003399] text-3xl font-bold text-center mb-4">
-              2T Data Solution – Kết nối dữ liệu, tối ưu vận hành,<br/>
+          <div className="w-full lg:w-[500px] mt-8 lg:mt-0">
+            <h2 className="text-[#003399] text-2xl md:text-3xl font-bold text-center mb-3 md:mb-4">
+              2T Data Solution – Kết nối dữ liệu, tối ưu vận hành,<br className="hidden md:block"/>
               thúc đẩy tăng trưởng.
             </h2>
-            <p className="text-xl text-center text-gray-600 mb-8">
+            <p className="text-lg md:text-xl text-center text-gray-600 mb-6 md:mb-8">
               Giải pháp thông minh cho doanh nghiệp số
             </p>
             
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-col md:flex-row gap-4 justify-center">
               <img 
                 src={image13} 
                 alt="Cloud Computing" 
-                className="w-[200px] h-[200px] rounded-lg shadow-lg"
+                className="w-full md:w-[200px] h-[200px] rounded-lg shadow-lg"
               />
               <img 
                 src={image4} 
                 alt="Data Analytics" 
-                className="w-[200px] h-[200px] rounded-lg shadow-lg mt-12"
+                className="w-full md:w-[200px] h-[200px] rounded-lg shadow-lg mt-4 md:mt-12"
               />
             </div>
           </div>
