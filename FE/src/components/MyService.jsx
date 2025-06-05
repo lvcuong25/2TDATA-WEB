@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
 import { useQuery } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
@@ -11,6 +11,12 @@ import { LinkOutlined } from "@ant-design/icons";
 const MyService = () => {
   const navigate = useNavigate();
   const { currentUser } = useContext(AuthContext);
+  const [accessToken, setAccessToken] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    setAccessToken(token);
+  }, []);
 
   const { data: userData, isLoading } = useQuery({
     queryKey: ["myServices", currentUser?._id],
@@ -23,13 +29,32 @@ const MyService = () => {
     enabled: !!currentUser?._id,
   });
 
-  const handleServiceClick = (service) => {
-    // Find the first authorized link
-    const authorizedLink = service.service.authorizedLinks?.[0];
-    if (authorizedLink) {
-      window.open(authorizedLink.url, "_blank");
-    } else {
-      console.log("No authorized link found for this service.", service);
+  const handleServiceClick = async (service) => {
+    try {
+      if (!accessToken || !currentUser?._id) {
+        console.error('Missing access token or user ID');
+        return;
+      }
+
+      // Make the webhook request
+      const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
+        userId: currentUser._id,
+        accessToken: accessToken
+      });
+
+      if (response.status !== 200) {
+        throw new Error('Webhook request failed');
+      }
+
+      // Find the first authorized link
+      const authorizedLink = service.service.authorizedLinks?.[0];
+      if (authorizedLink) {
+        window.open(authorizedLink.url, "_blank");
+      } else {
+        console.log("No authorized link found for this service.", service);
+      }
+    } catch (error) {
+      console.error('Error making webhook request:', error);
     }
   };
 
