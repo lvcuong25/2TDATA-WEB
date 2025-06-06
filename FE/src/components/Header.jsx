@@ -7,6 +7,7 @@ const Header = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userService, setUserService] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const location = useLocation();
 
@@ -20,6 +21,7 @@ const Header = () => {
           try {
             const userData = JSON.parse(userStr);
             setUserService(userData.service);
+            setIsAdmin(userData.role === 'admin');
           } catch (error) {
             console.error('Error parsing user data:', error);
           }
@@ -141,6 +143,21 @@ const Header = () => {
                     Dịch vụ
                   </Link>
                 </li>
+                {isAdmin && (
+                  <li>
+                    <Link
+                      to="/admin"
+                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                        location.pathname === '/admin'
+                          ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500'
+                          : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'
+                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Quản trị
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link
                     to="/blogs"
