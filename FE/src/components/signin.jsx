@@ -88,7 +88,7 @@ const SignIn = () => {
       const { data } = await instance.post('auth/sign-in', signinData);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       // Save encrypted credentials if remember me is checked
       if (rememberMe) {
         const formData = getValues();
@@ -107,9 +107,21 @@ const SignIn = () => {
       toast.success('Đăng nhập thành công!');
       localStorage.setItem('accessToken', data.accessToken);
       
-      // Use redirectPath from server response
-      navigate('/service');
-      // navigate(data.redirectPath);
+      // Check if user has services
+      try {
+        const userResponse = await instance.get(`/user/${data.user._id}`);
+        if (userResponse.data.data.services && userResponse.data.data.services.length > 0) {
+          navigate('/service/my-service');
+        } else {
+          navigate('/service');
+        }
+        // Refresh the page after navigation
+        window.location.reload();
+      } catch (error) {
+        console.error('Error checking user services:', error);
+        navigate('/service');
+        window.location.reload();
+      }
     },
     onError: () => {
       toast.error('Email hoặc mật khẩu không đúng!');
