@@ -12,6 +12,7 @@ import {
   FlagOutlined,
   LaptopOutlined,
   UnorderedListOutlined,
+  FormOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -53,6 +54,10 @@ const DashBoard = () => {
 
           <Menu.Item key="/admin/status" icon={<FileTextOutlined />} onClick={() => handleLinkClick('/admin/status')}>
             <Link to="/admin/status">Quản lý trạng thái</Link>
+          </Menu.Item>
+
+          <Menu.Item key="/admin/user-info" icon={<FormOutlined />} onClick={() => handleLinkClick('/admin/user-info')}>
+            <Link to="/admin/user-info">Quản lý đăng ký</Link>
           </Menu.Item>
        
           <Menu.Item key="/" icon={<HeartOutlined />} onClick={() => handleLinkClick('/')}>

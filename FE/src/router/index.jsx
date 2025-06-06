@@ -13,6 +13,7 @@ import BlogEdit from '../components/admin/Blog/BlogEdit.jsx';
 import AllBlogPage from '../components/Blog/AllBlogPage.js';
 import DetailBlogPage from '../components/Blog/DetailBlogPage.js';
 import MyService from '../components/MyService.jsx';
+import UserInfoList from '../components/admin/UserInfo/UserInfoList.jsx';
 
 import UsersList from '../components/admin/Users/UsersList.jsx';
 import UsersForm from '../components/admin/Users/UsersForm.jsx';
@@ -77,6 +78,9 @@ const Router = () => {
             <Route index element={<StatusList />} />
             <Route path="add" element={<StatusForm />} />
             <Route path="edit/:id" element={<StatusEdit />} />
+          </Route>
+          <Route path="user-info">
+            <Route index element={<UserInfoList />} />
           </Route>
         </Route>
 
