@@ -7,7 +7,6 @@ import instance from "../utils/axiosInstance";
 import { useState, useEffect } from "react";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import CryptoJS from 'crypto-js';
-import { useNavigate } from 'react-router-dom';
 
 // Secret key for encryption (in production, this should be stored securely)
 const SECRET_KEY = 'your-secret-key-here';
@@ -44,7 +43,6 @@ const signinSchema = Joi.object({
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const navigate = useNavigate();
 
   const {
     register,
@@ -88,7 +86,7 @@ const SignIn = () => {
       const { data } = await instance.post('auth/sign-in', signinData);
       return data;
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       // Save encrypted credentials if remember me is checked
       if (rememberMe) {
         const formData = getValues();
@@ -106,22 +104,10 @@ const SignIn = () => {
       
       toast.success('Đăng nhập thành công!');
       localStorage.setItem('accessToken', data.accessToken);
-      
-      // Check if user has services
-      try {
-        const userResponse = await instance.get(`/user/${data.user._id}`);
-        if (userResponse.data.data.services && userResponse.data.data.services.length > 0) {
-          navigate('/service/my-service');
-        } else {
-          navigate('/service');
-        }
-        // Refresh the page after navigation
-        window.location.reload();
-      } catch (error) {
-        console.error('Error checking user services:', error);
-        navigate('/service');
-        window.location.reload();
-      }
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Redirect and refresh to /service/my-service
+      window.location.href = '/service/my-service';
     },
     onError: () => {
       toast.error('Email hoặc mật khẩu không đúng!');
