@@ -47,8 +47,13 @@ const Service = () => {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (values) => {
-      const response = await instance.put(`/user/${currentUser._id}`, values);
-      return response.data;
+      const { data } = await instance.put(`/user/${currentUser._id}`, {
+        ...values,
+        email: currentUser.email,
+        role: currentUser.role,
+        active: currentUser.active
+      });
+      return data;
     },
     onSuccess: () => {
       toast.success('Cập nhật thông tin thành công!');
@@ -56,7 +61,8 @@ const Service = () => {
       reset();
     },
     onError: (error) => {
-      toast.error('Cập nhật thông tin thất bại: ' + error.message);
+      console.error("Error updating user:", error);
+      toast.error(error.response?.data?.message || 'Cập nhật thông tin thất bại');
     }
   });
 
@@ -98,8 +104,15 @@ const Service = () => {
   const onSubmit = (data) => {
     setIsLoading(true);
     if (selectedServices.length > 0) {
-      registerServiceMutation.mutate(selectedServices, {
-        onSettled: () => setIsLoading(false)
+      updateProfileMutation.mutate(data, {
+        onSuccess: () => {
+          registerServiceMutation.mutate(selectedServices, {
+            onSettled: () => setIsLoading(false)
+          });
+        },
+        onError: () => {
+          setIsLoading(false);
+        }
       });
     } else {
       updateProfileMutation.mutate(data, {
