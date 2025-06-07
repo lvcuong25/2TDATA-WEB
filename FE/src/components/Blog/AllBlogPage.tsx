@@ -64,7 +64,7 @@ const AllBlogPage: React.FC = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const truncateMarkdown = (content: string, maxLength: number) => {
+  const truncateHTML = (content: string, maxLength: number) => {
     if (content.length <= maxLength) return content;
     const truncated = content.substr(0, content.lastIndexOf(' ', maxLength));
     return truncated + '...';
@@ -144,10 +144,9 @@ const AllBlogPage: React.FC = () => {
                       }
                       description={
                         <>
-                          <div className="text-gray-600 prose prose-sm max-w-none line-clamp-3">
-                            <ReactMarkdown>
-                              {truncateMarkdown(blog.content, 150)}
-                            </ReactMarkdown>
+                          <div className="text-gray-600 prose prose-sm max-w-none line-clamp-3"
+                            dangerouslySetInnerHTML={{ __html: truncateHTML(blog.content, 150) }}
+                          >
                           </div>
                           <Space className="mt-3" size={[0, 8]} wrap>
                             {blog.tags && blog.tags.map(tag => (

@@ -1,9 +1,57 @@
 import UserService from "../model/UserService.js";
 import User from "../model/User.js";
+import Service from "../model/Service.js";
 
 // Lấy danh sách service đang chờ xác nhận
 export const getPendingServices = async (req, res, next) => {
     try {
+        const { search, status } = req.query;
+        
+        // Build query conditions
+        const query = {};
+        
+        // Add status filter if provided
+        if (status) {
+            query.status = status;
+        }
+
+        // Handle combined user and service search
+        if (search) {
+            // Find matching users
+            const matchingUsers = await User.find({
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+            const userIds = matchingUsers.map(user => user._id);
+
+            // Find matching services
+            const matchingServices = await Service.find({
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { slug: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+            const serviceIds = matchingServices.map(service => service._id);
+
+            // Apply conditions if any matches are found
+            const orConditions = [];
+            if (userIds.length > 0) {
+                orConditions.push({ user: { $in: userIds } });
+            }
+            if (serviceIds.length > 0) {
+                orConditions.push({ service: { $in: serviceIds } });
+            }
+
+            if (orConditions.length > 0) {
+                query.$or = orConditions;
+            } else {
+                // If no user or service matches the search, return empty result
+                return res.status(200).json({ data: { docs: [], totalDocs: 0, limit: options.limit, page: options.page, totalPages: 0 } });
+            }
+        }
+
         const options = {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
@@ -24,9 +72,26 @@ export const getPendingServices = async (req, res, next) => {
             ]
         };
 
-        // Lấy các service có trạng thái waiting
-        const data = await UserService.paginate({ }, options);
-        return res.status(200).json({ data });
+        const data = await UserService.paginate(query, options);
+        
+        // Filter out documents where user or service failed to populate, or where essential fields are missing
+        const filteredDocs = data.docs.filter(doc => 
+            doc.user !== null && 
+            doc.service !== null && 
+            doc.user.name && 
+            doc.user.email &&
+            doc.service.name
+        );
+
+        return res.status(200).json({
+            data: {
+                docs: filteredDocs,
+                totalDocs: filteredDocs.length,
+                limit: data.limit,
+                page: data.page,
+                totalPages: Math.ceil(filteredDocs.length / data.limit)
+            }
+        });
     } catch (error) {
         next(error);
     }

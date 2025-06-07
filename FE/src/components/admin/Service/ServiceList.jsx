@@ -1,18 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Space, Table, Button, Popconfirm, Tag } from "antd";
+import { Space, Table, Button, Popconfirm, Tag, Input } from "antd";
 import { toast } from "react-toastify";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
 
 const ServiceList = () => {
   const queryClient = useQueryClient();
+  const [searchValue, setSearchValue] = useState("");
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["SERVICES"],
+    queryKey: ["SERVICES", searchValue],
     queryFn: async () => {
-      const { data } = await instance.get(`/service`);
+      const params = new URLSearchParams({
+        ...(searchValue && { name: searchValue })
+      });
+      const { data } = await instance.get(`/service?${params}`);
       return data;
     },
   });
@@ -30,6 +34,10 @@ const ServiceList = () => {
 
   const handleDelete = (id) => {
     deleteMutation.mutate(id);
+  };
+
+  const handleSearch = (value) => {
+    setSearchValue(value);
   };
 
   const columns = [
@@ -119,6 +127,16 @@ const ServiceList = () => {
       </h2>
       <div className="">
         <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-4">
+            <Input
+              placeholder="Tìm kiếm theo tên, slug hoặc mã"
+              prefix={<SearchOutlined />}
+              value={searchValue}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-96"
+              allowClear
+            />
+          </div>
           <Link
             to="/admin/services/add"
             className="px-4 py-2 text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out"
@@ -134,7 +152,6 @@ const ServiceList = () => {
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
-            // showQuickJumper: true,
           }}
           scroll={{ x: "max-content" }}
         />

@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { Space, Table, Button, Popconfirm, message } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import { Space, Table, Button, Popconfirm, message, Input } from "antd";
+import { DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
 
 const UserInfoList = () => {
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchText, setSearchText] = useState("");
 
   // Fetch user info list
   const { data, isLoading } = useQuery({
@@ -33,6 +34,20 @@ const UserInfoList = () => {
   const handleDelete = (id) => {
     deleteMutation.mutate(id);
   };
+
+  const handleSearch = (value) => {
+    setSearchText(value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const filteredData = data?.userInfos?.filter((item) => {
+    const searchLower = searchText.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(searchLower) ||
+      item.email.toLowerCase().includes(searchLower) ||
+      item.phoneNumber.includes(searchText)
+    );
+  });
 
   const columns = [
     {
@@ -72,7 +87,6 @@ const UserInfoList = () => {
               danger
               icon={<DeleteOutlined />}
             >
-              Xóa
             </Button>
           </Popconfirm>
         </Space>
@@ -87,16 +101,25 @@ const UserInfoList = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Danh sách thông tin đăng ký</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Danh sách thông tin đăng ký</h1>
+        <Input
+          placeholder="Tìm kiếm theo tên, email hoặc số điện thoại"
+          prefix={<SearchOutlined />}
+          onChange={(e) => handleSearch(e.target.value)}
+          style={{ width: 300 }}
+          allowClear
+        />
+      </div>
       <Table
         columns={columns}
-        dataSource={data?.userInfos}
+        dataSource={filteredData}
         rowKey="_id"
         loading={isLoading}
         pagination={{
           current: currentPage,
           pageSize: pageSize,
-          total: data?.pagination?.total,
+          total: filteredData?.length || 0,
           showSizeChanger: true,
           showTotal: (total) => `Tổng số ${total} bản ghi`,
         }}

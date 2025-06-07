@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import MDEditor from '@uiw/react-md-editor';
+import { Editor } from '@tinymce/tinymce-react';
 import { Button, Input, Form, Spin } from 'antd';
 import instance from "../../../utils/axiosInstance";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -130,9 +130,46 @@ const BlogEdit = () => {
                             />
                         </Form.Item>
                         <Form.Item label="Nội dung Blog" required>
-                            <MDEditor
+                            <Editor
+                                apiKey="853mkibb12dzlp0m1qpm80m4uvwnhwwkc66oylham0jzvz8s"
                                 value={content}
-                                onChange={setContent}
+                                onEditorChange={(newContent) => setContent(newContent)}
+                                init={{
+                                    height: 500,
+                                    menubar: true,
+                                    plugins: [
+                                        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                                        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                                        'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                                    ],
+                                    toolbar: 'undo redo | blocks | ' +
+                                        'bold italic forecolor | alignleft aligncenter ' +
+                                        'alignright alignjustify | bullist numlist outdent indent | ' +
+                                        'removeformat | help',
+                                    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                                    images_upload_handler: function (blobInfo, success, failure) {
+                                        const maxSize = 5 * 1024 * 1024; // 5MB
+                                        if (blobInfo.blob().size > maxSize) {
+                                            failure('Image size exceeds 5MB limit');
+                                            return;
+                                        }
+                                        // Convert to base64
+                                        const reader = new FileReader();
+                                        reader.onload = function() {
+                                            success(reader.result);
+                                        };
+                                        reader.readAsDataURL(blobInfo.blob());
+                                    },
+                                    automatic_uploads: true,
+                                    images_reuse_filename: true,
+                                    paste_data_images: true,
+                                    image_advtab: true,
+                                    image_dimensions: true,
+                                    image_class_list: [
+                                        {title: 'None', value: ''},
+                                        {title: 'Responsive', value: 'img-fluid'}
+                                    ]
+                                }}
                             />
                         </Form.Item>
                         <Form.Item>

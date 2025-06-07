@@ -5,7 +5,17 @@ import UserService from "../model/UserService.js";
 // Lấy danh sách dịch vụ
 export const getServices = async (req, res, next) => {
     try {
-        const services = await Service.find();
+        let query = {};
+        if (req.query.name) {
+            query.$or = [
+                { name: { $regex: new RegExp(req.query.name, 'i') } },
+                { slug: { $regex: new RegExp(req.query.name, 'i') } }
+            ];
+        }
+        if (req.query.status) {
+            query.status = req.query.status;
+        }
+        const services = await Service.find(query);
         return res.status(200).json(services);
     } catch (error) {
         next(error);

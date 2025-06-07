@@ -19,19 +19,14 @@ export const getAllUser = async (req, res, next) => {
         };
         let query = {};
         if (req.query.name) {
-            query.name = { $regex: new RegExp(req.query.name, 'i') };
-        }
-        if (req.query.email) {
-            query.email = { $regex: new RegExp(req.query.email, 'i') };
+            query.$or = [
+                { name: { $regex: new RegExp(req.query.name, 'i') } },
+                { email: { $regex: new RegExp(req.query.name, 'i') } },
+                { phone: { $regex: new RegExp(req.query.name, 'i') } }
+            ];
         }
         if (req.query.role) {
             query.role = req.query.role;
-        }
-        if (req.query.address) {
-            query.address = { $regex: new RegExp(req.query.address, 'i') };
-        }
-        if (req.query.phone) {
-            query.phone = { $regex: new RegExp(req.query.phone, 'i') };
         }
         if (req.query.active) {
             query.active = req.query.active;

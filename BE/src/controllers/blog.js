@@ -4,7 +4,14 @@ import Blog from "../model/Blog.js";
 // Lấy danh sách các bài blog
 export const getAllBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find().sort({ createdAt: -1 });
+    let query = {};
+    if (req.query.name) {
+      query.$or = [
+        { title: { $regex: new RegExp(req.query.name, 'i') } },
+        { content: { $regex: new RegExp(req.query.name, 'i') } }
+      ];
+    }
+    const blogs = await Blog.find(query).sort({ createdAt: -1 });
     res.json(blogs);
   } catch (err) {
     console.error("Error fetching blogs:", err);
