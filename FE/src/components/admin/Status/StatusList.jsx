@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { Space, Table, Button, Popconfirm, Tag, Modal, Input, Form, Descriptions, Avatar, Select, Row, Col, Badge } from "antd";
 import { toast } from "react-toastify";
-import { CheckOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, EditOutlined, LinkOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, EditOutlined, LinkOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
 
 const StatusList = () => {
@@ -215,7 +215,7 @@ const StatusList = () => {
     setStatusFilter(value);
   };
 
-  const handleTableChange = (newPagination, filters, sorter) => {
+  const handleTableChange = (newPagination) => {
     setPagination(newPagination);
   };
 
@@ -364,33 +364,32 @@ const StatusList = () => {
         Danh sách yêu cầu dịch vụ
       </h2>
       
-      <Row gutter={[0, 0]} className="mb-4">
-        <Col span={7}>
-          <Input.Search
-            placeholder="Tìm kiếm theo tên/email người dùng hoặc tên/slug dịch vụ"
-            allowClear
-            value={searchText}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full"
-          />
-        </Col>
-        <Col span={3}>
-          <Select
-            placeholder="Lọc theo trạng thái"
-            allowClear
-            value={statusFilter}
-            onChange={handleStatusChange}
-            className="w-full"
-            options={[
-              { value: 'waiting', label: 'Đang chờ' },
-              { value: 'approved', label: 'Đã xác nhận' },
-              { value: 'rejected', label: 'Bị từ chối' }
-            ]}
-          />
-        </Col>
-      </Row>
-
       <div className="">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-4">
+            <Input
+              placeholder="Tìm kiếm theo tên/email người dùng hoặc tên/slug dịch vụ"
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-96"
+              allowClear
+            />
+            <Select
+              placeholder="Lọc theo trạng thái"
+              allowClear
+              value={statusFilter}
+              onChange={handleStatusChange}
+              className="w-40"
+              options={[
+                { value: 'waiting', label: 'Đang chờ' },
+                { value: 'approved', label: 'Đã xác nhận' },
+                { value: 'rejected', label: 'Bị từ chối' }
+              ]}
+            />
+          </div>
+        </div>
+
         <Table
           columns={columns}
           dataSource={data?.data?.docs}
