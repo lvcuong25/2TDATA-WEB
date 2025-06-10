@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { uploadFileCloudinary } from "../../admin/libs/uploadImageCloud";
-import { InfoCircleOutlined, UserOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, UserOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -19,6 +19,7 @@ const UsersEdit = () => {
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
     const [editingInfo, setEditingInfo] = useState(null);
     const [infoForm] = Form.useForm();
+    const [isCopied, setIsCopied] = useState(false);
 
     const { control, handleSubmit, setValue, reset, formState: { errors } } = useForm();
 
@@ -190,27 +191,25 @@ const UsersEdit = () => {
 
     const infoColumns = [
         {
-            title: "ID",
-            dataIndex: "_id",
-            key: "_id",
-            render: (text) => (
-                <span className="text-gray-600">{text}</span>
-            ),
-        },
-        {
             title: "Mã",
             dataIndex: "code",
             key: "code",
+            width: 450,
+            render: (text) => (
+                <span>{text?.length > 50 ? `${text.substring(0, 50)}...` : text}</span>
+            ),
         },
         {
             title: "Tiêu đề",
             dataIndex: "title",
             key: "title",
+            width: 150,
         },
         {
             title: "Mô tả",
             dataIndex: "description",
             key: "description",
+            width: 200,
             render: (text) => (
                 <span>{text?.length > 50 ? `${text.substring(0, 50)}...` : text}</span>
             ),
@@ -218,6 +217,7 @@ const UsersEdit = () => {
         {
             title: "Thao tác",
             key: "action",
+            width: 120,
             render: (_, record) => (
                 <Space>
                     <Button 
@@ -579,30 +579,56 @@ const UsersEdit = () => {
                     setEditingInfo(null);
                 }}
                 confirmLoading={addInfoMutation.isPending || updateInfoMutation.isPending}
+                width={800}
+                bodyStyle={{ padding: '24px' }}
             >
                 <Form
                     form={infoForm}
                     layout="vertical"
+                    size="large"
                 >
                     <Form.Item
                         name="code"
                         label="Mã"
                         rules={[{ required: true, message: 'Vui lòng nhập mã!' }]}
                     >
-                        <Input />
+                        <Input 
+                            style={{ fontSize: '16px' }} 
+                            suffix={
+                                editingInfo ? (
+                                    <Button
+                                        type="text"
+                                        icon={isCopied ? null : <CopyOutlined />}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const codeValue = infoForm.getFieldValue('code');
+                                            if (codeValue) {
+                                                navigator.clipboard.writeText(codeValue);
+                                                setIsCopied(true);
+                                                setTimeout(() => {
+                                                    setIsCopied(false);
+                                                }, 2000);
+                                            }
+                                        }}
+                                    >
+                                        {isCopied ? 'Đã sao chép' : null}
+                                    </Button>
+                                ) : null
+                            }
+                        />
                     </Form.Item>
                     <Form.Item
                         name="title"
                         label="Tiêu đề"
                         rules={[{ required: true, message: 'Vui lòng nhập tiêu đề!' }]}
                     >
-                        <Input />
+                        <Input style={{ fontSize: '16px' }} />
                     </Form.Item>
                     <Form.Item
                         name="description"
                         label="Mô tả"
                     >
-                        <Input.TextArea rows={4} />
+                        <Input.TextArea rows={6} style={{ fontSize: '16px' }} />
                     </Form.Item>
                 </Form>
             </Modal>

@@ -6,7 +6,7 @@ import { AuthContext } from "./core/Auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
 import { Tag, Table, Space, Card, Button, Tooltip, Modal, Form, Input, message, Popconfirm } from "antd";
-import { LinkOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { LinkOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from "@ant-design/icons";
 
 const MyService = () => {
   const navigate = useNavigate();
@@ -15,6 +15,7 @@ const MyService = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingInfo, setEditingInfo] = useState(null);
+  const [isCopied, setIsCopied] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -150,11 +151,11 @@ const MyService = () => {
   const addInfoMutation = useMutation({
     mutationFn: async (values) => {
       const response = await instance.post('/user/information', {
-          ...values,
-          userId: currentUser?._id
+        ...values,
+        userId: currentUser._id
       });
       return response.data;
-  },
+    },
     onSuccess: () => {
       message.success('Thêm thông tin thành công');
       queryClient.invalidateQueries(["myServices", currentUser?._id]);
@@ -168,10 +169,13 @@ const MyService = () => {
 
   // Update information mutation
   const updateInfoMutation = useMutation({
-    mutationFn: async ({ id, values }) => {
-      const response = await instance.put(`/user/information/${id}`, values);
+    mutationFn: async ({ id: infoId, values }) => {
+      const response = await instance.put(`/user/information/${infoId}`, {
+          ...values,
+          userId: currentUser._id
+      });
       return response.data;
-    },
+  },
     onSuccess: () => {
       message.success('Cập nhật thông tin thành công');
       queryClient.invalidateQueries(["myServices", currentUser?._id]);
@@ -218,11 +222,14 @@ const MyService = () => {
 
   const handleModalOk = () => {
     form.validateFields().then(values => {
+      console.log('Submitting values:', values);
       if (editingInfo) {
         updateInfoMutation.mutate({ id: editingInfo._id, values });
       } else {
         addInfoMutation.mutate(values);
       }
+    }).catch(info => {
+      console.log('Validate Failed:', info);
     });
   };
 
@@ -231,16 +238,20 @@ const MyService = () => {
       title: "Mã",
       dataIndex: "code",
       key: "code",
+      ellipsis: true,
+      width:450,
     },
     {
       title: "Tiêu đề",
       dataIndex: "title",
       key: "title",
+      width: 150,
     },
     {
       title: "Mô tả",
       dataIndex: "description",
       key: "description",
+      width: 200,
       render: (text) => (
         <Tooltip title={text}>
           <span>{text?.length > 50 ? `${text.substring(0, 50)}...` : text}</span>
@@ -250,6 +261,7 @@ const MyService = () => {
     {
       title: "Thao tác",
       key: "action",
+      width: 120,
       render: (_, record) => (
         <Space>
           <Button 
@@ -267,7 +279,6 @@ const MyService = () => {
               type="primary" 
               danger
               icon={<DeleteOutlined />} 
-            
               loading={deleteInfoMutation.isPending && deleteInfoMutation.variables === record._id}
             />
           </Popconfirm>
@@ -413,7 +424,7 @@ const MyService = () => {
       </div>
 
       <Modal
-        title={editingInfo ? "Sửa thông tin" : "Thêm thông tin mới"}
+        title={editingInfo ? "Thông tin" : "Thêm thông tin mới"}
         open={isModalVisible}
         onOk={handleModalOk}
         onCancel={() => {
@@ -422,30 +433,56 @@ const MyService = () => {
           setEditingInfo(null);
         }}
         confirmLoading={addInfoMutation.isPending || updateInfoMutation.isPending}
+        width={800}
+        bodyStyle={{ padding: '24px' }}
       >
         <Form
           form={form}
           layout="vertical"
+          size="large"
         >
           <Form.Item
             name="code"
             label="Mã"
             rules={[{ required: true, message: 'Vui lòng nhập mã!' }]}
           >
-            <Input />
+            <Input 
+              style={{ fontSize: '16px' }} 
+              suffix={
+                editingInfo ? (
+                    <Button
+                        type="text"
+                        icon={isCopied ? null : <CopyOutlined />}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const codeValue = form.getFieldValue('code');
+                            if (codeValue) {
+                                navigator.clipboard.writeText(codeValue);
+                                setIsCopied(true);
+                                setTimeout(() => {
+                                    setIsCopied(false);
+                                }, 2000);
+                            }
+                        }}
+                    >
+                        {isCopied ? 'Đã sao chép' : null}
+                    </Button>
+                ) : null
+              }
+            />
           </Form.Item>
           <Form.Item
             name="title"
             label="Tiêu đề"
             rules={[{ required: true, message: 'Vui lòng nhập tiêu đề!' }]}
           >
-            <Input />
+            <Input style={{ fontSize: '16px' }} />
           </Form.Item>
           <Form.Item
             name="description"
             label="Mô tả"
           >
-            <Input.TextArea rows={4} />
+            <Input.TextArea rows={6} style={{ fontSize: '16px' }} />
           </Form.Item>
         </Form>
       </Modal>
