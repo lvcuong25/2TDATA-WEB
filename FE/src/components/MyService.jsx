@@ -3,15 +3,19 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
-import { Tag, Table, Space, Card, Button, Tooltip } from "antd";
-import { LinkOutlined } from "@ant-design/icons";
+import { Tag, Table, Space, Card, Button, Tooltip, Modal, Form, Input, message, Popconfirm } from "antd";
+import { LinkOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
 const MyService = () => {
   const navigate = useNavigate();
   const { currentUser } = useContext(AuthContext);
   const [accessToken, setAccessToken] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [form] = Form.useForm();
+  const [editingInfo, setEditingInfo] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -142,6 +146,136 @@ const MyService = () => {
     return userService.service.authorizedLinks?.[0];
   };
 
+  // Add information mutation
+  const addInfoMutation = useMutation({
+    mutationFn: async (values) => {
+      const response = await instance.post('/user/information', {
+          ...values,
+          userId: currentUser?._id
+      });
+      return response.data;
+  },
+    onSuccess: () => {
+      message.success('Thêm thông tin thành công');
+      queryClient.invalidateQueries(["myServices", currentUser?._id]);
+      setIsModalVisible(false);
+      form.resetFields();
+    },
+    onError: (error) => {
+      message.error('Thêm thông tin thất bại: ' + error.message);
+    }
+  });
+
+  // Update information mutation
+  const updateInfoMutation = useMutation({
+    mutationFn: async ({ id, values }) => {
+      const response = await instance.put(`/user/information/${id}`, values);
+      return response.data;
+    },
+    onSuccess: () => {
+      message.success('Cập nhật thông tin thành công');
+      queryClient.invalidateQueries(["myServices", currentUser?._id]);
+      setIsModalVisible(false);
+      form.resetFields();
+      setEditingInfo(null);
+    },
+    onError: (error) => {
+      message.error('Cập nhật thông tin thất bại: ' + error.message);
+    }
+  });
+
+  // Delete information mutation
+  const deleteInfoMutation = useMutation({
+    mutationFn: (infoId) => instance.delete(`/user/information/${infoId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["myServices", currentUser?._id]);
+      message.success("Thông tin đã được xóa thành công!");
+    },
+    onError: (error) => {
+      message.error("Không thể xóa thông tin: " + error.message);
+    }
+  });
+
+  const handleAddInfo = () => {
+    setEditingInfo(null);
+    form.resetFields();
+    setIsModalVisible(true);
+  };
+
+  const handleEditInfo = (info) => {
+    setEditingInfo(info);
+    form.setFieldsValue({
+      code: info.code,
+      title: info.title,
+      description: info.description
+    });
+    setIsModalVisible(true);
+  };
+
+  const handleDeleteInfo = (infoId) => {
+    deleteInfoMutation.mutate(infoId);
+  };
+
+  const handleModalOk = () => {
+    form.validateFields().then(values => {
+      if (editingInfo) {
+        updateInfoMutation.mutate({ id: editingInfo._id, values });
+      } else {
+        addInfoMutation.mutate(values);
+      }
+    });
+  };
+
+  const infoColumns = [
+    {
+      title: "Mã",
+      dataIndex: "code",
+      key: "code",
+    },
+    {
+      title: "Tiêu đề",
+      dataIndex: "title",
+      key: "title",
+    },
+    {
+      title: "Mô tả",
+      dataIndex: "description",
+      key: "description",
+      render: (text) => (
+        <Tooltip title={text}>
+          <span>{text?.length > 50 ? `${text.substring(0, 50)}...` : text}</span>
+        </Tooltip>
+      ),
+    },
+    {
+      title: "Thao tác",
+      key: "action",
+      render: (_, record) => (
+        <Space>
+          <Button 
+            type="primary" 
+            icon={<EditOutlined />} 
+            onClick={() => handleEditInfo(record)}
+          />
+          <Popconfirm
+            title="Bạn có chắc chắn muốn xóa thông tin này?"
+            onConfirm={() => handleDeleteInfo(record._id)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button 
+              type="primary" 
+              danger
+              icon={<DeleteOutlined />} 
+            
+              loading={deleteInfoMutation.isPending && deleteInfoMutation.variables === record._id}
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -256,7 +390,66 @@ const MyService = () => {
             />
           )}
         </section>
+
+        <section className="bg-gray-100 rounded-[32px] max-w-6xl mx-auto mt-8 p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold">Thông tin của tôi</h2>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={handleAddInfo}
+            >
+              Thêm thông tin
+            </Button>
+          </div>
+          
+          <Table
+            columns={infoColumns}
+            dataSource={userData?.data?.information || []}
+            rowKey="_id"
+            pagination={{ pageSize: 10 }}
+          />
+        </section>
       </div>
+
+      <Modal
+        title={editingInfo ? "Sửa thông tin" : "Thêm thông tin mới"}
+        open={isModalVisible}
+        onOk={handleModalOk}
+        onCancel={() => {
+          setIsModalVisible(false);
+          form.resetFields();
+          setEditingInfo(null);
+        }}
+        confirmLoading={addInfoMutation.isPending || updateInfoMutation.isPending}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+        >
+          <Form.Item
+            name="code"
+            label="Mã"
+            rules={[{ required: true, message: 'Vui lòng nhập mã!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="title"
+            label="Tiêu đề"
+            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="Mô tả"
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
       <Footer />
     </div>
   );

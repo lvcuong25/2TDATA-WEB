@@ -44,6 +44,20 @@ const userSchema = new mongoose.Schema(
     service: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'UserService'
+    }],
+    information: [{
+      code: {
+        type: String,
+        required: true,
+      },
+      title: {
+        type: String,
+        required: true
+      },
+      description:{
+        type: String,
+        description: "Mô tả chi tiết về link"
+      }
     }]
   },
   { timestamps: true, versionKey: false }

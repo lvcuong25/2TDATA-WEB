@@ -274,3 +274,122 @@ export const removeServiceFromProfile = async (req, res, next) => {
         next(error);
     }
 };
+
+// Add new information to user
+export const addUserInformation = async (req, res, next) => {
+    try {
+        const { code, title, description, userId } = req.body;
+        const currentUser = req.user;
+
+        // If user is admin, use the provided userId, otherwise use current user's id
+        const targetUserId = currentUser.role === 'admin' ? userId : currentUser._id;
+
+        const user = await User.findById(targetUserId);
+        if (!user) {
+            return res.status(404).json({ message: "Không tìm thấy người dùng" });
+        }
+
+        // Check if information with same code already exists
+        const existingInfo = user.information.find(info => info.code === code);
+        if (existingInfo) {
+            return res.status(400).json({ message: "Mã thông tin đã tồn tại" });
+        }
+
+        user.information.push({
+            code,
+            title,
+            description
+        });
+
+        await user.save();
+
+        return res.status(200).json({
+            data: user,
+            message: "Thêm thông tin thành công"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Update user information
+export const updateUserInformation = async (req, res, next) => {
+    try {
+        const { informationId } = req.params;
+        const { code, title, description, userId } = req.body;
+        const currentUser = req.user;
+
+        // If user is admin, use the provided userId, otherwise use current user's id
+        const targetUserId = currentUser.role === 'admin' ? userId : currentUser._id;
+
+        const user = await User.findById(targetUserId);
+        if (!user) {
+            return res.status(404).json({ message: "Không tìm thấy người dùng" });
+        }
+
+        const infoIndex = user.information.findIndex(info => info._id.toString() === informationId);
+        if (infoIndex === -1) {
+            return res.status(404).json({ message: "Không tìm thấy thông tin" });
+        }
+
+        // Check if new code already exists (excluding current info)
+        const existingInfo = user.information.find(
+            info => info.code === code && info._id.toString() !== informationId
+        );
+        if (existingInfo) {
+            return res.status(400).json({ message: "Mã thông tin đã tồn tại" });
+        }
+
+        user.information[infoIndex] = {
+            ...user.information[infoIndex],
+            code,
+            title,
+            description
+        };
+
+        await user.save();
+
+        return res.status(200).json({
+            data: user,
+            message: "Cập nhật thông tin thành công"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Delete user information
+export const deleteUserInformation = async (req, res, next) => {
+    try {
+        const { informationId } = req.params;
+        const currentUser = req.user;
+
+        // Find the user that contains this information
+        const user = await User.findOne({
+            'information._id': informationId
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "Không tìm thấy thông tin cần xóa" });
+        }
+
+        // Check if user is admin or the owner of the information
+        if (currentUser.role !== 'admin' && user._id.toString() !== currentUser._id.toString()) {
+            return res.status(403).json({ message: "Bạn không có quyền xóa thông tin này" });
+        }
+
+        // Remove the information
+        user.information = user.information.filter(
+            info => info._id.toString() !== informationId
+        );
+
+        await user.save();
+
+        return res.status(200).json({
+            data: user,
+            message: "Xóa thông tin thành công"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
