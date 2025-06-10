@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { Space, Table, Button, Popconfirm, message, Input } from "antd";
+import { Space, Table, Button, Popconfirm, message, Input, Modal, Badge } from "antd";
 import { DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
 
@@ -9,6 +9,16 @@ const UserInfoList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchText, setSearchText] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [viewedUsers, setViewedUsers] = useState(() => {
+    const saved = localStorage.getItem('viewedUsers');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('viewedUsers', JSON.stringify(viewedUsers));
+  }, [viewedUsers]);
 
   // Fetch user info list
   const { data, isLoading } = useQuery({
@@ -19,12 +29,27 @@ const UserInfoList = () => {
     },
   });
 
+  const handleRowClick = (record) => {
+    setSelectedUser(record);
+    setIsModalVisible(true);
+    if (!viewedUsers.includes(record._id)) {
+      setViewedUsers([...viewedUsers, record._id]);
+    }
+  };
+
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+    setSelectedUser(null);
+  };
+
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id) => instance.delete(`/userInfo/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries(["USER_INFO"]);
       message.success("Xóa thông tin thành công!");
+      setSelectedUser(null);
+      setIsModalVisible(false);
     },
     onError: (error) => {
       message.error("Không thể xóa thông tin: " + error.message);
@@ -32,12 +57,13 @@ const UserInfoList = () => {
   });
 
   const handleDelete = (id) => {
+    handleModalClose();
     deleteMutation.mutate(id);
   };
 
   const handleSearch = (value) => {
     setSearchText(value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
 
   const filteredData = data?.userInfos?.filter((item) => {
@@ -54,6 +80,14 @@ const UserInfoList = () => {
       title: "Tên",
       dataIndex: "name",
       key: "name",
+      render: (text, record) => (
+        <Space>
+          {text}
+          {!viewedUsers.includes(record._id) && (
+            <Badge dot color="red" />
+          )}
+        </Space>
+      ),
     },
     {
       title: "Email",
@@ -76,19 +110,21 @@ const UserInfoList = () => {
       key: "action",
       render: (_, record) => (
         <Space size="middle">
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa?"
-            onConfirm={() => handleDelete(record._id)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button
-              type="primary"
-              danger
-              icon={<DeleteOutlined />}
+          <span onClick={(e) => e.stopPropagation()}>
+            <Popconfirm
+              title="Bạn có chắc chắn muốn xóa?"
+              onConfirm={() => handleDelete(record._id)}
+              okText="Có"
+              cancelText="Không"
             >
-            </Button>
-          </Popconfirm>
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+              >
+              </Button>
+            </Popconfirm>
+          </span>
         </Space>
       ),
     },
@@ -116,6 +152,10 @@ const UserInfoList = () => {
         dataSource={filteredData}
         rowKey="_id"
         loading={isLoading}
+        onRow={(record) => ({
+          onClick: () => handleRowClick(record),
+          style: { cursor: 'pointer' }
+        })}
         pagination={{
           current: currentPage,
           pageSize: pageSize,
@@ -125,6 +165,34 @@ const UserInfoList = () => {
         }}
         onChange={handleTableChange}
       />
+
+      <Modal
+        title="Chi tiết thông tin đăng ký"
+        open={isModalVisible}
+        onCancel={handleModalClose}
+        footer={null}
+      >
+        {selectedUser && (
+          <div className="space-y-4">
+            <div>
+              <p className="font-semibold">Tên:</p>
+              <p>{selectedUser.name}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Email:</p>
+              <p>{selectedUser.email}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Số điện thoại:</p>
+              <p>{selectedUser.phoneNumber}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Ngày đăng ký:</p>
+              <p>{new Date(selectedUser.createdAt).toLocaleDateString("vi-VN")}</p>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

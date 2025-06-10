@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { Space, Table, Button, Popconfirm, Tag, Modal, Input, Form, Descriptions, Avatar, Select, Row, Col } from "antd";
+import { Space, Table, Button, Popconfirm, Tag, Modal, Input, Form, Descriptions, Avatar, Select, Row, Col, Badge } from "antd";
 import { toast } from "react-toastify";
 import { CheckOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, EditOutlined, LinkOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
@@ -15,6 +15,18 @@ const StatusList = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
+  const [viewedRequests, setViewedRequests] = useState(() => {
+    const saved = localStorage.getItem('viewedRequests');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('viewedRequests', JSON.stringify(viewedRequests));
+  }, [viewedRequests]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,11 +57,13 @@ const StatusList = () => {
   }, [isModalOpen, selectedService, form]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["PENDING_SERVICES", debouncedSearchText, statusFilter],
+    queryKey: ["PENDING_SERVICES", debouncedSearchText, statusFilter, pagination.current, pagination.pageSize],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (debouncedSearchText) params.append('search', debouncedSearchText);
       if (statusFilter) params.append('status', statusFilter);
+      params.append('page', pagination.current);
+      params.append('limit', pagination.pageSize);
       const { data } = await instance.get(`/requests/pending?${params.toString()}`);
       return data;
     },
@@ -107,6 +121,9 @@ const StatusList = () => {
     setSelectedService(record);
     setIsEditMode(false);
     setIsModalOpen(true);
+    if (!viewedRequests.includes(record._id)) {
+      setViewedRequests([...viewedRequests, record._id]);
+    }
   };
 
   const handleEdit = async (record) => {
@@ -115,6 +132,9 @@ const StatusList = () => {
       setSelectedService({...record, link: data.data.link});
       setIsEditMode(true);
       setIsModalOpen(true);
+      if (!viewedRequests.includes(record._id)) {
+        setViewedRequests([...viewedRequests, record._id]);
+      }
     } catch (error) {
       toast.error("Không thể lấy thông tin dịch vụ: " + error.message);
     }
@@ -195,6 +215,10 @@ const StatusList = () => {
     setStatusFilter(value);
   };
 
+  const handleTableChange = (newPagination, filters, sorter) => {
+    setPagination(newPagination);
+  };
+
   const columns = [
     {
       title: "STT",
@@ -208,6 +232,14 @@ const StatusList = () => {
       dataIndex: "_id",
       key: "_id",
       ellipsis: true,
+      render: (text, record) => (
+        <Space>
+          {text}
+          {!viewedRequests.includes(record._id) && (
+            <Badge dot color="red" />
+          )}
+        </Space>
+      ),
     },
     {
       title: "Người dùng",
@@ -315,6 +347,7 @@ const StatusList = () => {
               <Button 
                 icon={<DeleteOutlined />} 
                 danger
+                onClick={(e) => e.stopPropagation()}
               />
             </Popconfirm>
           )}
@@ -364,11 +397,13 @@ const StatusList = () => {
           rowKey="_id"
           loading={isLoading}
           pagination={{
-            showSizeChanger: true,
+            ...pagination,
             total: data?.data?.totalDocs,
-            current: data?.data?.page,
-            pageSize: data?.data?.limit,
+            showSizeChanger: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
+            pageSizeOptions: ['10', '20', '50', '100'],
           }}
+          onChange={handleTableChange}
           scroll={{ x: "max-content" }}
         />
       </div>

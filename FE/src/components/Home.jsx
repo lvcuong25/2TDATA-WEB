@@ -61,6 +61,34 @@ const Home = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const { name, email, phoneNumber } = formData;
+
+    // Validate name
+    if (!name.trim()) {
+      toast.error("Vui lòng nhập họ tên.");
+      return;
+    }
+
+    if (name.length < 2) {
+      toast.error("Họ tên phải có ít nhất 2 ký tự.");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Địa chỉ email không hợp lệ. Vui lòng nhập email đúng định dạng (ví dụ: example@domain.com)");
+      return;
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^\d{10,11}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      toast.error("Số điện thoại không hợp lệ. Vui lòng nhập 10 hoặc 11 chữ số.");
+      return;
+    }
+
     addUserInfoMutation.mutate(formData);
   };
 

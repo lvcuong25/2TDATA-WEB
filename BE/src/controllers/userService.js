@@ -48,7 +48,15 @@ export const getPendingServices = async (req, res, next) => {
                 query.$or = orConditions;
             } else {
                 // If no user or service matches the search, return empty result
-                return res.status(200).json({ data: { docs: [], totalDocs: 0, limit: options.limit, page: options.page, totalPages: 0 } });
+                return res.status(200).json({ 
+                    data: { 
+                        docs: [], 
+                        totalDocs: 0, 
+                        limit: 10, 
+                        page: 1, 
+                        totalPages: 0 
+                    } 
+                });
             }
         }
 
@@ -83,13 +91,17 @@ export const getPendingServices = async (req, res, next) => {
             doc.service.name
         );
 
+        // Calculate total pages based on filtered documents
+        const totalDocs = await UserService.countDocuments(query);
+        const totalPages = Math.ceil(totalDocs / options.limit);
+
         return res.status(200).json({
             data: {
                 docs: filteredDocs,
-                totalDocs: filteredDocs.length,
-                limit: data.limit,
-                page: data.page,
-                totalPages: Math.ceil(filteredDocs.length / data.limit)
+                totalDocs: totalDocs,
+                limit: options.limit,
+                page: options.page,
+                totalPages: totalPages
             }
         });
     } catch (error) {
