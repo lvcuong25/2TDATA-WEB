@@ -14,7 +14,7 @@ const Logout = () => {
       toast.success('Đăng xuất thành công!');
       
       // Reload the page
-      window.location.reload();
+      // window.location.reload();
       
       // Redirect to login page
       navigate('/');

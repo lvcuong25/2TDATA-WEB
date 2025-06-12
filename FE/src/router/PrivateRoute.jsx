@@ -41,4 +41,15 @@ const AdminRoute = ({ children }) => {
   );
 };
 
-export { LoginRoute, NoneLoginRoute, AdminRoute };
+const PrivateRoute = ({ children }) => {
+  const { currentUser } = useContext(AuthContext);
+  return (
+    <ConditionalRoute
+      condition={!!currentUser}
+      redirectTo="/"
+      children={children}
+    />
+  );
+};
+
+export { LoginRoute, NoneLoginRoute, AdminRoute, PrivateRoute };
