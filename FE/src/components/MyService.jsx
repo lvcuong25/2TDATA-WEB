@@ -84,7 +84,7 @@ const MyService = () => {
             }
           }, { once: true });
 
-          // Check for Facebook redirect URL and close popup
+          // Check for redirect URL and close popup
           const checkRedirect = setInterval(() => {
             try {
               if (popup.closed) {
@@ -93,11 +93,11 @@ const MyService = () => {
               }
               
               const popupUrl = popup.location.href;
-              if (popupUrl.includes('#_=_')) {
+              if (popupUrl.includes('/service/my-service')) {
                 popup.close();
                 clearInterval(checkRedirect);
               }
-            } catch (error) {
+            } catch {
               // Handle cross-origin errors silently
               console.log('Checking popup URL...');
             }
