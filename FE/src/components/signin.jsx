@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from 'react-toastify';
 import instance from "../utils/axiosInstance";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import CryptoJS from 'crypto-js';
 
@@ -42,14 +42,11 @@ const signinSchema = Joi.object({
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
-    getValues
   } = useForm({
     resolver: joiResolver(signinSchema),
     defaultValues: {
@@ -58,50 +55,12 @@ const SignIn = () => {
     },
   });
 
-  // Load saved credentials on component mount
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('rememberedEmail');
-    const savedPassword = localStorage.getItem('rememberedPassword');
-    const savedRememberMe = localStorage.getItem('rememberMe');
-
-    if (savedRememberMe === 'true' && savedEmail && savedPassword) {
-      try {
-        const decryptedEmail = decryptData(savedEmail);
-        const decryptedPassword = decryptData(savedPassword);
-        setValue('email', decryptedEmail);
-        setValue('password', decryptedPassword);
-        setRememberMe(true);
-      } catch (error) {
-        console.error('Error decrypting saved credentials:', error);
-        // Clear invalid saved credentials
-        localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberedPassword');
-        localStorage.removeItem('rememberMe');
-      }
-    }
-  }, [setValue]);
-
   const { mutate, isLoading } = useMutation({
     mutationFn: async (signinData) => {
       const { data } = await instance.post('auth/sign-in', signinData);
       return data;
     },
     onSuccess: (data) => {
-      // Save encrypted credentials if remember me is checked
-      if (rememberMe) {
-        const formData = getValues();
-        const encryptedEmail = encryptData(formData.email);
-        const encryptedPassword = encryptData(formData.password);
-        localStorage.setItem('rememberedEmail', encryptedEmail);
-        localStorage.setItem('rememberedPassword', encryptedPassword);
-        localStorage.setItem('rememberMe', 'true');
-      } else {
-        // Clear saved credentials if remember me is unchecked
-        localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberedPassword');
-        localStorage.removeItem('rememberMe');
-      }
-      
       toast.success('Đăng nhập thành công!');
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user));
@@ -141,6 +100,7 @@ const SignIn = () => {
               id="email"
               className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
               placeholder="name@company.com"
+              autoComplete="username"
             />
             {errors?.email && <span className="text-red-500 text-sm">{errors?.email?.message}</span>}
           </div>
@@ -166,18 +126,6 @@ const SignIn = () => {
               </button>
             </div>
             {errors?.password && <span className="text-red-500 text-sm">{errors?.password?.message}</span>}
-          </div>
-
-          {/* Remember Me Checkbox */}
-          <div className="mb-4 flex items-center">
-            <input 
-              type="checkbox" 
-              id="remember" 
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="text-red-500" 
-            />
-            <label htmlFor="remember" className="text-green-900 ml-2">Ghi nhớ đăng nhập</label>
           </div>
 
           {/* Forgot Password Link */}
