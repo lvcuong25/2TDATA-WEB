@@ -19,14 +19,6 @@ const StatusList = () => {
     current: 1,
     pageSize: 10,
   });
-  const [viewedRequests, setViewedRequests] = useState(() => {
-    const saved = localStorage.getItem('viewedRequests');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('viewedRequests', JSON.stringify(viewedRequests));
-  }, [viewedRequests]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -121,9 +113,6 @@ const StatusList = () => {
     setSelectedService(record);
     setIsEditMode(false);
     setIsModalOpen(true);
-    if (!viewedRequests.includes(record._id)) {
-      setViewedRequests([...viewedRequests, record._id]);
-    }
   };
 
   const handleEdit = async (record) => {
@@ -132,9 +121,6 @@ const StatusList = () => {
       setSelectedService({...record, link: data.data.link});
       setIsEditMode(true);
       setIsModalOpen(true);
-      if (!viewedRequests.includes(record._id)) {
-        setViewedRequests([...viewedRequests, record._id]);
-      }
     } catch (error) {
       toast.error("Không thể lấy thông tin dịch vụ: " + error.message);
     }
@@ -232,14 +218,6 @@ const StatusList = () => {
       dataIndex: "_id",
       key: "_id",
       ellipsis: true,
-      render: (text, record) => (
-        <Space>
-          {text}
-          {!viewedRequests.includes(record._id) && (
-            <Badge dot color="red" />
-          )}
-        </Space>
-      ),
     },
     {
       title: "Người dùng",
