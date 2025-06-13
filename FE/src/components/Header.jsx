@@ -14,7 +14,7 @@ const Header = () => {
     useEffect(() => {
       const checkAuth = () => {
         const token = localStorage.getItem("accessToken");
-        const userStr = localStorage.getItem("user");
+        const userStr = sessionStorage.getItem("user");
         setIsLoggedIn(!!token);
         
         if (userStr) {
