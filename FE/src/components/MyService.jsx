@@ -54,7 +54,60 @@ const MyService = () => {
       // Find the first authorized link
       const authorizedLink = service.service.authorizedLinks?.[0];
       if (authorizedLink) {
-        window.open(authorizedLink.url, "_blank");
+        const width = 800;
+        const height = 600;
+        const left = (window.innerWidth - width) / 2;
+        const top = (window.innerHeight - height) / 2;
+        
+        // Prevent default behavior and stop propagation
+        event?.preventDefault();
+        event?.stopPropagation();
+        
+        // Store current scroll position
+        const scrollPosition = window.scrollY;
+        
+        // Open popup
+        const popup = window.open(
+          authorizedLink.url,
+          'popup',
+          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+        );
+        
+        // Restore scroll position after popup opens
+        if (popup) {
+          window.scrollTo(0, scrollPosition);
+          
+          // Add event listener to close popup when main window gets focus
+          window.addEventListener('focus', () => {
+            if (popup && !popup.closed) {
+              popup.close();
+            }
+          }, { once: true });
+
+          // Check for Facebook redirect URL and close popup
+          const checkRedirect = setInterval(() => {
+            try {
+              if (popup.closed) {
+                clearInterval(checkRedirect);
+                return;
+              }
+              
+              const popupUrl = popup.location.href;
+              if (popupUrl.includes('#_=_')) {
+                popup.close();
+                clearInterval(checkRedirect);
+              }
+            } catch (error) {
+              // Handle cross-origin errors silently
+              console.log('Checking popup URL...');
+            }
+          }, 500); // Check every 500ms
+
+          // Clear interval after 5 minutes to prevent memory leaks
+          setTimeout(() => {
+            clearInterval(checkRedirect);
+          }, 300000);
+        }
       } else {
         console.log("No authorized link found for this service.", service);
       }
