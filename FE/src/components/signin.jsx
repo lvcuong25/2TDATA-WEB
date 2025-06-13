@@ -12,14 +12,14 @@ import CryptoJS from 'crypto-js';
 const SECRET_KEY = 'your-secret-key-here';
 
 // Encryption functions
-const encryptData = (data) => {
-  return CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
-};
+// const encryptData = (data) => {
+//   return CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
+// };
 
-const decryptData = (encryptedData) => {
-  const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
-  return bytes.toString(CryptoJS.enc.Utf8);
-};
+// const decryptData = (encryptedData) => {
+//   const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
+//   return bytes.toString(CryptoJS.enc.Utf8);
+// };
 
 const signinSchema = Joi.object({
   email: Joi.string()
@@ -61,11 +61,8 @@ const SignIn = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast.success('Đăng nhập thành công!');
       localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirect and refresh to /service/my-service
+      toast.success('Đăng nhập thành công!');
       window.location.href = '/service/my-service';
     },
     onError: () => {

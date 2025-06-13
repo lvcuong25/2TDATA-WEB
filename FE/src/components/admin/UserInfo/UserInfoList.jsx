@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { Space, Table, Button, Popconfirm, message, Input, Modal, Badge } from "antd";
+import { Space, Table, Button, Popconfirm, message, Input, Modal } from "antd";
 import { DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
 
@@ -11,14 +11,6 @@ const UserInfoList = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [viewedUsers, setViewedUsers] = useState(() => {
-    const saved = localStorage.getItem('viewedUsers');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('viewedUsers', JSON.stringify(viewedUsers));
-  }, [viewedUsers]);
 
   // Fetch user info list
   const { data, isLoading } = useQuery({
@@ -32,9 +24,6 @@ const UserInfoList = () => {
   const handleRowClick = (record) => {
     setSelectedUser(record);
     setIsModalVisible(true);
-    if (!viewedUsers.includes(record._id)) {
-      setViewedUsers([...viewedUsers, record._id]);
-    }
   };
 
   const handleModalClose = () => {
@@ -80,14 +69,6 @@ const UserInfoList = () => {
       title: "Tên",
       dataIndex: "name",
       key: "name",
-      render: (text, record) => (
-        <Space>
-          {text}
-          {!viewedUsers.includes(record._id) && (
-            <Badge dot color="red" />
-          )}
-        </Space>
-      ),
     },
     {
       title: "Email",

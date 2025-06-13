@@ -1,31 +1,28 @@
 const AUTH_KEY = 'user';
 
 const getAuth = () => {
-    const lsValue = localStorage?.getItem(AUTH_KEY);
+    const lsValue = sessionStorage?.getItem(AUTH_KEY);
     if (!lsValue) return;
 
     try {
         const auth = JSON.parse(lsValue);
       
         return auth || undefined;
-    } catch (error) {
-    }
+    } catch { /* empty */ }
 };
 
 const setAuth = (auth) => {
     try {
         const lsValue = JSON.stringify(auth);
-        localStorage?.setItem(AUTH_KEY, lsValue);
-    } catch (error) {
-    }
+        sessionStorage?.setItem(AUTH_KEY, lsValue);
+    } catch { /* empty */ }
 };
 
 const removeAuth = () => {
     try {
-        localStorage?.removeItem('accessToken');
-        localStorage?.removeItem(AUTH_KEY);
-    } catch (error) {
-    }
+        sessionStorage?.removeItem('accessToken');
+        sessionStorage?.removeItem(AUTH_KEY);
+    } catch { /* empty */ }
 };
 
 export { getAuth, setAuth, removeAuth };

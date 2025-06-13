@@ -50,7 +50,7 @@ export const signUp = async (req, res, next) => {
 export const signIn = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const userExist = await User.findOne({ email }).populate('service');
+        const userExist = await User.findOne({ email });
         if (!userExist) {
             return res.status(400).json({
                 message: "Email không tồn tại",
@@ -75,16 +75,6 @@ export const signIn = async (req, res, next) => {
             return res.status(200).json({
                 message: "Đăng nhập thành công!",
                 accessToken,
-                user: {
-                    _id: userExist._id,
-                    email: userExist.email,
-                    role: userExist.role,
-                    name: userExist.name,
-                    phone: userExist.phone,
-                    address: userExist.address,
-                    age: userExist.age,
-                    avatar: userExist.avatar
-                },
                 redirectPath: '/admin'
             });
         }
@@ -94,16 +84,6 @@ export const signIn = async (req, res, next) => {
             return res.status(200).json({
                 message: "Đăng nhập thành công!",
                 accessToken,
-                user: {
-                    _id: userExist._id,
-                    email: userExist.email,
-                    role: userExist.role,
-                    name: userExist.name,
-                    phone: userExist.phone,
-                    address: userExist.address,
-                    age: userExist.age,
-                    avatar: userExist.avatar
-                },
                 redirectPath: '/service/service-use'
             });
         }
@@ -112,16 +92,6 @@ export const signIn = async (req, res, next) => {
         return res.status(200).json({
             message: "Đăng nhập thành công!",
             accessToken,
-            user: {
-                _id: userExist._id,
-                email: userExist.email,
-                role: userExist.role,
-                name: userExist.name,
-                phone: userExist.phone,
-                address: userExist.address,
-                age: userExist.age,
-                avatar: userExist.avatar
-            },
             service: userExist.service,
             redirectPath: `/service/my-service`
         });
