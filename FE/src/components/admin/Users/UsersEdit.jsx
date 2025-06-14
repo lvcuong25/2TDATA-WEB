@@ -142,7 +142,31 @@ const UsersEdit = () => {
 
     const onSubmit = (data) => {
         setIsLoading(true);
-        mutation.mutate({ ...data, avatar }, {
+        console.log('Form data before submission:', data); // Debug log
+
+        // Create update data object
+        const updateData = {
+            ...data,
+            avatar
+        };
+
+        // Only include password if it's not empty
+        if (data.password && data.password.trim() !== '') {
+            updateData.password = data.password;
+        }
+
+        console.log('Update data being sent:', updateData); // Debug log
+
+        mutation.mutate(updateData, {
+            onSuccess: (response) => {
+                console.log('Update successful:', response); // Debug log
+                toast.success("Thông tin người dùng đã được cập nhật thành công!");
+                navigate("/admin");
+            },
+            onError: (error) => {
+                console.error("Error updating user:", error);
+                toast.error(error.response?.data?.message || "Không thể cập nhật thông tin người dùng");
+            },
             onSettled: () => setIsLoading(false)
         });
     };
@@ -314,6 +338,40 @@ const UsersEdit = () => {
                                             {...field} 
                                             prefix={<MailOutlined />}
                                             placeholder="Nhập email của người dùng"
+                                        />
+                                    )}
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                label={
+                                    <Space>
+                                        <span>Mật khẩu</span>
+                                        <Tooltip title="Để trống nếu không muốn thay đổi mật khẩu">
+                                            <InfoCircleOutlined />
+                                        </Tooltip>
+                                    </Space>
+                                }
+                                validateStatus={errors.password ? "error" : ""}
+                                help={errors.password?.message}
+                            >
+                                <Controller
+                                    name="password"
+                                    control={control}
+                                    rules={{
+                                        minLength: { 
+                                            value: 6, 
+                                            message: 'Mật khẩu phải có ít nhất 6 ký tự' 
+                                        },
+                                        pattern: {
+                                            value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9!@#$%^&*()_+\-\[\]{};':"\\|,.<>/?]{6,}$/,
+                                            message: 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số, và có thể chứa ký tự đặc biệt'
+                                        }
+                                    }}
+                                    render={({ field }) => (
+                                        <Input.Password 
+                                            {...field} 
+                                            placeholder="Nhập mật khẩu mới"
                                         />
                                     )}
                                 />
