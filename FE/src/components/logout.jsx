@@ -11,11 +11,9 @@ const Logout = () => {
       sessionStorage.removeItem('user');
       // Show success message
       toast.success('Đăng xuất thành công!');
-      // Reload the page
-      window.location.reload();
-      // Redirect to login page
-      navigate('/');
-      
+
+      window.location.href = '/';
+      // window.location.reload();
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Có lỗi xảy ra khi đăng xuất!');
