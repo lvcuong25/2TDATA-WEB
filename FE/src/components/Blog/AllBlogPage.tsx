@@ -75,9 +75,9 @@ const AllBlogPage: React.FC = () => {
   return (
     <div className="bg-gray-50 min-h-screen pt-12">
 
-      <Header/>
+
       <div className="container mx-auto px-4 pb-10">
-        <Title level={2} className="text-center mb-8 text-gray-800">Danh sách bài viết</Title>
+        <Title level={2} className="text-center mb-8 text-gray-800"></Title>
         <Row gutter={[32, 32]}>
           <Col xs={24} lg={6}>
             <Card className="shadow-sm sticky top-4">
@@ -186,7 +186,7 @@ const AllBlogPage: React.FC = () => {
           </Col>
         </Row>
       </div>
-      <Footer/>
+   
     </div>
   );
 };

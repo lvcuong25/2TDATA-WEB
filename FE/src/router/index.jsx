@@ -6,6 +6,7 @@ import SignIn from '../components/signin.jsx';
 import ResetPassword from '../components/ResetPassword.jsx';
 import ServiceBySlug from './ServiceBySlug.jsx';
 import LayoutAdmin from '../components/Layout/Admin.jsx';
+import LayoutWebsite from '../components/Layout/LayoutWebsite.jsx';
 import { AdminRoute, PrivateRoute } from './PrivateRoute.jsx';
 import BlogList from '../components/admin/Blog/BlogList.jsx';
 import BlogForm from '../components/admin/Blog/BlogForm.jsx';
@@ -14,7 +15,11 @@ import AllBlogPage from '../components/Blog/AllBlogPage.js';
 import DetailBlogPage from '../components/Blog/DetailBlogPage.js';
 import MyService from '../components/MyService.jsx';
 import UserInfoList from '../components/admin/UserInfo/UserInfoList.jsx';
-
+import Metabase from '../components/metabase/metabase.jsx';
+import Metabase2 from '../components/metabase/metabase2.jsx';
+import Metabase3 from '../components/metabase/metabase3.jsx';
+import Metabase4 from '../components/metabase/metabase4.jsx';
+import Metabase5 from '../components/metabase/metabase5.jsx';
 import UsersList from '../components/admin/Users/UsersList.jsx';
 import UsersForm from '../components/admin/Users/UsersForm.jsx';
 import UsersEdit from '../components/admin/Users/UsersEdit.jsx';
@@ -33,7 +38,8 @@ const Router = () => {
   return (
     <div>
       <Routes>
-        <Route>
+        {/* Main Website Routes */}
+        <Route element={<LayoutWebsite />}>
           <Route index element={<Home />} />
           <Route path='/login' element={<SignIn />} />
           <Route path='/logup' element={<SignUp />} />
@@ -50,8 +56,18 @@ const Router = () => {
           <Route path="blogs" element={<AllBlogPage />} />
           <Route path="thankyou" element={<ThankYou />} />
           <Route path="/blogs/:id" element={<DetailBlogPage />} />
+
+          <Route path="/metabase" element={<Metabase />} />
+          <Route path="/metabase2" element={<Metabase2 />} />
+          <Route path="/metabase3" element={<Metabase3 />} />
+          <Route path="/metabase4" element={<Metabase4 />} />
+          <Route path="/metabase5" element={<Metabase5 />} />
+  
         </Route>
 
+       
+       
+        {/* Admin Routes */}
         <Route
           path="/admin"
           element={

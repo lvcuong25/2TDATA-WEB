@@ -123,7 +123,7 @@ const Service = () => {
 
   return (
     <div>
-      <Header />
+ 
       {isLoadingServices || (currentUser && isFetchingUser) ? (
         <div className="flex justify-center items-center h-screen">
           <Spin size="large" />
@@ -282,7 +282,6 @@ const Service = () => {
           )}
         </>
       )}
-      <Footer />
     </div>
   );
 };

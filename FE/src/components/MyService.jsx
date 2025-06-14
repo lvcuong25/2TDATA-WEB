@@ -298,7 +298,7 @@ const MyService = () => {
   if (!userData || !userData.data || !userData.data.service) {
     return (
       <div>
-        <Header />
+       
         <div className="container mx-auto pt-[100px] py-12">
           <section className="bg-gray-100 rounded-[32px] max-w-6xl mx-auto mt-8 p-8 text-center">
             <h2 className="text-2xl font-bold mb-8">Dịch vụ của tôi</h2>
@@ -312,7 +312,7 @@ const MyService = () => {
 
   return (
     <div>
-      <Header />
+   
       <div className="container mx-auto pt-[100px] py-12">
         <section className="bg-gray-100 rounded-[32px] max-w-6xl mx-auto mt-8 p-8">
           <h2 className="text-2xl font-bold text-center mb-8">
@@ -487,7 +487,7 @@ const MyService = () => {
         </Form>
       </Modal>
 
-      <Footer />
+   
     </div>
   );
 };

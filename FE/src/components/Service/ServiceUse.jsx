@@ -22,7 +22,7 @@ const ServiceUse = () => {
 
   return (
     <div>
-      <Header />
+   
       <section className="relative">
         <div>
           <img src={image9} alt="" className="w-full" />
@@ -324,7 +324,7 @@ const ServiceUse = () => {
           </div>
         </div>
       </section>
-      <Footer/>
+   
     </div>
   );
 };

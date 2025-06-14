@@ -51,7 +51,6 @@ const DetailBlogPage: React.FC = () => {
 
   return (
     <div className="bg-gray-100 min-h-screen pt-12">
-      <Header/>
       <div className="container mx-auto  max-w-4xl pb-10">
         <Breadcrumb className="mb-6 mt-12">
           <Breadcrumb.Item><Link to="/">Home</Link></Breadcrumb.Item>
@@ -134,7 +133,6 @@ const DetailBlogPage: React.FC = () => {
           </div>
         </article>
       </div>
-        <Footer/>
     </div>
   );
 };

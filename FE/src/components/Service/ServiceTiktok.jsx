@@ -6,7 +6,7 @@ import Footer from "../Footer";
 const ServiceTiktok = () => {
   return (
       <div>
-      <Header />
+    
       <section className="relative">
         <div>
           <img src={image9} alt="" className="w-full" />
@@ -308,7 +308,7 @@ const ServiceTiktok = () => {
           </div>
         </div>
       </section>
-      <Footer/>
+   
     </div>
   )
 }

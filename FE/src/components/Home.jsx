@@ -94,7 +94,6 @@ const Home = () => {
 
   return (
     <div>
-     <Header/>
 
       <section className="relative pt-[30px]">
         {/* Background image */}
@@ -715,8 +714,6 @@ const Home = () => {
         </div>
       </div>
     </section>
-
-   <Footer/>
 
     
     </div>

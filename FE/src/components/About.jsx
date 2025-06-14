@@ -5,7 +5,7 @@ import Footer from "./Footer";
 const About = () => {
   return (
     <div>
-      <Header />
+   
       <div className="container mx-auto pt-[100px] py-12 text-center px-4">
       <h1 className="text-3xl font-bold mb-8">Về chúng tôi</h1>
       <p className="text-lg mb-6 max-w-3xl mx-auto">
@@ -64,7 +64,7 @@ const About = () => {
       </p>
     </div>
     
-      <Footer />
+    
     </div>
   )
 }
