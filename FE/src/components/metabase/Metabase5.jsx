@@ -92,7 +92,7 @@ const Metabase5 = () => {
         </Button>
         <Button 
           danger
-          onClick={() => window.open('https://metabase.com/app/embed/1234567890/dashboard/1234567890?delete=true', '_blank')}
+          onClick={() =>  window.location.href('https://metabase.com/app/embed/1234567890/dashboard/1234567890?delete=true', '_blank')}
         >
           Xóa dữ liệu
         </Button>

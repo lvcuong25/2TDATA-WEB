@@ -93,7 +93,7 @@ const Metabase = () => {
         </Button>
         <Button 
           danger
-          onClick={() => window.open('http://meta.2tdata.com/public/dashboard/8c8b3a08-cf9e-41f6-a406-d7d5ca7b620b?delete=true', '_blank')}
+          onClick={() => window.location.href('http://meta.2tdata.com/public/dashboard/8c8b3a08-cf9e-41f6-a406-d7d5ca7b620b?delete=true', '_blank')}
         >
           Xóa dữ liệu
         </Button>
