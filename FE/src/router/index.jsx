@@ -15,11 +15,11 @@ import AllBlogPage from '../components/Blog/AllBlogPage.js';
 import DetailBlogPage from '../components/Blog/DetailBlogPage.js';
 import MyService from '../components/MyService.jsx';
 import UserInfoList from '../components/admin/UserInfo/UserInfoList.jsx';
-import Metabase from '../components/metabase/metabase.jsx';
-import Metabase2 from '../components/metabase/metabase2.jsx';
-import Metabase3 from '../components/metabase/metabase3.jsx';
-import Metabase4 from '../components/metabase/metabase4.jsx';
-import Metabase5 from '../components/metabase/metabase5.jsx';
+import Metabase from '../components/metabase/Metabase.jsx';
+import Metabase2 from '../components/metabase/Metabase2.jsx';
+import Metabase3 from '../components/metabase/Metabase3.jsx';
+import Metabase4 from '../components/metabase/Metabase4.jsx';
+import Metabase5 from '../components/metabase/Metabase5.jsx';
 import UsersList from '../components/admin/Users/UsersList.jsx';
 import UsersForm from '../components/admin/Users/UsersForm.jsx';
 import UsersEdit from '../components/admin/Users/UsersEdit.jsx';
@@ -57,11 +57,11 @@ const Router = () => {
           <Route path="thankyou" element={<ThankYou />} />
           <Route path="/blogs/:id" element={<DetailBlogPage />} />
 
-          <Route path="/metabase" element={<Metabase />} />
-          <Route path="/metabase2" element={<Metabase2 />} />
-          <Route path="/metabase3" element={<Metabase3 />} />
-          <Route path="/metabase4" element={<Metabase4 />} />
-          <Route path="/metabase5" element={<Metabase5 />} />
+          <Route path="/tiktok-shop" element={<Metabase />} />
+          <Route path="/tiktok-ads-ch" element={<Metabase2 />} />
+          <Route path="/shopee" element={<Metabase3 />} />
+          <Route path="/google-ads" element={<Metabase4 />} />
+          <Route path="/facebook-ads" element={<Metabase5 />} />
   
         </Route>
 

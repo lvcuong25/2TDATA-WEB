@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const instance = axios.create({
-  baseURL: 'http://localhost:3000/api/',
+  baseURL: 'https://data.hcw.com.vn/api/',
 });
 
 // Thêm interceptor để tự động gắn token
