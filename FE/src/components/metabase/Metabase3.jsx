@@ -11,7 +11,7 @@ const Metabase3 = () => {
       overflow: 'hidden'
     }}>
         <iframe 
-          src="https://metabase.com/app/embed/1234567890/dashboard/1234567890" 
+          src="http://meta.2tdata.com/public/dashboard/eb348956-0737-46b9-ba6a-d0ed041d8f27" 
           style={{
             width: '100%',
             height: '100%',
