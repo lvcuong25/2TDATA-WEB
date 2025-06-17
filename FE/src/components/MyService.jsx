@@ -395,99 +395,17 @@ const MyService = () => {
           ) : (
             <Table
               columns={columns}
-              dataSource={userData.data.service.filter(service => service.status !== "rejected")}
+              dataSource={userData.data.service.filter(service => service.status == "approved")}
               rowKey="_id"
               pagination={{ pageSize: 10 }}
             />
           )}
         </section>
 
-        <section className="bg-gray-100 rounded-[32px] max-w-6xl mx-auto mt-8 p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">Thông tin của tôi</h2>
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />}
-              onClick={handleAddInfo}
-            >
-              Thêm thông tin
-            </Button>
-          </div>
-          
-          <Table
-            columns={infoColumns}
-            dataSource={userData?.data?.information || []}
-            rowKey="_id"
-            pagination={{ pageSize: 10 }}
-          />
-        </section>
+        
       </div>
 
-      <Modal
-        title={editingInfo ? "Thông tin" : "Thêm thông tin mới"}
-        open={isModalVisible}
-        onOk={handleModalOk}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-          setEditingInfo(null);
-        }}
-        confirmLoading={addInfoMutation.isPending || updateInfoMutation.isPending}
-        width={800}
-        bodyStyle={{ padding: '24px' }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          size="large"
-        >
-          <Form.Item
-            name="code"
-            label="Mã"
-            rules={[{ required: true, message: 'Vui lòng nhập mã!' }]}
-          >
-            <Input 
-              style={{ fontSize: '16px' }} 
-              suffix={
-                editingInfo ? (
-                    <Button
-                        type="text"
-                        icon={isCopied ? null : <CopyOutlined />}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const codeValue = form.getFieldValue('code');
-                            if (codeValue) {
-                                navigator.clipboard.writeText(codeValue);
-                                setIsCopied(true);
-                                setTimeout(() => {
-                                    setIsCopied(false);
-                                }, 2000);
-                            }
-                        }}
-                    >
-                        {isCopied ? 'Đã sao chép' : null}
-                    </Button>
-                ) : null
-              }
-            />
-          </Form.Item>
-          <Form.Item
-            name="title"
-            label="Tiêu đề"
-            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề!' }]}
-          >
-            <Input style={{ fontSize: '16px' }} />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Mô tả"
-          >
-            <Input.TextArea rows={6} style={{ fontSize: '16px' }} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Footer />
+    
     </div>
   );
 };
