@@ -97,15 +97,11 @@ const MyService = () => {
           color={
             status === "approved"
               ? "green"
-              : status === "waiting"
-              ? "orange"
               : "red"
           }
         >
           {status === "approved"
             ? "Đã xác nhận"
-            : status === "waiting"
-            ? "Đang chờ"
             : "Bị từ chối"}
         </Tag>
       ),
@@ -313,28 +309,6 @@ const MyService = () => {
       ),
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => (
-        <Tag
-          color={
-            status === "approved"
-              ? "green"
-              : status === "waiting"
-              ? "orange"
-              : "red"
-          }
-        >
-          {status === "approved"
-            ? "Đã xác nhận"
-            : status === "waiting"
-            ? "Đang chờ"
-            : "Bị từ chối"}
-        </Tag>
-      ),
-    },
-    {
       title: "Ngày đăng ký",
       dataIndex: "createdAt",
       key: "createdAt",
@@ -415,7 +389,7 @@ const MyService = () => {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {userData?.data?.service
-                  ?.filter(userService => userService?.status !== "rejected")
+                  ?.filter(userService => userService?.status === "approved")
                   ?.slice((currentPage - 1) * servicesPerPage, currentPage * servicesPerPage)
                   ?.map((userService) => {
                   const authorizedLink = findAuthorizedLink(userService);
@@ -465,11 +439,11 @@ const MyService = () => {
                   );
                 })}
               </div>
-              {userData?.data?.service?.filter(userService => userService?.status !== "rejected")?.length > servicesPerPage && (
+              {userData?.data?.service?.filter(userService => userService?.status === "approved")?.length > servicesPerPage && (
                 <div className="flex justify-center mt-8">
                   <Pagination
                     current={currentPage}
-                    total={userData?.data?.service?.filter(userService => userService?.status !== "rejected")?.length}
+                    total={userData?.data?.service?.filter(userService => userService?.status === "approved")?.length}
                     pageSize={servicesPerPage}
                     onChange={(page) => setCurrentPage(page)}
                     showSizeChanger={false}
@@ -480,7 +454,7 @@ const MyService = () => {
           ) : (
             <Table
               columns={serviceColumns}
-              dataSource={userData?.data?.service?.filter(service => service?.status !== "rejected")}
+              dataSource={userData?.data?.service?.filter(service => service?.status === "approved")}
               rowKey="_id"
               pagination={{ pageSize: 10 }}
             />
