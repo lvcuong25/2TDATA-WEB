@@ -22,16 +22,16 @@ const UsersForm = () => {
         queryKey: ["USER", id],
         queryFn: async () => {
             const { data } = await instance.get(`/user/${id}`);
-            return data.data;
+            return data?.data;
         },
         enabled: !!id,
         onSuccess: (data) => {
             if (data) {
-                setValue('email', data.email);
-                setValue('name', data.name);
-                setValue('phone', data.phone);
-                setValue('role', data.role);
-                if (data.avatar) setAvatar(data.avatar);
+                setValue('email', data?.email);
+                setValue('name', data?.name);
+                setValue('phone', data?.phone);
+                setValue('role', data?.role);
+                if (data?.avatar) setAvatar(data?.avatar);
             }
         }
     });
@@ -52,7 +52,7 @@ const UsersForm = () => {
         },
         onError: (error) => {
             console.error("Error:", error);
-            toast.error(error.response?.data?.message || `Không thể ${id ? 'cập nhật' : 'thêm'} người dùng`);
+            toast.error(error?.response?.data?.message || `Không thể ${id ? 'cập nhật' : 'thêm'} người dùng`);
         },
     });
 
@@ -73,8 +73,8 @@ const UsersForm = () => {
     };
 
     const handleImageChange = async ({ target }) => {
-        if (target.files.length > 0) {
-            const file = target.files[0];
+        if (target?.files?.length > 0) {
+            const file = target?.files[0];
             setAvatar(URL.createObjectURL(file));
             uploadMutation.mutate(file);
         }
@@ -101,7 +101,7 @@ const UsersForm = () => {
                             </div>
                             <div className="flex flex-col">
                                 <button type="button"
-                                    onClick={() => document.getElementById('file')?.click()}
+                                    onClick={() => document?.getElementById('file')?.click()}
                                     className="py-3.5 px-7 text-base font-medium text-indigo-100 focus:outline-none bg-[#202142] rounded-lg border border-indigo-200 hover:bg-indigo-900 focus:z-10 focus:ring-4 focus:ring-indigo-200">
                                     Chọn ảnh
                                 </button>
@@ -119,8 +119,8 @@ const UsersForm = () => {
                         <Form.Item 
                             label="Email" 
                             required
-                            validateStatus={errors.email ? "error" : ""}
-                            help={errors.email?.message}
+                            validateStatus={errors?.email ? "error" : ""}
+                            help={errors?.email?.message}
                         >
                             <Controller
                                 name="email"
@@ -139,8 +139,8 @@ const UsersForm = () => {
                         <Form.Item 
                             label="Tên" 
                             required
-                            validateStatus={errors.name ? "error" : ""}
-                            help={errors.name?.message}
+                            validateStatus={errors?.name ? "error" : ""}
+                            help={errors?.name?.message}
                         >
                             <Controller
                                 name="name"
@@ -155,8 +155,8 @@ const UsersForm = () => {
 
                         <Form.Item 
                             label="Số điện thoại"
-                            validateStatus={errors.phone ? "error" : ""}
-                            help={errors.phone?.message}
+                            validateStatus={errors?.phone ? "error" : ""}
+                            help={errors?.phone?.message}
                         >
                             <Controller
                                 name="phone"
@@ -174,8 +174,8 @@ const UsersForm = () => {
                         <Form.Item 
                             label="Vai trò" 
                             required
-                            validateStatus={errors.role ? "error" : ""}
-                            help={errors.role?.message}
+                            validateStatus={errors?.role ? "error" : ""}
+                            help={errors?.role?.message}
                         >
                             <Controller
                                 name="role"
@@ -194,8 +194,8 @@ const UsersForm = () => {
                             <Form.Item 
                                 label="Mật khẩu" 
                                 required
-                                validateStatus={errors.password ? "error" : ""}
-                                help={errors.password?.message}
+                                validateStatus={errors?.password ? "error" : ""}
+                                help={errors?.password?.message}
                             >
                                 <Controller
                                     name="password"
@@ -213,11 +213,11 @@ const UsersForm = () => {
                             <Button 
                                 type="primary" 
                                 htmlType="submit" 
-                                loading={mutation.isPending || uploadMutation.isPending}
-                                disabled={mutation.isPending || uploadMutation.isPending}
+                                loading={mutation?.isPending || uploadMutation?.isPending}
+                                disabled={mutation?.isPending || uploadMutation?.isPending}
                                 className="bg-blue-500"
                             >
-                                {mutation.isPending ? "Đang xử lý..." : (id ? "Cập nhật" : "Thêm")}
+                                {mutation?.isPending ? "Đang xử lý..." : (id ? "Cập nhật" : "Thêm")}
                             </Button>
                         </Form.Item>
                     </div>

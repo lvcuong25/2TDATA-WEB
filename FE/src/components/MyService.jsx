@@ -5,8 +5,8 @@ import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
-import { Tag, Table, Space, Card, Button, Tooltip, Modal, Form, Input, message, Popconfirm } from "antd";
-import { LinkOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from "@ant-design/icons";
+import { Tag, Table, Space, Card, Button, Tooltip, Modal, Form, Input, message, Popconfirm, Pagination, Switch } from "antd";
+import { LinkOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, AppstoreOutlined, TableOutlined } from "@ant-design/icons";
 
 const MyService = () => {
   const navigate = useNavigate();
@@ -16,6 +16,9 @@ const MyService = () => {
   const [form] = Form.useForm();
   const [editingInfo, setEditingInfo] = useState(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isCardView, setIsCardView] = useState(true);
+  const servicesPerPage = 9;
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -27,9 +30,9 @@ const MyService = () => {
     queryKey: ["myServices", currentUser?._id],
     queryFn: async () => {
       if (!currentUser?._id) return null;
-      const response = await instance.get(`/user/${currentUser._id}`);
-      console.log(response.data);
-      return response.data;
+      const response = await instance.get(`/user/${currentUser?._id}`);
+      console.log(response?.data);
+      return response?.data;
     },
     enabled: !!currentUser?._id,
   });
@@ -43,18 +46,18 @@ const MyService = () => {
 
       // Make the webhook request
       const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
-        userId: currentUser._id,
+        userId: currentUser?._id,
         accessToken: accessToken
       });
 
-      if (response.status !== 200) {
+      if (response?.status !== 200) {
         throw new Error('Webhook request failed');
       }
 
       // Find the first authorized link
-      const authorizedLink = service.service.authorizedLinks?.[0];
+      const authorizedLink = service?.service?.authorizedLinks?.[0];
       if (authorizedLink) {
-        window.location.href = authorizedLink.url;
+        window.location.href = authorizedLink?.url;
       } else {
         console.log("No authorized link found for this service.", service);
       }
@@ -144,7 +147,7 @@ const MyService = () => {
 
   // Find if there is an authorized link for conditional rendering
   const findAuthorizedLink = (userService) => {
-    return userService.service.authorizedLinks?.[0];
+    return userService?.service?.authorizedLinks?.[0];
   };
 
   // Add information mutation
@@ -224,7 +227,7 @@ const MyService = () => {
     form.validateFields().then(values => {
       console.log('Submitting values:', values);
       if (editingInfo) {
-        updateInfoMutation.mutate({ id: editingInfo._id, values });
+        updateInfoMutation.mutate({ id: editingInfo?._id, values });
       } else {
         addInfoMutation.mutate(values);
       }
@@ -287,6 +290,73 @@ const MyService = () => {
     },
   ];
 
+  const serviceColumns = [
+    {
+      title: "Dịch vụ",
+      dataIndex: "service",
+      key: "service",
+      render: (service) => (
+        <div className="flex items-center gap-2">
+          <img
+            src={
+              service?.image ||
+              "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
+            }
+            alt={service?.name}
+            className="w-10 h-10 object-cover rounded"
+          />
+          <div>
+            <div className="font-medium">{service?.name}</div>
+            <div className="text-sm text-gray-500">{service?.slug}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => (
+        <Tag
+          color={
+            status === "approved"
+              ? "green"
+              : status === "waiting"
+              ? "orange"
+              : "red"
+          }
+        >
+          {status === "approved"
+            ? "Đã xác nhận"
+            : status === "waiting"
+            ? "Đang chờ"
+            : "Bị từ chối"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Ngày đăng ký",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+    },
+    {
+      title: "Thao tác",
+      key: "action",
+      render: (_, record) => (
+        <Button
+          type="primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleServiceClick(record);
+          }}
+        >
+          Kết nối
+        </Button>
+      ),
+    },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -295,10 +365,10 @@ const MyService = () => {
     );
   }
 
-  if (!userData || !userData.data || !userData.data.service) {
+  if (!userData || !userData?.data || !userData?.data?.service) {
     return (
       <div>
-        <Header />
+        <Header/>
         <div className="container mx-auto pt-[100px] py-12">
           <section className="bg-gray-100 rounded-[32px] max-w-6xl mx-auto mt-8 p-8 text-center">
             <h2 className="text-2xl font-bold mb-8">Dịch vụ của tôi</h2>
@@ -312,14 +382,26 @@ const MyService = () => {
 
   return (
     <div>
-      <Header />
+      <Header/>   
       <div className="container mx-auto pt-[100px] py-12">
         <section className="bg-gray-100 rounded-[32px] max-w-6xl mx-auto mt-8 p-8">
-          <h2 className="text-2xl font-bold text-center mb-8">
-            Dịch vụ đang triển khai
-          </h2>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold text-center">
+              Dịch vụ đang triển khai
+            </h2>
+            <div className="flex items-center gap-2">
+              <AppstoreOutlined className={isCardView ? "text-blue-500" : "text-gray-400"} />
+              <Switch
+                checked={!isCardView}
+                onChange={(checked) => setIsCardView(!checked)}
+                checkedChildren={<TableOutlined />}
+                unCheckedChildren={<AppstoreOutlined />}
+              />
+              <TableOutlined className={!isCardView ? "text-blue-500" : "text-gray-400"} />
+            </div>
+          </div>
 
-          {!userData.data.service || userData.data.service.length === 0 ? (
+          {!userData?.data?.service || userData?.data?.service?.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-600 mb-4">Bạn chưa đăng ký dịch vụ nào</p>
               <button
@@ -329,58 +411,79 @@ const MyService = () => {
                 Đăng ký dịch vụ
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userData.data.service
-                .filter(userService => userService.status !== "rejected")
-                .map((userService) => {
-                const authorizedLink = findAuthorizedLink(userService);
-                return (
-                  <div
-                    key={userService._id}
-                    className={`bg-white rounded-2xl p-6 flex flex-col items-center shadow ${
-                      userService.status === "approved" && authorizedLink
-                        ? "cursor-pointer hover:shadow-lg transition"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      userService.status === "approved" &&
-                      authorizedLink &&
-                      handleServiceClick(userService)
-                    }
-                  >
-                    <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
-                      <img
-                        src={
-                          userService.service.image ||
-                          "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
-                        }
-                        alt={userService.service.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="font-semibold mb-2 capitalize">
-                      {userService.service.name}
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      Ngày đăng ký:{" "}
-                      {new Date(userService.createdAt).toLocaleDateString(
-                        "vi-VN"
-                      )}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleServiceClick(userService);
-                      }}
-                      className="bg-blue-500 text-white rounded-full px-8 py-2 font-semibold flex items-center gap-2 hover:bg-blue-600 transition"
+          ) : isCardView ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userData?.data?.service
+                  ?.filter(userService => userService?.status !== "rejected")
+                  ?.slice((currentPage - 1) * servicesPerPage, currentPage * servicesPerPage)
+                  ?.map((userService) => {
+                  const authorizedLink = findAuthorizedLink(userService);
+                  return (
+                    <div
+                      key={userService?._id}
+                      className={`bg-white rounded-2xl p-6 flex flex-col items-center shadow ${
+                        userService?.status === "approved" && authorizedLink
+                          ? "cursor-pointer hover:shadow-lg transition"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        userService?.status === "approved" &&
+                        authorizedLink &&
+                        handleServiceClick(userService)
+                      }
                     >
-                      Kết nối<span>→</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                      <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
+                        <img
+                          src={
+                            userService?.service?.image ||
+                            "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
+                          }
+                          alt={userService?.service?.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="font-semibold mb-2 capitalize">
+                        {userService?.service?.name}
+                      </div>
+                      <div className="text-sm text-gray-600 mb-2">
+                        Ngày đăng ký:{" "}
+                        {new Date(userService?.createdAt).toLocaleDateString(
+                          "vi-VN"
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleServiceClick(userService);
+                        }}
+                        className="bg-blue-500 text-white rounded-full px-8 py-2 font-semibold flex items-center gap-2 hover:bg-blue-600 transition"
+                      >
+                        Kết nối<span>→</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              {userData?.data?.service?.filter(userService => userService?.status !== "rejected")?.length > servicesPerPage && (
+                <div className="flex justify-center mt-8">
+                  <Pagination
+                    current={currentPage}
+                    total={userData?.data?.service?.filter(userService => userService?.status !== "rejected")?.length}
+                    pageSize={servicesPerPage}
+                    onChange={(page) => setCurrentPage(page)}
+                    showSizeChanger={false}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <Table
+              columns={serviceColumns}
+              dataSource={userData?.data?.service?.filter(service => service?.status !== "rejected")}
+              rowKey="_id"
+              pagination={{ pageSize: 10 }}
+            />
           )}
         </section>
 
@@ -388,24 +491,21 @@ const MyService = () => {
           <h2 className="text-2xl font-bold text-center mb-8">
             Danh sách dịch vụ
           </h2>
-          {!userData.data.service || userData.data.service.length === 0 ? (
+          {!userData?.data?.service || userData?.data?.service?.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-600 mb-4">Bạn chưa đăng ký dịch vụ nào</p>
             </div>
           ) : (
             <Table
               columns={columns}
-              dataSource={userData.data.service.filter(service => service.status == "approved")}
+              dataSource={userData?.data?.service?.filter(service => service?.status === "approved")}
               rowKey="_id"
               pagination={{ pageSize: 10 }}
             />
           )}
         </section>
-
-        
       </div>
-
-    
+      <Footer/>
     </div>
   );
 };
