@@ -76,6 +76,15 @@ export const removeUserById = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
     try {
+
+           // If password is being updated, hash it
+           if (req.body.password && req.body.password.trim() !== '') {
+            req.body.password = await hashPassword(req.body.password);
+        } else {
+            // Remove password field if it's empty
+            delete req.body.password;
+        }
+
         // If updating services, validate and convert to ObjectIds
         if (req.body.service) {
             const user = await User.findById(req.params.id);
