@@ -17,7 +17,8 @@ import {
     removeServiceFromProfile,
     addUserInformation,
     updateUserInformation,
-    deleteUserInformation
+    deleteUserInformation,
+    getUserServices
 } from "../controllers/user.js";
 
 const routerUser = Router();
@@ -26,6 +27,7 @@ const routerUser = Router();
 routerUser.get('/', checkPermission(), getAllUser);
 routerUser.get('/:id', checkPermission(), getUserById);
 routerUser.get('/email/:email', checkPermission(), getUserByEmail);
+routerUser.get('/:id/services', checkPermission(), getUserServices);
 routerUser.delete('/:id', checkPermission(), removeUserById);
 routerUser.delete('/restore/:id', checkPermission(), restoreUserById);
 

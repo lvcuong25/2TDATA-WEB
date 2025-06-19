@@ -9,6 +9,8 @@ import instance from "../../../utils/axiosInstance";
 const ServiceList = () => {
   const queryClient = useQueryClient();
   const [searchValue, setSearchValue] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["SERVICES", searchValue],
@@ -146,12 +148,18 @@ const ServiceList = () => {
         </div>
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={data?.data?.docs || []}
           rowKey="_id"
           loading={isLoading}
           pagination={{
-            pageSize: 10,
+            pageSize: data?.data?.limit || 10,
+            total: data?.data?.totalDocs,
+            current: data?.data?.page,
             showSizeChanger: true,
+            onChange: (page, pageSize) => {
+              setPage(page);
+              setPageSize(pageSize);
+            }
           }}
           scroll={{ x: "max-content" }}
         />

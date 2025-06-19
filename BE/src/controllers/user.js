@@ -76,15 +76,6 @@ export const removeUserById = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
     try {
-
-           // If password is being updated, hash it
-           if (req.body.password && req.body.password.trim() !== '') {
-            req.body.password = await hashPassword(req.body.password);
-        } else {
-            // Remove password field if it's empty
-            delete req.body.password;
-        }
-
         // If updating services, validate and convert to ObjectIds
         if (req.body.service) {
             const user = await User.findById(req.params.id);
@@ -397,6 +388,47 @@ export const deleteUserInformation = async (req, res, next) => {
         return res.status(200).json({
             data: user,
             message: "Xóa thông tin thành công"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Lấy danh sách service của user
+export const getUserServices = async (req, res, next) => {
+    try {
+        const page = req.query.page ? +req.query.page : 1;
+        const limit = req.query.limit ? +req.query.limit : 10;
+
+        // Lấy user và populate dịch vụ đã approved
+        const user = await User.findById(req.params.id)
+            .populate({
+                path: 'service',
+                match: { status: 'approved' },
+                populate: [
+                    { path: 'service', select: 'name slug image status description authorizedLinks' },
+                    { path: 'approvedBy', select: 'name email avatar' }
+                ]
+            });
+
+        if (!user) {
+            return res.status(404).json({ message: "Không tìm thấy user" });
+        }
+
+        // Lấy toàn bộ dịch vụ đã populate
+        const allServices = user.service || [];
+        const totalServices = allServices.length;
+        const start = (page - 1) * limit;
+        const end = start + limit;
+        const paginatedServices = allServices.slice(start, end);
+
+        return res.status(200).json({
+            data: {
+                services: paginatedServices,
+                totalServices,
+                page,
+                limit
+            }
         });
     } catch (error) {
         next(error);

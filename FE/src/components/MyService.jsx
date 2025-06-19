@@ -3,23 +3,18 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
-import { Tag, Table, Space, Card, Button, Tooltip, Modal, Form, Input, message, Popconfirm, Pagination, Switch } from "antd";
-import { LinkOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, AppstoreOutlined, TableOutlined } from "@ant-design/icons";
+import { Tag, Table, Space, Button, Tooltip, Switch, Pagination } from "antd";
+import { AppstoreOutlined, TableOutlined } from "@ant-design/icons";
 
 const MyService = () => {
   const navigate = useNavigate();
   const { currentUser } = useContext(AuthContext);
   const [accessToken, setAccessToken] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [form] = Form.useForm();
-  const [editingInfo, setEditingInfo] = useState(null);
-  const [isCopied, setIsCopied] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [isCardView, setIsCardView] = useState(true);
-  const servicesPerPage = 9;
-  const queryClient = useQueryClient();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -27,11 +22,15 @@ const MyService = () => {
   }, []);
 
   const { data: userData, isLoading } = useQuery({
-    queryKey: ["myServices", currentUser?._id],
+    queryKey: ["myServices", currentUser?._id, currentPage, pageSize],
     queryFn: async () => {
       if (!currentUser?._id) return null;
-      const response = await instance.get(`/user/${currentUser?._id}`);
-      console.log(response?.data);
+      const response = await instance.get(`/user/${currentUser?._id}/services`, {
+        params: {
+          page: currentPage,
+          limit: pageSize,
+        },
+      });
       return response?.data;
     },
     enabled: !!currentUser?._id,
@@ -146,146 +145,6 @@ const MyService = () => {
     return userService?.service?.authorizedLinks?.[0];
   };
 
-  // Add information mutation
-  const addInfoMutation = useMutation({
-    mutationFn: async (values) => {
-      const response = await instance.post('/user/information', {
-        ...values,
-        userId: currentUser._id
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      message.success('Thêm thông tin thành công');
-      queryClient.invalidateQueries(["myServices", currentUser?._id]);
-      setIsModalVisible(false);
-      form.resetFields();
-    },
-    onError: (error) => {
-      message.error('Thêm thông tin thất bại: ' + error.message);
-    }
-  });
-
-  // Update information mutation
-  const updateInfoMutation = useMutation({
-    mutationFn: async ({ id: infoId, values }) => {
-      const response = await instance.put(`/user/information/${infoId}`, {
-          ...values,
-          userId: currentUser._id
-      });
-      return response.data;
-  },
-    onSuccess: () => {
-      message.success('Cập nhật thông tin thành công');
-      queryClient.invalidateQueries(["myServices", currentUser?._id]);
-      setIsModalVisible(false);
-      form.resetFields();
-      setEditingInfo(null);
-    },
-    onError: (error) => {
-      message.error('Cập nhật thông tin thất bại: ' + error.message);
-    }
-  });
-
-  // Delete information mutation
-  const deleteInfoMutation = useMutation({
-    mutationFn: (infoId) => instance.delete(`/user/information/${infoId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["myServices", currentUser?._id]);
-      message.success("Thông tin đã được xóa thành công!");
-    },
-    onError: (error) => {
-      message.error("Không thể xóa thông tin: " + error.message);
-    }
-  });
-
-  const handleAddInfo = () => {
-    setEditingInfo(null);
-    form.resetFields();
-    setIsModalVisible(true);
-  };
-
-  const handleEditInfo = (info) => {
-    setEditingInfo(info);
-    form.setFieldsValue({
-      code: info.code,
-      title: info.title,
-      description: info.description
-    });
-    setIsModalVisible(true);
-  };
-
-  const handleDeleteInfo = (infoId) => {
-    deleteInfoMutation.mutate(infoId);
-  };
-
-  const handleModalOk = () => {
-    form.validateFields().then(values => {
-      console.log('Submitting values:', values);
-      if (editingInfo) {
-        updateInfoMutation.mutate({ id: editingInfo?._id, values });
-      } else {
-        addInfoMutation.mutate(values);
-      }
-    }).catch(info => {
-      console.log('Validate Failed:', info);
-    });
-  };
-
-  const infoColumns = [
-    {
-      title: "Mã",
-      dataIndex: "code",
-      key: "code",
-      ellipsis: true,
-      width:450,
-    },
-    {
-      title: "Tiêu đề",
-      dataIndex: "title",
-      key: "title",
-      width: 150,
-    },
-    {
-      title: "Mô tả",
-      dataIndex: "description",
-      key: "description",
-      width: 200,
-      render: (text) => (
-        <Tooltip title={text}>
-          <span>{text?.length > 50 ? `${text.substring(0, 50)}...` : text}</span>
-        </Tooltip>
-      ),
-    },
-    {
-      title: "Thao tác",
-      key: "action",
-      width: 120,
-      render: (_, record) => (
-        <Space>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            onClick={() => handleEditInfo(record)}
-          />
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa thông tin này?"
-            onConfirm={() => handleDeleteInfo(record._id)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button 
-              type="primary" 
-              danger
-              icon={<DeleteOutlined />} 
-              loading={deleteInfoMutation.isPending && deleteInfoMutation.variables === record._id}
-            />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
   const serviceColumns = [
     {
       title: "Dịch vụ",
@@ -331,6 +190,16 @@ const MyService = () => {
     },
   ];
 
+  // Pagination handler
+  const handleTableChange = (pagination) => {
+    setCurrentPage(pagination.current);
+    setPageSize(pagination.pageSize);
+  };
+
+  // LẤY DỮ LIỆU PHÂN TRANG ĐÚNG TỪ API MỚI
+  const userServices = userData?.data?.services || [];
+  const totalServices = userData?.data?.totalServices || 0;
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -339,7 +208,7 @@ const MyService = () => {
     );
   }
 
-  if (!userData || !userData?.data || !userData?.data?.service) {
+  if (!userData || !userData?.data || !userData?.data?.services) {
     return (
       <div>
         <Header/>
@@ -375,7 +244,7 @@ const MyService = () => {
             </div>
           </div>
 
-          {!userData?.data?.service || userData?.data?.service?.length === 0 ? (
+          {!userServices || userServices.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-600 mb-4">Bạn chưa đăng ký dịch vụ nào</p>
               <button
@@ -388,14 +257,11 @@ const MyService = () => {
           ) : isCardView ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userData?.data?.service
-                  ?.filter(userService => userService?.status === "approved")
-                  ?.slice((currentPage - 1) * servicesPerPage, currentPage * servicesPerPage)
-                  ?.map((userService) => {
+                {userServices.map((userService, idx) => {
                   const authorizedLink = findAuthorizedLink(userService);
                   return (
                     <div
-                      key={userService?._id}
+                      key={`${userService._id}_${idx}`}
                       className={`bg-white rounded-2xl p-6 flex flex-col items-center shadow ${
                         userService?.status === "approved" && authorizedLink
                           ? "cursor-pointer hover:shadow-lg transition"
@@ -421,10 +287,7 @@ const MyService = () => {
                         {userService?.service?.name}
                       </div>
                       <div className="text-sm text-gray-600 mb-2">
-                        Ngày đăng ký:{" "}
-                        {new Date(userService?.createdAt).toLocaleDateString(
-                          "vi-VN"
-                        )}
+                        Ngày đăng ký: {new Date(userService?.createdAt).toLocaleDateString("vi-VN")}
                       </div>
                       <button
                         onClick={(e) => {
@@ -439,24 +302,35 @@ const MyService = () => {
                   );
                 })}
               </div>
-              {userData?.data?.service?.filter(userService => userService?.status === "approved")?.length > servicesPerPage && (
-                <div className="flex justify-center mt-8">
-                  <Pagination
-                    current={currentPage}
-                    total={userData?.data?.service?.filter(userService => userService?.status === "approved")?.length}
-                    pageSize={servicesPerPage}
-                    onChange={(page) => setCurrentPage(page)}
-                    showSizeChanger={false}
-                  />
-                </div>
-              )}
+              <div className="flex justify-center mt-8">
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={totalServices}
+                  showSizeChanger
+                  pageSizeOptions={['3', '6', '10', '20']}
+                  onChange={(page, size) => {
+                    setCurrentPage(page);
+                    setPageSize(size);
+                  }}
+                  showTotal={total => `Tổng số ${total} dịch vụ`}
+                />
+              </div>
             </>
           ) : (
             <Table
-              columns={serviceColumns}
-              dataSource={userData?.data?.service?.filter(service => service?.status === "approved")}
-              rowKey="_id"
-              pagination={{ pageSize: 10 }}
+              columns={columns}
+              dataSource={userServices}
+              rowKey={(record, idx) => `${record._id}_${idx}`}
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: totalServices,
+                showSizeChanger: true,
+                pageSizeOptions: ['3', '6', '10', '20'],
+                showTotal: (total) => `Tổng số ${total} dịch vụ`,
+              }}
+              onChange={handleTableChange}
             />
           )}
         </section>
@@ -465,16 +339,24 @@ const MyService = () => {
           <h2 className="text-2xl font-bold text-center mb-8">
             Danh sách dịch vụ
           </h2>
-          {!userData?.data?.service || userData?.data?.service?.length === 0 ? (
+          {!userServices || userServices.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-600 mb-4">Bạn chưa đăng ký dịch vụ nào</p>
             </div>
           ) : (
             <Table
               columns={columns}
-              dataSource={userData?.data?.service?.filter(service => service?.status === "approved")}
-              rowKey="_id"
-              pagination={{ pageSize: 10 }}
+              dataSource={userServices}
+              rowKey={(record, idx) => `${record._id}_${idx}`}
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: totalServices,
+                showSizeChanger: true,
+                pageSizeOptions: ['3', '6', '10', '20'],
+                showTotal: (total) => `Tổng số ${total} dịch vụ`,
+              }}
+              onChange={handleTableChange}
             />
           )}
         </section>

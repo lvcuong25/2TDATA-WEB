@@ -5,6 +5,10 @@ import UserService from "../model/UserService.js";
 // Lấy danh sách dịch vụ
 export const getServices = async (req, res, next) => {
     try {
+        const page = req.query.page ? +req.query.page : 1;
+        const limit = req.query.limit ? +req.query.limit : 10;
+        const sort = req.query.sort ? req.query.sort : { createdAt: -1 };
+
         let query = {};
         if (req.query.name) {
             query.$or = [
@@ -15,8 +19,9 @@ export const getServices = async (req, res, next) => {
         if (req.query.status) {
             query.status = req.query.status;
         }
-        const services = await Service.find(query);
-        return res.status(200).json(services);
+
+        const data = await Service.paginate(query, { page, limit, sort });
+        return res.status(200).json({ data });
     } catch (error) {
         next(error);
     }
