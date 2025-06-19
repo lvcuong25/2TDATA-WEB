@@ -404,7 +404,7 @@ export const getUserServices = async (req, res, next) => {
         const user = await User.findById(req.params.id)
             .populate({
                 path: 'service',
-                match: { status: 'approved' },
+         
                 populate: [
                     { path: 'service', select: 'name slug image status description authorizedLinks' },
                     { path: 'approvedBy', select: 'name email avatar' }
