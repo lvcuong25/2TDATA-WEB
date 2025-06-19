@@ -9,6 +9,7 @@ const Logout = () => {
       // Clear authentication data
       localStorage.removeItem('accessToken');
       sessionStorage.removeItem('user');
+      sessionStorage.removeItem('accessToken');
       // Show success message
       toast.success('Đăng xuất thành công!');
 
