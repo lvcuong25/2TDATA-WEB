@@ -65,6 +65,7 @@ const SignIn = () => {
     },
     onSuccess: (data) => {
       localStorage.setItem('accessToken', data.accessToken);
+      sessionStorage.setItem('accessToken', data.accessToken);
       toast.success('Đăng nhập thành công!');
       window.location.href = '/service/my-service';
     },

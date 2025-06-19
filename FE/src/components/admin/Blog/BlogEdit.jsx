@@ -29,11 +29,11 @@ const BlogEdit = () => {
     useEffect(() => {
         if (blogData) {
             reset({
-                title: blogData.title,
+                title: blogData?.title,
                 // Thêm các trường khác nếu cần
             });
-            setContent(blogData.content);
-            setImage(blogData.image);
+            setContent(blogData?.content);
+            setImage(blogData?.image);
         }
     }, [blogData, reset]);
 
