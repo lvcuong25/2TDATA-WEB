@@ -1,34 +1,18 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState, useContext } from 'react'
 import image from "../image/image.jpg";
-import Logout from "./logout";
+import UserDropdown from './UserProfile/UserDropdown';
 import { Link, useLocation } from 'react-router-dom';
+import { AuthContext } from './core/Auth';
 
 const Header = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [userService, setUserService] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const { currentUser, isLogin } = useContext(AuthContext);
 
     const location = useLocation();
 
-    useEffect(() => {
-      const checkAuth = () => {
-        const token = localStorage.getItem("accessToken");
-        const userStr = sessionStorage.getItem("user");
-        setIsLoggedIn(!!token);
-        
-        if (userStr) {
-          try {
-            const userData = JSON.parse(userStr);
-            setUserService(userData.service);
-            setIsAdmin(userData.role === 'admin');
-          } catch (error) {
-            console.error('Error parsing user data:', error);
-          }
-        }
-      };
-      checkAuth();
-    }, []);
+    const handleLogoutSuccess = () => {
+      // This will be handled by AuthContext automatically
+    };
 
     const toggleMenu = () => {
       setIsMenuOpen(!isMenuOpen);
@@ -43,11 +27,8 @@ const Header = () => {
             </Link>
             
             <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-              {isLoggedIn ? (
-                <Logout onLogoutSuccess={() => {
-                  setIsLoggedIn(false);
-                  setUserService(null);
-                }} />
+              {isLogin ? (
+                <UserDropdown onLogoutSuccess={handleLogoutSuccess} />
               ) : (
                 <Link
                   to="/login"
@@ -103,7 +84,7 @@ const Header = () => {
                   </Link>
                 </li>
             
-                {isLoggedIn && (
+                {isLogin && (
                   <li>
                     <Link
                       to="/service/my-service"
@@ -131,7 +112,7 @@ const Header = () => {
                     Dịch vụ
                   </Link>
                 </li>
-                {isAdmin && (
+                {currentUser?.role === 'admin' && (
                   <li>
                     <Link
                       to="/admin"
