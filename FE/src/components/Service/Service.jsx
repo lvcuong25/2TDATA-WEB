@@ -217,36 +217,51 @@ const Service = () => {
               {isCardView ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {docs.map((service) => (
-                      <div 
-                        key={service?._id}
-                        className="bg-white rounded-2xl p-6 flex flex-col items-center shadow hover:shadow-lg transition-shadow"
-                      >
-                        <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
-                          <img 
-                            src={service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
-                            alt={service?.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="font-semibold mb-4 capitalize">{service?.name}</div>
-                        <div className="flex items-center gap-2 mb-4">
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            service?.status 
-                              ? 'bg-green-100 text-green-800 border border-green-200' 
-                              : 'bg-red-100 text-red-800 border border-red-200'
-                          }`}>
-                            {service?.status ? 'Hoạt động' : 'Không hoạt động'}
-                          </span>
-                        </div>
-                        <Checkbox
-                          onChange={(e) => handleServiceSelect(service?._id, e.target.checked)}
-                          disabled={!service?.status}
+                    {docs.length > 0 ? (
+                      docs.map((service) => (
+                        <div
+                          key={service?._id}
+                          className="bg-white rounded-2xl p-6 flex flex-col items-center shadow hover:shadow-lg transition-shadow"
                         >
-                          Chọn dịch vụ
-                        </Checkbox>
+                          <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
+                            <img
+                              src={
+                                service?.image ||
+                                "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
+                              }
+                              alt={service?.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="font-semibold mb-4 capitalize">
+                            {service?.name}
+                          </div>
+                          <div className="flex items-center gap-2 mb-4">
+                            <span
+                              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                service?.status
+                                  ? "bg-green-100 text-green-800 border border-green-200"
+                                  : "bg-red-100 text-red-800 border border-red-200"
+                              }`}
+                            >
+                              {service?.status ? "Hoạt động" : "Không hoạt động"}
+                            </span>
+                          </div>
+                          <Checkbox
+                            onChange={(e) =>
+                              handleServiceSelect(service?._id, e.target.checked)
+                            }
+                            disabled={!service?.status}
+                          >
+                            Chọn dịch vụ
+                          </Checkbox>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center text-gray-500">
+                        Không có dịch vụ nào.
                       </div>
-                    ))}
+                    )}
                   </div>
                   <div className="flex justify-center mt-8">
                     <Pagination

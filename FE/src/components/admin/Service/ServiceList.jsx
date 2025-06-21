@@ -13,10 +13,12 @@ const ServiceList = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["SERVICES", searchValue],
+    queryKey: ["SERVICES", searchValue, page, pageSize],
     queryFn: async () => {
       const params = new URLSearchParams({
-        ...(searchValue && { name: searchValue })
+        page: page.toString(),
+        limit: pageSize.toString(),
+        ...(searchValue && { name: searchValue }),
       });
       const { data } = await instance.get(`/service?${params}`);
       return data;
@@ -148,7 +150,7 @@ const ServiceList = () => {
         </div>
         <Table
           columns={columns}
-          dataSource={data?.data?.docs || []}
+          dataSource={data?.data?.docs ?? []}
           rowKey="_id"
           loading={isLoading}
           pagination={{
