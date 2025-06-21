@@ -84,7 +84,7 @@ export const signIn = async (req, res, next) => {
             return res.status(200).json({
                 message: "Đăng nhập thành công!",
                 accessToken,
-                redirectPath: '/service/service-use'
+                redirectPath: '/service/my-service'
             });
         }
 

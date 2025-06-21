@@ -25,11 +25,17 @@ const UserDropdown = ({ onLogoutSuccess }) => {
 
   const handleLogout = () => {
     try {
-      removeCurrentUser(navigate);
+      removeCurrentUser();
       toast.success('Đăng xuất thành công!');
+
       if (onLogoutSuccess) {
         onLogoutSuccess();
       }
+
+      // Force a redirect to the homepage. This is more reliable than navigate()
+      // in this specific scenario due to component unmounting.
+      window.location.href = '/';
+
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Có lỗi xảy ra khi đăng xuất!');
