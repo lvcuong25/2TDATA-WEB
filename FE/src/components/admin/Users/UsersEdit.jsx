@@ -524,8 +524,8 @@ const UsersEdit = () => {
                                                     field.onChange(newServices);
                                                 }}
                                             >
-                                                {servicesData?.data?.docs?.map((service, idx) => (
-                                                    <Option key={`${service._id}_${service.customSlug || service.createdAt || idx}`} value={service._id}>
+                                                {servicesData?.data?.docs?.map((service) => (
+                                                    <Option key={service._id} value={service._id}>
                                                         {service.name}
                                                     </Option>
                                                 ))}
@@ -533,10 +533,10 @@ const UsersEdit = () => {
                                             <div className="mt-4 p-4 border rounded-lg bg-gray-50">
                                                 <h3 className="text-lg font-semibold mb-3">Thông tin dịch vụ đã chọn:</h3>
                                                 <div className="space-y-4">
-                                                    {field.value?.map((service, idx) => {
-                                                        const serviceInfo = servicesData?.data?.docs?.find(s => s?._id === (service?.id || service?.service?._id)) || service?.service;
+                                                    {field.value?.map((service) => {
+                                                        const serviceInfo = servicesData?.data?.docs?.find(s => s._id === service.id);
                                                         return serviceInfo ? (
-                                                            <div key={`${serviceInfo._id}_${serviceInfo.customSlug || serviceInfo.createdAt || idx}`} className="p-4 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
+                                                            <div key={serviceInfo._id} className="p-4 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
                                                                 <div className="flex gap-4">
                                                                     <div className="w-24 h-24 flex-shrink-0">
                                                                         <img 

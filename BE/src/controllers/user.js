@@ -76,6 +76,12 @@ export const removeUserById = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
     try {
+        
+        // Hash password if it's provided in the update
+        if (req.body.password && req.body.password.trim() !== '') {
+            req.body.password = await hashPassword(req.body.password);
+        }
+        
         // If updating services, validate and convert to ObjectIds
         if (req.body.service) {
             const user = await User.findById(req.params.id);
@@ -158,6 +164,11 @@ export const getUserByEmail = async (req, res, next) => {
 
 export const updateUserProfile = async (req, res, next) => {
     try {
+        // Hash password if it's provided in the update
+        if (req.body.password && req.body.password.trim() !== '') {
+            req.body.password = await hashPassword(req.body.password);
+        }
+        
         // If updating services, validate and convert to ObjectIds
         if (req.body.service) {
             const user = await User.findById(req.user._id);
