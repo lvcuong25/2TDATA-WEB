@@ -43,12 +43,11 @@ const AdminRoute = ({ children }) => {
 
 const PrivateRoute = ({ children }) => {
   const { currentUser } = useContext(AuthContext);
-  const location = useLocation();
   
   return (
     <ConditionalRoute
       condition={!!currentUser}
-      redirectTo={`${location.pathname}`}
+      redirectTo="/"
       children={children}
     />
   );

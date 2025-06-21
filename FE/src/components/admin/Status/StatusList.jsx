@@ -4,13 +4,15 @@ import { Space, Table, Button, Popconfirm, Tag, Modal, Input, Form, Descriptions
 import { toast } from "react-toastify";
 import { CheckOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, EditOutlined, LinkOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
+import LinkFieldArray from '../shared/LinkFieldArray';
 
 const StatusList = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [form] = Form.useForm();
-  const [links, setLinks] = useState([{ url: '', title: '', type: 'authority', description: '' }]);
+  const [links, setLinks] = useState([]);
+  const [linkUpdates, setLinkUpdates] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -30,21 +32,33 @@ const StatusList = () => {
 
   useEffect(() => {
     if (isModalOpen && selectedService) {
-      const initialLinks = selectedService.link || [{ url: '', title: '', type: 'authority', description: '' }];
+      const initialLinks = selectedService.link?.length ? selectedService.link : [];
       setLinks(initialLinks);
+      
+      const initialLinkUpdates = selectedService.link_update?.length ? selectedService.link_update : [];
+      setLinkUpdates(initialLinkUpdates);
+
+      form.resetFields();
+      
       const formValues = {};
       initialLinks.forEach((link, index) => {
-        formValues[`url${index}`] = link.url || '';
-        formValues[`title${index}`] = link.title || '';
-        formValues[`type${index}`] = link.type || 'authority';
-        formValues[`description${index}`] = link.description || '';
+        formValues[`link_url_${index}`] = link.url || '';
+        formValues[`link_title_${index}`] = link.title || '';
+        formValues[`link_description_${index}`] = link.description || '';
+      });
+      initialLinkUpdates.forEach((link, index) => {
+        formValues[`link_update_url_${index}`] = link.url || '';
+        formValues[`link_update_title_${index}`] = link.title || '';
+        formValues[`link_update_description_${index}`] = link.description || '';
       });
       form.setFieldsValue(formValues);
+
     } else if (!isModalOpen) {
       setSelectedService(null);
       setIsEditMode(false);
       form.resetFields();
-      setLinks([{ url: '', title: '', type: 'authority', description: '' }]);
+      setLinks([]);
+      setLinkUpdates([]);
     }
   }, [isModalOpen, selectedService, form]);
 
@@ -73,17 +87,17 @@ const StatusList = () => {
   });
 
   const updateLinksMutation = useMutation({
-    mutationFn: (data) => instance.put(`/requests/${data.id}/links`, { links: data.links }),
+    mutationFn: (data) => instance.put(`/requests/${data.id}/links`, { 
+      links: data.links,
+      link_update: data.link_update
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries(["PENDING_SERVICES"]);
       toast.success("Đã cập nhật link thành công!");
       setIsModalOpen(false);
-      setLinks([{ url: '', title: '', type: 'authority', description: '' }]);
-      form.resetFields();
-      setIsEditMode(false);
     },
     onError: (error) => {
-      toast.error("Không thể cập nhật link: " + error.message);
+      toast.error("Không thể cập nhật link: " + (error.response?.data?.message || error.message));
     },
   });
 
@@ -118,7 +132,7 @@ const StatusList = () => {
   const handleEdit = async (record) => {
     try {
       const { data } = await instance.get(`/requests/${record._id}`);
-      setSelectedService({...record, link: data.data.link});
+      setSelectedService({ ...record, ...data.data });
       setIsEditMode(true);
       setIsModalOpen(true);
     } catch (error) {
@@ -137,60 +151,33 @@ const StatusList = () => {
   const handleModalOk = async () => {
     try {
       await form.validateFields();
-      const validLinks = links.filter(link => link.url.trim() !== '' && link.title.trim() !== '');
       
+      const validLinks = links.filter(link => link.url && link.url.trim() !== '' && link.title && link.title.trim() !== '');
+      const validLinkUpdates = linkUpdates.filter(link => link.url && link.url.trim() !== '' && link.title && link.title.trim() !== '');
+
       if (isEditMode) {
         updateLinksMutation.mutate({ 
           id: selectedService._id, 
-          links: validLinks 
+          links: validLinks,
+          link_update: validLinkUpdates
         });
       } else {
         await approveMutation.mutateAsync(selectedService._id);
         
         updateLinksMutation.mutate({ 
           id: selectedService._id, 
-          links: validLinks 
+          links: validLinks,
+          link_update: validLinkUpdates
         });
       }
     } catch (error) {
       console.error('Validation failed:', error);
+      toast.error("Vui lòng điền đầy đủ thông tin các link!");
     }
   };
 
   const handleModalCancel = () => {
     setIsModalOpen(false);
-  };
-
-  const addLinkField = () => {
-    const newLinks = [...links, { url: '', title: '', type: 'authority', description: '' }];
-    setLinks(newLinks);
-    form.setFieldsValue({ 
-      [`url${newLinks.length - 1}`]: '',
-      [`title${newLinks.length - 1}`]: '',
-      [`type${newLinks.length - 1}`]: 'authority',
-      [`description${newLinks.length - 1}`]: ''
-    });
-  };
-
-  const removeLinkField = (index) => {
-    const newLinks = [...links];
-    newLinks.splice(index, 1);
-    setLinks(newLinks);
-    const updatedFormValues = {};
-    newLinks.forEach((link, idx) => {
-      updatedFormValues[`url${idx}`] = link.url;
-      updatedFormValues[`title${idx}`] = link.title;
-      updatedFormValues[`type${idx}`] = link.type;
-      updatedFormValues[`description${idx}`] = link.description;
-    });
-    form.setFieldsValue(updatedFormValues);
-  };
-
-  const updateLink = (index, field, value) => {
-    const newLinks = [...links];
-    newLinks[index] = { ...newLinks[index], [field]: value };
-    setLinks(newLinks);
-    form.setFieldsValue({ [`${field}${index}`]: value });
   };
 
   const handleSearch = (value) => {
@@ -211,13 +198,14 @@ const StatusList = () => {
       dataIndex: "index",
       key: "index",
       width: 60,
-      render: (_, __, index) => index + 1,
+      render: (_, __, index) => ((pagination.current - 1) * pagination.pageSize) + index + 1,
     },
     {
       title: "Mã",
       dataIndex: "_id",
       key: "_id",
       ellipsis: true,
+      width: 80
     },
     {
       title: "Người dùng",
@@ -235,7 +223,6 @@ const StatusList = () => {
       dataIndex: "service",
       key: "service",
       render: (service) => {
-        console.log('Service object in render:', service);
         return (
           <div className="flex items-center gap-2">
             <img
@@ -276,6 +263,7 @@ const StatusList = () => {
     {
       title: "Action",
       key: "action",
+      width: 150,
       render: (_, record) => (
         <Space size="middle">
           {record.status === 'waiting' && (
@@ -312,7 +300,6 @@ const StatusList = () => {
               type="primary"
               className="bg-blue-500 hover:bg-blue-600"
             >
-              
             </Button>
           )}
           {record.status !== 'waiting' && (
@@ -390,14 +377,15 @@ const StatusList = () => {
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
-        okText={isEditMode ? "Cập nhật" : "Xác nhận"}
+        okText={isEditMode ? "Cập nhật" : "Xác nhận và Cập nhật link"}
         cancelText="Hủy"
         confirmLoading={approveMutation.isPending || updateLinksMutation.isPending}
         width={800}
+        destroyOnClose
       >
         <Form form={form} layout="vertical">
           {selectedService && selectedService.user && (
-            <Descriptions title="Thông tin người dùng" bordered column={1} size="small">
+            <Descriptions title="Thông tin người dùng" bordered column={1} size="small" className="mb-4">
               <Descriptions.Item label="Tên">{selectedService.user?.name || 'N/A'}</Descriptions.Item>
               <Descriptions.Item label="Email">{selectedService.user?.email || 'N/A'}</Descriptions.Item>
               {selectedService.user?.phone && <Descriptions.Item label="Điện thoại">{selectedService.user.phone}</Descriptions.Item>}
@@ -409,73 +397,22 @@ const StatusList = () => {
               )}
             </Descriptions>
           )}
-          <div className="mt-4">
-            <h3 className="text-lg font-medium mb-2">Danh sách link</h3>
-            {links.map((link, index) => (
-              <div key={index} className="flex gap-2 mb-4 items-start">
-                <div className="flex-1">
-                  <Form.Item
-                    name={`url${index}`}
-                    rules={[{ required: true, message: 'Vui lòng nhập URL!' }]}
-                    className="mb-2"
-                  >
-                    <Input
-                      placeholder="Nhập URL dịch vụ"
-                      value={link.url}
-                      onChange={(e) => updateLink(index, 'url', e.target.value)}
-                    />
-                  </Form.Item>
-                  <div className="flex gap-2 mb-2">
-                    <Form.Item
-                      name={`title${index}`}
-                      rules={[{ required: true, message: 'Vui lòng nhập tiêu đề!' }]}
-                      className="flex-1 mb-0"
-                    >
-                      <Input
-                        placeholder="Nhập tiêu đề hoặc mô tả"
-                        value={link.title}
-                        onChange={(e) => updateLink(index, 'title', e.target.value)}
-                      />
-                    </Form.Item>
-                  
-                  </div>
-                  <Form.Item
-                    name={`description${index}`}
-                    className="mb-0"
-                  >
-                    <Input.TextArea
-                      placeholder="Nhập mô tả chi tiết về link"
-                      value={link.description}
-                      onChange={(e) => updateLink(index, 'description', e.target.value)}
-                      rows={2}
-                    />
-                  </Form.Item>
-                </div>
-                <div className="flex gap-2 mt-2">
-                  {link.url && link.url.trim() !== '' && (
-                    <Tag color='blue' style={{ cursor: 'pointer' }}>
-                      <a href={link.url} target="_blank" rel="noopener noreferrer"><LinkOutlined /></a>
-                    </Tag>
-                  )}
-                  {index > 0 && (
-                    <Button
-                      icon={<DeleteOutlined />}
-                      onClick={() => removeLinkField(index)}
-                      danger
-                    />
-                  )}
-                </div>
-              </div>
-            ))}
-            <Button 
-              type="dashed" 
-              onClick={addLinkField} 
-              icon={<PlusOutlined />}
-              className="w-full"
-            >
-              Thêm link
-            </Button>
-          </div>
+          
+          <LinkFieldArray 
+            title="Danh sách link chính"
+            links={links}
+            onLinksChange={setLinks}
+            form={form}
+            fieldNamePrefix="link"
+          />
+
+          <LinkFieldArray 
+            title="Danh sách link cập nhật"
+            links={linkUpdates}
+            onLinksChange={setLinkUpdates}
+            form={form}
+            fieldNamePrefix="link_update"
+          />
         </Form>
       </Modal>
     </div>

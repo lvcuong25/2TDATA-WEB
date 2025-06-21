@@ -193,13 +193,13 @@ const UserProfile = () => {
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                 <div>
                   <p className="text-sm text-blue-600 font-medium">Dịch vụ đang sử dụng</p>
-                  <p className="text-2xl font-bold text-blue-900">
+                  <div className="text-2xl font-bold text-blue-900">
                     {servicesLoading ? (
                       <Spin size="small" />
                     ) : (
                       userServices.length
                     )}
-                  </p>
+                  </div>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <span className="text-blue-600 text-xl">📊</span>

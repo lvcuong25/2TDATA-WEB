@@ -332,7 +332,7 @@ export const removeUserService = async (req, res, next) => {
 export const updateUserServiceLinks = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { links } = req.body;
+        const { links, link_update } = req.body;
         const userId = req.user._id;
 
         // Tìm UserService
@@ -363,6 +363,25 @@ export const updateUserServiceLinks = async (req, res, next) => {
                 };
             });
             userService.link = formattedLinks;
+        }
+
+        // Validate và format link_update
+        if (link_update && Array.isArray(link_update)) {
+            const formattedUpdateLinks = link_update.map(link => {
+                if (typeof link === 'string') {
+                    return {
+                        url: link,
+                        title: 'Link cập nhật không có tiêu đề',
+                        description: ''
+                    };
+                }
+                return {
+                    url: link.url || '',
+                    title: link.title || 'Link cập nhật không có tiêu đề',
+                    description: link.description || ''
+                };
+            });
+            userService.link_update = formattedUpdateLinks;
         }
 
         await userService.save();

@@ -37,6 +37,20 @@ const userServiceSchema = new mongoose.Schema(
       unique: true,
       // required: true
     },
+    link_update:[{
+      url: {
+        type: String,
+        description: "URL cập nhật của service"
+      },
+      title: {
+        type: String,
+        description: "Tiêu đề hoặc mô tả của link cập nhật"
+      },
+      description:{
+        type: String,
+        description: "Mô tả chi tiết về link cập nhật"
+      }
+    }],
     link: [{
       url: {
         type: String,

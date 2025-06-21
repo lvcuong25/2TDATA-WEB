@@ -25,10 +25,11 @@ const UserDropdown = ({ onLogoutSuccess }) => {
 
   const handleLogout = () => {
     try {
-      removeCurrentUser();
+      removeCurrentUser(navigate);
       toast.success('Đăng xuất thành công!');
-      onLogoutSuccess();
-      navigate('/');
+      if (onLogoutSuccess) {
+        onLogoutSuccess();
+      }
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Có lỗi xảy ra khi đăng xuất!');

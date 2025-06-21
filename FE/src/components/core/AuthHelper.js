@@ -20,8 +20,8 @@ const setAuth = (auth) => {
 
 const removeAuth = () => {
     try {
-        sessionStorage?.removeItem('accessToken');
-        sessionStorage?.removeItem(AUTH_KEY);
+        localStorage.clear();
+        sessionStorage.clear();
     } catch { /* empty */ }
 };
 

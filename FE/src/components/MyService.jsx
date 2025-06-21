@@ -138,57 +138,32 @@ const MyService = () => {
       key: "createdAt",
       render: (date) => new Date(date).toLocaleDateString("vi-VN"),
     },
-  ];
-
-  // Find if there is an authorized link for conditional rendering
-  const findAuthorizedLink = (userService) => {
-    return userService?.service?.authorizedLinks?.[0];
-  };
-
-  const serviceColumns = [
-    {
-      title: "Dịch vụ",
-      dataIndex: "service",
-      key: "service",
-      render: (service) => (
-        <div className="flex items-center gap-2">
-          <img
-            src={
-              service?.image ||
-              "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
-            }
-            alt={service?.name}
-            className="w-10 h-10 object-cover rounded"
-          />
-          <div>
-            <div className="font-medium">{service?.name}</div>
-            <div className="text-sm text-gray-500">{service?.slug}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Ngày đăng ký",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
-    },
     {
       title: "Thao tác",
       key: "action",
       render: (_, record) => (
         <Button
           type="primary"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleServiceClick(record);
+          onClick={() => {
+            if (record.link_update && record.link_update.length > 0) {
+              record.link_update.forEach((link) => {
+                if (link.url) {
+                  window.open(link.url, "_blank", "noopener,noreferrer");
+                }
+              });
+            }
           }}
         >
-          Kết nối
+          Cập nhật
         </Button>
       ),
     },
   ];
+
+  // Find if there is an authorized link for conditional rendering
+  const findAuthorizedLink = (userService) => {
+    return userService?.service?.authorizedLinks?.[0];
+  };
 
   // Pagination handler
   const handleTableChange = (pagination) => {

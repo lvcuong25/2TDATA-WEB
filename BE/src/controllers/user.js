@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import User from "../model/User.js";
 import { hashPassword } from "../utils/password.js";
 
-
 export const getAllUser = async (req, res, next) => {
     try {
         const options = {
@@ -76,6 +75,11 @@ export const removeUserById = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
     try {
+        // Hash password if it is being updated
+        if (req.body.password) {
+            req.body.password = await hashPassword(req.body.password);
+        }
+
         // If updating services, validate and convert to ObjectIds
         if (req.body.service) {
             const user = await User.findById(req.params.id);
