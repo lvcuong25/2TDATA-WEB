@@ -3,6 +3,7 @@ import image from "../image/image.jpg";
 import UserDropdown from './UserProfile/UserDropdown';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from './core/Auth';
+import Dropdown from './PrivacPolicy/Dropdown';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -139,6 +140,9 @@ const Header = () => {
                   >
                     Bài viết
                   </Link>
+                </li>
+                <li>
+                  <Dropdown />
                 </li>
               </ul>
             </div>

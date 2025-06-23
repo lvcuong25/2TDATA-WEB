@@ -31,6 +31,9 @@ import ThankYou from "../components/ThankYou.jsx";
 import LayOutUser from "../components/Layout/layOutUser.jsx";
 import UserProfile from "../components/UserProfile/UserProfile.jsx";
 import ChangePassword from "../components/UserProfile/ChangePassword.jsx";
+import DataPolicy from "../components/PrivacPolicy/DataPolicy.jsx";
+import SecurityAndDataPolicy from "../components/PrivacPolicy/SecurityAndDataPolicy.jsx";
+import TermsOfService from "../components/PrivacPolicy/TermsOfService.jsx";
 
 const Router = () => {
   return (
@@ -60,6 +63,10 @@ const Router = () => {
             <Route index element={<UserProfile />} />
             <Route path="change-password" element={<ChangePassword />} />
           </Route>
+          <Route path="/policy/chinh-sach-thu-thap-va-xu-ly-du-lieu-ca-nhan-khach-hang" element={<DataPolicy />} />
+          <Route path="/policy/chinh-sach-bao-mat-va-xu-ly-du-lieu-khach-hang" element={<SecurityAndDataPolicy />} />
+          <Route path="/policy/dieu-khoan-su-dung-dich-vu" element={<TermsOfService />} />
+
         </Route>
 
         <Route
