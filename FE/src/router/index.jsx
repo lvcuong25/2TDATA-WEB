@@ -28,7 +28,7 @@ import StatusForm from "../components/admin/Status/StatusForm.jsx";
 import StatusEdit from "../components/admin/Status/StatusEdit.jsx";
 import About from "../components/About.jsx";
 import ThankYou from "../components/ThankYou.jsx";
-import LayOutUser from "../components/Layout/layOutUser.jsx";
+import LayOutUser from "../components/Layout/LayOutUser.jsx";
 import UserProfile from "../components/UserProfile/UserProfile.jsx";
 import ChangePassword from "../components/UserProfile/ChangePassword.jsx";
 import DataPolicy from "../components/PrivacPolicy/DataPolicy.jsx";
