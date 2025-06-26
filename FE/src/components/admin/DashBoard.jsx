@@ -13,6 +13,7 @@ import {
   LaptopOutlined,
   UnorderedListOutlined,
   FormOutlined,
+  LinkOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -58,6 +59,10 @@ const DashBoard = () => {
 
           <Menu.Item key="/admin/user-info" icon={<FormOutlined />} onClick={() => handleLinkClick('/admin/user-info')}>
             <Link to="/admin/user-info">Quản lý đăng ký</Link>
+          </Menu.Item>
+
+          <Menu.Item key="/admin/iframe" icon={<LinkOutlined />} onClick={() => handleLinkClick('/admin/iframe')}>
+            <Link to="/admin/iframe">Quản lý iframe</Link>
           </Menu.Item>
        
           <Menu.Item key="/" icon={<HeartOutlined />} onClick={() => handleLinkClick('/')}>

@@ -34,6 +34,8 @@ import ChangePassword from "../components/UserProfile/ChangePassword.jsx";
 import DataPolicy from "../components/PrivacPolicy/DataPolicy.jsx";
 import SecurityAndDataPolicy from "../components/PrivacPolicy/SecurityAndDataPolicy.jsx";
 import TermsOfService from "../components/PrivacPolicy/TermsOfService.jsx";
+import IframeList from "../components/admin/Iframe/IframeList.jsx";
+import Ifame from "../components/Iframe/Ifame.jsx";
 
 const Router = () => {
   return (
@@ -66,7 +68,7 @@ const Router = () => {
           <Route path="/policy/chinh-sach-thu-thap-va-xu-ly-du-lieu-ca-nhan-khach-hang" element={<DataPolicy />} />
           <Route path="/policy/chinh-sach-bao-mat-va-xu-ly-du-lieu-khach-hang" element={<SecurityAndDataPolicy />} />
           <Route path="/policy/dieu-khoan-su-dung-dich-vu" element={<TermsOfService />} />
-
+          <Route path="/:domain" element={<Ifame />} />
         </Route>
 
         <Route
@@ -99,6 +101,9 @@ const Router = () => {
           </Route>
           <Route path="user-info">
             <Route index element={<UserInfoList />} />
+          </Route>
+          <Route path="iframe">
+            <Route index element={<IframeList />} />
           </Route>
         </Route>
       </Routes>
