@@ -5,7 +5,7 @@ import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
 import { useQuery } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
-import { Tag, Table, Space, Button, Tooltip, Switch, Pagination } from "antd";
+import { Tag, Table, Space, Button, Tooltip, Switch, Pagination, Modal } from "antd";
 import { AppstoreOutlined, TableOutlined } from "@ant-design/icons";
 
 const MyService = () => {
@@ -15,6 +15,8 @@ const MyService = () => {
   const [isCardView, setIsCardView] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTimer, setModalTimer] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -63,6 +65,27 @@ const MyService = () => {
     } catch (error) {
       console.error('Error making webhook request:', error);
     }
+  };
+
+  const handleUpdateLinks = async (record) => {
+    setIsModalOpen(true);
+    if (modalTimer) clearTimeout(modalTimer);
+    // Gọi POST tới tất cả các link_update
+    if (record.link_update && record.link_update.length > 0) {
+      await Promise.all(
+        record.link_update.map(link => {
+          if (link.url) {
+            // Gửi POST, không cần chờ kết quả
+            return fetch(link.url, { method: 'POST' });
+          }
+          return null;
+        })
+      );
+    }
+    const timer = setTimeout(() => {
+      setIsModalOpen(false);
+    }, 15000); // 15 giây
+    setModalTimer(timer);
   };
 
   const columns = [
@@ -144,15 +167,7 @@ const MyService = () => {
       render: (_, record) => (
         <Button
           type="primary"
-          onClick={() => {
-            if (record.link_update && record.link_update.length > 0) {
-              record.link_update.forEach((link) => {
-                if (link.url) {
-                  window.open(link.url, "_blank", "noopener,noreferrer");
-                }
-              });
-            }
-          }}
+          onClick={() => handleUpdateLinks(record)}
         >
           Cập nhật
         </Button>
@@ -337,6 +352,22 @@ const MyService = () => {
         </section>
       </div>
       <Footer/>
+      <Modal
+        open={isModalOpen}
+        footer={null}
+        closable={false}
+        centered
+        onCancel={() => {
+          setIsModalOpen(false);
+          if (modalTimer) clearTimeout(modalTimer);
+        }}
+      >
+        <div style={{ textAlign: 'center', padding: 32 }}>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h3>Đang xử lý, vui lòng chờ trong giây lát...</h3>
+          <p>Popup này sẽ tự động đóng sau 15 giây.</p>
+        </div>
+      </Modal>
     </div>
   );
 };
