@@ -1,30 +1,19 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState, useContext } from 'react'
 import image from "../image/image.jpg";
-import Logout from "./logout";
-import { Link } from 'react-router-dom';
+import UserDropdown from './UserProfile/UserDropdown';
+import { Link, useLocation } from 'react-router-dom';
+import { AuthContext } from './core/Auth';
+import Dropdown from './PrivacPolicy/Dropdown';
 
 const Header = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [userService, setUserService] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const { currentUser, isLogin } = useContext(AuthContext);
 
-    useEffect(() => {
-      const checkAuth = () => {
-        const token = localStorage.getItem("accessToken");
-        const userStr = localStorage.getItem("user");
-        setIsLoggedIn(!!token);
-        
-        if (userStr) {
-          try {
-            const userData = JSON.parse(userStr);
-            setUserService(userData.service);
-          } catch (error) {
-            console.error('Error parsing user data:', error);
-          }
-        }
-      };
-      checkAuth();
-    }, []);
+    const location = useLocation();
+
+    const handleLogoutSuccess = () => {
+      // This will be handled by AuthContext automatically
+    };
 
     const toggleMenu = () => {
       setIsMenuOpen(!isMenuOpen);
@@ -39,11 +28,8 @@ const Header = () => {
             </Link>
             
             <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-              {isLoggedIn ? (
-                <Logout onLogoutSuccess={() => {
-                  setIsLoggedIn(false);
-                  setUserService(null);
-                }} />
+              {isLogin ? (
+                <UserDropdown onLogoutSuccess={handleLogoutSuccess} />
               ) : (
                 <Link
                   to="/login"
@@ -87,27 +73,27 @@ const Header = () => {
                 <li>
                   <Link
                     to="/"
-                    className="block py-2 px-3 text-white bg-blue-700 rounded-sm md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500"
-                    aria-current="page"
+                    className={`block py-2 px-3 rounded-sm md:p-0 ${
+                      location.pathname === '/'
+                        ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500'
+                        : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'
+                    }`}
+                    aria-current={location.pathname === '/' ? 'page' : undefined}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Trang chủ
                   </Link>
                 </li>
-                <li>
-                  <Link
-                    to="/about"
-                    className="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Giới thiệu
-                  </Link>
-                </li>
-                {isLoggedIn && (
+            
+                {isLogin && (
                   <li>
                     <Link
                       to="/service/my-service"
-                      className="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                        location.pathname === '/service/my-service'
+                          ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500'
+                          : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'
+                      }`}
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Dịch vụ của tôi
@@ -117,20 +103,46 @@ const Header = () => {
                 <li>
                   <Link
                     to="/service"
-                    className="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+                    className={`block py-2 px-3 rounded-sm md:p-0 ${
+                      location.pathname === '/service'
+                        ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500'
+                        : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'
+                    }`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Dịch vụ
                   </Link>
                 </li>
+                {currentUser?.role === 'admin' && (
+                  <li>
+                    <Link
+                      to="/admin"
+                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                        location.pathname === '/admin'
+                          ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500'
+                          : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'
+                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Quản trị
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link
                     to="/blogs"
-                    className="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+                    className={`block py-2 px-3 rounded-sm md:p-0 ${
+                      location.pathname === '/blogs'
+                        ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500'
+                        : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'
+                    }`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Bài viết
                   </Link>
+                </li>
+                <li>
+                  <Dropdown />
                 </li>
               </ul>
             </div>

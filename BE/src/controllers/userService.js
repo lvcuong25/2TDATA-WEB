@@ -1,13 +1,69 @@
 import UserService from "../model/UserService.js";
 import User from "../model/User.js";
+import Service from "../model/Service.js";
 
 // Lấy danh sách service đang chờ xác nhận
 export const getPendingServices = async (req, res, next) => {
     try {
+        const { search, status } = req.query;
+        
+        // Build query conditions
+        const query = {};
+        
+        // Add status filter if provided
+        if (status) {
+            query.status = status;
+        }
+
+        // Handle combined user and service search
+        if (search) {
+            // Find matching users
+            const matchingUsers = await User.find({
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+            const userIds = matchingUsers.map(user => user._id);
+
+            // Find matching services
+            const matchingServices = await Service.find({
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { slug: { $regex: search, $options: 'i' } }
+                ]
+            }).select('_id');
+            const serviceIds = matchingServices.map(service => service._id);
+
+            // Apply conditions if any matches are found
+            const orConditions = [];
+            if (userIds.length > 0) {
+                orConditions.push({ user: { $in: userIds } });
+            }
+            if (serviceIds.length > 0) {
+                orConditions.push({ service: { $in: serviceIds } });
+            }
+
+            if (orConditions.length > 0) {
+                query.$or = orConditions;
+            } else {
+                // If no user or service matches the search, return empty result
+                return res.status(200).json({ 
+                    data: { 
+                        docs: [], 
+                        totalDocs: 0, 
+                        limit: 10, 
+                        page: 1, 
+                        totalPages: 0 
+                    } 
+                });
+            }
+        }
+
         const options = {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
-            sort: { createdAt: -1 }, // Sắp xếp theo thời gian tạo mới nhất
+            sort: { createdAt: -1 },
             populate: [
                 { 
                     path: 'user', 
@@ -24,9 +80,30 @@ export const getPendingServices = async (req, res, next) => {
             ]
         };
 
-        // Lấy tất cả services, không filter theo status
-        const data = await UserService.paginate({}, options);
-        return res.status(200).json({ data });
+        const data = await UserService.paginate(query, options);
+        
+        // Filter out documents where user or service failed to populate, or where essential fields are missing
+        const filteredDocs = data.docs.filter(doc => 
+            doc.user !== null && 
+            doc.service !== null && 
+            doc.user.name && 
+            doc.user.email &&
+            doc.service.name
+        );
+
+        // Calculate total pages based on filtered documents
+        const totalDocs = await UserService.countDocuments(query);
+        const totalPages = Math.ceil(totalDocs / options.limit);
+
+        return res.status(200).json({
+            data: {
+                docs: filteredDocs,
+                totalDocs: totalDocs,
+                limit: options.limit,
+                page: options.page,
+                totalPages: totalPages
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -38,6 +115,7 @@ export const getUserServices = async (req, res, next) => {
         const options = {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
+            sort: { createdAt: -1 },
             populate: [
                 { 
                     path: 'service', 
@@ -61,7 +139,11 @@ export const getUserServices = async (req, res, next) => {
 export const approveUserService = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { status, reason, links } = req.body;
+        const { status, reason } = req.body;
+
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ message: "Trạng thái không hợp lệ" });
+        }
 
         const userService = await UserService.findById(id);
         if (!userService) {
@@ -74,26 +156,6 @@ export const approveUserService = async (req, res, next) => {
                 userService.user,
                 { $addToSet: { services: userService._id } }
             );
-
-            // Cập nhật links nếu có
-            if (links && Array.isArray(links)) {
-                // Validate và format links
-                const formattedLinks = links.map(link => {
-                    if (typeof link === 'string') {
-                        return {
-                            url: link,
-                            title: 'Link không có tiêu đề',
-                            type: 'authority' // Default type
-                        };
-                    }
-                    return {
-                        url: link.url || '',
-                        title: link.title || 'Link không có tiêu đề',
-                        type: link.type || 'authority' // Default type
-                    };
-                });
-                userService.link = formattedLinks;
-            }
         }
 
         // Cập nhật trạng thái xác nhận
@@ -124,7 +186,7 @@ export const approveUserService = async (req, res, next) => {
 // Thêm service vào user (sẽ ở trạng thái chờ xác nhận)
 export const addServiceToUser = async (req, res, next) => {
     try {
-        const { serviceId } = req.body;
+        const { serviceId, customSlug } = req.body;
         const userId = req.user._id;
 
         // Chuyển đổi serviceId thành mảng nếu là string
@@ -153,7 +215,8 @@ export const addServiceToUser = async (req, res, next) => {
             const userService = new UserService({
                 user: userId,
                 service: sid,
-                status: 'waiting'
+                status: 'waiting',
+                customSlug: customSlug // Nếu có customSlug được cung cấp
             });
             await userService.save();
 
@@ -269,7 +332,7 @@ export const removeUserService = async (req, res, next) => {
 export const updateUserServiceLinks = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { links } = req.body;
+        const { links, link_update } = req.body;
         const userId = req.user._id;
 
         // Tìm UserService
@@ -290,17 +353,35 @@ export const updateUserServiceLinks = async (req, res, next) => {
                     return {
                         url: link,
                         title: 'Link không có tiêu đề',
-                        type: 'authority' // Default type
+                        description: ''
                     };
                 }
                 return {
                     url: link.url || '',
                     title: link.title || 'Link không có tiêu đề',
-                    description: link.description || '',
-                    type: link.type || 'authority' // Default type
+                    description: link.description || ''
                 };
             });
             userService.link = formattedLinks;
+        }
+
+        // Validate và format link_update
+        if (link_update && Array.isArray(link_update)) {
+            const formattedUpdateLinks = link_update.map(link => {
+                if (typeof link === 'string') {
+                    return {
+                        url: link,
+                        title: 'Link cập nhật không có tiêu đề',
+                        description: ''
+                    };
+                }
+                return {
+                    url: link.url || '',
+                    title: link.title || 'Link cập nhật không có tiêu đề',
+                    description: link.description || ''
+                };
+            });
+            userService.link_update = formattedUpdateLinks;
         }
 
         await userService.save();

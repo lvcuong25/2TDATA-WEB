@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { Button, Input, Form, Spin, Switch, Typography } from 'antd';
+import { Button, Input, Form, Spin, Switch, Typography, Space, Tooltip } from 'antd';
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import instance from "../../../utils/axiosInstance";
 import { uploadFileCloudinary } from "../libs/uploadImageCloud";
 import dayjs from 'dayjs';
+import { PlusOutlined, MinusCircleOutlined, EyeOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -18,9 +19,22 @@ const ServiceEdit = () => {
 
     const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
-            status: true
+            status: true,
+            authorizedLinks: [{ url: '', title: '', description: '' }]
         }
     });
+
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: "authorizedLinks"
+    });
+
+    // Add default link field when component mounts if none exists
+    useEffect(() => {
+        if (fields.length === 0) {
+            append({ url: '', title: '', description: '' });
+        }
+    }, [fields.length, append]);
 
     const name = watch('name');
 
@@ -51,10 +65,15 @@ const ServiceEdit = () => {
 
     useEffect(() => {
         if (serviceData) {
+            console.log('Service Data:', serviceData); // Debug log
             setValue('name', serviceData.name);
             setValue('slug', serviceData.slug);
             setValue('description', serviceData.description);
             setValue('status', serviceData.status);
+            // Đảm bảo link là một mảng
+            const links = Array.isArray(serviceData.authorizedLinks) ? serviceData.authorizedLinks : [];
+            console.log('Setting links:', links); // Debug log
+            setValue('authorizedLinks', links);
             setImage(serviceData.image);
         }
     }, [serviceData, setValue]);
@@ -88,7 +107,9 @@ const ServiceEdit = () => {
 
     const onSubmit = (data) => {
         setIsLoading(true);
-        mutation.mutate({ ...data, image }, {
+        // Lọc bỏ các link trống
+        const filteredLinks = data.authorizedLinks.filter(link => link.url.trim() !== '');
+        mutation.mutate({ ...data, image, authorizedLinks: filteredLinks }, {
             onSettled: () => setIsLoading(false)
         });
     };
@@ -166,16 +187,7 @@ const ServiceEdit = () => {
                                     required: 'Slug không được bỏ trống'
                                 }}
                                 render={({ field }) => (
-                                    <div className="flex items-center gap-2">
-                                        <Input {...field} disabled />
-                                        <Link 
-                                            to={`/service/slug/${field.value}`} 
-                                            target="_blank"
-                                            className="text-blue-500 hover:text-blue-700"
-                                        >
-                                            Xem trang
-                                        </Link>
-                                    </div>
+                                    <Input {...field} disabled />
                                 )}
                             />
                         </Form.Item>
@@ -186,6 +198,80 @@ const ServiceEdit = () => {
                                 render={({ field }) => <Input.TextArea {...field} rows={4} placeholder="Nhập mô tả dịch vụ (nếu có)" />}
                             />
                         </Form.Item>
+
+                        <Form.Item label="Link ủy quyền">
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="mb-4 p-4 border rounded-lg">
+                                    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                                        <div className="flex items-center gap-2">
+                                            <Controller
+                                                name={`authorizedLinks.${index}.url`}
+                                                control={control}
+                                                rules={{ required: 'URL không được bỏ trống' }}
+                                                render={({ field }) => (
+                                                    <Input 
+                                                        {...field} 
+                                                        placeholder="URL" 
+                                                        addonBefore="URL"
+                                                        className="flex-1"
+                                                    />
+                                                )}
+                                            />
+                                            <Tooltip title="Xem link">
+                                                <Link 
+                                                    to={watch(`authorizedLinks.${index}.url`)} 
+                                                    target="_blank"
+                                                    className="text-blue-500 hover:text-blue-700"
+                                                >
+                                                    <EyeOutlined />
+                                                </Link>
+                                            </Tooltip>
+                                        </div>
+                                        <Controller
+                                            name={`authorizedLinks.${index}.title`}
+                                            control={control}
+                                            rules={{ required: 'Tiêu đề không được bỏ trống' }}
+                                            render={({ field }) => (
+                                                <Input 
+                                                    {...field} 
+                                                    placeholder="Tiêu đề" 
+                                                    addonBefore="Tiêu đề"
+                                                />
+                                            )}
+                                        />
+                                        <Controller
+                                            name={`authorizedLinks.${index}.description`}
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Input.TextArea 
+                                                    {...field} 
+                                                    placeholder="Mô tả (không bắt buộc)" 
+                                                    rows={2}
+                                                />
+                                            )}
+                                        />
+                                      {/*  <Button 
+                                            type="text" 
+                                            danger 
+                                            icon={<MinusCircleOutlined />} 
+                                            onClick={() => remove(index)}
+                                            className="self-end"
+                                        >
+                                            Xóa link
+                                        </Button>*/ }
+                                    </Space>
+                                </div>
+                            ))}
+                        {/*     <Button 
+                                type="dashed" 
+                                onClick={() => append({ url: '', title: '', description: '' })} 
+                                block 
+                                icon={<PlusOutlined />}
+                            >
+                                Thêm link
+                            </Button>*/ }
+                        </Form.Item>
+
                         <Form.Item 
                             label="Trạng thái hoạt động"
                             valuePropName="checked"

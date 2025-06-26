@@ -1,7 +1,7 @@
 import React from 'react'
 import image from "../image/image.jpg";
-import hcw from "../image/hcw.jpg";
-import remobpo from "../image/remobpo.jpg";
+import hcw from "../image/hcw.png";
+import remobpo from "../image/remobpo.png";
 const Footer = () => {
   return (
     <div>
@@ -12,9 +12,8 @@ const Footer = () => {
                   {/* Logo and Company Info */}
                   <div className="w-1/3">
                     <div className="flex flex-col items-start">
-                      <img src={image} alt="2T DATA" className="h-[100px] w-[100px]" />
-                      <h2 className="text-xl font-bold mb-6">2T DATA SOLUTION</h2>
-                      <div className="space-y-4">
+                   <h1 className="text-xl font-bold mb-6">2T DATA SOLUTION</h1>
+                         <div className="space-y-4">
                         <div className="flex items-center gap-2">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -41,6 +40,8 @@ const Footer = () => {
                           <span>Website: https://2tdata.com/</span>
                         </div>
                       </div>
+                      {/* THÀNH VIÊN CỦA 2T GROUP section with centered logos */}
+                    
                     </div>
                   </div>
       
@@ -53,19 +54,30 @@ const Footer = () => {
                       <li><a href="#" className="hover:text-blue-600">Chính sách bán hàng</a></li>
                       <li><a href="#" className="hover:text-blue-600">Liên hệ</a></li>
                     </ul>
-                    <div className="mt-4">
-                    <p className="font-semibold">Công ty đối tác:</p>
-                  <div className='flex'>
-                  <img src={hcw} alt="2T DATA" className="h-[100px] w-[120px]" />
-                  <img src={remobpo} alt="2T DATA" className="h-[100px] w-[140px]" />
-                  </div>
-                  </div>
                   </div>
                   
                 </div>
+
+                <div className="font-semibold text-2xl  mt-6">THÀNH VIÊN CỦA 2T GROUP</div>
+                <div className="mt-6 flex flex-col items-center text-center">
+                
+              
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 items-center mt-4">
+                  <a href="https://hcw.com.vn/" target="_blank" rel="noopener noreferrer">
+                    <img src={hcw} alt="HCW" className="h-[60px] w-auto object-contain mx-auto" />
+                  </a>
+                  
+                  <img src={image} alt="2T DATA" className="h-[90px] w-auto object-contain mx-auto" />
+                  
+                  <a href="https://remobpo.com/" target="_blank" rel="noopener noreferrer">
+                    <img src={remobpo} alt="REMOBPO" className="h-[60px] w-auto object-contain mx-auto" />
+                  </a>
+                </div>
+              </div>
+              
               </div>
             </div>
-            <div className="bg-[#003399] text-white text-center py-4 mt-8">
+            <div className="bg-[#003399] text-white text-center py-2 mt-8">
               <p>Copyright © 2025 2T Data Solution | Powered by 2T Data Solution</p>
             </div>
           </footer>

@@ -1,21 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-
-import { Space, Table, Button, Popconfirm } from "antd";
+import { Space, Table, Button, Popconfirm, Input } from "antd";
 import { toast } from "react-toastify";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFileExcel } from "@fortawesome/free-solid-svg-icons";
+import { EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
 
 const BlogList = () => {
   const queryClient = useQueryClient();
+  const [searchValue, setSearchValue] = useState("");
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["BLOGS"],
+    queryKey: ["BLOGS", searchValue],
     queryFn: async () => {
-      const { data } = await instance.get(`/blogs`);
+      const params = new URLSearchParams({
+        ...(searchValue && { name: searchValue })
+      });
+      const { data } = await instance.get(`/blogs?${params}`);
       return data;
     },
   });
@@ -35,7 +36,9 @@ const BlogList = () => {
     deleteMutation.mutate(id);
   };
 
-  
+  const handleSearch = (value) => {
+    setSearchValue(value);
+  };
 
   const columns = [
     {
@@ -98,6 +101,16 @@ const BlogList = () => {
       </h2>
       <div className="">
         <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-4">
+            <Input
+              placeholder="Tìm kiếm theo tiêu đề hoặc nội dung"
+              prefix={<SearchOutlined />}
+              value={searchValue}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-96"
+              allowClear
+            />
+          </div>
           <Link
             to="/admin/blogs/add"
             className="px-4 py-2 text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 ease-in-out"
@@ -113,7 +126,6 @@ const BlogList = () => {
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
-            // showQuickJumper: true,
           }}
           scroll={{ x: "max-content" }}
         />

@@ -5,66 +5,79 @@ const userServiceSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+      ref: "User",
+      required: true,
     },
     service: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Service',
-      required: true
+      ref: "Service",
+      required: true,
     },
     status: {
       type: String,
-      enum: ['waiting', 'approved', 'rejected'],
-      default: 'waiting',
-      description: "Trạng thái xác nhận: waiting (chờ xác nhận), approved (đã xác nhận), rejected (bị từ chối)"
+      enum: ["waiting", "approved", "rejected"],
+      default: "waiting",
+      description:
+        "Trạng thái xác nhận: waiting (chờ xác nhận), approved (đã xác nhận), rejected (bị từ chối)",
     },
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      description: "Admin đã xác nhận"
+      ref: "User",
+      description: "Admin đã xác nhận",
     },
     approvedAt: {
       type: Date,
-      description: "Thời gian xác nhận"
+      description: "Thời gian xác nhận",
     },
     reason: {
       type: String,
-      description: "Lý do từ chối (nếu bị rejected)"
+      description: "Lý do từ chối (nếu bị rejected)",
     },
     customSlug: {
       type: String,
       unique: true,
       // required: true
     },
-    link: [{
-      url: {
-        type: String,
-        required: true,
-        description: "URL của service"
+    link_update: [
+      {
+        url: {
+          type: String,
+          description: "URL cập nhật của service",
+        },
+        title: {
+          type: String,
+          description: "Tiêu đề hoặc mô tả của link cập nhật",
+        },
+        description: {
+          type: String,
+          description: "Mô tả chi tiết về link cập nhật",
+        },
       },
-      title: {
-        type: String,
-        required: true,
-        description: "Tiêu đề hoặc mô tả của link"
+    ],
+    link: [
+      {
+        url: {
+          type: String,
+          required: true,
+          description: "URL của service",
+        },
+        title: {
+          type: String,
+          required: true,
+          description: "Tiêu đề hoặc mô tả của link",
+        },
+        description: {
+          type: String,
+          description: "Mô tả chi tiết về link",
+        },
       },
-      description:{
-        type: String,
-        description: "Mô tả chi tiết về link"
-      },
-      type: {
-        type: String,
-        enum: ['authority', 'result'],
-        required: true,
-        description: "Loại link: authority (uy quyền) hoặc result (kết quả)"
-      }
-    }]
+    ],
   },
   { timestamps: true, versionKey: false }
 );
 
 // Tự động tạo customSlug trước khi lưu
-userServiceSchema.pre('save', function(next) {
+userServiceSchema.pre("save", function (next) {
   if (!this.customSlug) {
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
@@ -75,4 +88,4 @@ userServiceSchema.pre('save', function(next) {
 
 userServiceSchema.plugin(mongoosePaginate);
 
-export default mongoose.model("UserService", userServiceSchema); 
+export default mongoose.model("UserService", userServiceSchema);

@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { Navigate } from "react-router";
+import { Navigate, useLocation } from "react-router";
 import { AuthContext } from "../components/core/Auth";
 
 
@@ -41,4 +41,17 @@ const AdminRoute = ({ children }) => {
   );
 };
 
-export { LoginRoute, NoneLoginRoute, AdminRoute };
+const PrivateRoute = ({ children }) => {
+  const { currentUser } = useContext(AuthContext);
+  const location = useLocation();
+  
+  return (
+    <ConditionalRoute
+      condition={!!currentUser}
+      redirectTo={`${location.pathname}`}
+      children={children}
+    />
+  );
+};
+
+export { LoginRoute, NoneLoginRoute, AdminRoute, PrivateRoute };

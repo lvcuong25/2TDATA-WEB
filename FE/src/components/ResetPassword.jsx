@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import Joi from 'joi';
 import instance from '../utils/axiosInstance';
 import { useNavigate } from 'react-router-dom';
+import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 
 const resetSchema = Joi.object({
   email: Joi.string()
@@ -48,6 +49,8 @@ const resetSchema = Joi.object({
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const {
     register,
@@ -217,27 +220,45 @@ const ResetPassword = () => {
           {/* Password fields */}
           <div className="mb-4">
             <label htmlFor="password" className="block text-gray-800">Mật khẩu mới</label>
-            <input
-              {...register("password")}
-              type="password"
-              id="password"
-              className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
-              placeholder="••••••••"
-              autoComplete="off"
-            />
+            <div className="relative">
+              <input
+                {...register("password")}
+                type={showPassword ? "text" : "password"}
+                id="password"
+                className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
+                placeholder="••••••••"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </button>
+            </div>
             {errors?.password && <span className="text-red-500 text-sm">{errors?.password?.message}</span>}
           </div>
 
           <div className="mb-4">
             <label htmlFor="cPassword" className="block text-gray-800">Xác nhận mật khẩu</label>
-            <input
-              {...register("cPassword")}
-              type="password"
-              id="cPassword"
-              className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
-              placeholder="••••••••"
-              autoComplete="off"
-            />
+            <div className="relative">
+              <input
+                {...register("cPassword")}
+                type={showConfirmPassword ? "text" : "password"}
+                id="cPassword"
+                className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
+                placeholder="••••••••"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showConfirmPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </button>
+            </div>
             {errors?.cPassword && <span className="text-red-500 text-sm">{errors?.cPassword?.message}</span>}
           </div>
 

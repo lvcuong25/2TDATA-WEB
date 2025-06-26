@@ -1,11 +1,26 @@
 import Joi from "joi";
-import { useNavigate } from "react-router-dom";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from 'react-toastify';
 import instance from "../utils/axiosInstance";
+import { useState } from "react";
+import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
+import CryptoJS from 'crypto-js';
+import { useSearchParams } from 'react-router-dom';
 
+// Secret key for encryption (in production, this should be stored securely)
+const SECRET_KEY = 'your-secret-key-here';
+
+// Encryption functions
+// const encryptData = (data) => {
+//   return CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
+// };
+
+// const decryptData = (encryptedData) => {
+//   const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
+//   return bytes.toString(CryptoJS.enc.Utf8);
+// };
 
 const signinSchema = Joi.object({
   email: Joi.string()
@@ -27,7 +42,9 @@ const signinSchema = Joi.object({
 });
 
 const SignIn = () => {
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get('redirect') || '/service/my-service';
 
   const {
     register,
@@ -45,19 +62,14 @@ const SignIn = () => {
     mutationFn: async (signinData) => {
       const { data } = await instance.post('auth/sign-in', signinData);
       return data;
-
     },
     onSuccess: (data) => {
-      
-      
-      toast.success('Đăng nhập thành công!');
       localStorage.setItem('accessToken', data.accessToken);
-      // localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Use window.location.href to refresh the page after redirect
-      window.location.href = data.redirectPath;
+      sessionStorage.setItem('accessToken', data.accessToken);
+      toast.success('Đăng nhập thành công!');
+      window.location.href = '/service/my-service';
     },
-    onError: (error) => {
+    onError: () => {
       toast.error('Email hoặc mật khẩu không đúng!');
     },
   });
@@ -89,6 +101,7 @@ const SignIn = () => {
               id="email"
               className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
               placeholder="name@company.com"
+              autoComplete="username"
             />
             {errors?.email && <span className="text-red-500 text-sm">{errors?.email?.message}</span>}
           </div>
@@ -96,20 +109,24 @@ const SignIn = () => {
           {/* Password Input */}
           <div className="mb-4">
             <label htmlFor="password" className="block text-gray-800">Mật khẩu</label>
-            <input
-              {...register('password')}
-              type="password"
-              id="password"
-              className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                {...register('password')}
+                type={showPassword ? "text" : "password"}
+                id="password"
+                autoComplete="current-password"
+                className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </button>
+            </div>
             {errors?.password && <span className="text-red-500 text-sm">{errors?.password?.message}</span>}
-          </div>
-
-          {/* Remember Me Checkbox */}
-          <div className="mb-4 flex items-center">
-            <input type="checkbox" id="remember" className="text-red-500" />
-            <label htmlFor="remember" className="text-green-900 ml-2">Ghi nhớ đăng nhập</label>
           </div>
 
           {/* Forgot Password Link */}
