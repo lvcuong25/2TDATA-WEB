@@ -420,7 +420,7 @@ export const getUserServices = async (req, res, next) => {
         }
 
         // Lấy toàn bộ dịch vụ đã populate
-        const allServices = user.service || [];
+        const allServices = (user.service || []).filter(s => s.status !== 'rejected');
         const totalServices = allServices.length;
         const start = (page - 1) * limit;
         const end = start + limit;

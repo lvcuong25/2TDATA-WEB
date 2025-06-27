@@ -119,12 +119,12 @@ const MyService = () => {
           color={
             status === "approved"
               ? "green"
-              : "red"
+              : "green"
           }
         >
           {status === "approved"
             ? "Đã xác nhận"
-            : "Bị từ chối"}
+            : "Đã xác nhận"}
         </Tag>
       ),
     },
@@ -187,7 +187,7 @@ const MyService = () => {
   };
 
   // LẤY DỮ LIỆU PHÂN TRANG ĐÚNG TỪ API MỚI
-  const userServices = (userData?.data?.services || []).filter(s => s.status !== 'rejected');
+  const userServices = userData?.data?.services || [];
   const totalServices = userData?.data?.totalServices || 0;
 
   if (isLoading) {
