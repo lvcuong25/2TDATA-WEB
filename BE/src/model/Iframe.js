@@ -24,6 +24,10 @@ const iframeSchema = new mongoose.Schema({
   description: {
     type: String,
   },
+  viewers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   createdAt: {
     type: Date,
     default: Date.now,
