@@ -187,7 +187,7 @@ const MyService = () => {
   };
 
   // LẤY DỮ LIỆU PHÂN TRANG ĐÚNG TỪ API MỚI
-  const userServices = userData?.data?.services || [];
+  const userServices = (userData?.data?.services || []).filter(s => s.status !== 'rejected');
   const totalServices = userData?.data?.totalServices || 0;
 
   if (isLoading) {

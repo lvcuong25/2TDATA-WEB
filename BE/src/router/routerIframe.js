@@ -27,6 +27,6 @@ router.post('/', createIframe);
 router.put('/:id', updateIframe);
 
 // Xóa iframe
-router.delete('/:id', deleteIframe);
+router.delete('/:id', deleteIframe);  
 
 export default router; 

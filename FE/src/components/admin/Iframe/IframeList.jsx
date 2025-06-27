@@ -127,7 +127,17 @@ const IframeList = () => {
       title: 'Tên miền',
       dataIndex: 'domain',
       key: 'domain',
-      render: (domain) => domain || 'Chưa đặt',
+      render: (domain) =>
+        domain ? (
+          <a
+            href={`${window.location.origin}/${domain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            {`${window.location.origin}/${domain}`}
+          </a>
+        ) : 'Chưa đặt',
     },
     {
       title: 'URL',
