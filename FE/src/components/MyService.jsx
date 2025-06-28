@@ -5,8 +5,8 @@ import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
 import { useQuery } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
-import { Tag, Table, Space, Button, Tooltip, Switch, Pagination, Modal } from "antd";
-import { AppstoreOutlined, TableOutlined } from "@ant-design/icons";
+import { Tag, Table, Space, Button, Tooltip, Switch, Pagination } from "antd";
+import { AppstoreOutlined, TableOutlined, LoadingOutlined } from "@ant-design/icons";
 
 const MyService = () => {
   const navigate = useNavigate();
@@ -15,8 +15,9 @@ const MyService = () => {
   const [isCardView, setIsCardView] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalTimer, setModalTimer] = useState(null);
+  const [currentPageServices, setCurrentPageServices] = useState(1);
+  const [pageSizeServices, setPageSizeServices] = useState(6);
+  const [updatingServiceId, setUpdatingServiceId] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -33,6 +34,7 @@ const MyService = () => {
           limit: pageSize,
         },
       });
+      console.log(response?.data)
       return response?.data;
     },
     enabled: !!currentUser?._id,
@@ -68,24 +70,29 @@ const MyService = () => {
   };
 
   const handleUpdateLinks = async (record) => {
-    setIsModalOpen(true);
-    if (modalTimer) clearTimeout(modalTimer);
-    // Gọi POST tới tất cả các link_update
-    if (record.link_update && record.link_update.length > 0) {
-      await Promise.all(
-        record.link_update.map(link => {
-          if (link.url) {
-            // Gửi POST, không cần chờ kết quả
-            return fetch(link.url, { method: 'POST' });
-          }
-          return null;
-        })
-      );
+    setUpdatingServiceId(record._id);
+    
+    try {
+      // Gọi POST tới tất cả các link_update
+      if (record.link_update && record.link_update.length > 0) {
+        await Promise.all(
+          record.link_update.map(link => {
+            if (link.url) {
+              // Gửi POST, không cần chờ kết quả
+              return fetch(link.url, { method: 'POST' });
+            }
+            return null;
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error updating links:', error);
+    } finally {
+      // Dừng loading sau 15 giây
+      setTimeout(() => {
+        setUpdatingServiceId(null);
+      }, 15000);
     }
-    const timer = setTimeout(() => {
-      setIsModalOpen(false);
-    }, 15000); // 15 giây
-    setModalTimer(timer);
   };
 
   const columns = [
@@ -168,8 +175,10 @@ const MyService = () => {
         <Button
           type="primary"
           onClick={() => handleUpdateLinks(record)}
+          loading={updatingServiceId === record._id}
+          icon={updatingServiceId === record._id ? <LoadingOutlined /> : null}
         >
-          Cập nhật
+          {updatingServiceId === record._id ? "Đang cập nhật..." : "Cập nhật"}
         </Button>
       ),
     },
@@ -189,6 +198,11 @@ const MyService = () => {
   // LẤY DỮ LIỆU PHÂN TRANG ĐÚNG TỪ API MỚI
   const userServices = userData?.data?.services || [];
   const totalServices = userData?.data?.totalServices || 0;
+
+  // Lọc ra các dịch vụ có link kết quả cho danh sách dịch vụ
+  const servicesWithLinks = userServices.filter(service => 
+    service.link && service.link.length > 0
+  );
 
   if (isLoading) {
     return (
@@ -329,45 +343,32 @@ const MyService = () => {
           <h2 className="text-2xl font-bold text-center mb-8">
             Danh sách dịch vụ
           </h2>
-          {!userServices || userServices.length === 0 ? (
+          {!servicesWithLinks || servicesWithLinks.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">Bạn chưa đăng ký dịch vụ nào</p>
+              <p className="text-gray-600 mb-4">Chưa có dịch vụ nào có kết quả</p>
             </div>
           ) : (
             <Table
               columns={columns}
-              dataSource={userServices}
+              dataSource={servicesWithLinks}
               rowKey={(record, idx) => `${record._id}_${idx}`}
               pagination={{
-                current: currentPage,
-                pageSize: pageSize,
-                total: totalServices,
+                current: currentPageServices,
+                pageSize: pageSizeServices,
+                total: servicesWithLinks.length,
                 showSizeChanger: true,
                 pageSizeOptions: ['3', '6', '10', '20'],
-                showTotal: (total) => `Tổng số ${total} dịch vụ`,
+                showTotal: (total) => `Tổng số ${total} dịch vụ có kết quả`,
               }}
-              onChange={handleTableChange}
+              onChange={(pagination) => {
+                setCurrentPageServices(pagination.current);
+                setPageSizeServices(pagination.pageSize);
+              }}
             />
           )}
         </section>
       </div>
       <Footer/>
-      <Modal
-        open={isModalOpen}
-        footer={null}
-        closable={false}
-        centered
-        onCancel={() => {
-          setIsModalOpen(false);
-          if (modalTimer) clearTimeout(modalTimer);
-        }}
-      >
-        <div style={{ textAlign: 'center', padding: 32 }}>
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <h3>Đang xử lý, vui lòng chờ trong giây lát...</h3>
-          <p>Popup này sẽ tự động đóng sau 15 giây.</p>
-        </div>
-      </Modal>
     </div>
   );
 };
