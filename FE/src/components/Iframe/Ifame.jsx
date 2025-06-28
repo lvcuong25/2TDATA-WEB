@@ -31,14 +31,11 @@ const Ifame = () => {
 
   if (loading) {
     return (
-      <div>
+      <div style={{ height: '100vh', width: '100vw' }}>
         <Header />
         <div style={{ 
-          position: 'fixed',
-          top: 100,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
+          height: 'calc(100vh - 80px)',
+          width: '100%',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -53,14 +50,11 @@ const Ifame = () => {
 
   if (error) {
     return (
-      <div>
+      <div style={{ height: '100vh', width: '100vw' }}>
         <Header />
         <div style={{ 
-          position: 'fixed',
-          top: 100,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
+          height: 'calc(100vh - 80px)',
+          width: '100%',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -74,16 +68,13 @@ const Ifame = () => {
   }
 
   return (
-    <div>
+    <div style={{ height: '100vh', width: '100vw', overflow: 'hidden' }}>
       <Header />
-
+      
       <div style={{ 
-        position: 'fixed',
-        top: 100,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden'
+        width: '100%',
+        height: 'calc(100vh - 80px)',
+        position: 'relative'
       }}>
         {iframeData?.url ? (
           <iframe 
@@ -91,10 +82,13 @@ const Ifame = () => {
             style={{
               width: '100%',
               height: '100%',
-              border: 'none'
+              border: 'none',
+              display: 'block'
             }}
             title={iframeData.title || "Embedded Content"}
             allowFullScreen
+            allow="fullscreen"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
           />
         ) : (
           <div style={{
