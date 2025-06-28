@@ -40,6 +40,22 @@ const MyService = () => {
     enabled: !!currentUser?._id,
   });
 
+  // API call riêng cho danh sách dịch vụ có link
+  const { data: servicesWithLinksData, isLoading: isLoadingServicesWithLinks } = useQuery({
+    queryKey: ["servicesWithLinks", currentUser?._id],
+    queryFn: async () => {
+      if (!currentUser?._id) return null;
+      const response = await instance.get(`/user/${currentUser?._id}/services`, {
+        params: {
+          page: 1,
+          limit: 1000, // Lấy tất cả để lọc client-side
+        },
+      });
+      return response?.data;
+    },
+    enabled: !!currentUser?._id,
+  });
+
   const handleServiceClick = async (service) => {
     try {
       if (!accessToken || !currentUser?._id) {
@@ -199,12 +215,13 @@ const MyService = () => {
   const userServices = userData?.data?.services || [];
   const totalServices = userData?.data?.totalServices || 0;
 
-  // Lọc ra các dịch vụ có link kết quả cho danh sách dịch vụ
-  const servicesWithLinks = userServices.filter(service => 
+  // Lọc ra các dịch vụ có link kết quả cho danh sách dịch vụ (từ API riêng)
+  const allServices = servicesWithLinksData?.data?.services || [];
+  const servicesWithLinks = allServices.filter(service => 
     service.link && service.link.length > 0
   );
 
-  if (isLoading) {
+  if (isLoading || isLoadingServicesWithLinks) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
