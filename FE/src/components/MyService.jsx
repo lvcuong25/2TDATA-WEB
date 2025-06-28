@@ -113,7 +113,7 @@ const MyService = () => {
 
   const columns = [
     {
-      title: "Service",
+      title: "Dịch vụ",
       dataIndex: "service",
       key: "service",
       render: (service) => (
@@ -134,7 +134,7 @@ const MyService = () => {
       ),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (status) => (
@@ -152,7 +152,7 @@ const MyService = () => {
       ),
     },
     {
-      title: "Links Kết quả",
+      title: "Kết quả",
       dataIndex: "link",
       key: "resultLinks",
       render: (links) => {
@@ -179,7 +179,7 @@ const MyService = () => {
       },
     },
     {
-      title: "Registered At",
+      title: "Thời gian",
       dataIndex: "createdAt",
       key: "createdAt",
       render: (date) => new Date(date).toLocaleDateString("vi-VN"),
