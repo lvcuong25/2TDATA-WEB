@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { Space, Table, Button, Popconfirm, Tag, Modal, Input, Form, Descriptions, Avatar, Select, Row, Col, Badge } from "antd";
+import { Space, Table, Button, Popconfirm, Tag, Modal, Input, Form, Descriptions, Avatar, Select } from "antd";
 import { toast } from "react-toastify";
-import { CheckOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, EditOutlined, LinkOutlined, SearchOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
 import LinkFieldArray from '../shared/LinkFieldArray';
 import { useNavigate } from "react-router-dom";
 
-const StatusList = () => {
+const OrgStatusList = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
@@ -18,17 +18,13 @@ const StatusList = () => {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-  });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchText(searchText);
     }, 500);
-
     return () => clearTimeout(timer);
   }, [searchText]);
 
@@ -36,12 +32,9 @@ const StatusList = () => {
     if (isModalOpen && selectedService) {
       const initialLinks = selectedService.link?.length ? selectedService.link : [];
       setLinks(initialLinks);
-      
       const initialLinkUpdates = selectedService.link_update?.length ? selectedService.link_update : [];
       setLinkUpdates(initialLinkUpdates);
-
       form.resetFields();
-      
       const formValues = {};
       initialLinks.forEach((link, index) => {
         formValues[`link_url_${index}`] = link.url || '';
@@ -54,7 +47,6 @@ const StatusList = () => {
         formValues[`link_update_description_${index}`] = link.description || '';
       });
       form.setFieldsValue(formValues);
-
     } else if (!isModalOpen) {
       setSelectedService(null);
       setIsEditMode(false);
@@ -65,23 +57,23 @@ const StatusList = () => {
   }, [isModalOpen, selectedService, form]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["PENDING_SERVICES", debouncedSearchText, statusFilter, pagination.current, pagination.pageSize],
+    queryKey: ["PENDING_ORG_SERVICES", debouncedSearchText, statusFilter, pagination.current, pagination.pageSize],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (debouncedSearchText) params.append('search', debouncedSearchText);
       if (statusFilter) params.append('status', statusFilter);
       params.append('page', pagination.current);
       params.append('limit', pagination.pageSize);
-      const { data } = await instance.get(`/requests/pending?${params.toString()}`);
+      const { data } = await instance.get(`/organization/pending?${params.toString()}`);
       return data;
     },
   });
 
   const approveMutation = useMutation({
-    mutationFn: (id) => instance.put(`/requests/${id}/approve`, { status: 'approved' }),
+    mutationFn: (id) => instance.put(`/organization/services/${id}/approve`, { status: 'approved' }),
     onSuccess: () => {
-      queryClient.invalidateQueries(["PENDING_SERVICES"]);
-      toast.success("Đã xác nhận dịch vụ thành công!");
+      queryClient.invalidateQueries(["PENDING_ORG_SERVICES"]);
+      toast.success("Đã xác nhận dịch vụ cho tổ chức thành công!");
     },
     onError: (error) => {
       toast.error("Không thể xác nhận dịch vụ: " + error.message);
@@ -89,12 +81,12 @@ const StatusList = () => {
   });
 
   const updateLinksMutation = useMutation({
-    mutationFn: (data) => instance.put(`/requests/${data.id}/links`, { 
+    mutationFn: (data) => instance.put(`/organization/services/${data.id}/links`, {
       links: data.links,
       link_update: data.link_update
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries(["PENDING_SERVICES"]);
+      queryClient.invalidateQueries(["PENDING_ORG_SERVICES"]);
       toast.success("Đã cập nhật link thành công!");
       setIsModalOpen(false);
     },
@@ -104,9 +96,9 @@ const StatusList = () => {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (id) => instance.put(`/requests/${id}/approve`, { status: 'rejected' }),
+    mutationFn: (id) => instance.put(`/organization/services/${id}/approve`, { status: 'rejected' }),
     onSuccess: () => {
-      queryClient.invalidateQueries(["PENDING_SERVICES"]);
+      queryClient.invalidateQueries(["PENDING_ORG_SERVICES"]);
       toast.success("Đã từ chối dịch vụ!");
     },
     onError: (error) => {
@@ -115,9 +107,9 @@ const StatusList = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => instance.delete(`/requests/${id}`),
+    mutationFn: (id) => instance.delete(`/organization/services/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries(["PENDING_SERVICES"]);
+      queryClient.invalidateQueries(["PENDING_ORG_SERVICES"]);
       toast.success("Đã xóa dịch vụ thành công!");
     },
     onError: (error) => {
@@ -133,7 +125,7 @@ const StatusList = () => {
 
   const handleEdit = async (record) => {
     try {
-      const { data } = await instance.get(`/requests/${record._id}`);
+      const { data } = await instance.get(`/organization/services/${record._id}`);
       setSelectedService({ ...record, ...data.data });
       setIsEditMode(true);
       setIsModalOpen(true);
@@ -153,27 +145,23 @@ const StatusList = () => {
   const handleModalOk = async () => {
     try {
       await form.validateFields();
-      
       const validLinks = links.filter(link => link.url && link.url.trim() !== '' && link.title && link.title.trim() !== '');
       const validLinkUpdates = linkUpdates.filter(link => link.url && link.url.trim() !== '' && link.title && link.title.trim() !== '');
-
       if (isEditMode) {
-        updateLinksMutation.mutate({ 
-          id: selectedService._id, 
+        updateLinksMutation.mutate({
+          id: selectedService._id,
           links: validLinks,
           link_update: validLinkUpdates
         });
       } else {
         await approveMutation.mutateAsync(selectedService._id);
-        
-        updateLinksMutation.mutate({ 
-          id: selectedService._id, 
+        updateLinksMutation.mutate({
+          id: selectedService._id,
           links: validLinks,
           link_update: validLinkUpdates
         });
       }
     } catch (error) {
-      console.error('Validation failed:', error);
       toast.error("Vui lòng điền đầy đủ thông tin các link!");
     }
   };
@@ -203,13 +191,13 @@ const StatusList = () => {
       render: (_, __, index) => ((pagination.current - 1) * pagination.pageSize) + index + 1,
     },
     {
-      title: "Người dùng",
-      dataIndex: "user",
-      key: "user",
-      render: (user) => (
+      title: "Tổ chức",
+      dataIndex: "organization",
+      key: "organization",
+      render: (org) => (
         <div>
-          <div className="font-medium">{user?.name || 'N/A'}</div>
-          <div className="text-sm text-gray-500">{user?.email || 'N/A'}</div>
+          <div className="font-medium">{org?.name || 'N/A'}</div>
+          <div className="text-sm text-gray-500">{org?.email || 'N/A'}</div>
         </div>
       ),
     },
@@ -322,24 +310,21 @@ const StatusList = () => {
     <div>
       <div className="flex items-center justify-between bg-white rounded-lg shadow px-6 py-4 mb-6">
         <span className="text-xl font-semibold text-gray-800">
-          Danh sách yêu cầu dịch vụ
+          Danh sách yêu cầu dịch vụ của tổ chức
         </span>
         <Button
-          type="primary"
-          icon={<CheckOutlined />}
-          onClick={() => navigate("/admin/status/org-status")}
-          className="flex items-center"
-          style={{ fontWeight: 500 }}
+          type="default"
+          onClick={() => navigate("/admin/status")}
+          className="ml-4"
         >
-          Quản lý trạng thái tổ chức
+          Quay lại
         </Button>
       </div>
-      
       <div className="">
         <div className="flex justify-between items-center mb-4">
           <div className="flex gap-4">
             <Input
-              placeholder="Tìm kiếm theo tên/email người dùng hoặc tên/slug dịch vụ"
+              placeholder="Tìm kiếm theo tên tổ chức hoặc tên/slug dịch vụ"
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => handleSearch(e.target.value)}
@@ -360,7 +345,6 @@ const StatusList = () => {
             />
           </div>
         </div>
-
         <Table
           columns={columns}
           dataSource={data?.data?.docs}
@@ -377,9 +361,8 @@ const StatusList = () => {
           scroll={{ x: "max-content" }}
         />
       </div>
-
       <Modal
-        title={isEditMode ? "Chỉnh sửa dịch vụ" : "Xác nhận dịch vụ"}
+        title={isEditMode ? "Chỉnh sửa dịch vụ của tổ chức" : "Xác nhận dịch vụ của tổ chức"}
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
@@ -390,29 +373,27 @@ const StatusList = () => {
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          {selectedService && selectedService.user && (
-            <Descriptions title="Thông tin người dùng" bordered column={1} size="small" className="mb-4">
-              <Descriptions.Item label="Tên">{selectedService.user?.name || 'N/A'}</Descriptions.Item>
-              <Descriptions.Item label="Email">{selectedService.user?.email || 'N/A'}</Descriptions.Item>
-              {selectedService.user?.phone && <Descriptions.Item label="Điện thoại">{selectedService.user.phone}</Descriptions.Item>}
-              {selectedService.user?.address && <Descriptions.Item label="Địa chỉ">{selectedService.user.address}</Descriptions.Item>}
-              {selectedService.user?.avatar && (
-                <Descriptions.Item label="Avatar">
-                  <Avatar src={selectedService.user.avatar} size="large" />
+          {selectedService && selectedService.organization && (
+            <Descriptions title="Thông tin tổ chức" bordered column={1} size="small" className="mb-4">
+              <Descriptions.Item label="Tên tổ chức">{selectedService.organization?.name || 'N/A'}</Descriptions.Item>
+              <Descriptions.Item label="Email">{selectedService.organization?.email || 'N/A'}</Descriptions.Item>
+              {selectedService.organization?.phone && <Descriptions.Item label="Điện thoại">{selectedService.organization.phone}</Descriptions.Item>}
+              {selectedService.organization?.address && <Descriptions.Item label="Địa chỉ">{selectedService.organization.address}</Descriptions.Item>}
+              {selectedService.organization?.logo && (
+                <Descriptions.Item label="Logo">
+                  <Avatar src={selectedService.organization.logo} size="large" />
                 </Descriptions.Item>
               )}
             </Descriptions>
           )}
-          
-          <LinkFieldArray 
+          <LinkFieldArray
             title="Danh sách link chính"
             links={links}
             onLinksChange={setLinks}
             form={form}
             fieldNamePrefix="link"
           />
-
-          <LinkFieldArray 
+          <LinkFieldArray
             title="Danh sách link cập nhật"
             links={linkUpdates}
             onLinksChange={setLinkUpdates}
@@ -425,4 +406,4 @@ const StatusList = () => {
   );
 };
 
-export default StatusList;
+export default OrgStatusList; 

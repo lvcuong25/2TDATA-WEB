@@ -1,0 +1,265 @@
+import React, { useContext, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Table, Button, Tag, Input, Tooltip, Pagination, Space } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { toast } from 'react-toastify';
+import instance from '../../utils/axiosInstance';
+import { AuthContext } from '../core/Auth';
+
+
+const ServiceOrganization = () => {
+  // ===== Lấy thông tin user hiện tại =====
+  const { currentUser } = useContext(AuthContext);
+  const [searchText, setSearchText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [updatingServiceId, setUpdatingServiceId] = useState(null);
+
+  // ===== Lấy thông tin tổ chức của user =====
+  const { data: org, isLoading: orgLoading } = useQuery({
+    queryKey: ['organization', currentUser?._id],
+    queryFn: async () => {
+      if (!currentUser?._id) return null;
+      const res = await instance.get(`organization/user/${currentUser._id}`);
+      console.log(res)
+      return res;
+    },
+  });
+
+  // ===== Định nghĩa cột cho bảng dịch vụ =====
+  const columns = [
+    {
+      title: 'STT',
+      dataIndex: 'index',
+      key: 'index',
+      width: 60,
+      render: (_, __, index) => index + 1,
+    },
+    {
+      title: 'Dịch vụ',
+      dataIndex: 'service',
+      key: 'service',
+      render: (service) => (
+        <div className="flex items-center gap-2">
+          <img
+            src={service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+            alt={service?.name || 'Service image'}
+            className="w-10 h-10 object-cover rounded"
+          />
+          <div>
+            <div className="font-medium">{service?.name || 'N/A'}</div>
+            <div className="text-sm text-gray-500">{service?.slug || 'N/A'}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => new Date(date).toLocaleDateString('vi-VN'),
+    },
+    {
+      title: 'Kết nối',
+      key: 'connect',
+      width: 120,
+      render: (_, record) => {
+        const links = record.service?.authorizedLinks || [];
+        const hasLink = links.length > 0;
+        return (
+          <Button
+            type="primary"
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => {
+              if (hasLink) {
+                window.open(links[0].url, '_blank');
+              } else {
+                toast.info('Dịch vụ này chưa có link kết nối.');
+              }
+            }}
+          >
+            Kết nối <span style={{ marginLeft: 4 }}>→</span>
+          </Button>
+        );
+      },
+    },
+  ];
+
+  // State và hàm cập nhật link cho bảng kết quả (giống MyService.jsx)
+  const handleUpdateLinks = async (record) => {
+    setUpdatingServiceId(record._id);
+    try {
+      if (record.link_update && record.link_update.length > 0) {
+        await Promise.all(
+          record.link_update.map(link => {
+            if (link.url) {
+              return fetch(link.url, { method: 'POST' });
+            }
+            return null;
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error updating links:', error);
+    } finally {
+      setTimeout(() => {
+        setUpdatingServiceId(null);
+      }, 15000);
+    }
+  };
+
+  // ===== Render UI =====
+  if (orgLoading) return <div className="p-4">Đang tải thông tin tổ chức...</div>;
+
+  // Lấy danh sách dịch vụ đúng từ org
+  const orgServices = org?.data?.services || org?.services || [];
+  const paginatedServices = orgServices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div>
+      {/* Tiêu đề, nút, search full width */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <span className="text-xl font-semibold text-gray-800 block">
+          Danh sách dịch vụ của tổ chức
+        </span>
+        <div className="flex gap-2 flex-1 md:flex-none">
+          <Input
+            placeholder="Tìm kiếm theo tên/slug dịch vụ"
+            prefix={<SearchOutlined />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full md:w-96"
+            allowClear
+          />
+        </div>
+      </div>
+      {/* 2 bảng trong 1 khung lớn chia 2 grid */}
+      <div className="bg-white rounded-xl shadow-lg border p-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          {/* Bảng dịch vụ bên trái */}
+          <div className="md:col-span-2 min-w-0 rounded-lg border p-4 flex flex-col h-full bg-gray-50">
+            <h3 className="font-semibold text-lg mb-3">Bảng dịch vụ</h3>
+            <Table
+              columns={columns}
+              dataSource={paginatedServices}
+              rowKey="_id"
+              loading={orgLoading}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+            <div className="flex justify-end mt-2">
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={orgServices.length}
+                showSizeChanger
+                pageSizeOptions={['10', '20', '50', '100']}
+                onChange={(page, size) => {
+                  setCurrentPage(page);
+                  setPageSize(size);
+                }}
+                showTotal={(total, range) => `${range[0]}-${range[1]} của ${total} mục`}
+              />
+            </div>
+          </div>
+          {/* Bảng kết quả bên phải */}
+          <div className="md:col-span-3 min-w-0 rounded-lg border p-4 flex flex-col h-full bg-gray-50">
+            <h3 className="font-semibold text-lg mb-3">Bảng kết quả</h3>
+            <Table
+              columns={[
+                {
+                  title: "Dịch vụ",
+                  dataIndex: "service",
+                  key: "service",
+                  render: (service) => (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={service?.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
+                        alt={service?.name}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                      <div>
+                        <div className="font-medium">{service?.name}</div>
+                        <div className="text-sm text-gray-500">{service?.slug}</div>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  title: "Trạng thái",
+                  dataIndex: "status",
+                  key: "status",
+                  render: (status) => (
+                    <Tag color={
+                      status === "approved" ? "green" :
+                      status === "rejected" ? "red" : "orange"
+                    }>
+                      {status === "approved" ? "Đã xác nhận" :
+                       status === "rejected" ? "Bị từ chối" : "Đang chờ"}
+                    </Tag>
+                  ),
+                },
+                {
+                  title: "Kết quả",
+                  dataIndex: "link",
+                  key: "resultLinks",
+                  render: (links) => {
+                    return links && links.length > 0 ? (
+                      <Space direction="vertical">
+                        {links.map((link, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Tooltip title={link.description || "Không có mô tả"}>
+                              <a
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                {link.title}
+                              </a>
+                            </Tooltip>
+                          </div>
+                        ))}
+                      </Space>
+                    ) : (
+                      "Chưa có link kết quả"
+                    );
+                  },
+                },
+                {
+                  title: "Ngày tạo",
+                  dataIndex: "createdAt",
+                  key: "createdAt",
+                  render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+                },
+                {
+                  title: "Thao tác",
+                  key: "action",
+                  render: (_, record) => (
+                    <Button
+                      type="primary"
+                      onClick={() => handleUpdateLinks(record)}
+                      loading={updatingServiceId === record._id}
+                    >
+                      {updatingServiceId === record._id ? "Đang cập nhật..." : "Cập nhật"}
+                    </Button>
+                  ),
+                },
+              ]}
+              dataSource={orgServices.filter(item => item.link && item.link.length > 0)}
+              rowKey={record => record._id}
+              className="mt-10"
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showTotal: (total) => `Tổng số ${total} dịch vụ có kết quả`,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ServiceOrganization;

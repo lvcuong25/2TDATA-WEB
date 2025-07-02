@@ -1,14 +1,17 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../core/Auth';
+import RegisterOrganizationModal from './RegisterOrganizationModal';
+import { axiosGet } from '../../utils/axiosInstance';
 
 const UserDropdown = ({ onLogoutSuccess }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const navigate = useNavigate();
   const { currentUser, removeCurrentUser } = useContext(AuthContext);
+  const [showOrgModal, setShowOrgModal] = useState(false);
+  const [hasOrganization, setHasOrganization] = useState(false);
+  const [loadingOrg, setLoadingOrg] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -22,6 +25,22 @@ const UserDropdown = ({ onLogoutSuccess }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    const fetchOrg = async () => {
+      if (!currentUser || currentUser.role === 'admin') return;
+      setLoadingOrg(true);
+      try {
+        await axiosGet(`organization/user/${currentUser._id}`);
+        setHasOrganization(true);
+      } catch {
+        setHasOrganization(false);
+      } finally {
+        setLoadingOrg(false);
+      }
+    };
+    fetchOrg();
+  }, [currentUser]);
 
   const handleLogout = () => {
     try {
@@ -45,6 +64,8 @@ const UserDropdown = ({ onLogoutSuccess }) => {
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
   };
+
+  const canRegisterOrg = currentUser?.role === 'admin' || !hasOrganization;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -138,6 +159,19 @@ const UserDropdown = ({ onLogoutSuccess }) => {
             )}
             
             <button
+              onClick={() => { if (canRegisterOrg) { setShowOrgModal(true); setIsOpen(false); } }}
+              className={`block w-full text-left px-4 py-2 text-sm ${canRegisterOrg ? 'text-blue-600 hover:bg-gray-100 dark:text-blue-400 dark:hover:bg-gray-700' : 'text-gray-400 cursor-not-allowed'} `}
+              disabled={!canRegisterOrg || loadingOrg}
+            >
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Đăng ký tổ chức
+              </div>
+            </button>
+            
+            <button
               onClick={handleLogout}
               className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700"
             >
@@ -151,6 +185,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
           </div>
         </div>
       )}
+     
     </div>
   );
 };

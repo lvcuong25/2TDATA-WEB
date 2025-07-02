@@ -200,6 +200,54 @@ const MyService = () => {
     },
   ];
 
+  const deployedColumns = [
+    {
+      title: "Dịch vụ",
+      dataIndex: "service",
+      key: "service",
+      render: (service) => (
+        <div className="flex items-center gap-2">
+          <img
+            src={service.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
+            alt={service.name}
+            className="w-10 h-10 object-cover rounded"
+          />
+          <div>
+            <div className="font-medium">{service.name}</div>
+            <div className="text-sm text-gray-500">{service.slug}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Thời gian",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+    },
+    {
+      title: "Kết nối",
+      key: "connect",
+      width: 120,
+      render: (_, record) => {
+        const links = record.service?.authorizedLinks || [];
+        const hasLink = links.length > 0;
+        return (
+          <Tooltip title={hasLink ? 'Kết nối dịch vụ' : 'Chưa có link kết nối'}>
+            <Button
+              type="primary"
+              className="bg-blue-500 hover:bg-blue-600"
+              onClick={() => hasLink && window.open(links[0].url, '_blank')}
+              disabled={!hasLink}
+            >
+              Kết nối <span style={{ marginLeft: 4 }}>→</span>
+            </Button>
+          </Tooltip>
+        );
+      }
+    },
+  ];
+
   // Find if there is an authorized link for conditional rendering
   const findAuthorizedLink = (userService) => {
     return userService?.service?.authorizedLinks?.[0];
@@ -340,7 +388,7 @@ const MyService = () => {
             </>
           ) : (
             <Table
-              columns={columns}
+              columns={deployedColumns}
               dataSource={userServices}
               rowKey={(record, idx) => `${record._id}_${idx}`}
               pagination={{
