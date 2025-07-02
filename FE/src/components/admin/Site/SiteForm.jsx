@@ -100,7 +100,10 @@ const SiteForm = () => {
       
       let response;
       if (hasFileUpload) {
-        // Use FormData for file upload
+        // Convert file to base64 and use FormData for consistency
+        const file = logoFileList[0].originFileObj;
+        const base64Logo = await convertFileToBase64(file);
+        
         const formData = new FormData();
         formData.append('name', values.name);
         formData.append('description', values.description || '');
@@ -108,13 +111,14 @@ const SiteForm = () => {
         formData.append('domains', JSON.stringify(validDomains));
         formData.append('theme_config', JSON.stringify(processedThemeConfig));
         formData.append('settings', JSON.stringify(values.settings || {}));
-        formData.append('logo', logoFileList[0].originFileObj);
+        formData.append('logo', file);  // Keep file for multer to process
 
-        console.log('🚀 Uploading with FormData:', {
+        console.log('🚀 Uploading with FormData (base64 backend):', {
           isEdit,
           id,
-          hasFile: !!logoFileList[0].originFileObj,
-          fileName: logoFileList[0].originFileObj?.name
+          hasFile: !!file,
+          fileName: file?.name,
+          fileSize: file?.size
         });
 
         if (isEdit) {
@@ -149,6 +153,16 @@ const SiteForm = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Helper function to convert file to base64
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const handleDomainChange = (index, value) => {

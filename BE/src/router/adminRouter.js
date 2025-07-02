@@ -133,7 +133,7 @@ router.use(allowAdminAccess);
 
 // Admin site management routes matching frontend expectations
 router.get('/sites', getAllSites);
-router.post('/sites', uploadLogo, handleUploadErrors, createSite);
+router.post('/sites', uploadLogoToBase64, handleUploadErrors, createSite);
 router.get('/sites/:id', getSiteById);
 router.get('/sites/:id/stats', getSiteStats);
 router.put('/sites/:id', uploadLogo, handleUploadErrors, updateSite);

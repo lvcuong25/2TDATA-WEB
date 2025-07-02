@@ -71,7 +71,7 @@ export const getAllSites = async (req, res) => {
  */
 export const createSite = async (req, res) => {
   try {
-    const {
+    let {
       name,
       domains,
       theme_config,
@@ -79,6 +79,104 @@ export const createSite = async (req, res) => {
       settings,
       site_admins
     } = req.body;
+    
+    // Handle FormData fields (when file is uploaded, other fields come as strings)
+    if (req.body.domains && typeof req.body.domains === 'string') {
+      try {
+        domains = JSON.parse(req.body.domains);
+      } catch (e) {
+        // If parsing fails, treat as single domain
+        domains = [req.body.domains];
+      }
+    }
+    
+    if (req.body.theme_config && typeof req.body.theme_config === 'string') {
+      try {
+        const parsedThemeConfig = JSON.parse(req.body.theme_config);
+        // Map frontend field names to backend field names
+        // Handle Antd ColorPicker format
+        const getPrimaryColor = () => {
+          const primary = parsedThemeConfig.primary_color || parsedThemeConfig.primaryColor;
+          if (typeof primary === 'string') return primary;
+          if (primary?.metaColor) {
+            const { r, g, b } = primary.metaColor;
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+          }
+          return '#3B82F6';
+        };
+        
+        const getSecondaryColor = () => {
+          const secondary = parsedThemeConfig.secondary_color || parsedThemeConfig.secondaryColor;
+          if (typeof secondary === 'string') return secondary;
+          if (secondary?.metaColor) {
+            const { r, g, b } = secondary.metaColor;
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+          }
+          return '#1F2937';
+        };
+        
+        theme_config = {
+          primaryColor: getPrimaryColor(),
+          secondaryColor: getSecondaryColor(),
+          layout: parsedThemeConfig.layout || 'default',
+          logoUrl: parsedThemeConfig.logoUrl,
+          faviconUrl: parsedThemeConfig.faviconUrl,
+          customCss: parsedThemeConfig.custom_css || parsedThemeConfig.customCss
+        };
+        console.log('✅ Processed theme_config for create:', theme_config);
+      } catch (e) {
+        console.error('Error parsing theme_config:', e);
+      }
+    } else if (req.body.theme_config && typeof req.body.theme_config === 'object') {
+      // Handle direct object (non-FormData requests)
+      const directThemeConfig = req.body.theme_config;
+      
+      const getDirectPrimaryColor = () => {
+        const primary = directThemeConfig.primary_color || directThemeConfig.primaryColor;
+        if (typeof primary === 'string') return primary;
+        if (primary?.metaColor) {
+          const { r, g, b } = primary.metaColor;
+          return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+        return '#3B82F6';
+      };
+      
+      const getDirectSecondaryColor = () => {
+        const secondary = directThemeConfig.secondary_color || directThemeConfig.secondaryColor;
+        if (typeof secondary === 'string') return secondary;
+        if (secondary?.metaColor) {
+          const { r, g, b } = secondary.metaColor;
+          return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+        return '#1F2937';
+      };
+      
+      theme_config = {
+        primaryColor: getDirectPrimaryColor(),
+        secondaryColor: getDirectSecondaryColor(),
+        layout: directThemeConfig.layout || 'default',
+        logoUrl: directThemeConfig.logoUrl,
+        faviconUrl: directThemeConfig.faviconUrl,
+        customCss: directThemeConfig.custom_css || directThemeConfig.customCss
+      };
+      console.log('✅ Direct theme_config for create:', theme_config);
+    }
+    
+    if (req.body.settings && typeof req.body.settings === 'string') {
+      try {
+        settings = JSON.parse(req.body.settings);
+      } catch (e) {
+        console.error('Error parsing settings:', e);
+      }
+    }
+    
+    if (req.body.site_admins && typeof req.body.site_admins === 'string') {
+      try {
+        site_admins = JSON.parse(req.body.site_admins);
+      } catch (e) {
+        console.error('Error parsing site_admins:', e);
+      }
+    }
     
     // Validate required fields
     if (!name || !domains || !Array.isArray(domains) || domains.length === 0) {
@@ -116,6 +214,28 @@ export const createSite = async (req, res) => {
           success: false,
           message: 'Some site admin users do not exist'
         });
+      }
+    }
+    
+    // Handle logo upload if file was uploaded
+    if (req.file) {
+      if (req.file.buffer) {
+        // BASE64 METHOD: Convert buffer to base64 and store in database
+        const base64Data = req.file.buffer.toString('base64');
+        const mimeType = req.file.mimetype;
+        logo_url = `data:${mimeType};base64,${base64Data}`;
+        
+        console.log('✅ Logo converted to base64 for create');
+        console.log('📸 Logo size:', req.file.size, 'bytes');
+        console.log('🎨 MIME Type:', mimeType);
+        console.log('📦 Base64 length:', base64Data.length);
+      } else {
+        // FALLBACK: File system method
+        logo_url = `/logos/${req.file.filename}`;
+        
+        console.log('✅ Logo uploaded to file system for create:', req.file.filename);
+        console.log('📸 Logo URL:', logo_url);
+        console.log('📁 Logo saved to backend uploads directory:', req.file.path);
       }
     }
     

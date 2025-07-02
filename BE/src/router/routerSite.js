@@ -16,7 +16,7 @@ import {
   requireSuperAdmin,
   requireSiteAdmin 
 } from '../middlewares/siteDetection.js';
-import { uploadLogo, handleUploadErrors } from '../middlewares/upload.js';
+import { uploadLogo, uploadLogoToBase64, handleUploadErrors } from '../middlewares/upload.js';
 
 const router = express.Router();
 
@@ -29,7 +29,7 @@ router.use(getUser);
 
 // Super Admin only routes
 router.get('/', requireSuperAdmin, getAllSites);
-router.post('/', requireSuperAdmin, uploadLogo, handleUploadErrors, createSite);
+router.post('/', requireSuperAdmin, uploadLogoToBase64, handleUploadErrors, createSite);
 router.get('/:id', requireSuperAdmin, getSiteById);
 router.get('/:id/stats', requireSuperAdmin, getSiteStats);
 router.put('/:id', requireSuperAdmin, uploadLogo, handleUploadErrors, updateSite);
