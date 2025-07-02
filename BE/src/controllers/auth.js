@@ -7,7 +7,7 @@ import sendEmail from "../utils/sendEmail.js";
 
 export const signUp = async (req, res, next) => {
     try {
-        const { email, password,  } = req.body;
+        const { email, password, role, site_id } = req.body;
         const userExist = await User.findOne({ email });
         if (userExist) {
             return res.status(400).json({
@@ -34,6 +34,8 @@ export const signUp = async (req, res, next) => {
         const user = await User.create({
             email,
             password: hashPasswordUser,
+            role: role || 'member', // Default role is 'member'
+            site_id: site_id, // Required for multi-tenant
             // service: serviceId
         });
 
@@ -70,8 +72,8 @@ export const signIn = async (req, res, next) => {
 
         const accessToken = token({ _id: userExist._id }, "365d");
         
-        // Nếu là admin, chuyển hướng đến trang admin
-        if (userExist.role === 'admin') {
+        // Nếu là admin hoặc super_admin, chuyển hướng đến trang admin
+        if (userExist.role === 'admin' || userExist.role === 'super_admin') {
             return res.status(200).json({
                 message: "Đăng nhập thành công!",
                 accessToken,

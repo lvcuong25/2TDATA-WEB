@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  mongodb-test:
+    image: mongo:7.0
+    container_name: mongodb-test
+    restart: unless-stopped
+    ports:
+      - "27018:27017"  # Different port to avoid conflicts with dev DB
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: testuser
+      MONGO_INITDB_ROOT_PASSWORD: testpassword
+      MONGO_INITDB_DATABASE: test_db
+    volumes:
+      - mongodb_test_data:/data/db
+    networks:
+      - test-network
+
+  # Optional: MongoDB Express for GUI management
+  mongo-express-test:
+    image: mongo-express:1.0.0
+    container_name: mongo-express-test
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: testuser
+      ME_CONFIG_MONGODB_ADMINPASSWORD: testpassword
+      ME_CONFIG_MONGODB_URL: mongodb://testuser:testpassword@mongodb-test:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      - mongodb-test
+    networks:
+      - test-network
+
+volumes:
+  mongodb_test_data:
+
+networks:
+  test-network:
+    driver: bridge

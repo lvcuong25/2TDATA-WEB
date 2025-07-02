@@ -1,7 +1,30 @@
 import axios from 'axios';
 
+/**
+ * 🌐 Multi-Site Axios Utils Instance
+ * 
+ * ⚠️  DEPRECATED: For new development, consider using:
+ *    - ../../BE/frontend-helpers/api-client.js (recommended)
+ *    - This provides better site detection and doesn't require manual headers
+ * 
+ * This instance has been updated to:
+ * ✅ Use dynamic base URL for multi-site support
+ * ✅ Work with affiliate domains
+ */
+
+// Dynamic base URL function for multi-site support
+const getApiBaseURL = () => {
+  const protocol = window.location.protocol;
+  const host = window.location.host;
+  return `${protocol}//${host}/api`;
+};
+
 const instance = axios.create({
-  baseURL: 'http://localhost:3000/api/',
+  baseURL: getApiBaseURL(),
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  }
 });
 
 // Thêm interceptor để tự động gắn token

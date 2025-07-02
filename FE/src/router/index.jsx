@@ -28,7 +28,7 @@ import StatusForm from "../components/admin/Status/StatusForm.jsx";
 import StatusEdit from "../components/admin/Status/StatusEdit.jsx";
 import About from "../components/About.jsx";
 import ThankYou from "../components/ThankYou.jsx";
-import LayOutUser from "../components/Layout/layOutUser.jsx";
+import LayOutUser from "../components/Layout/LayOutUser.jsx";
 import UserProfile from "../components/UserProfile/UserProfile.jsx";
 import ChangePassword from "../components/UserProfile/ChangePassword.jsx";
 import DataPolicy from "../components/PrivacPolicy/DataPolicy.jsx";
@@ -36,6 +36,10 @@ import SecurityAndDataPolicy from "../components/PrivacPolicy/SecurityAndDataPol
 import TermsOfService from "../components/PrivacPolicy/TermsOfService.jsx";
 import IframeList from "../components/admin/Iframe/IframeList.jsx";
 import Ifame from "../components/Iframe/Ifame.jsx";
+import SiteList from "../components/admin/Site/SiteList.jsx";
+import SiteForm from "../components/admin/Site/SiteForm.jsx";
+import SiteDetail from "../components/admin/Site/SiteDetail.jsx";
+import SiteAdminList from "../components/admin/Site/SiteAdminList.jsx";
 
 const Router = () => {
   return (
@@ -104,6 +108,13 @@ const Router = () => {
           </Route>
           <Route path="iframe">
             <Route index element={<IframeList />} />
+          </Route>
+          <Route path="sites">
+            <Route index element={<SiteList />} />
+            <Route path="add" element={<SiteForm />} />
+            <Route path="edit/:id" element={<SiteForm />} />
+            <Route path="detail/:id" element={<SiteDetail />} />
+            <Route path=":siteId/admins" element={<SiteAdminList />} />
           </Route>
         </Route>
       </Routes>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import instance from '../../../utils/axiosInstance';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination } from 'antd';
+import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 
@@ -19,6 +19,15 @@ const IframeList = () => {
     queryFn: async () => {
       const { data } = await instance.get(`/iframe?page=${currentPage}&limit=${pageSize}`);
       return data;
+    },
+  });
+
+  // Fetch user data for viewers select
+  const { data: userData, isLoading: loadingUsers } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const { data } = await instance.get(`/user?limit=1000`);
+      return data.docs || data.data?.docs || [];
     },
   });
 
@@ -89,7 +98,10 @@ const IframeList = () => {
 
   const handleEdit = (record) => {
     setEditingIframe(record);
-    form.setFieldsValue(record);
+    form.setFieldsValue({
+      ...record,
+      viewers: record.viewers?.map(u => typeof u === 'string' ? u : u._id)
+    });
     setIsModalVisible(true);
   };
 
@@ -115,7 +127,17 @@ const IframeList = () => {
       title: 'Tên miền',
       dataIndex: 'domain',
       key: 'domain',
-      render: (domain) => domain || 'Chưa đặt',
+      render: (domain) =>
+        domain ? (
+          <a
+            href={`${window.location.origin}/${domain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            {`${window.location.origin}/${domain}`}
+          </a>
+        ) : 'Chưa đặt',
     },
     {
       title: 'URL',
@@ -262,6 +284,28 @@ const IframeList = () => {
               rows={4}
               placeholder="Nhập mô tả (không bắt buộc)"
             />
+          </Form.Item>
+
+          <Form.Item
+            name="viewers"
+            label="Người dùng được phép truy cập"
+          >
+            <Select
+              mode="multiple"
+              placeholder="Chọn người dùng"
+              loading={loadingUsers}
+              optionFilterProp="children"
+              showSearch
+              filterOption={(input, option) =>
+                (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {userData?.map(user => (
+                <Select.Option key={user._id} value={user._id}>
+                  {user.name || user.email}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
 
           <Form.Item className="mb-0">

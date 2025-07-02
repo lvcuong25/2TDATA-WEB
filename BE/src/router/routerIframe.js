@@ -7,6 +7,7 @@ import {
   updateIframe,
   deleteIframe
 } from '../controllers/iframe.js';
+import { getUser } from '../middlewares/getUser.js';
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.get('/', getAllIframes);
 router.get('/:id', getIframeById);
 
 // Lấy iframe theo domain
-router.get('/domain/:domain', getIframeByDomain);
+router.get('/domain/:domain', getUser, getIframeByDomain);
 
 // Thêm mới iframe
 router.post('/', createIframe);
@@ -26,6 +27,6 @@ router.post('/', createIframe);
 router.put('/:id', updateIframe);
 
 // Xóa iframe
-router.delete('/:id', deleteIframe);
+router.delete('/:id', deleteIframe);  
 
 export default router; 

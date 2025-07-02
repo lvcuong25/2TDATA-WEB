@@ -23,17 +23,17 @@ const Dropdown = () => {
   const items = [
     {
       to: '/policy/chinh-sach-thu-thap-va-xu-ly-du-lieu-ca-nhan-khach-hang',
-      label: 'Chính sách dữ liệu',
+      label: 'Chính sách thu thập và xử lý dữ liệu cá nhân khách hàng',
       desc: 'Thu thập & xử lý dữ liệu cá nhân',
     },
     {
       to: '/policy/chinh-sach-bao-mat-va-xu-ly-du-lieu-khach-hang',
-      label: 'Bảo mật & Xử lý dữ liệu',
+      label: 'Chính sách bảo mật và xử lý dữ liệu khách hàng',
       desc: 'Chính sách bảo mật khách hàng',
     },
     {
       to: '/policy/dieu-khoan-su-dung-dich-vu',
-      label: 'Điều khoản sử dụng',
+      label: 'Điều khoản sử dụng dịch vụ',
       desc: 'Quy định sử dụng dịch vụ',
     },
   ];
@@ -49,7 +49,7 @@ const Dropdown = () => {
           ${isDropdownActive ? 'bg-gray-100 md:bg-transparent md:text-blue-700' : 'hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700'}
         `}
       >
-        Chính sách
+        Điều khoản và chính sách 
         <svg className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path></svg>
       </button>
       {open && (
