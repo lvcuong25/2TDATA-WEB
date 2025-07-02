@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Table, Button, Tag, Input, Tooltip, Pagination, Space } from 'antd';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Table, Button, Tag, Input, Tooltip, Pagination, Space, Modal, Checkbox, Card, Spin } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 import instance from '../../utils/axiosInstance';
@@ -14,6 +14,11 @@ const ServiceOrganization = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [updatingServiceId, setUpdatingServiceId] = useState(null);
+  const queryClient = useQueryClient();
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+  const [allServices, setAllServices] = useState([]);
+  const [loadingAllServices, setLoadingAllServices] = useState(false);
 
   // ===== Lấy thông tin tổ chức của user =====
   const { data: org, isLoading: orgLoading } = useQuery({
@@ -108,6 +113,39 @@ const ServiceOrganization = () => {
     }
   };
 
+  // Fetch all services when open modal
+  const handleOpenAddModal = async () => {
+    setIsAddModalOpen(true);
+    if (allServices.length === 0) {
+      setLoadingAllServices(true);
+      try {
+        const { data } = await instance.get('/service?limit=1000');
+        setAllServices(data.docs || data.data?.docs || []);
+      } catch {
+        toast.error('Không thể tải danh sách dịch vụ');
+      } finally {
+        setLoadingAllServices(false);
+      }
+    }
+  };
+
+  // Gửi API thêm nhiều dịch vụ
+  const handleAddServices = async () => {
+    if (!selectedServiceIds.length) return;
+    try {
+      await instance.post(`/organization/${org?.data?._id}/services`, {
+        serviceId: selectedServiceIds
+      });
+      toast.success('Đã thêm dịch vụ thành công!');
+      setIsAddModalOpen(false);
+      setSelectedServiceIds([]);
+      // Refetch lại danh sách dịch vụ tổ chức
+      queryClient.invalidateQueries(['organization', currentUser?._id]);
+    } catch {
+      toast.error('Không thể thêm dịch vụ');
+    }
+  };
+
   // ===== Render UI =====
   if (orgLoading) return <div className="p-4">Đang tải thông tin tổ chức...</div>;
 
@@ -123,14 +161,17 @@ const ServiceOrganization = () => {
           Danh sách dịch vụ của tổ chức
         </span>
         <div className="flex gap-2 flex-1 md:flex-none">
-          <Input
-            placeholder="Tìm kiếm theo tên/slug dịch vụ"
-            prefix={<SearchOutlined />}
-            value={searchText}
+        <Input
+          placeholder="Tìm kiếm theo tên/slug dịch vụ"
+          prefix={<SearchOutlined />}
+          value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             className="w-full md:w-96"
-            allowClear
-          />
+          allowClear
+        />
+          <Button type="primary" className="bg-blue-600 min-w-[120px]" onClick={handleOpenAddModal}>
+            Thêm dịch vụ
+          </Button>
         </div>
       </div>
       {/* 2 bảng trong 1 khung lớn chia 2 grid */}
@@ -139,14 +180,14 @@ const ServiceOrganization = () => {
           {/* Bảng dịch vụ bên trái */}
           <div className="md:col-span-2 min-w-0 rounded-lg border p-4 flex flex-col h-full bg-gray-50">
             <h3 className="font-semibold text-lg mb-3">Bảng dịch vụ</h3>
-            <Table
-              columns={columns}
+      <Table
+        columns={columns}
               dataSource={paginatedServices}
-              rowKey="_id"
+        rowKey="_id"
               loading={orgLoading}
               pagination={false}
-              scroll={{ x: 'max-content' }}
-            />
+        scroll={{ x: 'max-content' }}
+      />
             <div className="flex justify-end mt-2">
               <Pagination
                 current={currentPage}
@@ -165,73 +206,73 @@ const ServiceOrganization = () => {
           {/* Bảng kết quả bên phải */}
           <div className="md:col-span-3 min-w-0 rounded-lg border p-4 flex flex-col h-full bg-gray-50">
             <h3 className="font-semibold text-lg mb-3">Bảng kết quả</h3>
-            <Table
-              columns={[
-                {
-                  title: "Dịch vụ",
-                  dataIndex: "service",
-                  key: "service",
-                  render: (service) => (
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={service?.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
-                        alt={service?.name}
-                        className="w-10 h-10 object-cover rounded"
-                      />
-                      <div>
-                        <div className="font-medium">{service?.name}</div>
-                        <div className="text-sm text-gray-500">{service?.slug}</div>
-                      </div>
+      <Table
+        columns={[
+          {
+            title: "Dịch vụ",
+            dataIndex: "service",
+            key: "service",
+            render: (service) => (
+              <div className="flex items-center gap-2">
+                <img
+                  src={service?.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
+                  alt={service?.name}
+                  className="w-10 h-10 object-cover rounded"
+                />
+                <div>
+                  <div className="font-medium">{service?.name}</div>
+                  <div className="text-sm text-gray-500">{service?.slug}</div>
+                </div>
+              </div>
+            ),
+          },
+          {
+            title: "Trạng thái",
+            dataIndex: "status",
+            key: "status",
+            render: (status) => (
+              <Tag color={
+                status === "approved" ? "green" :
+                status === "rejected" ? "red" : "orange"
+              }>
+                {status === "approved" ? "Đã xác nhận" :
+                 status === "rejected" ? "Bị từ chối" : "Đang chờ"}
+              </Tag>
+            ),
+          },
+          {
+            title: "Kết quả",
+            dataIndex: "link",
+            key: "resultLinks",
+            render: (links) => {
+              return links && links.length > 0 ? (
+                <Space direction="vertical">
+                  {links.map((link, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Tooltip title={link.description || "Không có mô tả"}>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {link.title}
+                        </a>
+                      </Tooltip>
                     </div>
-                  ),
-                },
-                {
-                  title: "Trạng thái",
-                  dataIndex: "status",
-                  key: "status",
-                  render: (status) => (
-                    <Tag color={
-                      status === "approved" ? "green" :
-                      status === "rejected" ? "red" : "orange"
-                    }>
-                      {status === "approved" ? "Đã xác nhận" :
-                       status === "rejected" ? "Bị từ chối" : "Đang chờ"}
-                    </Tag>
-                  ),
-                },
-                {
-                  title: "Kết quả",
-                  dataIndex: "link",
-                  key: "resultLinks",
-                  render: (links) => {
-                    return links && links.length > 0 ? (
-                      <Space direction="vertical">
-                        {links.map((link, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <Tooltip title={link.description || "Không có mô tả"}>
-                              <a
-                                href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 hover:underline"
-                              >
-                                {link.title}
-                              </a>
-                            </Tooltip>
-                          </div>
-                        ))}
-                      </Space>
-                    ) : (
-                      "Chưa có link kết quả"
-                    );
-                  },
-                },
-                {
-                  title: "Ngày tạo",
-                  dataIndex: "createdAt",
-                  key: "createdAt",
-                  render: (date) => new Date(date).toLocaleDateString("vi-VN"),
-                },
+                  ))}
+                </Space>
+              ) : (
+                "Chưa có link kết quả"
+              );
+            },
+          },
+          {
+            title: "Ngày tạo",
+            dataIndex: "createdAt",
+            key: "createdAt",
+            render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+          },
                 {
                   title: "Thao tác",
                   key: "action",
@@ -247,17 +288,71 @@ const ServiceOrganization = () => {
                 },
               ]}
               dataSource={orgServices.filter(item => item.link && item.link.length > 0)}
-              rowKey={record => record._id}
-              className="mt-10"
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showTotal: (total) => `Tổng số ${total} dịch vụ có kết quả`,
-              }}
-            />
+        rowKey={record => record._id}
+        className="mt-10"
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `Tổng số ${total} dịch vụ có kết quả`,
+        }}
+      />
           </div>
         </div>
       </div>
+      {/* Modal thêm nhiều dịch vụ dạng card */}
+      <Modal
+        open={isAddModalOpen}
+        onOk={handleAddServices}
+        onCancel={() => setIsAddModalOpen(false)}
+        okText="Thêm dịch vụ"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: !selectedServiceIds.length }}
+        width={900}
+        destroyOnClose
+        title="Chọn dịch vụ để thêm vào tổ chức"
+      >
+        {loadingAllServices ? (
+          <div className="text-center py-8"><Spin /> Đang tải...</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+            {allServices.length === 0 ? (
+              <div className="col-span-full text-center text-gray-500">Không có dịch vụ nào</div>
+            ) : (
+              allServices.map(s => {
+                  const checked = selectedServiceIds.includes(s._id);
+                  return (
+                  <Card
+                      key={s._id}
+                    className={`cursor-pointer transition-all duration-200 shadow-sm hover:shadow-lg flex flex-col items-center ${checked ? 'border-blue-500 ring-2 ring-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}
+                      onClick={() => {
+                        setSelectedServiceIds(ids => checked ? ids.filter(id => id !== s._id) : [...ids, s._id]);
+                      }}
+                    bordered
+                    >
+                      <img
+                        src={s.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+                        alt={s.name}
+                        className="w-20 h-20 object-cover rounded mb-2 border"
+                      />
+                      <div className="font-semibold text-base text-center mb-1">{s.name}</div>
+                      <div className="text-xs text-gray-500 mb-1">{s.slug}</div>
+                      <div className="text-xs text-gray-700 mb-2 line-clamp-2 text-center" style={{ minHeight: 32 }}>{s.description || 'Không có mô tả'}</div>
+                    <Checkbox
+                        checked={checked}
+                        onChange={e => {
+                          e.stopPropagation();
+                          setSelectedServiceIds(ids => checked ? ids.filter(id => id !== s._id) : [...ids, s._id]);
+                        }}
+                        className="mt-2"
+                      />
+                      <span className="text-xs mt-1">{checked ? 'Đã chọn' : 'Chọn'}</span>
+                  </Card>
+                  );
+                })
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
