@@ -36,6 +36,10 @@ import SecurityAndDataPolicy from "../components/PrivacPolicy/SecurityAndDataPol
 import TermsOfService from "../components/PrivacPolicy/TermsOfService.jsx";
 import IframeList from "../components/admin/Iframe/IframeList.jsx";
 import Ifame from "../components/Iframe/Ifame.jsx";
+import SiteList from "../components/admin/Site/SiteList.jsx";
+import SiteForm from "../components/admin/Site/SiteForm.jsx";
+import SiteDetail from "../components/admin/Site/SiteDetail.jsx";
+import SiteAdminList from "../components/admin/Site/SiteAdminList.jsx";
 
 const Router = () => {
   return (
@@ -104,6 +108,13 @@ const Router = () => {
           </Route>
           <Route path="iframe">
             <Route index element={<IframeList />} />
+          </Route>
+          <Route path="sites">
+            <Route index element={<SiteList />} />
+            <Route path="add" element={<SiteForm />} />
+            <Route path="edit/:id" element={<SiteForm />} />
+            <Route path="detail/:id" element={<SiteDetail />} />
+            <Route path=":siteId/admins" element={<SiteAdminList />} />
           </Route>
         </Route>
       </Routes>

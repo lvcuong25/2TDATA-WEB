@@ -31,7 +31,7 @@ const NoneLoginRoute = ({ children }) => {
 
 const AdminRoute = ({ children }) => {
   const { currentUser } = useContext(AuthContext);
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "super_admin";
   return (
     <ConditionalRoute
       condition={!!currentUser && isAdmin}

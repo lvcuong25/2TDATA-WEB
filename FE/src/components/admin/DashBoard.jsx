@@ -14,6 +14,7 @@ import {
   UnorderedListOutlined,
   FormOutlined,
   LinkOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -37,38 +38,64 @@ const DashBoard = () => {
         style={{ position: 'fixed', height: '100vh' }} // Fixed Sider
       >
       
-        <Menu theme="dark" defaultSelectedKeys={[activeLink]} mode="inline">
-        <Divider />
-
-        
-        <Menu.Item key="/admin" icon={<UserOutlined />} onClick={() => handleLinkClick('/admin')}>
-            <Link to="/admin">Quản lý người dùng</Link>
-          </Menu.Item>
-    
-        <Menu.Item key="/admin/services" icon={<ShoppingOutlined />} onClick={() => handleLinkClick('/admin/services')}>
-            <Link to="/admin/services">Quản lý dịch vụ</Link>
-          </Menu.Item>
-       
-        <Menu.Item key="/admin/blogs" icon={<FileTextOutlined />} onClick={() => handleLinkClick('/admin/blogs')}>
-            <Link to="/admin/blogs">Quản lý blogs</Link>
-          </Menu.Item>
-
-          <Menu.Item key="/admin/status" icon={<FileTextOutlined />} onClick={() => handleLinkClick('/admin/status')}>
-            <Link to="/admin/status">Quản lý trạng thái</Link>
-          </Menu.Item>
-
-          <Menu.Item key="/admin/user-info" icon={<FormOutlined />} onClick={() => handleLinkClick('/admin/user-info')}>
-            <Link to="/admin/user-info">Quản lý đăng ký</Link>
-          </Menu.Item>
-
-          <Menu.Item key="/admin/iframe" icon={<LinkOutlined />} onClick={() => handleLinkClick('/admin/iframe')}>
-            <Link to="/admin/iframe">Quản lý iframe</Link>
-          </Menu.Item>
-       
-          <Menu.Item key="/" icon={<HeartOutlined />} onClick={() => handleLinkClick('/')}>
-            <Link to="/">Website</Link>
-          </Menu.Item>
-        </Menu>
+        <Menu 
+          theme="dark" 
+          defaultSelectedKeys={[activeLink]} 
+          mode="inline"
+          items={[
+            {
+              type: 'divider',
+            },
+            {
+              key: '/admin',
+              icon: <UserOutlined />,
+              label: <Link to="/admin">Quản lý người dùng</Link>,
+              onClick: () => handleLinkClick('/admin')
+            },
+            {
+              key: '/admin/services',
+              icon: <ShoppingOutlined />,
+              label: <Link to="/admin/services">Quản lý dịch vụ</Link>,
+              onClick: () => handleLinkClick('/admin/services')
+            },
+            {
+              key: '/admin/blogs',
+              icon: <FileTextOutlined />,
+              label: <Link to="/admin/blogs">Quản lý blogs</Link>,
+              onClick: () => handleLinkClick('/admin/blogs')
+            },
+            {
+              key: '/admin/status',
+              icon: <FileTextOutlined />,
+              label: <Link to="/admin/status">Quản lý trạng thái</Link>,
+              onClick: () => handleLinkClick('/admin/status')
+            },
+            {
+              key: '/admin/user-info',
+              icon: <FormOutlined />,
+              label: <Link to="/admin/user-info">Quản lý đăng ký</Link>,
+              onClick: () => handleLinkClick('/admin/user-info')
+            },
+            {
+              key: '/admin/iframe',
+              icon: <LinkOutlined />,
+              label: <Link to="/admin/iframe">Quản lý iframe</Link>,
+              onClick: () => handleLinkClick('/admin/iframe')
+            },
+            {
+              key: '/admin/sites',
+              icon: <GlobalOutlined />,
+              label: <Link to="/admin/sites">Quản lý trang web</Link>,
+              onClick: () => handleLinkClick('/admin/sites')
+            },
+            {
+              key: '/',
+              icon: <HeartOutlined />,
+              label: <Link to="/">Website</Link>,
+              onClick: () => handleLinkClick('/')
+            }
+          ]}
+        />
       </Sider>
       <Layout className="site-layout" style={{ marginLeft: collapsed ? 80 : 250 }}> 
         <Header className="site-layout-background" style={{ padding: 0, background: '#fff' }}>

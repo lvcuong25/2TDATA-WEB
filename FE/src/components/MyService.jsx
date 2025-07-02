@@ -95,7 +95,17 @@ const MyService = () => {
           record.link_update.map(link => {
             if (link.url) {
               // Gửi POST, không cần chờ kết quả
-              return fetch(link.url, { method: 'POST' });
+              // Use proper headers and error handling
+              return fetch(link.url, { 
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                mode: 'cors' // Explicitly set CORS mode
+              }).catch(error => {
+                console.log('Link update request failed (expected):', error.message);
+                return null; // Don't throw, just log
+              });
             }
             return null;
           })

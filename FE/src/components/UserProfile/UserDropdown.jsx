@@ -77,7 +77,8 @@ const UserDropdown = ({ onLogoutSuccess }) => {
             </p>
             {currentUser?.role && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 mt-1">
-                {currentUser.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
+                {(currentUser.role === 'admin' || currentUser.role === 'super_admin') ? 
+                  (currentUser.role === 'super_admin' ? 'Quản trị tối cao' : 'Quản trị viên') : 'Người dùng'}
               </span>
             )}
           </div>
@@ -122,7 +123,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
               </div>
             </Link>
             
-            {currentUser?.role === 'admin' && (
+            {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
               <Link
                 to="/admin"
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"

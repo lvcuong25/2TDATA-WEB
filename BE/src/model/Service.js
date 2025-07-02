@@ -1,13 +1,18 @@
 import mongoose from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
-const serviceSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      unique: true,
-    },
+const serviceSchema = new mongoose.Schema({
+  site_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Site',
+    required: true,
+    index: true
+  },
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+  },
     slug: {
       type: String,
       required: true,

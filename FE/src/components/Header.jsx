@@ -3,11 +3,13 @@ import image from "../image/image.jpg";
 import UserDropdown from './UserProfile/UserDropdown';
 import { Link, useLocation } from 'react-router-dom';
 import { AuthContext } from './core/Auth';
+import { useSite } from '../context/SiteContext';
 import Dropdown from './PrivacPolicy/Dropdown';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { currentUser, isLogin } = useContext(AuthContext);
+    const { currentSite } = useSite();
 
     const location = useLocation();
 
@@ -24,7 +26,15 @@ const Header = () => {
         <nav className="bg-white dark:bg-gray-900 fixed w-full z-20 top-0 start-0 border-b border-gray-200 dark:border-gray-600">
           <div className="container flex flex-wrap items-center justify-between mx-auto px-4">
             <Link to="/">
-              <img src={image} alt="2T DATA" className="h-[60px] md:h-[80px] w-[60px] md:w-[80px]" />
+              <img 
+                src={currentSite?.logo_url || currentSite?.theme_config?.logoUrl || image} 
+                alt={currentSite?.name || '2T DATA'} 
+                className="h-[60px] md:h-[80px] w-[60px] md:w-[80px] object-contain"
+                onError={(e) => {
+                  // Fallback to default image if site logo fails to load
+                  e.target.src = image;
+                }}
+              />
             </Link>
             
             <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
@@ -113,7 +123,7 @@ const Header = () => {
                     Dịch vụ
                   </Link>
                 </li>
-                {currentUser?.role === 'admin' && (
+                {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
                   <li>
                     <Link
                       to="/admin"
