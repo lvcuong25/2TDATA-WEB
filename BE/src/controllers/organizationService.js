@@ -67,6 +67,17 @@ export const getOrganizationServices = async (req, res, next) => {
       ]
     };
     const data = await OrganizationService.paginate({ organization: req.params.orgId }, options);
+    // Lọc link theo quyền
+    const userRole = req.user?.role || null;
+    const userId = req.user?._id?.toString() || null;
+    data.docs = data.docs.map(doc => {
+      const isOwnerOrManager = (doc.organization?.manager?.toString() === userId) || (doc.organization?.members?.some(m => m.user?.toString() === userId && (m.role === 'owner' || m.role === 'manager')));
+      if (!isOwnerOrManager) {
+        doc.link = Array.isArray(doc.link) ? doc.link.filter(l => l.visible !== false && (!l.visibleFor || l.visibleFor.length === 0 || l.visibleFor.map(id => id.toString()).includes(userId))) : doc.link;
+        delete doc.link_update;
+      }
+      return doc;
+    });
     return res.status(200).json({ data });
   } catch (error) { next(error); }
 };
@@ -178,14 +189,23 @@ export const getOrganizationServiceDetail = async (req, res, next) => {
   try {
     const { id } = req.params;
     const orgService = await OrganizationService.findById(id)
-      .populate('organization', 'name email phone address logo')
+      .populate('organization', 'name email phone address logo manager members')
       .populate('service', 'name slug image status description')
       .populate('approvedBy', 'name email avatar');
     if (!orgService) {
       return res.status(404).json({ message: "Không tìm thấy thông tin service" });
     }
+    // Lọc link theo quyền
+    const userRole = req.user?.role || null;
+    const userId = req.user?._id?.toString() || null;
+    const isOwnerOrManager = (orgService.organization?.manager?.toString() === userId) || (orgService.organization?.members?.some(m => m.user?.toString() === userId && (m.role === 'owner' || m.role === 'manager')));
+    let data = orgService.toObject();
+    if (!isOwnerOrManager) {
+      data.link = Array.isArray(data.link) ? data.link.filter(l => l.visible !== false && (!l.visibleFor || l.visibleFor.length === 0 || l.visibleFor.map(id => id.toString()).includes(userId))) : data.link;
+      delete data.link_update;
+    }
     return res.status(200).json({
-      data: orgService,
+      data,
       message: "Lấy thông tin service thành công"
     });
   } catch (error) { next(error); }
@@ -240,13 +260,17 @@ export const updateOrganizationServiceLinks = async (req, res, next) => {
           return {
             url: link,
             title: 'Link không có tiêu đề',
-            description: ''
+            description: '',
+            visible: true,
+            visibleFor: []
           };
         }
         return {
           url: link.url || '',
           title: link.title || 'Link không có tiêu đề',
-          description: link.description || ''
+          description: link.description || '',
+          visible: typeof link.visible === 'boolean' ? link.visible : true,
+          visibleFor: Array.isArray(link.visibleFor) ? link.visibleFor : []
         };
       });
       orgService.link = formattedLinks;
@@ -257,13 +281,17 @@ export const updateOrganizationServiceLinks = async (req, res, next) => {
           return {
             url: link,
             title: 'Link cập nhật không có tiêu đề',
-            description: ''
+            description: '',
+            visible: true,
+            visibleFor: []
           };
         }
         return {
           url: link.url || '',
           title: link.title || 'Link cập nhật không có tiêu đề',
-          description: link.description || ''
+          description: link.description || '',
+          visible: typeof link.visible === 'boolean' ? link.visible : true,
+          visibleFor: Array.isArray(link.visibleFor) ? link.visibleFor : []
         };
       });
       orgService.link_update = formattedUpdateLinks;

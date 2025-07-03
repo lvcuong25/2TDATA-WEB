@@ -53,6 +53,16 @@ const organizationServiceSchema = new mongoose.Schema(
           type: String,
           description: "Mô tả chi tiết về link cập nhật",
         },
+        visible: {
+          type: Boolean,
+          default: true,
+          description: "Link này có hiển thị cho member không?",
+        },
+        visibleFor: [{
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          description: "Chỉ định user nào được xem link này (nếu rỗng thì tất cả member đều xem được)"
+        }],
       },
     ],
     link: [
@@ -71,6 +81,16 @@ const organizationServiceSchema = new mongoose.Schema(
           type: String,
           description: "Mô tả chi tiết về link",
         },
+        visible: {
+          type: Boolean,
+          default: true,
+          description: "Link này có hiển thị cho member không?",
+        },
+        visibleFor: [{
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          description: "Chỉ định user nào được xem link này (nếu rỗng thì tất cả member đều xem được)"
+        }],
       },
     ],
   },

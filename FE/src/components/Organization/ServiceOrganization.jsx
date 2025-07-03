@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Table, Button, Tag, Input, Tooltip, Pagination, Space, Modal, Checkbox, Card, Spin } from 'antd';
+import { Table, Button, Tag, Input, Tooltip, Pagination, Space, Modal, Checkbox, Card, Spin, message, Row, Col, Avatar } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 import instance from '../../utils/axiosInstance';
@@ -19,6 +19,8 @@ const ServiceOrganization = () => {
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
   const [allServices, setAllServices] = useState([]);
   const [loadingAllServices, setLoadingAllServices] = useState(false);
+  const [shareModal, setShareModal] = useState({ open: false, link: null, record: null });
+  const [selectedShareUsers, setSelectedShareUsers] = useState([]);
 
   // ===== Lấy thông tin tổ chức của user =====
   const { data: org, isLoading: orgLoading } = useQuery({
@@ -153,6 +155,28 @@ const ServiceOrganization = () => {
   const orgServices = org?.data?.services || org?.services || [];
   const paginatedServices = orgServices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  const members = (org?.data?.members || org?.members || []);
+  const uniqueMembers = Array.from(
+    new Map(members.map(m => [m.user._id, m])).values()
+  );
+  // Lọc bỏ owner/manager
+  const shareableMembers = uniqueMembers.filter(m => m.role !== 'owner' && m.role !== 'manager');
+  const memberOptions = shareableMembers.map(m => ({
+    label: m.user.name || m.user.email,
+    value: m.user._id
+  }));
+
+  // Lọc link cho member ở FE (bổ sung bảo mật phía client)
+  const isOwnerOrManager = ["owner", "manager"].includes(currentUser?.role) || org?.data?.manager?._id === currentUser?._id;
+  const filteredOrgServices = isOwnerOrManager
+    ? orgServices.filter(s => s.link && s.link.length > 0)
+    : orgServices.map(service => ({
+        ...service,
+        link: Array.isArray(service.link)
+          ? service.link.filter(l => l.visible !== false && (Array.isArray(l.visibleFor) && l.visibleFor.includes(currentUser._id)))
+          : service.link
+      })).filter(s => s.link && s.link.length > 0);
+
   return (
     <div>
       {/* Tiêu đề, nút, search full width */}
@@ -244,23 +268,47 @@ const ServiceOrganization = () => {
             title: "Kết quả",
             dataIndex: "link",
             key: "resultLinks",
-            render: (links) => {
+            render: (links, record) => {
+              const members = org?.data?.members || org?.members || [];
+              const isOwnerOrManager = ["owner", "manager"].includes(currentUser?.role) || org?.data?.manager?._id === currentUser?._id;
               return links && links.length > 0 ? (
                 <Space direction="vertical">
-                  {links.map((link, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <Tooltip title={link.description || "Không có mô tả"}>
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          {link.title}
-                        </a>
-                      </Tooltip>
-                    </div>
-                  ))}
+                  {links.map((link, idx) => {
+                    let sharedNames = "Tất cả thành viên";
+                    if (link.visibleFor && Array.isArray(link.visibleFor) && link.visibleFor.length > 0) {
+                      const sharedMembers = members.filter(m => link.visibleFor.includes(m.user._id));
+                      sharedNames = sharedMembers.length > 0
+                        ? sharedMembers.map(m => m.user.name || m.user.email).join(", ")
+                        : "Không ai";
+                    }
+                    return (
+                      <div key={idx} className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Tooltip title={link.description || "Không có mô tả"}>
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              {link.title}
+                            </a>
+                          </Tooltip>
+                          {isOwnerOrManager && (
+                            <Button size="small" onClick={() => {
+                              setShareModal({ open: true, link, record });
+                              setSelectedShareUsers(link.visibleFor || []);
+                            }}>Chỉnh chia sẻ</Button>
+                          )}
+                        </div>
+                        {isOwnerOrManager && (
+                          <div className="text-xs text-gray-500 ml-2">
+                            <b>Chia sẻ cho:</b> {sharedNames}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </Space>
               ) : (
                 "Chưa có link kết quả"
@@ -287,7 +335,7 @@ const ServiceOrganization = () => {
                   ),
                 },
               ]}
-              dataSource={orgServices.filter(item => item.link && item.link.length > 0)}
+              dataSource={filteredOrgServices}
         rowKey={record => record._id}
         className="mt-10"
         pagination={{
@@ -352,6 +400,69 @@ const ServiceOrganization = () => {
             )}
           </div>
         )}
+      </Modal>
+      {/* Modal chỉnh chia sẻ link */}
+      <Modal
+        open={shareModal.open}
+        onCancel={() => setShareModal({ open: false, link: null, record: null })}
+        onOk={async () => {
+          // Gọi API cập nhật visibleFor cho link này
+          try {
+            const serviceId = shareModal.record?._id;
+            // Lấy danh sách link mới
+            const newLinks = (shareModal.record?.link || []).map(l =>
+              l.url === shareModal.link.url ? { ...l, visibleFor: selectedShareUsers } : l
+            );
+            await instance.put(`/organization/services/${serviceId}/links`, { links: newLinks });
+            message.success('Cập nhật chia sẻ thành công!');
+            setShareModal({ open: false, link: null, record: null });
+            queryClient.invalidateQueries(['organization', currentUser?._id]);
+          } catch {
+            message.error('Cập nhật chia sẻ thất bại!');
+          }
+        }}
+        title="Chỉnh chia sẻ link cho thành viên"
+        okText="Lưu chia sẻ"
+        cancelText="Hủy"
+        width={900}
+      >
+        <div style={{ marginBottom: 12 }}>
+          <Row gutter={[16, 16]}>
+            {memberOptions.map(opt => (
+              <Col xs={24} sm={12} md={8} lg={8} key={opt.value}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: 56,
+                  background: '#fafbfc',
+                  border: '1px solid #eee',
+                  borderRadius: 8,
+                  padding: '0 12px',
+                  margin: 0,
+                  boxSizing: 'border-box',
+                  width: '100%'
+                }}>
+                  <Checkbox
+                    checked={selectedShareUsers.includes(opt.value)}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setSelectedShareUsers(prev => [...prev, opt.value]);
+                      } else {
+                        setSelectedShareUsers(prev => prev.filter(id => id !== opt.value));
+                      }
+                    }}
+                    style={{ fontSize: 16, marginRight: 12, marginLeft: 0 }}
+                  />
+                  <Avatar size={32} src={shareableMembers.find(m => m.user._id === opt.value)?.user.avatar} style={{ marginRight: 12 }}>
+                    {(opt.label || '').charAt(0).toUpperCase()}
+                  </Avatar>
+                  <span style={{ fontWeight: 500, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{opt.label}</span>
+                </div>
+              </Col>
+            ))}
+          </Row>
+        </div>
+        <div className="text-xs text-gray-500 mt-2">Không chọn ai thì không thành viên nào được xem link (chỉ owner/manager thấy).</div>
       </Modal>
     </div>
   );
