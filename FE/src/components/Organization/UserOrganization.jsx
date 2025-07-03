@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, Avatar, Table, Button, Form, Select, Tag, Popconfirm, Typography, Divider, Input, Modal, Descriptions, Row, Col } from 'antd';
 import { DeleteOutlined, EditOutlined, MailOutlined, PhoneOutlined, HomeOutlined, IdcardOutlined, PictureOutlined, NumberOutlined } from '@ant-design/icons';
@@ -46,6 +46,7 @@ const UserOrganization = () => {
     onSuccess: () => {
       queryClient.invalidateQueries(['organization', currentUser?._id]);
       form.resetFields();
+      toast.success('Thêm thành viên thành công!');
     },
   });
   const updateMemberRoleMutation = useMutation({
@@ -54,7 +55,13 @@ const UserOrganization = () => {
   });
   const removeMemberMutation = useMutation({
     mutationFn: (userId) => instance.delete(`/organization/${org?.data?._id}/members/${userId}`),
-    onSuccess: () => queryClient.invalidateQueries(['organization', currentUser?._id]),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['organization', currentUser?._id]);
+      toast.success('Xóa thành viên thành công!');
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.error || 'Xóa thành viên thất bại!');
+    }
   });
   const updateOrgMutation = useMutation({
     mutationFn: (values) => instance.put(`/organization/${org?.data?._id}`, values),
@@ -65,6 +72,15 @@ const UserOrganization = () => {
     },
     onError: (err) => toast.error(err?.response?.data?.error || 'Cập nhật thất bại!')
   });
+
+  useEffect(() => {
+    // Tính tổng số trang mới
+    const totalMembers = org?.data?.members?.length || 0;
+    const totalPages = Math.ceil(totalMembers / memberPageSize) || 1;
+    if (memberPage > totalPages) {
+      setMemberPage(totalPages);
+    }
+  }, [org?.data?.members?.length, memberPage, memberPageSize]);
 
   if (isLoading) return <div className="flex justify-center items-center h-64"><span>Đang tải...</span></div>;
   if (!org) return <div className="text-center text-gray-500">Bạn chưa thuộc tổ chức nào.</div>;
@@ -217,7 +233,7 @@ const UserOrganization = () => {
           {orgData.address || 'Chưa cập nhật'}
         </Descriptions.Item>
       </Descriptions>
-      {isOwner && (
+      {isOwnerOrManager && (
         <Form form={form} onFinish={handleAddMember} layout="inline" style={{ marginBottom: 16 }} className='mt-10'>
           <Form.Item name="userId" rules={[{ required: true, message: 'Vui lòng chọn người dùng' }]}> 
             <Select

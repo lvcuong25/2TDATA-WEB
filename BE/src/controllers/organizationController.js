@@ -132,7 +132,12 @@ export const addMember = async (req, res) => {
             return res.status(404).json({ error: "Không tìm thấy tổ chức." });
         }
 
-        // TODO: Thêm logic kiểm tra quyền của người dùng hiện tại (chỉ owner mới được thêm)
+        // Lấy user hiện tại từ req.user
+        const currentUserId = req.user._id;
+        const currentMember = organization.members.find(m => m.user.equals(currentUserId));
+        if (!currentMember || (currentMember.role !== 'owner' && currentMember.role !== 'manager')) {
+            return res.status(403).json({ error: "Chỉ owner hoặc manager mới được thêm thành viên." });
+        }
 
         const isMember = organization.members.some(member => member.user.equals(userId));
         if (isMember) {

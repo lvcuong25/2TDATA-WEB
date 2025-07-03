@@ -38,7 +38,6 @@ const organizationServiceSchema = new mongoose.Schema(
     customSlug: {
       type: String,
       unique: true,
-      // required: true
     },
     link_update: [
       {
@@ -86,9 +85,8 @@ organizationServiceSchema.pre("save", function (next) {
     this.customSlug = `orgservice-${timestamp}-${randomStr}`;
   }
   next();
-},
-{ timestamps: true, versionKey: false });
+});
 
 organizationServiceSchema.plugin(mongoosePaginate);
 
-export default mongoose.model("OrganizationService", organizationServiceSchema); 
+export default mongoose.model("OrganizationService", organizationServiceSchema);
