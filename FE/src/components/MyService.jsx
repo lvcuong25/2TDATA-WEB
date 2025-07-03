@@ -57,8 +57,10 @@ const MyService = () => {
   });
 
   // Hàm sinh state base64
-  function generateState(userId) {
-    return btoa(JSON.stringify({ userId }));
+  function generateState(userId, name, serviceId) {
+    const obj = { userId, name, serviceId };
+    console.log('STATE OBJ (before encode):', obj);
+    return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
   }
   // Hàm thêm/thay thế state vào url
   function appendStateToUrl(url, stateValue) {
@@ -88,7 +90,13 @@ const MyService = () => {
       // Find the first authorized link
       const authorizedLink = service?.service?.authorizedLinks?.[0];
       if (authorizedLink) {
-        const state = generateState(currentUser?._id || "");
+        const stateObj = {
+          userId: currentUser?._id || "",
+          name: currentUser?.name || "",
+          serviceId: service?._id || ""
+        };
+        console.log('STATE OBJ (before encode):', stateObj);
+        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId);
         const urlWithState = appendStateToUrl(authorizedLink.url, state);
         window.location.href = urlWithState;
       } else {
@@ -253,7 +261,13 @@ const MyService = () => {
               className="bg-blue-500 hover:bg-blue-600"
               onClick={() => {
                 if (hasLink) {
-                  const state = generateState(currentUser?._id || "");
+                  const stateObj = {
+                    userId: currentUser?._id || "",
+                    name: currentUser?.name || "",
+                    serviceId: record.service._id || ""
+                  };
+                  console.log('STATE OBJ (before encode):', stateObj);
+                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId);
                   const urlWithState = appendStateToUrl(links[0].url, state);
                   window.location.href = urlWithState;
                 }

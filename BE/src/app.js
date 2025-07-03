@@ -13,7 +13,7 @@ app.use(cors());
 
 const { DB_URI, PORT } = process.env;
 connectDB(process.env.DB_URI)
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json());
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // app.use(express.json());
 app.use("/api", router);
