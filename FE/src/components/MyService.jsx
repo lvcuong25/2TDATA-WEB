@@ -56,27 +56,41 @@ const MyService = () => {
     enabled: !!currentUser?._id,
   });
 
+  // Hàm sinh state base64
+  function generateState(userId) {
+    return btoa(JSON.stringify({ userId }));
+  }
+  // Hàm thêm/thay thế state vào url
+  function appendStateToUrl(url, stateValue) {
+    try {
+      const urlObj = new URL(url, window.location.origin);
+      urlObj.searchParams.set('state', stateValue);
+      return urlObj.toString();
+    } catch {
+      return url;
+    }
+  }
+
   const handleServiceClick = async (service) => {
     try {
       if (!accessToken || !currentUser?._id) {
         console.error('Missing access token or user ID');
         return;
       }
-
       // Make the webhook request
       const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
         userId: currentUser?._id,
         accessToken: accessToken
       });
-
       if (response?.status !== 200) {
         throw new Error('Webhook request failed');
       }
-
       // Find the first authorized link
       const authorizedLink = service?.service?.authorizedLinks?.[0];
       if (authorizedLink) {
-        window.location.href = authorizedLink?.url;
+        const state = generateState(currentUser?._id || "");
+        const urlWithState = appendStateToUrl(authorizedLink.url, state);
+        window.location.href = urlWithState;
       } else {
         console.log("No authorized link found for this service.", service);
       }
@@ -237,7 +251,13 @@ const MyService = () => {
             <Button
               type="primary"
               className="bg-blue-500 hover:bg-blue-600"
-              onClick={() => hasLink && window.open(links[0].url, '_blank')}
+              onClick={() => {
+                if (hasLink) {
+                  const state = generateState(currentUser?._id || "");
+                  const urlWithState = appendStateToUrl(links[0].url, state);
+                  window.location.href = urlWithState;
+                }
+              }}
               disabled={!hasLink}
             >
               Kết nối <span style={{ marginLeft: 4 }}>→</span>
