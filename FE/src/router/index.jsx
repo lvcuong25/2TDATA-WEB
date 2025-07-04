@@ -36,10 +36,16 @@ import SecurityAndDataPolicy from "../components/PrivacPolicy/SecurityAndDataPol
 import TermsOfService from "../components/PrivacPolicy/TermsOfService.jsx";
 import IframeList from "../components/admin/Iframe/IframeList.jsx";
 import Ifame from "../components/Iframe/Ifame.jsx";
+// Site management imports (from main branch)
 import SiteList from "../components/admin/Site/SiteList.jsx";
 import SiteForm from "../components/admin/Site/SiteForm.jsx";
 import SiteDetail from "../components/admin/Site/SiteDetail.jsx";
 import SiteAdminList from "../components/admin/Site/SiteAdminList.jsx";
+// Organization management imports (from vietcuong branch)
+import OrganizationList from "../components/admin/Organization/OrganizationList.jsx";
+import OrgStatusList from "../components/admin/Status/OrgStatusList.jsx";
+import UserOrganization from "../components/Organization/UserOrganization.jsx";
+import ServiceOrganization from "../components/Organization/ServiceOrganization.jsx";
 
 const Router = () => {
   return (
@@ -68,10 +74,29 @@ const Router = () => {
           <Route path="/profile" element={<LayOutUser />}>
             <Route index element={<UserProfile />} />
             <Route path="change-password" element={<ChangePassword />} />
+            <Route path="organization" element={
+              <PrivateRoute>
+                <UserOrganization />
+              </PrivateRoute>
+            } />
+            <Route path="organization/services" element={
+              <PrivateRoute>
+                <ServiceOrganization orgId={null} />
+              </PrivateRoute>
+            } />
           </Route>
-          <Route path="/policy/chinh-sach-thu-thap-va-xu-ly-du-lieu-ca-nhan-khach-hang" element={<DataPolicy />} />
-          <Route path="/policy/chinh-sach-bao-mat-va-xu-ly-du-lieu-khach-hang" element={<SecurityAndDataPolicy />} />
-          <Route path="/policy/dieu-khoan-su-dung-dich-vu" element={<TermsOfService />} />
+          <Route
+            path="/policy/chinh-sach-thu-thap-va-xu-ly-du-lieu-ca-nhan-khach-hang"
+            element={<DataPolicy />}
+          />
+          <Route
+            path="/policy/chinh-sach-bao-mat-va-xu-ly-du-lieu-khach-hang"
+            element={<SecurityAndDataPolicy />}
+          />
+          <Route
+            path="/policy/dieu-khoan-su-dung-dich-vu"
+            element={<TermsOfService />}
+          />
           <Route path="/:domain" element={<Ifame />} />
         </Route>
 
@@ -102,6 +127,7 @@ const Router = () => {
             <Route index element={<StatusList />} />
             <Route path="add" element={<StatusForm />} />
             <Route path="edit/:id" element={<StatusEdit />} />
+            <Route path="org-status" element={<OrgStatusList />} />
           </Route>
           <Route path="user-info">
             <Route index element={<UserInfoList />} />
@@ -115,6 +141,9 @@ const Router = () => {
             <Route path="edit/:id" element={<SiteForm />} />
             <Route path="detail/:id" element={<SiteDetail />} />
             <Route path=":siteId/admins" element={<SiteAdminList />} />
+          </Route>
+          <Route path="organization">
+            <Route index element={<OrganizationList />} />
           </Route>
         </Route>
       </Routes>

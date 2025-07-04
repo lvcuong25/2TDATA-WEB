@@ -1,1 +1,25 @@
 # Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+# Bỏ qua node_modules trong BE và FE
+BE/node_modules/
+FE/node_modules/
+
+# Bỏ qua file log
+*.log
+
+# Bỏ qua thư mục build/output
+BE/dist/
+FE/dist/
+BE/build/
+FE/build/
+
+# Bỏ qua config, temp files
+.vscode/
+.env
+.DS_Store
+*.zip
+*.tar.gz
+*.tgz
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

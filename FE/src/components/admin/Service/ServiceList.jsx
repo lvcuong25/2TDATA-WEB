@@ -13,14 +13,17 @@ const ServiceList = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["SERVICES", searchValue],
+    queryKey: ["SERVICES", searchValue, page, pageSize],
     queryFn: async () => {
       const params = new URLSearchParams({
-        ...(searchValue && { name: searchValue })
+        ...(searchValue && { name: searchValue }),
+        page,
+        limit: pageSize
       });
       const { data } = await instance.get(`/service?${params}`);
       return data;
     },
+    keepPreviousData: true
   });
 
   const deleteMutation = useMutation({
@@ -40,6 +43,7 @@ const ServiceList = () => {
 
   const handleSearch = (value) => {
     setSearchValue(value);
+    setPage(1); // reset về trang 1 khi search
   };
 
   const columns = [
@@ -47,8 +51,8 @@ const ServiceList = () => {
       title: "STT",
       dataIndex: "index",
       key: "index",
-        width: 60,
-      render: (_, __, index) => index + 1,
+      width: 60,
+      render: (_, __, index) => (page - 1) * pageSize + index + 1,
     },
     {
       title: "Mã",
@@ -152,13 +156,13 @@ const ServiceList = () => {
           rowKey="_id"
           loading={isLoading}
           pagination={{
-            pageSize: data?.data?.limit || 10,
+            pageSize: pageSize,
             total: data?.data?.totalDocs,
-            current: data?.data?.page,
+            current: page,
             showSizeChanger: true,
-            onChange: (page, pageSize) => {
-              setPage(page);
-              setPageSize(pageSize);
+            onChange: (newPage, newPageSize) => {
+              setPage(newPage);
+              setPageSize(newPageSize);
             }
           }}
           scroll={{ x: "max-content" }}

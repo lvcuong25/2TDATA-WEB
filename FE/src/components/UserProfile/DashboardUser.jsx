@@ -9,10 +9,15 @@ import {
   HomeOutlined,
   LogoutOutlined,
   SettingOutlined,
+  TeamOutlined,
+  AppstoreOutlined,
+  UsergroupAddOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../core/Auth';
+import { useQuery } from '@tanstack/react-query';
+import instance from '../../utils/axiosInstance';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -22,6 +27,23 @@ const DashboardUser = () => {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const { currentUser, removeCurrentUser } = useContext(AuthContext);
+
+  // Kiểm tra user đã có tổ chức chưa
+  const { data: orgData } = useQuery({
+    queryKey: ['organization', currentUser?._id],
+    queryFn: async () => {
+      if (!currentUser?._id || currentUser.role === 'admin') return null;
+      try {
+        const res = await instance.get(`organization/user/${currentUser._id}`);
+        return res;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!currentUser?._id,
+    retry: false,
+  });
+  const hasOrganization = !!orgData || currentUser?.role === 'admin';
 
   const handleLogout = () => {
     try {
@@ -68,6 +90,30 @@ const DashboardUser = () => {
       key: '/admin',
       icon: <SettingOutlined />,
       label: <Link to="/admin">Quản trị</Link>,
+    });
+  }
+
+  // Add organization menu if user has organization
+  if (hasOrganization) {
+    // Find index of 'Đổi mật khẩu'
+    const changePasswordIdx = menuItems.findIndex(item => item.key === '/profile/change-password');
+    // Insert organization group before 'Đổi mật khẩu'
+    menuItems.splice(changePasswordIdx, 0, {
+      key: 'organization-group',
+      icon: <TeamOutlined />,
+      label: 'Tổ chức',
+      children: [
+        {
+          key: '/profile/organization',
+          icon: <UsergroupAddOutlined />,
+          label: <Link to="/profile/organization">Quản lý thành viên</Link>,
+        },
+        {
+          key: '/profile/organization/services',
+          icon: <AppstoreOutlined />,
+          label: <Link to="/profile/organization/services">Quản lý dịch vụ</Link>,
+        },
+      ],
     });
   }
 
@@ -147,6 +193,8 @@ const DashboardUser = () => {
               {location.pathname === '/service/my-service' && 'Dịch vụ của tôi'}
               {location.pathname === '/blogs' && 'Bài viết'}
               {location.pathname === '/admin' && 'Quản trị'}
+              {location.pathname === '/profile/organization' && 'Quản lý thành viên'}
+              {location.pathname === '/profile/organization/services' && 'Quản lý dịch vụ'}
             </Title>
           </div>
         </Header>
