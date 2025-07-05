@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Spin, Typography, Breadcrumb, Tag, Divider, message, Space } from 'antd';
@@ -11,8 +11,6 @@ import Header from '../Header';
 import Footer from '../Footer';
 
 const { Title, Paragraph } = Typography;
-
-
 
 const DetailBlogPage: React.FC = () => {
   const [blog, setBlog] = useState<Blog | null>(null);
@@ -37,8 +35,7 @@ const DetailBlogPage: React.FC = () => {
 
   // useEffect(() => {
   //   if (blog) {
-  //     console.log("Blog content:", blog.content);
-  //   }
+  //     //   }
   // }, [blog]);
 
   if (isLoading) return <Spin size="large" className="flex justify-center items-center h-screen" />;

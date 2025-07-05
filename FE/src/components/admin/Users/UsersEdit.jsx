@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Button, Input, Form, Spin, Select, Switch, Tag, Space, Card, Tooltip, Modal, Table, Popconfirm } from 'antd';
 import instance from "../../../utils/axiosInstance";
@@ -142,7 +142,7 @@ const UsersEdit = () => {
 
     const onSubmit = (data) => {
         setIsLoading(true);
-        console.log('Form data before submission:', data); // Debug log
+        // Debug log
 
         // Create update data object
         const updateData = {
@@ -155,11 +155,11 @@ const UsersEdit = () => {
             updateData.password = data.password;
         }
 
-        console.log('Update data being sent:', updateData); // Debug log
+        // Debug log
 
         mutation.mutate(updateData, {
             onSuccess: (response) => {
-                console.log('Update successful:', response); // Debug log
+                // Debug log
                 toast.success("Thông tin người dùng đã được cập nhật thành công!");
                 navigate("/admin");
             },

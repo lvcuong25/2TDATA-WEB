@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const blogSchema = new mongoose.Schema({
+  site_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Site',
+    required: true,
+    index: true
+  },
   title: {
     type: String,
     required: true,

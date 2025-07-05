@@ -1,4 +1,4 @@
-import Service from "../model/Service.js";
+﻿import Service from "../model/Service.js";
 import User from "../model/User.js";
 import UserService from "../model/UserService.js";
 
@@ -65,7 +65,6 @@ export const getServiceById = async (req, res, next) => {
     }
 };
 
-
 // Lấy chi tiết một dịch vụ theo slug
 export const getServiceBySlug = async (req, res, next) => {
     try {
@@ -105,7 +104,6 @@ export const getServiceBySlug = async (req, res, next) => {
         next(error);
     }
 };
-
 
 // Tạo dịch vụ mới
 export const createService = async (req, res, next) => {

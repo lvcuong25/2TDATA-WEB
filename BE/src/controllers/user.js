@@ -1,6 +1,7 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 import User from "../model/User.js";
 import { hashPassword } from "../utils/password.js";
+import logger from "../utils/logger.js";
 
 export const getAllUser = async (req, res, next) => {
     try {
@@ -8,13 +9,19 @@ export const getAllUser = async (req, res, next) => {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
             sort: req.query.sort ? req.query.sort : { createdAt: -1 },
-            populate: {
-                path: 'service',
-                populate: [
-                    { path: 'service', select: 'name slug image status description authorizedLinks' },
-                    { path: 'approvedBy', select: 'name email avatar' }
-                ]
-            }
+            populate: [
+                {
+                    path: 'service',
+                    populate: [
+                        { path: 'service', select: 'name slug image status description authorizedLinks' },
+                        { path: 'approvedBy', select: 'name email avatar' }
+                    ]
+                },
+                {
+                    path: 'site_id',
+                    select: 'name domains'
+                }
+            ]
         };
         let query = {};
         if (req.query.name) {
@@ -30,8 +37,44 @@ export const getAllUser = async (req, res, next) => {
         if (req.query.active) {
             query.active = req.query.active;
         }
-        const data = await User.paginate(query, options);
-        return !data ? res.status(400).json({ message: "Get all user failed" }) : res.status(200).json({ data })
+        
+        // Apply site filter based on user role
+        let finalFilter = { ...query };
+        
+        // Super admin can see all users across all sites
+        if (req.user && req.user.role === 'super_admin') {
+            // No filter needed, can see all users
+            logger.info('Super admin accessing all users', {
+                adminId: req.user._id,
+                adminEmail: req.user.email
+            });
+            // Don't add any site filter for super admin
+        } 
+        // Site admin can only see users from their site
+        else if (req.user && req.user.role === 'site_admin') {
+            // Use user's site_id if available, otherwise use detected site
+            const siteId = req.user.site_id || req.site?._id;
+            if (siteId) {
+                finalFilter.site_id = siteId;
+                logger.info('Site admin accessing site users', {
+                    adminId: req.user._id,
+                    adminEmail: req.user.email,
+                    siteId: siteId,
+                    siteName: req.site?.name
+                });
+            }
+        }
+        // Regular admin or member - apply site filter from middleware
+        else if (req.siteFilter && Object.keys(req.siteFilter).length > 0) {
+            finalFilter = { ...finalFilter, ...req.siteFilter };
+        }
+        // Default case - filter by current site if available
+        else if (req.site) {
+            finalFilter.site_id = req.site._id;
+        }
+        
+        const result = await User.paginate(finalFilter, options);
+        return !result ? res.status(400).json({ message: "Get all user failed" }) : res.status(200).json({ data: result })
     } catch (error) {
         next(error);
     }
@@ -58,23 +101,115 @@ export const createUser = async (req, res, next) => {
     try {
         req.body.password = await hashPassword(req.body.password);
         const data = await User.create(req.body);
+        
+        if (data) {
+            logger.audit('User created', {
+                adminId: req.user?._id,
+                adminEmail: req.user?.email,
+                targetUserId: data._id,
+                targetUserEmail: data.email,
+                userRole: data.role,
+                siteId: req.site?._id,
+                ip: req.ip
+            });
+        }
+        
         return !data ? res.status(500).json({ message: "Tạo user thất bại" }) : res.status(201).json({ data });
     } catch (error) {
+        logger.error('User creation failed', {
+            error: error.message,
+            adminId: req.user?._id,
+            userData: { email: req.body.email, role: req.body.role },
+            ip: req.ip
+        });
         next(error);
     }
 }
 
 export const removeUserById = async (req, res, next) => {
     try {
+        // Get user data before deactivation for audit logging
+        const userData = await User.findById(req.params.id);
+        if (!userData) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
         const data = await User.findByIdAndUpdate(req.params.id, { active: false }, { new: true });
-        return !data ? res.status(500).json({ message: "Vô hiệu hóa người dùng thất bại" }) : res.status(200).json({ data, message: "Vô hiệu hóa người dùng thành công!" });
+        
+        if (data) {
+            logger.audit('User deactivated', {
+                adminId: req.user?._id,
+                adminEmail: req.user?.email,
+                targetUserId: data._id,
+                targetUserEmail: data.email,
+                targetUserRole: data.role,
+                previousStatus: userData.active,
+                newStatus: data.active,
+                siteId: req.site?._id,
+                ip: req.ip
+            });
+        }
+        
+        return !data ? 
+            res.status(500).json({ message: "Vô hiệu hóa người dùng thất bại" }) : 
+            res.status(200).json({ data, message: "Vô hiệu hóa người dùng thành công!" });
     } catch (error) {
+        logger.error('User deactivation failed', {
+            error: error.message,
+            adminId: req.user?._id,
+            targetUserId: req.params.id,
+            ip: req.ip
+        });
+        next(error);
+    }
+};
+
+export const restoreUserById = async (req, res, next) => {
+    try {
+        // Get user data before restoration for audit logging
+        const userData = await User.findById(req.params.id);
+        if (!userData) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const data = await User.findByIdAndUpdate(req.params.id, { active: true }, { new: true });
+        
+        if (data) {
+            logger.audit('User restored', {
+                adminId: req.user?._id,
+                adminEmail: req.user?.email,
+                targetUserId: data._id,
+                targetUserEmail: data.email,
+                targetUserRole: data.role,
+                previousStatus: userData.active,
+                newStatus: data.active,
+                siteId: req.site?._id,
+                ip: req.ip
+            });
+        }
+        
+        return !data ? 
+            res.status(500).json({ message: "Khôi phục người dùng thất bại" }) : 
+            res.status(200).json({ data, message: "Khôi phục người dùng thành công" });
+    } catch (error) {
+        logger.error('User restoration failed', {
+            error: error.message,
+            adminId: req.user?._id,
+            targetUserId: req.params.id,
+            ip: req.ip
+        });
         next(error);
     }
 };
 
 export const updateUser = async (req, res, next) => {
     try {
+        // Get original user data for audit logging
+        const originalUser = await User.findById(req.params.id);
+        if (!originalUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
         // Hash password if it is being updated
         if (req.body.password) {
             req.body.password = await hashPassword(req.body.password);
@@ -82,11 +217,6 @@ export const updateUser = async (req, res, next) => {
 
         // If updating services, validate and convert to ObjectIds
         if (req.body.service) {
-            const user = await User.findById(req.params.id);
-            if (!user) {
-                return res.status(404).json({ message: "User not found" });
-            }
-
             // Ensure service is an array of objects with id and status
             const newServices = Array.isArray(req.body.service) ? req.body.service : [req.body.service];
             
@@ -134,19 +264,43 @@ export const updateUser = async (req, res, next) => {
             ]
         });
 
+        if (data) {
+            // Log the changes made
+            const changes = {};
+            for (const key in req.body) {
+                if (key !== 'password' && originalUser[key] !== req.body[key]) {
+                    changes[key] = {
+                        from: originalUser[key],
+                        to: req.body[key]
+                    };
+                }
+            }
+            if (req.body.password) {
+                changes.password = 'updated';
+            }
+
+            logger.audit('User updated', {
+                adminId: req.user?._id,
+                adminEmail: req.user?.email,
+                targetUserId: data._id,
+                targetUserEmail: data.email,
+                changes,
+                siteId: req.site?._id,
+                ip: req.ip
+            });
+        }
+
         return !data ? 
             res.status(500).json({ message: "Cập nhật thông tin thất bại!" }) : 
             res.status(200).json({ data, message: "Cập nhật thông tin thành công" });
     } catch (error) {
-        next(error);
-    }
-}
-
-export const restoreUserById = async (req, res, next) => {
-    try {
-        const data = await User.findByIdAndUpdate(req.params.id, { active: true }, { new: true });
-        return !data ? res.status(500).json({ message: "Khôi phục người dùng thất bại" }) : res.status(200).json({ data, message: "Khôi phục người dùng thành công" });
-    } catch (error) {
+        logger.error('User update failed', {
+            error: error.message,
+            adminId: req.user?._id,
+            targetUserId: req.params.id,
+            updateData: { ...req.body, password: req.body.password ? '[REDACTED]' : undefined },
+            ip: req.ip
+        });
         next(error);
     }
 }
@@ -207,7 +361,6 @@ export const updateUserProfile = async (req, res, next) => {
         next(error);
     }
 }
-
 
 // Xóa dịch vụ khỏi user theo userId truyền params
 export const removeServiceFromUser = async (req, res, next) => {
@@ -420,7 +573,7 @@ export const getUserServices = async (req, res, next) => {
         }
 
         // Lấy toàn bộ dịch vụ đã populate
-        const allServices = user.service || [];
+        const allServices = (user.service || []).filter(s => s.status !== 'rejected');
         const totalServices = allServices.length;
         const start = (page - 1) * limit;
         const end = start + limit;

@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { 
     signUp, 
     signIn, 
@@ -12,8 +12,6 @@ import { checkRequestBody } from "../middlewares/checkRequestBody.js";
 import { registerSchema, resetPasswordSchema } from "../validations/auth.js";
 
 const routerAuth = Router();
-
-
 
 routerAuth.post("/send-otp", sendOTP);
 routerAuth.post("/reset-password", checkRequestBody(resetPasswordSchema), resetPassword);

@@ -2,6 +2,12 @@ import mongoose from 'mongoose';
 import mongoosePaginate from "mongoose-paginate-v2";
 
 const iframeSchema = new mongoose.Schema({
+  site_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Site',
+    required: true,
+    index: true
+  },
   title: {
     type: String,
     required: true,
@@ -24,6 +30,10 @@ const iframeSchema = new mongoose.Schema({
   description: {
     type: String,
   },
+  viewers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

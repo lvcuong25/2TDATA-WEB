@@ -1,4 +1,4 @@
-import { joiResolver } from "@hookform/resolvers/joi";
+﻿import { joiResolver } from "@hookform/resolvers/joi";
 import { useMutation } from "@tanstack/react-query";
 import React, { useState } from "react";
 
@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import instance from "../utils/axiosInstance";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
-
 
 const signupChema = Joi.object({
   email: Joi.string()

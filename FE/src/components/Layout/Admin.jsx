@@ -1,5 +1,4 @@
-import DashBoard from "../admin/DashBoard"
-
+﻿import DashBoard from "../admin/DashBoard"
 
 const LayoutAdmin = () => {
   return (

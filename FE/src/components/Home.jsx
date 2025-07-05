@@ -1,32 +1,17 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import Logout from "./logout";
-import image from "../image/image.jpg";
-import image2 from "../image/image2.webp";
-import image3 from "../image/image3.jpg";
-import image5 from "../image/image5.png";
-import image6 from "../image/image6.png";
-import image7 from "../image/image7.png";
-import image9 from "../image/image9.png";
-import image1 from "../image/image1.png";
-import image4 from "../image/image4.png";
-import image8 from "../image/image8.png";
-import image10 from "../image/image10.png";
-import image11 from "../image/image11.png";
-import image12 from "../image/image12.png";
-import image13 from "../image/image13.png";
-import image14 from "../image/image14.png";
-import image15 from "../image/image15.png";
-import image16 from "../image/image16.jpg";
-import image17 from "../image/image17.png";
 import Header from "./Header";
 import Footer from "./Footer";
 import { useMutation } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
 import { toast } from "react-toastify";
+import axiosInstance from "../axios/axiosInstance";
+import { useSite } from "../context/SiteContext";
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [iframeUrl, setIframeUrl] = useState('https://www.hcwvietnam.com/2tdata_soltuion'); // default
+  const { currentSite, refreshSiteConfig } = useSite();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -51,12 +36,38 @@ const Home = () => {
     }
   });
 
+  // Update iframe URL when site config changes
+  useEffect(() => {
+    if (currentSite?.settings?.iframeUrl) {
+      setIframeUrl(currentSite.settings.iframeUrl);
+    }
+  }, [currentSite]);
+
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem("accessToken");
       setIsLoggedIn(!!token);
     };
     checkAuth();
+
+    // Set up periodic refresh of site config (every 30 seconds)
+    const configRefreshInterval = setInterval(() => {
+      refreshSiteConfig();
+    }, 30000);
+
+    // Refresh config when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshSiteConfig();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Refresh config when window regains focus
+    const handleFocus = () => {
+      refreshSiteConfig();
+    };
+    window.addEventListener('focus', handleFocus);
 
     // Add Rocket.Chat Livechat script
     const script = document.createElement('script');
@@ -76,6 +87,9 @@ const Home = () => {
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
+      clearInterval(configRefreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
@@ -125,12 +139,13 @@ const Home = () => {
         overflow: 'hidden'
       }}>
         <iframe 
-          src="https://www.hcwvietnam.com/2tdata_soltuion" 
+          src={iframeUrl}
           style={{
             width: '100%',
             height: '100%',
             border: 'none'
           }}
+          title={currentSite?.name || '2TDATA'}
         />
       </div>
     </div>

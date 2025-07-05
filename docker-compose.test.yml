@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: 2tdata-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: 2TDATA
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - 2tdata-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Mongo Express - MongoDB Admin UI
+  mongo-express:
+    image: mongo-express:latest
+    container_name: 2tdata-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - 2tdata-network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: 2tdata-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_URI=mongodb://admin:password@mongodb:27017/2TDATA?authSource=admin
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/2TDATA?authSource=admin
+      - SECRET_KEY=encore
+      - JWT_SECRET=encore
+      - JWT_EXPIRES_IN=24h
+      - SEND_OTP_EMAIL=vietcuong2532k3@gmail.com
+      - SEND_OTP_EMAIL_PASSWORD=qcps wsji smea gqxf
+      - LOG_LEVEL=info
+      - BCRYPT_SALT_ROUNDS=12
+    volumes:
+      - ./BE/uploads:/app/uploads
+      - ./BE/logs:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - 2tdata-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: 2tdata-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      VITE_MONGO_EXPRESS_URL: "http://localhost:8081"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - 2tdata-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  2tdata-network:
+    driver: bridge
+    name: 2tdata-network

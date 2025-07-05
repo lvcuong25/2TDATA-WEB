@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import { useContext, useEffect, useState } from "react";
@@ -6,7 +6,7 @@ import { AuthContext } from "./core/Auth";
 import { useQuery } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
 import { Tag, Table, Space, Button, Tooltip, Switch, Pagination } from "antd";
-import { AppstoreOutlined, TableOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, TableOutlined, LoadingOutlined } from "@ant-design/icons";
 
 const MyService = () => {
   const navigate = useNavigate();
@@ -15,6 +15,9 @@ const MyService = () => {
   const [isCardView, setIsCardView] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
+  const [currentPageServices, setCurrentPageServices] = useState(1);
+  const [pageSizeServices, setPageSizeServices] = useState(6);
+  const [updatingServiceId, setUpdatingServiceId] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -36,38 +39,110 @@ const MyService = () => {
     enabled: !!currentUser?._id,
   });
 
+  // API call riêng cho danh sách dịch vụ có link
+  const { data: servicesWithLinksData, isLoading: isLoadingServicesWithLinks } = useQuery({
+    queryKey: ["servicesWithLinks", currentUser?._id],
+    queryFn: async () => {
+      if (!currentUser?._id) return null;
+      const response = await instance.get(`/user/${currentUser?._id}/services`, {
+        params: {
+          page: 1,
+          limit: 1000, // Lấy tất cả để lọc client-side
+        },
+      });
+      return response?.data;
+    },
+    enabled: !!currentUser?._id,
+  });
+
+  // Hàm sinh state base64
+  function generateState(userId, name, serviceId) {
+    const obj = { userId, name, serviceId };
+    return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+  }
+  // Hàm thêm/thay thế state vào url
+  function appendStateToUrl(url, stateValue) {
+    try {
+      const urlObj = new URL(url, window.location.origin);
+      urlObj.searchParams.set('state', stateValue);
+      return urlObj.toString();
+    } catch {
+      return url;
+    }
+  }
+
   const handleServiceClick = async (service) => {
     try {
       if (!accessToken || !currentUser?._id) {
         console.error('Missing access token or user ID');
         return;
       }
-
       // Make the webhook request
       const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
         userId: currentUser?._id,
         accessToken: accessToken
       });
-
       if (response?.status !== 200) {
         throw new Error('Webhook request failed');
       }
-
       // Find the first authorized link
       const authorizedLink = service?.service?.authorizedLinks?.[0];
       if (authorizedLink) {
-        window.location.href = authorizedLink?.url;
-      } else {
-        console.log("No authorized link found for this service.", service);
-      }
+        const stateObj = {
+          userId: currentUser?._id || "",
+          name: currentUser?.name || "",
+          serviceId: service?._id || ""
+        };
+        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId);
+        const urlWithState = appendStateToUrl(authorizedLink.url, state);
+        window.location.href = urlWithState;
+        } else {
+          console.error('No authorized link found for service');
+        }
     } catch (error) {
       console.error('Error making webhook request:', error);
     }
   };
 
+  const handleUpdateLinks = async (record) => {
+    setUpdatingServiceId(record._id);
+    
+    try {
+      // Gọi POST tới tất cả các link_update
+      if (record.link_update && record.link_update.length > 0) {
+        await Promise.all(
+          record.link_update.map(link => {
+            if (link.url) {
+              // Gửi POST, không cần chờ kết quả
+              // Use proper headers and error handling
+              return fetch(link.url, { 
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                mode: 'cors' // Explicitly set CORS mode
+              }).catch(error => {
+                console.error('Error calling update link:', error.message);
+                return null; // Don't throw, just log
+              });
+            }
+            return null;
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error updating links:', error);
+    } finally {
+      // Dừng loading sau 15 giây
+      setTimeout(() => {
+        setUpdatingServiceId(null);
+      }, 15000);
+    }
+  };
+
   const columns = [
     {
-      title: "Service",
+      title: "Dịch vụ",
       dataIndex: "service",
       key: "service",
       render: (service) => (
@@ -88,7 +163,7 @@ const MyService = () => {
       ),
     },
     {
-      title: "Status",
+      title: "Trạng thái",
       dataIndex: "status",
       key: "status",
       render: (status) => (
@@ -96,17 +171,17 @@ const MyService = () => {
           color={
             status === "approved"
               ? "green"
-              : "red"
+              : "green"
           }
         >
           {status === "approved"
             ? "Đã xác nhận"
-            : "Bị từ chối"}
+            : "Đã xác nhận"}
         </Tag>
       ),
     },
     {
-      title: "Links Kết quả",
+      title: "Kết quả",
       dataIndex: "link",
       key: "resultLinks",
       render: (links) => {
@@ -133,7 +208,7 @@ const MyService = () => {
       },
     },
     {
-      title: "Registered At",
+      title: "Thời gian",
       dataIndex: "createdAt",
       key: "createdAt",
       render: (date) => new Date(date).toLocaleDateString("vi-VN"),
@@ -144,19 +219,72 @@ const MyService = () => {
       render: (_, record) => (
         <Button
           type="primary"
-          onClick={() => {
-            if (record.link_update && record.link_update.length > 0) {
-              record.link_update.forEach((link) => {
-                if (link.url) {
-                  window.open(link.url, "_blank", "noopener,noreferrer");
-                }
-              });
-            }
-          }}
+          onClick={() => handleUpdateLinks(record)}
+          loading={updatingServiceId === record._id}
+          icon={updatingServiceId === record._id ? <LoadingOutlined /> : null}
         >
-          Cập nhật
+          {updatingServiceId === record._id ? "Đang cập nhật..." : "Cập nhật"}
         </Button>
       ),
+    },
+  ];
+
+  const deployedColumns = [
+    {
+      title: "Dịch vụ",
+      dataIndex: "service",
+      key: "service",
+      render: (service) => (
+        <div className="flex items-center gap-2">
+          <img
+            src={service.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
+            alt={service.name}
+            className="w-10 h-10 object-cover rounded"
+          />
+          <div>
+            <div className="font-medium">{service.name}</div>
+            <div className="text-sm text-gray-500">{service.slug}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Thời gian",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+    },
+    {
+      title: "Kết nối",
+      key: "connect",
+      width: 120,
+      render: (_, record) => {
+        const links = record.service?.authorizedLinks || [];
+        const hasLink = links.length > 0;
+        return (
+          <Tooltip title={hasLink ? 'Kết nối dịch vụ' : 'Chưa có link kết nối'}>
+            <Button
+              type="primary"
+              className="bg-blue-500 hover:bg-blue-600"
+              onClick={() => {
+                if (hasLink) {
+                  const stateObj = {
+                    userId: currentUser?._id || "",
+                    name: currentUser?.name || "",
+                    serviceId: record.service._id || ""
+                  };
+                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId);
+                  const urlWithState = appendStateToUrl(links[0].url, state);
+                  window.location.href = urlWithState;
+                }
+              }}
+              disabled={!hasLink}
+            >
+              Kết nối <span style={{ marginLeft: 4 }}>→</span>
+            </Button>
+          </Tooltip>
+        );
+      }
     },
   ];
 
@@ -175,7 +303,13 @@ const MyService = () => {
   const userServices = userData?.data?.services || [];
   const totalServices = userData?.data?.totalServices || 0;
 
-  if (isLoading) {
+  // Lọc ra các dịch vụ có link kết quả cho danh sách dịch vụ (từ API riêng)
+  const allServices = servicesWithLinksData?.data?.services || [];
+  const servicesWithLinks = allServices.filter(service => 
+    service.link && service.link.length > 0
+  );
+
+  if (isLoading || isLoadingServicesWithLinks) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
@@ -294,7 +428,7 @@ const MyService = () => {
             </>
           ) : (
             <Table
-              columns={columns}
+              columns={deployedColumns}
               dataSource={userServices}
               rowKey={(record, idx) => `${record._id}_${idx}`}
               pagination={{
@@ -314,24 +448,27 @@ const MyService = () => {
           <h2 className="text-2xl font-bold text-center mb-8">
             Danh sách dịch vụ
           </h2>
-          {!userServices || userServices.length === 0 ? (
+          {!servicesWithLinks || servicesWithLinks.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">Bạn chưa đăng ký dịch vụ nào</p>
+              <p className="text-gray-600 mb-4">Chưa có dịch vụ nào có kết quả</p>
             </div>
           ) : (
             <Table
               columns={columns}
-              dataSource={userServices}
+              dataSource={servicesWithLinks}
               rowKey={(record, idx) => `${record._id}_${idx}`}
               pagination={{
-                current: currentPage,
-                pageSize: pageSize,
-                total: totalServices,
+                current: currentPageServices,
+                pageSize: pageSizeServices,
+                total: servicesWithLinks.length,
                 showSizeChanger: true,
                 pageSizeOptions: ['3', '6', '10', '20'],
-                showTotal: (total) => `Tổng số ${total} dịch vụ`,
+                showTotal: (total) => `Tổng số ${total} dịch vụ có kết quả`,
               }}
-              onChange={handleTableChange}
+              onChange={(pagination) => {
+                setCurrentPageServices(pagination.current);
+                setPageSizeServices(pagination.pageSize);
+              }}
             />
           )}
         </section>

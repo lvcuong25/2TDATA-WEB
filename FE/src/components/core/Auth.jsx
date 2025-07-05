@@ -1,7 +1,6 @@
-import React, { createContext, useEffect, useState } from "react";
+﻿import React, { createContext, useEffect, useState } from "react";
 import { getUserByToken } from "./_request"; // adjust the path according to your project structure
 import { getAuth, removeAuth, setAuth } from "./AuthHelper";
-
 
 const AuthContext = createContext();
 export const fetchUser = async (setCurrentUser) => {

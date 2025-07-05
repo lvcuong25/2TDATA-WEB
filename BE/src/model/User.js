@@ -3,6 +3,15 @@ import mongoosePaginate from "mongoose-paginate-v2";
 
 const userSchema = new mongoose.Schema(
   {
+    site_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Site',
+      required: function() {
+        // site_id is not required for super_admin users
+        return this.role !== 'super_admin';
+      },
+      index: true
+    },
     email: {
       type: String,
       required: true,

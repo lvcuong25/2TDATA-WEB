@@ -1,8 +1,7 @@
-import jwt from "jsonwebtoken";
+﻿import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import User from "../model/User.js";
 // import Role from "../model/Role.js";
-
 
 dotenv.config();
 
@@ -26,7 +25,7 @@ export const checkPermission = (perrmisson) => {
                 });
             }
 
-            const user = await User.findById(decoded._id);
+            const user = await User.findById(decoded._id).populate('service');
             if (!user) {
                 return res.status(403).json({
                     message: "User does not exist",
@@ -37,6 +36,10 @@ export const checkPermission = (perrmisson) => {
                     message: "User is not active",
                 });
             }
+            
+            // Set user in request for downstream middleware and controllers
+            req.user = user;
+            
             // const userPermission = await Role.findOne({ name: user.role });
             // if (!userPermission) {
             //     return res.status(403).json({

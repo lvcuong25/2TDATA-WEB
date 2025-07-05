@@ -1,13 +1,13 @@
-import User from "../model/User.js";
+﻿import User from "../model/User.js";
 import Service from "../model/Service.js";
+import UserSession from "../model/UserSession.js";
 import { token } from "../utils/jwt.js";
 import { comparePassword, hashPassword } from "../utils/password.js";
 import sendEmail from "../utils/sendEmail.js";
 
-
 export const signUp = async (req, res, next) => {
     try {
-        const { email, password,  } = req.body;
+        const { email, password, role, site_id } = req.body;
         const userExist = await User.findOne({ email });
         if (userExist) {
             return res.status(400).json({
@@ -34,6 +34,8 @@ export const signUp = async (req, res, next) => {
         const user = await User.create({
             email,
             password: hashPasswordUser,
+            role: role || 'member', // Default role is 'member'
+            site_id: site_id, // Required for multi-tenant
             // service: serviceId
         });
 
@@ -70,12 +72,28 @@ export const signIn = async (req, res, next) => {
 
         const accessToken = token({ _id: userExist._id }, "365d");
         
-        // Nếu là admin, chuyển hướng đến trang admin
-        if (userExist.role === 'admin') {
+        // Create session with site context
+        const siteId = req.site?._id || userExist.site_id;
+        await UserSession.createSession(
+            userExist._id,
+            siteId,
+            accessToken,
+            365 * 24 * 60 * 60 // 365 days in seconds
+        );
+        
+        // Nếu là admin hoặc super_admin, chuyển hướng đến trang admin
+        if (userExist.role === 'admin' || userExist.role === 'super_admin' || userExist.role === 'site_admin') {
             return res.status(200).json({
                 message: "Đăng nhập thành công!",
                 accessToken,
-                redirectPath: '/admin'
+                redirectPath: '/admin',
+                data: {
+                    _id: userExist._id,
+                    email: userExist.email,
+                    name: userExist.name,
+                    role: userExist.role,
+                    site_id: userExist.site_id
+                }
             });
         }
 
@@ -109,7 +127,6 @@ export const getUserByToken = async (req, res, next) => {
         next(error);
     }
 }
-
 
 export const sendOTP = async (req, res, next) => {
     try {
