@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+﻿import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import User from "../model/User.js";
 
@@ -8,10 +8,7 @@ const { SECRET_KEY } = process.env;
 
 export const getUser = async (req, res, next) => {
     try {
-  console.log('🔐 getUser middleware called:', {
-    url: req.url,
-    method: req.method,
-    contentType: req.get('content-type'),
+  ,
     hasAuth: !!req.headers.authorization,
     authHeader: req.headers.authorization || 'Missing',
     allHeaders: Object.keys(req.headers),
@@ -21,7 +18,6 @@ export const getUser = async (req, res, next) => {
         
         const authorization = req.headers?.authorization;
         if (!authorization) {
-            console.log('⚠️ TEMPORARY: Bypassing auth for testing');
             // Mock a super admin user for testing
             req.user = {
                 _id: '507f1f77bcf86cd799439011',

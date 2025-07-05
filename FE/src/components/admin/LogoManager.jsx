@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Upload, Image, X, Save, RotateCcw } from 'lucide-react';
 import { useSite } from '../../context/SiteContext';
 import DynamicLogo from '../common/DynamicLogo';
@@ -86,8 +86,7 @@ const LogoManager = ({ siteId, onLogoUpdate }) => {
         }
 
         setPreviewUrl('');
-        console.log('✅ Logo uploaded successfully');
-      } else {
+        } else {
         throw new Error(result.message || 'Upload failed');
       }
     } catch (error) {

@@ -1,4 +1,4 @@
-import multer from 'multer';
+﻿import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
@@ -24,15 +24,12 @@ const logoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     // Save to backend uploads directory that can be served as static
     const uploadsLogoDir = path.join(process.cwd(), 'uploads', 'logos');
-    console.log('📁 Upload destination directory:', uploadsLogoDir);
-    console.log('📂 Directory exists:', fs.existsSync(uploadsLogoDir));
+    );
     
     // Ensure directory exists at upload time
     if (!fs.existsSync(uploadsLogoDir)) {
-      console.log('🔨 Creating logos directory...');
       fs.mkdirSync(uploadsLogoDir, { recursive: true });
-      console.log('✅ Logos directory created successfully');
-    }
+      }
     
     cb(null, uploadsLogoDir);
   },
@@ -41,15 +38,6 @@ const logoStorage = multer.diskStorage({
     const sitePrefix = req.params.id || 'site';
     const extension = path.extname(file.originalname);
     const filename = `${sitePrefix}-logo${extension}`;
-    
-    console.log('🔖 Upload file details:', {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      sitePrefix,
-      extension,
-      finalFilename: filename
-    });
     
     cb(null, filename);
   }
@@ -162,8 +150,7 @@ export const deleteOldLogo = (logoPath) => {
   if (logoPath && fs.existsSync(logoPath)) {
     try {
       fs.unlinkSync(logoPath);
-      console.log('Old logo deleted:', logoPath);
-    } catch (error) {
+      } catch (error) {
       console.error('Error deleting old logo:', error);
     }
   }

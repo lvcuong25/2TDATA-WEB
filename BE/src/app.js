@@ -1,8 +1,8 @@
-import express from "express";
+﻿import express from "express";
 import dotenv from 'dotenv';
 import router from './router/index.js';
-import cors from "cors";
 import { connectDB } from "./config/db.js";
+import dynamicCors from './middlewares/corsMiddleware.js';
 // Site detection middleware for multi-tenant functionality
 import { 
   detectSiteMiddleware, 
@@ -21,10 +21,11 @@ import logger from './utils/logger.js';
 
 // import router from './router';
 
-
 const app = express();
 dotenv.config();
-app.use(cors());
+
+// Use dynamic CORS based on site domains
+app.use(dynamicCors);
 
 const { DB_URI, PORT } = process.env;
 connectDB(process.env.DB_URI)
@@ -64,8 +65,7 @@ app.use((req, res, next) => {
       message: err.message,
     });
   });
-  
-  
+
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught Exception:', err);
@@ -78,9 +78,6 @@ process.on('unhandledRejection', (err) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server started on port ${PORT}`);
-    console.log(`📊 MongoDB Express: http://localhost:8081`);
-    console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
     logger.info(`Server started on port ${PORT}`);
   }).on('error', (err) => {
     console.error('❌ Server startup error:', err);

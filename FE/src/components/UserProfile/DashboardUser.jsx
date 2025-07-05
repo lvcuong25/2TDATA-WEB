@@ -84,8 +84,8 @@ const DashboardUser = () => {
     },
   ];
 
-  // Add admin menu if user is admin or super_admin
-  if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin') {
+  // Add admin menu if user is admin, super_admin, or site_admin
+  if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') {
     menuItems.splice(4, 0, {
       key: '/admin',
       icon: <SettingOutlined />,
@@ -146,8 +146,9 @@ const DashboardUser = () => {
                   {currentUser?.name || 'User'}
                 </Title>
                 <Text className="text-xs text-gray-500">
-                  {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') ? 
-                    (currentUser?.role === 'super_admin' ? 'Quản trị tối cao' : 'Quản trị viên') : 'Người dùng'}
+                  {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') ? 
+                    (currentUser?.role === 'super_admin' ? 'Quản trị tối cao' : 
+                     currentUser?.role === 'site_admin' ? 'Quản trị site' : 'Quản trị viên') : 'Người dùng'}
                 </Text>
               </div>
             )}

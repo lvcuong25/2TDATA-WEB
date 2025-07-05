@@ -1,11 +1,10 @@
-import React, { useContext, useState } from 'react';
+﻿import React, { useContext, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Tag, Input, Tooltip, Pagination, Space, Modal, Checkbox, Card, Spin, message, Row, Col, Avatar } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 import instance from '../../utils/axiosInstance';
 import { AuthContext } from '../core/Auth';
-
 
 const ServiceOrganization = () => {
   // ===== Lấy thông tin user hiện tại =====
@@ -28,7 +27,6 @@ const ServiceOrganization = () => {
     queryFn: async () => {
       if (!currentUser?._id) return null;
       const res = await instance.get(`organization/user/${currentUser._id}`);
-      console.log(res)
       return res;
     },
   });

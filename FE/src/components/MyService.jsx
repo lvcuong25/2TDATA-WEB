@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import { useContext, useEffect, useState } from "react";
@@ -34,7 +34,6 @@ const MyService = () => {
           limit: pageSize,
         },
       });
-      console.log(response?.data)
       return response?.data;
     },
     enabled: !!currentUser?._id,
@@ -59,7 +58,6 @@ const MyService = () => {
   // Hàm sinh state base64
   function generateState(userId, name, serviceId) {
     const obj = { userId, name, serviceId };
-    console.log('STATE OBJ (before encode):', obj);
     return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
   }
   // Hàm thêm/thay thế state vào url
@@ -95,13 +93,12 @@ const MyService = () => {
           name: currentUser?.name || "",
           serviceId: service?._id || ""
         };
-        console.log('STATE OBJ (before encode):', stateObj);
         const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId);
         const urlWithState = appendStateToUrl(authorizedLink.url, state);
         window.location.href = urlWithState;
-      } else {
-        console.log("No authorized link found for this service.", service);
-      }
+        } else {
+          console.error('No authorized link found for service');
+        }
     } catch (error) {
       console.error('Error making webhook request:', error);
     }
@@ -125,7 +122,7 @@ const MyService = () => {
                 },
                 mode: 'cors' // Explicitly set CORS mode
               }).catch(error => {
-                console.log('Link update request failed (expected):', error.message);
+                console.error('Error calling update link:', error.message);
                 return null; // Don't throw, just log
               });
             }
@@ -276,7 +273,6 @@ const MyService = () => {
                     name: currentUser?.name || "",
                     serviceId: record.service._id || ""
                   };
-                  console.log('STATE OBJ (before encode):', stateObj);
                   const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId);
                   const urlWithState = appendStateToUrl(links[0].url, state);
                   window.location.href = urlWithState;

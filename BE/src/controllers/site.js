@@ -1,11 +1,13 @@
-import Site from '../model/Site.js';
+﻿import Site from '../model/Site.js';
 import User from '../model/User.js';
 import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
 
 /**
- * Super Admin - Lấy danh sách tất cả sites
+ * Get sites based on user's role:
+ * - Super Admin: Can see all sites
+ * - Site Admin: Only sees their own site
  */
 export const getAllSites = async (req, res) => {
   try {
@@ -16,6 +18,32 @@ export const getAllSites = async (req, res) => {
     
     // Build query filter
     const filter = {};
+    
+    // Auto-filter based on user role
+    if (req.user) {
+      if (req.user.role === 'super_admin') {
+        // Super admin can see all sites
+        } else if (req.user.role === 'site_admin' && req.user.site_id) {
+        // Site admin can only see their own site
+        // Convert site_id to ObjectId if it's a string
+        const siteId = req.user.site_id;
+        if (!siteId) {
+          return res.status(403).json({
+            success: false,
+            message: 'Site admin does not have a site assigned',
+            error: 'NO_SITE_ASSIGNED'
+          });
+        }
+        filter._id = siteId;
+        } else {
+        // Other roles shouldn't have access
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied',
+          error: 'INSUFFICIENT_PERMISSIONS'
+        });
+      }
+    }
     
     if (search) {
       filter.$or = [
@@ -71,6 +99,14 @@ export const getAllSites = async (req, res) => {
  */
 export const createSite = async (req, res) => {
   try {
+    // Only super admin can create new sites
+    if (!req.user || req.user.role !== 'super_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only super admin can create new sites',
+        error: 'INSUFFICIENT_PERMISSIONS'
+      });
+    }
     let {
       name,
       domains,
@@ -123,8 +159,7 @@ export const createSite = async (req, res) => {
           faviconUrl: parsedThemeConfig.faviconUrl,
           customCss: parsedThemeConfig.custom_css || parsedThemeConfig.customCss
         };
-        console.log('✅ Processed theme_config for create:', theme_config);
-      } catch (e) {
+        } catch (e) {
         console.error('Error parsing theme_config:', e);
       }
     } else if (req.body.theme_config && typeof req.body.theme_config === 'object') {
@@ -159,8 +194,7 @@ export const createSite = async (req, res) => {
         faviconUrl: directThemeConfig.faviconUrl,
         customCss: directThemeConfig.custom_css || directThemeConfig.customCss
       };
-      console.log('✅ Direct theme_config for create:', theme_config);
-    }
+      }
     
     if (req.body.settings && typeof req.body.settings === 'string') {
       try {
@@ -225,18 +259,11 @@ export const createSite = async (req, res) => {
         const mimeType = req.file.mimetype;
         logo_url = `data:${mimeType};base64,${base64Data}`;
         
-        console.log('✅ Logo converted to base64 for create');
-        console.log('📸 Logo size:', req.file.size, 'bytes');
-        console.log('🎨 MIME Type:', mimeType);
-        console.log('📦 Base64 length:', base64Data.length);
-      } else {
+        } else {
         // FALLBACK: File system method
         logo_url = `/logos/${req.file.filename}`;
         
-        console.log('✅ Logo uploaded to file system for create:', req.file.filename);
-        console.log('📸 Logo URL:', logo_url);
-        console.log('📁 Logo saved to backend uploads directory:', req.file.path);
-      }
+        }
     }
     
     // Create new site
@@ -365,9 +392,59 @@ export const getSiteStats = async (req, res) => {
 
 /**
  * Super Admin - Cập nhật site
+ * Site Admin - Có thể cập nhật site của mình nếu có quyền manage_settings
  */
 export const updateSite = async (req, res) => {
   try {
+    // Check permissions
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+        error: 'UNAUTHORIZED'
+      });
+    }
+    
+    // Super admin can update any site
+    if (req.user.role !== 'super_admin') {
+      // Site admin can only update their own site
+      if (req.user.role === 'site_admin') {
+        // Check if site admin has site_id assigned
+        if (!req.user.site_id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Site admin does not have a site assigned',
+            error: 'NO_SITE_ASSIGNED'
+          });
+        }
+        
+        // Check if updating their own site
+        if (req.params.id !== req.user.site_id.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Site admin can only update their own site',
+            error: 'INSUFFICIENT_PERMISSIONS'
+          });
+        }
+        // Check if they have manage_settings permission
+        const siteAdmin = req.site.site_admins.find(admin => 
+          admin.user_id.toString() === req.user._id.toString()
+        );
+        if (!siteAdmin || !siteAdmin.permissions.includes('manage_settings')) {
+          return res.status(403).json({
+            success: false,
+            message: 'Site admin needs manage_settings permission',
+            error: 'INSUFFICIENT_PERMISSIONS'
+          });
+        }
+      } else {
+        return res.status(403).json({
+          success: false,
+          message: 'Only super admin or site admin can update sites',
+          error: 'INSUFFICIENT_PERMISSIONS'
+        });
+      }
+    }
     const { id } = req.params;
     let updateData = { ...req.body };
     
@@ -430,8 +507,7 @@ export const updateSite = async (req, res) => {
           faviconUrl: parsedThemeConfig.faviconUrl,
           customCss: parsedThemeConfig.custom_css || parsedThemeConfig.customCss
         };
-        console.log('✅ Processed theme_config:', updateData.theme_config);
-      } catch (e) {
+        } catch (e) {
         console.error('Error parsing theme_config:', e);
       }
     } else if (req.body.theme_config && typeof req.body.theme_config === 'object') {
@@ -466,8 +542,7 @@ export const updateSite = async (req, res) => {
         faviconUrl: directThemeConfig.faviconUrl,
         customCss: directThemeConfig.custom_css || directThemeConfig.customCss
       };
-      console.log('✅ Direct theme_config:', updateData.theme_config);
-    }
+      }
     
     if (req.body.settings && typeof req.body.settings === 'string') {
       try {
@@ -485,18 +560,11 @@ export const updateSite = async (req, res) => {
         const mimeType = req.file.mimetype;
         updateData.logo_url = `data:${mimeType};base64,${base64Data}`;
         
-        console.log('✅ Logo converted to base64');
-        console.log('📸 Logo size:', req.file.size, 'bytes');
-        console.log('🎨 MIME Type:', mimeType);
-        console.log('📦 Base64 length:', base64Data.length);
-      } else {
+        } else {
         // FALLBACK: File system method
         updateData.logo_url = `/logos/${req.file.filename}`;
         
-        console.log('✅ Logo uploaded to file system:', req.file.filename);
-        console.log('📸 Logo URL:', updateData.logo_url);
-        console.log('📁 Logo saved to backend uploads directory:', req.file.path);
-      }
+        }
       
       // Clean up old logo file if exists in uploads directory
       if (site.logo_url && site.logo_url.includes('/api/uploads/logos/')) {
@@ -505,8 +573,7 @@ export const updateSite = async (req, res) => {
         if (fs.existsSync(fullOldPath)) {
           try {
             fs.unlinkSync(fullOldPath);
-            console.log('🗑️ Old logo deleted:', fullOldPath);
-          } catch (error) {
+            } catch (error) {
             console.error('❌ Error deleting old logo:', error);
           }
         }
@@ -575,6 +642,14 @@ export const updateSite = async (req, res) => {
  */
 export const deleteSite = async (req, res) => {
   try {
+    // Only super admin can delete sites
+    if (!req.user || req.user.role !== 'super_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only super admin can delete sites',
+        error: 'INSUFFICIENT_PERMISSIONS'
+      });
+    }
     const { id } = req.params;
     
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -737,12 +812,7 @@ export const removeDomainFromSite = async (req, res) => {
  */
 export const getCurrentSiteInfo = async (req, res) => {
   try {
-    console.log('🌐 getCurrentSiteInfo called with:', {
-      site: req.site ? req.site.name : 'No site',
-      siteId: req.site ? req.site._id : 'No site ID',
-      siteDomains: req.site ? req.site.domains : 'No domains',
-      headers: {
-        'x-host': req.get('x-host'),
+    ,
         'host': req.get('host'),
         'hostname': req.hostname
       },

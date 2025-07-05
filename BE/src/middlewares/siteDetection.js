@@ -1,44 +1,26 @@
-import Site from '../model/Site.js';
+﻿import Site from '../model/Site.js';
 
 /**
  * Middleware để detect site từ domain/hostname
  * Thêm site info vào request object
  */
 export const detectSiteMiddleware = async (req, res, next) => {
-  console.log('🔍 detectSiteMiddleware called for:', req.path);
   try {
     // Lấy hostname từ header (check X-Host first for frontend requests)
     let hostname = req.get('x-host') || req.get('host') || req.hostname;
     
-    console.log('🔍 Site detection debug:', {
-      'x-host': req.get('x-host'),
-      'host': req.get('host'),
-      'hostname': req.hostname,
-      'final_hostname': hostname,
-      'path': req.path,
-      'url': req.url
-    });
-    
     // Remove port nếu có (localhost:3000 -> localhost)
     const originalHostname = hostname;
     hostname = hostname.split(':')[0];
-    
-    console.log(`🌐 Processing hostname: ${originalHostname} -> ${hostname}`);
     
     // Tìm site theo domain trước - sử dụng direct query thay vì findByDomain
     let site = await Site.findOne({ 
       domains: { $in: [hostname] },
       status: 'active' 
     });
-    console.log(`🔍 Direct lookup for "${hostname}": ${site ? `Found "${site.name}"` : 'Not found'}`);
-    
     // Nếu không tìm thấy và đang ở localhost environment, thử các cách khác
     if (!site && (hostname.includes('localhost') || hostname === '127.0.0.1')) {
-      console.log('🔍 Localhost detected, trying alternative detection methods...');
-      
       // Đầu tiên, thử tìm exact match với các cách khác nhau
-      console.log('🔧 Trying exact domain search for:', hostname);
-      
       // Try alternative localhost patterns
       const localhostPatterns = [
         hostname, // exact match
@@ -47,30 +29,23 @@ export const detectSiteMiddleware = async (req, res, next) => {
       ].filter(Boolean);
       
       for (const pattern of localhostPatterns) {
-        console.log(`   Testing pattern: "${pattern}"`);
         site = await Site.findOne({ 
           domains: { $in: [pattern] },
           status: 'active' 
         });
         if (site) {
-          console.log(`   ✅ Found site "${site.name}" with pattern "${pattern}"`);
           break;
         }
       }
       
       // Debug: List all available sites if still not found
       if (!site) {
-        console.log('🔍 Still not found, listing all available sites:');
         const allSites = await Site.find({ status: 'active' });
-        console.log('   Available sites and domains:');
-        for (const s of allSites) {
-          console.log(`     - ${s.name}: [${s.domains.join(', ')}]`);
-        }
+        console.log('Available sites:', allSites.map(s => ({ name: s.name, domains: s.domains })));
       }
       
       // Cuối cùng, nếu hostname chính xác là 'localhost', lấy main site
       if (!site && (hostname === 'localhost' || hostname === '127.0.0.1')) {
-        console.log('🏠 Using main site for bare localhost');
         site = await Site.findOne({ 
           $or: [
             { domains: 'localhost' },
@@ -79,8 +54,7 @@ export const detectSiteMiddleware = async (req, res, next) => {
           ],
           status: 'active' 
         }).sort({ createdAt: 1 });
-        console.log(`   Main site fallback: ${site ? `Found "${site.name}"` : 'Not found'}`);
-      }
+        }
       
       if (site) {
         req.isDevelopment = true;
@@ -115,6 +89,7 @@ export const detectSiteMiddleware = async (req, res, next) => {
     req.siteFilter = { site_id: site._id };
     req.domain = hostname;
     
+    // Log for debugging
     // Update last activity
     site.stats.lastActivity = new Date();
     await site.save();

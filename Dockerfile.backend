@@ -2,20 +2,23 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install system dependencies
+RUN apk add --no-cache python3 make g++ wget
+
 # Copy package files
 COPY BE/package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (use npm install for better compatibility)
+RUN npm install
 
 # Copy source code
 COPY BE/ ./
 
-# Copy docker environment file
-RUN cp .env.docker .env
+# Create required directories
+RUN mkdir -p logs uploads/logos uploads/avatars uploads/temp
 
-# Create logs directory
-RUN mkdir -p logs
+# Set permissions
+RUN chmod -R 755 uploads
 
 # Expose port
 EXPOSE 3000

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🌐 API Client for Multi-Site Architecture
  * Automatically handles domain-based site detection
  */
@@ -45,10 +45,6 @@ class ApiClient {
       ...options
     };
 
-    console.log('🌐 Making API request:', {
-      url,
-      method: defaultOptions.method,
-      currentDomain: this.getCurrentDomain()
     });
 
     try {
@@ -60,12 +56,6 @@ class ApiClient {
 
       const data = await response.json();
       
-      console.log('✅ API Response:', {
-        url,
-        status: response.status,
-        site: data.data?.name || 'Unknown'
-      });
-
       return data;
     } catch (error) {
       console.error('❌ API Request failed:', {
@@ -188,8 +178,7 @@ if (typeof window !== 'undefined') {
  * 
  * // Get current site info
  * const site = await apiClient.getCurrentSite();
- * console.log('Current site:', site.name);
- * 
+ * * 
  * // Login
  * const authResponse = await apiClient.login({
  *   email: 'admin@techhub.2tdata.com',

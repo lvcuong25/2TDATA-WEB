@@ -1,5 +1,4 @@
-import Blog from "../model/Blog.js";
-
+﻿import Blog from "../model/Blog.js";
 
 // Lấy danh sách các bài blog
 export const getAllBlogs = async (req, res) => {
@@ -34,8 +33,6 @@ export const getOneBlogById = async (req, res) => {
 // Tạo một bài blog mới
 export const createBlog = async (req, res) => {
   const { title, content, image } = req.body;
-
-  console.log("Received blog data:", req.body);
 
   // Validation
   if (!title || typeof title !== 'string' || title.trim().length < 5) {

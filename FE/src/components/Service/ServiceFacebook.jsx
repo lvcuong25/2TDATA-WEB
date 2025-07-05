@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import Header from "../Header";
 import Footer from "../Footer";
 import { useQuery } from "@tanstack/react-query";
@@ -247,7 +247,6 @@ const ServiceFacebook = () => {
       <MyService/>
       </section>
 
-  
       <Footer />
     </div>
   );

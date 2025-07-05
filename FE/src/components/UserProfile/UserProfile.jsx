@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+﻿import React, { useState, useContext } from 'react';
 import { Card, Avatar, Descriptions, Button, Divider, message, Row, Col, Tag, Spin, Form, Input, Modal } from 'antd';
 import { UserOutlined, EditOutlined, SaveOutlined, CloseOutlined, MailOutlined, CalendarOutlined, PhoneOutlined } from '@ant-design/icons';
 import { AuthContext } from '../core/Auth';
@@ -7,7 +7,6 @@ import instance from '../../utils/axiosInstance';
 
 const UserProfile = () => {
   const { currentUser, setCurrentUser } = useContext(AuthContext);
-  console.log(currentUser)
   const [isEditing, setIsEditing] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();

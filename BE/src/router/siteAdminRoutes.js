@@ -1,7 +1,7 @@
 import express from 'express';
-// import SiteAdminController from '../controller/SiteAdminController.js';
-// import { authMiddleware } from '../middleware/auth.js';
-// import { superAdminMiddleware } from '../middleware/superAdmin.js';
+// import SiteAdminController from '../controllers/SiteAdminController.js';
+// import { authMiddleware } from '../middlewares/auth.js';
+// import { superAdminMiddleware } from '../middlewares/superAdmin.js';
 
 const router = express.Router();
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import instance from '../../../utils/axiosInstance';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select, Upload, Switch, Tag } from 'antd';
@@ -177,7 +177,6 @@ const OrganizationList = () => {
   const handleRemoveMember = (userId) => {
     removeMemberMutation.mutate({ orgId: selectedOrg._id, userId });
   };
-
 
   const columns = [
     {

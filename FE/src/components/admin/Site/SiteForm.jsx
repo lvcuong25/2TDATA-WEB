@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Form, Input, Select, Button, Card, message, Space, Tag, Typography, Row, Col, Upload, ColorPicker } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
@@ -86,15 +86,6 @@ const SiteForm = () => {
             values.theme_config.secondary_color : '#f0f0f0')
       };
       
-      console.log('🎨 Original colors:', {
-        primary: values.theme_config?.primary_color,
-        secondary: values.theme_config?.secondary_color
-      });
-      console.log('🎨 Processed colors:', {
-        primary: processedThemeConfig.primary_color,
-        secondary: processedThemeConfig.secondary_color
-      });
-      
       // Check if we have a file to upload
       const hasFileUpload = logoFileList.length > 0 && logoFileList[0].originFileObj;
       
@@ -112,14 +103,6 @@ const SiteForm = () => {
         formData.append('theme_config', JSON.stringify(processedThemeConfig));
         formData.append('settings', JSON.stringify(values.settings || {}));
         formData.append('logo', file);  // Keep file for multer to process
-
-        console.log('🚀 Uploading with FormData (base64 backend):', {
-          isEdit,
-          id,
-          hasFile: !!file,
-          fileName: file?.name,
-          fileSize: file?.size
-        });
 
         if (isEdit) {
           response = await axiosInstance.put(`/admin/sites/edit/${id}`, formData);

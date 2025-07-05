@@ -1,4 +1,4 @@
-const multer = require('multer');
+﻿const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const Site = require('../models/Site');
@@ -84,8 +84,7 @@ class AssetController {
           try {
             await fs.unlink(oldLogoPath);
           } catch (error) {
-            console.log('Old logo file not found or already deleted');
-          }
+            }
         }
 
         // Update site with new logo URL
@@ -217,8 +216,7 @@ class AssetController {
       try {
         await fs.unlink(filePath);
       } catch (error) {
-        console.log('File not found or already deleted');
-      }
+        }
 
       // Remove from site's theme_config
       if (site.theme_config.assets && site.theme_config.assets[asset_type]) {

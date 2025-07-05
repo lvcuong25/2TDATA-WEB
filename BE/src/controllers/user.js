@@ -1,7 +1,7 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 import User from "../model/User.js";
 import { hashPassword } from "../utils/password.js";
-import { logger } from "../utils/logger.js";
+import logger from "../utils/logger.js";
 
 export const getAllUser = async (req, res, next) => {
     try {
@@ -9,13 +9,19 @@ export const getAllUser = async (req, res, next) => {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
             sort: req.query.sort ? req.query.sort : { createdAt: -1 },
-            populate: {
-                path: 'service',
-                populate: [
-                    { path: 'service', select: 'name slug image status description authorizedLinks' },
-                    { path: 'approvedBy', select: 'name email avatar' }
-                ]
-            }
+            populate: [
+                {
+                    path: 'service',
+                    populate: [
+                        { path: 'service', select: 'name slug image status description authorizedLinks' },
+                        { path: 'approvedBy', select: 'name email avatar' }
+                    ]
+                },
+                {
+                    path: 'site_id',
+                    select: 'name domains'
+                }
+            ]
         };
         let query = {};
         if (req.query.name) {
@@ -32,9 +38,40 @@ export const getAllUser = async (req, res, next) => {
             query.active = req.query.active;
         }
         
-        // Apply site filter if available
-        const siteFilter = req.siteFilter || {};
-        const finalFilter = { ...query, ...siteFilter };
+        // Apply site filter based on user role
+        let finalFilter = { ...query };
+        
+        // Super admin can see all users across all sites
+        if (req.user && req.user.role === 'super_admin') {
+            // No filter needed, can see all users
+            logger.info('Super admin accessing all users', {
+                adminId: req.user._id,
+                adminEmail: req.user.email
+            });
+            // Don't add any site filter for super admin
+        } 
+        // Site admin can only see users from their site
+        else if (req.user && req.user.role === 'site_admin') {
+            // Use user's site_id if available, otherwise use detected site
+            const siteId = req.user.site_id || req.site?._id;
+            if (siteId) {
+                finalFilter.site_id = siteId;
+                logger.info('Site admin accessing site users', {
+                    adminId: req.user._id,
+                    adminEmail: req.user.email,
+                    siteId: siteId,
+                    siteName: req.site?.name
+                });
+            }
+        }
+        // Regular admin or member - apply site filter from middleware
+        else if (req.siteFilter && Object.keys(req.siteFilter).length > 0) {
+            finalFilter = { ...finalFilter, ...req.siteFilter };
+        }
+        // Default case - filter by current site if available
+        else if (req.site) {
+            finalFilter.site_id = req.site._id;
+        }
         
         const result = await User.paginate(finalFilter, options);
         return !result ? res.status(400).json({ message: "Get all user failed" }) : res.status(200).json({ data: result })
@@ -268,7 +305,6 @@ export const updateUser = async (req, res, next) => {
     }
 }
 
-
 export const getUserByEmail = async (req, res, next) => {
     try {
         const data = await User.find({ email: req.params.email });
@@ -325,7 +361,6 @@ export const updateUserProfile = async (req, res, next) => {
         next(error);
     }
 }
-
 
 // Xóa dịch vụ khỏi user theo userId truyền params
 export const removeServiceFromUser = async (req, res, next) => {

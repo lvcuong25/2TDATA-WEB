@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
@@ -13,39 +13,29 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || process.env.DB_URI || 'mongodb://admin:password@localhost:27017/2TDATA?authSource=admin';
 
-console.log('🔗 Connecting to MongoDB:', MONGODB_URI.replace(/password@/, '***@'));
+);
 
 /**
  * Setup complete affiliate site architecture
  */
 const setupAffiliateSites = async () => {
   try {
-    console.log('🏢 Starting affiliate sites setup...');
-    
     // Connect to database
     await mongoose.connect(MONGODB_URI);
-    console.log('✅ Connected to MongoDB');
-
     // Check if we should force setup
     const forceSetup = process.argv.includes('--force');
     const existingSites = await Site.countDocuments();
     
     if (existingSites > 0 && !forceSetup) {
-      console.log('⚠️  Sites already exist in database. Use --force to proceed anyway.');
-      console.log(`   Current sites: ${existingSites}`);
       return;
     }
 
-    console.log('🏗️  Creating affiliate site architecture...');
-    
     // If force setup, clear existing sites to avoid domain conflicts
     if (forceSetup && existingSites > 0) {
-      console.log('🗑️  Force mode: Clearing existing sites...');
       await Site.deleteMany({});
       await User.deleteMany({});
       await Service.deleteMany({});
-      console.log('   ✅ Cleared existing data');
-    }
+      }
 
     // 1. Create Master/Main Site (2TDATA)
     const masterSite = new Site({
@@ -73,8 +63,6 @@ const setupAffiliateSites = async () => {
     });
 
     await masterSite.save();
-    console.log('   ✅ Created master site: 2TDATA');
-
     // 2. Create Affiliate Sites
     const affiliateSites = [
       {
@@ -160,8 +148,7 @@ const setupAffiliateSites = async () => {
 
       await site.save();
       createdAffiliateSites.push(site);
-      console.log(`   ✅ Created affiliate site: ${site.name}`);
-    }
+      }
 
     // 3. Create Super Admin (Global)
     const superAdminPassword = await bcrypt.hash('admin123', 12);
@@ -175,8 +162,6 @@ const setupAffiliateSites = async () => {
     });
 
     await superAdmin.save();
-    console.log('   ✅ Created super admin user');
-
     // 4. Create Site Admins for each affiliate site
     const siteAdmins = [];
     for (let i = 0; i < createdAffiliateSites.length; i++) {
@@ -205,8 +190,7 @@ const setupAffiliateSites = async () => {
       });
       await site.save();
 
-      console.log(`   ✅ Created site admin for: ${site.name}`);
-    }
+      }
 
     // 5. Create Sample Users for each affiliate site
     for (let i = 0; i < createdAffiliateSites.length; i++) {
@@ -230,8 +214,7 @@ const setupAffiliateSites = async () => {
         await user.save();
       }
 
-      console.log(`   ✅ Created 3 sample users for: ${site.name}`);
-    }
+      }
 
     // 6. Create Category-Specific Services for each affiliate site
     const servicesByCategory = {
@@ -345,11 +328,9 @@ const setupAffiliateSites = async () => {
         await service.save();
       }
 
-      console.log(`   ✅ Created ${services.length} services for: ${site.name}`);
-    }
+      }
 
     // 7. Update site statistics
-    console.log('\n📊 Updating site statistics...');
     for (const site of [masterSite, ...createdAffiliateSites]) {
       const userCount = await User.countDocuments({ site_id: site._id });
       const serviceCount = await Service.countDocuments({ site_id: site._id });
@@ -364,39 +345,25 @@ const setupAffiliateSites = async () => {
       );
     }
 
-    console.log('\n🎉 Affiliate sites setup completed successfully!');
-    
     // Display summary
-    console.log('\n📊 Setup Summary:');
-    console.log(`   🌍 Total Sites: ${await Site.countDocuments()}`);
-    console.log(`   👥 Total Users: ${await User.countDocuments()}`);
-    console.log(`   🔧 Total Services: ${await Service.countDocuments()}`);
-    console.log(`   👑 Super Admins: ${await User.countDocuments({ role: 'super_admin' })}`);
-    console.log(`   🏛️ Site Admins: ${await User.countDocuments({ role: 'site_admin' })}`);
+    }`);
+    }`);
+    }`);
+    }`);
+    }`);
 
-    console.log('\n🔑 Login Credentials:');
-    console.log('👑 Super Admin (Access to all sites):');
-    console.log('   📧 Email: superadmin@2tdata.com');
-    console.log('   🔑 Password: admin123');
-
-    console.log('\n🏛️ Site Admins:');
+    :');
     for (const site of createdAffiliateSites) {
-      console.log(`   ${site.name}:`);
-      console.log(`     📧 Email: admin@${site.domains[0]}`);
-      console.log(`     🔑 Password: siteadmin123`);
-      console.log(`     🌐 Domains: ${site.domains.join(', ')}`);
+      }`);
     }
 
-    console.log('\n👤 Sample Users (Password: user123):');
+    :');
     for (const site of createdAffiliateSites) {
-      console.log(`   ${site.name}: user1@${site.domains[0]}, user2@${site.domains[0]}, user3@${site.domains[0]}`);
-    }
+      }
 
-    console.log('\n🌐 Site Architecture:');
-    console.log('   Master Site: 2tdata.com (Global management)');
-    console.log('   Affiliate Sites:');
+    ');
     for (const site of createdAffiliateSites) {
-      console.log(`     - ${site.name}: ${site.domains[0]} (${site.category})`);
+      `);
     }
 
   } catch (error) {
@@ -404,14 +371,12 @@ const setupAffiliateSites = async () => {
     throw error;
   } finally {
     await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
-  }
+    }
 };
 
 // Run the setup
 setupAffiliateSites()
   .then(() => {
-    console.log('✅ Affiliate sites setup completed');
     process.exit(0);
   })
   .catch((error) => {

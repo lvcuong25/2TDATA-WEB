@@ -1,0 +1,115 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend.dev
+    container_name: 2tdata-backend-dev
+    networks:
+      - 2tdata-network-dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_URI=mongodb://admin:password@2tdata-mongodb-dev:27017/2TDATA?authSource=admin
+      - MONGODB_URI=mongodb://admin:password@2tdata-mongodb-dev:27017/2TDATA?authSource=admin
+      - SECRET_KEY=encore
+      - JWT_SECRET=encore
+      - JWT_EXPIRES_IN=24h
+      - SEND_OTP_EMAIL=vietcuong2532k3@gmail.com
+      - SEND_OTP_EMAIL_PASSWORD=qcps wsji smea gqxf
+      - LOG_LEVEL=debug
+      - BCRYPT_SALT_ROUNDS=12
+      # Enable file watching for Windows
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      # Mount source code for hot reload
+      - ./BE:/app
+      # Use anonymous volume for node_modules to avoid conflicts
+      - /app/node_modules
+      # Mount logs and uploads with persistent data
+      - backend_logs:/app/logs
+      - backend_uploads:/app/uploads
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend.dev
+    container_name: 2tdata-frontend-dev
+    networks:
+      - 2tdata-network-dev
+    ports:
+      - "5173:5173"
+    environment:
+      # Vite will use the API on port 3000
+      - VITE_API_BASE_URL=http://localhost:3000
+      - VITE_MONGO_EXPRESS_URL=http://localhost:8081
+      # Enable polling for file watching on Windows
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_USE_POLLING=true
+    volumes:
+      # Mount source code for hot reload
+      - ./FE:/app
+      # Use anonymous volume for node_modules
+      - /app/node_modules
+
+  mongodb:
+    image: mongo:latest
+    container_name: 2tdata-mongodb-dev
+    networks:
+      - 2tdata-network-dev
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: 2TDATA
+    volumes:
+      - mongodb_data_dev:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: 2tdata-mongo-express-dev
+    networks:
+      - 2tdata-network-dev
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_SERVER: 2tdata-mongodb-dev
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password
+    depends_on:
+      - mongodb
+
+  nginx:
+    image: nginx:alpine
+    container_name: 2tdata-nginx-dev
+    networks:
+      - 2tdata-network-dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+
+networks:
+  2tdata-network-dev:
+    driver: bridge
+
+volumes:
+  mongodb_data_dev:
+  backend_logs:
+  backend_uploads:

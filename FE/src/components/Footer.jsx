@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import image from "../image/image.jpg";
 import hcw from "../image/hcw.png";
 import remobpo from "../image/remobpo.png";
@@ -60,8 +60,7 @@ const Footer = () => {
 
                 <div className="font-semibold text-2xl  mt-6">THÀNH VIÊN CỦA 2T GROUP</div>
                 <div className="mt-6 flex flex-col items-center text-center">
-                
-              
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 items-center mt-4">
                   <a href="https://hcw.com.vn/" target="_blank" rel="noopener noreferrer">
                     <img src={hcw} alt="HCW" className="h-[60px] w-auto object-contain mx-auto" />
