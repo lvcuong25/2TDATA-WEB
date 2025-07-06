@@ -22,9 +22,9 @@ export const connectDB = async (uri) => {
             console.log('🔄 MongoDB reconnected');
         });
         
+        return true;
      } catch (e) {
-        console.error('❌ Failed to connect to MongoDB:', e);
-        process.exit(1);
+        console.error('❌ Failed to connect to MongoDB:', e.message);
+        throw e; // Let the calling function handle the error
      }
-}
 }
