@@ -1,11 +1,26 @@
-﻿import cors from 'cors';
+import cors from 'cors';
 import Site from '../model/Site.js';
+import logger from '../utils/logger.js';
 
 /**
  * Cache for site domains to avoid repeated DB queries
  */
 const domainCache = new Map();
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes (reduced for testing)
+
+// Get fallback domains from environment variables
+function getFallbackDomains() {
+  const envDomains = process.env.ALLOWED_DOMAINS || 'trunglq8.com,test.2tdata.com';
+  const domains = envDomains.split(',').map(domain => domain.trim());
+  
+  const fallbackDomains = [];
+  domains.forEach(domain => {
+    fallbackDomains.push(`http://${domain}`);
+    fallbackDomains.push(`https://${domain}`);
+  });
+  
+  return fallbackDomains;
+}
 
 /**
  * Get all allowed domains from database
@@ -18,30 +33,43 @@ async function getAllowedDomains() {
   }
   
   try {
-    const sites = await Site.find({ status: 'active' }, 'domains').lean();
-    const allDomains = sites.flatMap(site => site.domains);
+    // Add timeout to prevent hanging
+    const sites = await Site.find({ status: 'active' }, 'domains')
+      .lean()
+      .maxTimeMS(2000); // 2 second timeout
     
-    // Simple domain list with http/https variations only
+    const allDomains = sites.flatMap(site => site.domains || []);
     const allowedDomains = [];
+    
     allDomains.forEach(domain => {
       allowedDomains.push(`http://${domain}`);
       allowedDomains.push(`https://${domain}`);
     });
     
+    // Always include fallback domains
+    const fallbackDomains = getFallbackDomains();
+    const finalDomains = [...new Set([...allowedDomains, ...fallbackDomains])];
+    
     // Cache the result
     domainCache.set('all_domains', {
-      domains: allowedDomains,
+      domains: finalDomains,
       expires: Date.now() + CACHE_TTL
     });
     
-    return allowedDomains;
+    logger?.info(`✅ Loaded ${finalDomains.length} allowed domains from database`);
+    return finalDomains;
+    
   } catch (error) {
-    console.error('Error fetching allowed domains:', error);
-    // Fallback to basic domains
-    return [
-      'http://localhost',
-      'https://localhost'
-    ];
+    logger?.error('❌ Error fetching allowed domains, using fallback:', error.message);
+    
+    const fallbackDomains = getFallbackDomains();
+    // Cache fallback domains for shorter time
+    domainCache.set('all_domains', {
+      domains: fallbackDomains,
+      expires: Date.now() + (30 * 1000) // 30 seconds
+    });
+    
+    return fallbackDomains;
   }
 }
 

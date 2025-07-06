@@ -21,7 +21,10 @@
     "db:reset-admin": "node db-management/reset-superadmin.js",
     "db:cleanup": "node db-management/cleanup.js",
     "db:cleanup:all": "node db-management/cleanup.js --all",
-    "db:cleanup:test": "node db-management/cleanup.js --test-data --old-otps"
+    "db:cleanup:test": "node db-management/cleanup.js --test-data --old-otps",
+    "db:setup-auth": "node db-management/setup-mongodb-auth.js",
+    "db:setup-initial": "node db-management/setup-initial-data.js",
+    "setup:production": "npm run db:setup-auth && npm run db:setup-initial"
   },
   "keywords": [],
   "author": "",
