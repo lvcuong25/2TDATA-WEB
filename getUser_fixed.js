@@ -1,4 +1,4 @@
-﻿import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import User from "../model/User.js";
 
@@ -8,15 +8,23 @@ const { SECRET_KEY } = process.env;
 
 export const getUser = async (req, res, next) => {
     try {
+        // Debug logging for authentication
+        console.log("Auth Debug:", {
+            hasAuth: !!req.headers.authorization,
+            authHeader: req.headers.authorization || "Missing",
+            allHeaders: Object.keys(req.headers),
+            host: req.headers.host,
+            userAgent: req.headers["user-agent"]?.substring(0, 50) + "..." || "Missing"
+        });
         
         const authorization = req.headers?.authorization;
         if (!authorization) {
             // Mock a super admin user for testing
             req.user = {
-                _id: '507f1f77bcf86cd799439011',
-                email: 'test@admin.com',
-                role: 'super_admin',
-                name: 'Test Admin',
+                _id: "507f1f77bcf86cd799439011",
+                email: "test@admin.com",
+                role: "super_admin",
+                name: "Test Admin",
                 active: true
             };
             return next();
@@ -30,7 +38,7 @@ export const getUser = async (req, res, next) => {
             });
         }
 
-        const user = await User.findById(decoded._id).populate('service');
+        const user = await User.findById(decoded._id).populate("service");
         if (!user) {
             return res.status(403).json({
                 message: "User does not exist",

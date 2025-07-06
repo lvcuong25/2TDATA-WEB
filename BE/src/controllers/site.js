@@ -812,13 +812,7 @@ export const removeDomainFromSite = async (req, res) => {
  */
 export const getCurrentSiteInfo = async (req, res) => {
   try {
-    ,
-        'host': req.get('host'),
-        'hostname': req.hostname
-      },
-      url: req.url,
-      path: req.path
-    });
+    // Site detection check
     
     if (!req.site) {
       return res.status(404).json({

@@ -28,7 +28,7 @@ dotenv.config();
 app.use(dynamicCors);
 
 const { DB_URI, PORT } = process.env;
-connectDB(process.env.DB_URI)
+connectDB(process.env.DB_URI);
 app.use(express.json());
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 

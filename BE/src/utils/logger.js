@@ -1,115 +1,34 @@
-import winston from 'winston';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Define log levels and colors
-const logLevels = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  http: 3,
-  debug: 4,
-  audit: 5,
-  security: 6
+// Simple logger implementation to avoid dependency issues
+const getCurrentTimestamp = () => {
+  return new Date().toISOString();
 };
 
-const logColors = {
-  error: 'red',
-  warn: 'yellow',
-  info: 'green',
-  http: 'magenta',
-  debug: 'blue',
-  audit: 'cyan',
-  security: 'brightRed'
+const formatMessage = (level, message, meta = {}) => {
+  const timestamp = getCurrentTimestamp();
+  const metaStr = Object.keys(meta).length > 0 ? ` | ${JSON.stringify(meta)}` : '';
+  return `${timestamp} [${level.toUpperCase()}]: ${message}${metaStr}`;
 };
 
-winston.addColors(logColors);
-
-// Create logs directory if it doesn't exist
-const logsDir = path.join(__dirname, '../../logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
-}
-
-// Define log format
-const logFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-  winston.format.errors({ stack: true }),
-  winston.format.json(),
-  winston.format.printf(({ timestamp, level, message, ...meta }) => {
-    let logEntry = `${timestamp} [${level.toUpperCase()}]: ${message}`;
-    if (Object.keys(meta).length > 0) {
-      logEntry += ` | ${JSON.stringify(meta)}`;
+// Simple console-based logger
+const logger = {
+  info: (message, meta = {}) => {
+    console.log(formatMessage('info', message, meta));
+  },
+  error: (message, meta = {}) => {
+    console.error(formatMessage('error', message, meta));
+  },
+  warn: (message, meta = {}) => {
+    console.warn(formatMessage('warn', message, meta));
+  },
+  debug: (message, meta = {}) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(formatMessage('debug', message, meta));
     }
-    return logEntry;
-  })
-);
-
-// Create the logger
-const logger = winston.createLogger({
-  levels: logLevels,
-  level: process.env.LOG_LEVEL || 'info',
-  format: logFormat,
-  defaultMeta: { service: 'multi-tenant-app' },
-  transports: [
-    // Console transport for development
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize({ all: true }),
-        winston.format.simple()
-      )
-    }),
-    
-    // General application logs
-    new winston.transports.File({
-      filename: path.join(logsDir, 'app.log'),
-      level: 'info',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    
-    // Error logs
-    new winston.transports.File({
-      filename: path.join(logsDir, 'error.log'),
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    
-    // Security and audit logs
-    new winston.transports.File({
-      filename: path.join(logsDir, 'security.log'),
-      level: 'security',
-      maxsize: 10485760, // 10MB
-      maxFiles: 10,
-    }),
-    
-    // Audit logs
-    new winston.transports.File({
-      filename: path.join(logsDir, 'audit.log'),
-      level: 'audit',
-      maxsize: 10485760, // 10MB
-      maxFiles: 10,
-    })
-  ],
-  
-  // Handle uncaught exceptions and rejections
-  exceptionHandlers: [
-    new winston.transports.File({
-      filename: path.join(logsDir, 'exceptions.log')
-    })
-  ],
-  
-  rejectionHandlers: [
-    new winston.transports.File({
-      filename: path.join(logsDir, 'rejections.log')
-    })
-  ]
-});
+  },
+  log: (level, message, meta = {}) => {
+    console.log(formatMessage(level, message, meta));
+  }
+};
 
 // Security logging helper functions
 const securityLogger = {

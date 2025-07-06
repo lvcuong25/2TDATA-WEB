@@ -44,7 +44,7 @@ export const inputSanitizationMiddleware = (req, res, next) => {
 export const auditMiddleware = (req, res, next) => {
   // Log request for audit purposes
   if (process.env.NODE_ENV !== 'test') {
-    .toISOString()} - ${req.method} ${req.path} - IP: ${req.ip}`);
+    // Request audit logging
   }
   next();
 };

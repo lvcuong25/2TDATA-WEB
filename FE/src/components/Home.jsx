@@ -5,11 +5,9 @@ import Footer from "./Footer";
 import { useMutation } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
 import { toast } from "react-toastify";
-import axiosInstance from "../axios/axiosInstance";
 import { useSite } from "../context/SiteContext";
 
 const Home = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [iframeUrl, setIframeUrl] = useState('https://www.hcwvietnam.com/2tdata_soltuion'); // default
   const { currentSite, refreshSiteConfig } = useSite();
   const [formData, setFormData] = useState({
@@ -44,11 +42,6 @@ const Home = () => {
   }, [currentSite]);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem("accessToken");
-      setIsLoggedIn(!!token);
-    };
-    checkAuth();
 
     // Set up periodic refresh of site config (every 30 seconds)
     const configRefreshInterval = setInterval(() => {
@@ -91,7 +84,7 @@ const Home = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  }, [refreshSiteConfig]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

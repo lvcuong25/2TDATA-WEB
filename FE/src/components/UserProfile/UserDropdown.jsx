@@ -9,6 +9,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { currentUser, removeCurrentUser } = useContext(AuthContext);
+  // Show organization modal if needed later
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [hasOrganization, setHasOrganization] = useState(false);
   const [loadingOrg, setLoadingOrg] = useState(false);

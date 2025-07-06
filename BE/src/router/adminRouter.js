@@ -27,13 +27,7 @@ router.use(detectSiteMiddleware);
 // Then require authentication for all admin routes
 // Add extensive logging for Authorization header debugging
 router.use((req, res, next) => {
-  console.log('DEBUG Authorization header:', {
-    authorization: req.headers.authorization,
-    'content-type': req.headers['content-type'],
-    method: req.method,
-    url: req.url,
-    originalUrl: req.originalUrl
-  });
+  // Authorization header check for debugging
   next();
 });
 
