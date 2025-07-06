@@ -156,6 +156,8 @@ router.use(applySiteIsolation);
 // Admin site management routes with permissions
 router.get('/sites', requirePermission('site.read'), getAllSites);
 router.post('/sites', requirePermission('site.create'), uploadLogoToBase64, handleUploadErrors, createSite);
+// Add route for /admin/sites/add to match frontend expectations
+router.post('/sites/add', requirePermission('site.create'), uploadLogoToBase64, handleUploadErrors, createSite);
 router.get('/sites/:id', requirePermission('site.read'), getSiteById);
 router.get('/sites/:id/stats', requirePermission('analytics.read'), getSiteStats);
 router.put('/sites/:id', requirePermission('site.update'), uploadLogo, handleUploadErrors, updateSite);
