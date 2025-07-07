@@ -4,6 +4,12 @@
 export const getAllBlogs = async (req, res) => {
   try {
     let query = {};
+    
+    // Add site filter from middleware
+    if (req.siteId) {
+      query.site_id = req.siteId;
+    }
+    
     if (req.query.name) {
       query.$or = [
         { title: { $regex: new RegExp(req.query.name, 'i') } },
@@ -47,10 +53,17 @@ export const createBlog = async (req, res) => {
     return res.status(400).json({ message: "Ảnh phải là một URL hợp lệ" });
   }
 
+  // Get site_id from middleware
+  const siteId = req.siteId;
+  if (!siteId) {
+    return res.status(400).json({ message: "Site ID is required" });
+  }
+
   const blog = new Blog({
     title: title.trim(),
     content: content.trim(),
-    image
+    image,
+    site_id: siteId // Add site_id from middleware
   });
 
   try {

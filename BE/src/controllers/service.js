@@ -10,6 +10,12 @@ export const getServices = async (req, res, next) => {
         const sort = req.query.sort ? req.query.sort : { createdAt: -1 };
 
         let query = {};
+        
+        // Add site filter from middleware
+        if (req.siteId) {
+            query.site_id = req.siteId;
+        }
+        
         if (req.query.name) {
             query.$or = [
                 { name: { $regex: new RegExp(req.query.name, 'i') } },
@@ -110,8 +116,16 @@ export const createService = async (req, res, next) => {
     try {
         const { name, description, image, slug, authorizedLinks } = req.body;
         
-        // Kiểm tra dịch vụ đã tồn tại
-        const serviceExist = await Service.findOne({ name });
+        // Get site_id from middleware
+        const siteId = req.siteId;
+        if (!siteId) {
+            return res.status(400).json({
+                message: "Site ID is required",
+            });
+        }
+        
+        // Kiểm tra dịch vụ đã tồn tại trong site này
+        const serviceExist = await Service.findOne({ name, site_id: siteId });
         if (serviceExist) {
             return res.status(400).json({
                 message: "Dịch vụ đã tồn tại",
@@ -139,7 +153,8 @@ export const createService = async (req, res, next) => {
             description,
             image,
             slug,
-            authorizedLinks: filteredLinks
+            authorizedLinks: filteredLinks,
+            site_id: siteId // Add site_id from middleware
         });
 
         return res.status(201).json({

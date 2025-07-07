@@ -4,6 +4,7 @@ import router from './router/index.js';
 import { connectDB } from "./config/db.js";
 import cors from 'cors';
 import logger from './utils/logger.js';
+import { detectSiteMiddleware, applySiteFilterMiddleware } from './middlewares/siteDetection.js';
 
 // Load environment variables
 dotenv.config();
@@ -49,6 +50,29 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/uploads', express.static('uploads'));
 // Serve logos directly at /logos/ for frontend compatibility
 app.use('/logos', express.static('uploads/logos'));
+
+// Apply site detection middleware selectively
+// Skip site detection for auth routes and health checks
+app.use("/api", (req, res, next) => {
+    // Skip site detection for certain routes
+    const skipRoutes = [
+        '/api/health',
+        '/api/auth/sign-up',
+        '/api/auth/sign-in',
+        '/api/auth/send-otp',
+        '/api/auth/reset-password'
+    ];
+    
+    if (skipRoutes.some(route => req.path.startsWith(route))) {
+        return next();
+    }
+    
+    // Apply site detection for other routes
+    detectSiteMiddleware(req, res, (err) => {
+        if (err) return next(err);
+        applySiteFilterMiddleware(req, res, next);
+    });
+});
 
 // Main router
 app.use("/api", router);

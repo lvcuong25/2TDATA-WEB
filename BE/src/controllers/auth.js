@@ -7,7 +7,24 @@ import sendEmail from "../utils/sendEmail.js";
 
 export const signUp = async (req, res, next) => {
     try {
-        const { email, password, role, site_id } = req.body;
+        const { email, password, role } = req.body;
+        
+        // Get site_id from middleware (for regular users)
+        // Super admin can specify site_id in request body
+        let siteId = req.siteId; // From site detection middleware
+        
+        // If super admin is creating user, they can specify site_id
+        if (req.user?.role === 'super_admin' && req.body.site_id) {
+            siteId = req.body.site_id;
+        }
+        
+        // For non-super_admin roles, site_id is required
+        if (!siteId && role !== 'super_admin') {
+            return res.status(400).json({
+                message: "Site ID is required for user registration",
+            });
+        }
+        
         const userExist = await User.findOne({ email });
         if (userExist) {
             return res.status(400).json({
@@ -35,7 +52,7 @@ export const signUp = async (req, res, next) => {
             email,
             password: hashPasswordUser,
             role: role || 'member', // Default role is 'member'
-            site_id: site_id, // Required for multi-tenant
+            site_id: siteId, // Required for multi-tenant
             // service: serviceId
         });
 
