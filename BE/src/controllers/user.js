@@ -1,8 +1,9 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 import User from "../model/User.js";
 import { hashPassword } from "../utils/password.js";
-import logger from "../utils/logger.js";
-
+import logger from '../utils/logger.js';
+import { canAssignRole, getAssignableRoles, ROLES } from '../utils/roleHierarchy.js';
+import Site from '../model/Site.js';
 export const getAllUser = async (req, res, next) => {
     try {
         const options = {
@@ -99,8 +100,64 @@ export const getUserById = async (req, res, next) => {
 
 export const createUser = async (req, res, next) => {
     try {
-        req.body.password = await hashPassword(req.body.password);
-        const data = await User.create(req.body);
+        const { email, name, password, role, site_id } = req.body;
+        const creatorRole = req.user?.role || 'member';
+        
+        // Validate role assignment
+        if (role) {
+            if (!canAssignRole(creatorRole, role)) {
+                return res.status(403).json({ 
+                    message: `You cannot assign ${role} role. You can only assign roles lower than your own.`,
+                    assignableRoles: getAssignableRoles(creatorRole)
+                });
+            }
+        }
+        
+        // Validate site_id requirement
+        let finalSiteId = site_id;
+        
+        // For non-super_admin roles, site_id is required
+        if (role !== ROLES.SUPER_ADMIN) {
+            if (!finalSiteId) {
+                // If creator is site_admin, use their site_id
+                if (creatorRole === ROLES.SITE_ADMIN && req.user.site_id) {
+                    finalSiteId = req.user.site_id;
+                }
+                // If site detection middleware provided site_id
+                else if (req.siteId) {
+                    finalSiteId = req.siteId;
+                }
+                else {
+                    return res.status(400).json({ 
+                        message: "Site ID is required for non-super_admin users" 
+                    });
+                }
+            }
+            
+            // Validate that site_admin can only create users for their own site
+            if (creatorRole === ROLES.SITE_ADMIN && finalSiteId.toString() !== req.user.site_id.toString()) {
+                return res.status(403).json({ 
+                    message: "Site admins can only create users for their own site" 
+                });
+            }
+        }
+        
+        // Hash password
+        const hashedPassword = await hashPassword(password);
+        
+        // Create user
+        const userData = {
+            email,
+            name,
+            password: hashedPassword,
+            role: role || 'member',
+            site_id: finalSiteId
+        };
+        
+        const data = await User.create(userData);
+        
+        // Populate site info
+        await data.populate('site_id', 'name domains');
         
         if (data) {
             logger.audit('User created', {
@@ -109,12 +166,16 @@ export const createUser = async (req, res, next) => {
                 targetUserId: data._id,
                 targetUserEmail: data.email,
                 userRole: data.role,
-                siteId: req.site?._id,
+                siteId: data.site_id?._id,
+                siteName: data.site_id?.name,
                 ip: req.ip
             });
         }
         
-        return !data ? res.status(500).json({ message: "Tạo user thất bại" }) : res.status(201).json({ data });
+        return res.status(201).json({ 
+            data,
+            message: "User created successfully"
+        });
     } catch (error) {
         logger.error('User creation failed', {
             error: error.message,

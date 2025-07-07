@@ -18,6 +18,7 @@ import {
 } from '../middlewares/siteDetection.js';
 import { uploadLogo, uploadLogoToBase64, handleUploadErrors } from '../middlewares/upload.js';
 import { requirePermission, requireAnyPermission, applySiteIsolation } from '../middlewares/permissionMiddleware.js';
+import { getUserFormMetadata, getAllRoles } from '../controllers/metadata.js';
 
 const router = express.Router();
 
@@ -169,5 +170,9 @@ router.delete('/sites/:id', requirePermission('site.delete'), deleteSite);
 // Domain management
 router.post('/sites/:id/domains', requirePermission('site.update'), addDomainToSite);
 router.delete('/sites/:id/domains', requirePermission('site.update'), removeDomainFromSite);
+
+// Metadata endpoints
+router.get('/metadata/user-form', getUserFormMetadata);
+router.get('/metadata/roles', getAllRoles);
 
 export default router;
