@@ -186,6 +186,18 @@ const UserDropdown = ({ onLogoutSuccess }) => {
         </div>
       )}
      
+      {showOrgModal && (
+        <RegisterOrganizationModal
+          isOpen={showOrgModal}
+          onClose={() => setShowOrgModal(false)}
+          hasOrganization={hasOrganization}
+          isAdmin={currentUser?.role === 'admin'}
+          onSuccess={() => {
+            setShowOrgModal(false);
+            fetchOrg();
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -1,20 +1,37 @@
 import React, { useState } from 'react';
-import { Modal, Form, Input, Button, Alert } from 'antd';
+import { Modal, Form, Input, Button, Alert, Upload } from 'antd';
+import { PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { axiosPost } from '../../utils/axiosInstance';
 import { toast } from 'react-toastify';
+import { uploadFileCloudinary } from '../admin/libs/uploadImageCloud';
 
 const RegisterOrganizationModal = ({ isOpen, onClose, onSuccess, hasOrganization, isAdmin }) => {
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
   const [form] = Form.useForm();
+
+  const handleLogoUpload = async (info) => {
+    if (info.file.status === 'done' || info.file.status === 'uploading') {
+      const file = info.file.originFileObj;
+      if (file) {
+        const url = await uploadFileCloudinary(file);
+        setLogoUrl(url);
+        form.setFieldsValue({ logo: url });
+        toast.success('Tải logo thành công!');
+      }
+    }
+  };
 
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      await axiosPost('organization', values);
+      const submitValues = { ...values, logo: logoUrl };
+      await axiosPost('organization', submitValues);
       toast.success('Đăng ký tổ chức thành công!');
       onSuccess && onSuccess();
       onClose();
       form.resetFields();
+      setLogoUrl('');
     } catch (err) {
       toast.error(err?.error || 'Đăng ký tổ chức thất bại!');
     } finally {
@@ -28,7 +45,7 @@ const RegisterOrganizationModal = ({ isOpen, onClose, onSuccess, hasOrganization
     <Modal
       title="Đăng ký tổ chức"
       open={isOpen}
-      onCancel={() => { onClose(); form.resetFields(); }}
+      onCancel={() => { onClose(); form.resetFields(); setLogoUrl(''); }}
       footer={null}
       destroyOnClose
     >
@@ -86,11 +103,11 @@ const RegisterOrganizationModal = ({ isOpen, onClose, onSuccess, hasOrganization
         >
           <Input placeholder="Mã số thuế (nếu có)" />
         </Form.Item>
-        <Form.Item
-          label="Logo (URL)"
-          name="logo"
-        >
-          <Input placeholder="Logo (URL)" />
+        <Form.Item name="logo" label="Logo">
+          <Upload name="logo" listType="picture" showUploadList={false} customRequest={({ file, onSuccess }) => { onSuccess('ok'); handleLogoUpload({ file: { originFileObj: file } }); }}>
+            <Button icon={<UploadOutlined />}>Tải logo</Button>
+            {logoUrl && <img src={logoUrl} alt="logo" className="w-16 h-16 object-contain mt-2" />}
+          </Upload>
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={loading} block disabled={disableForm}>
