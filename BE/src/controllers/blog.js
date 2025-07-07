@@ -5,8 +5,20 @@ export const getAllBlogs = async (req, res) => {
   try {
     let query = {};
     
-    // Add site filter from middleware
-    if (req.siteId) {
+    // Apply site filter based on user role
+    // Super admin can see all blogs across all sites
+    if (req.user && req.user.role === 'super_admin') {
+      // No site filter needed - can see all blogs
+    }
+    // Site admin can only see blogs from their site
+    else if (req.user && req.user.role === 'site_admin') {
+      const siteId = req.user.site_id || req.site?._id;
+      if (siteId) {
+        query.site_id = siteId;
+      }
+    }
+    // For public/member access, use site filter from middleware
+    else if (req.siteId) {
       query.site_id = req.siteId;
     }
     
@@ -16,7 +28,11 @@ export const getAllBlogs = async (req, res) => {
         { content: { $regex: new RegExp(req.query.name, 'i') } }
       ];
     }
-    const blogs = await Blog.find(query).sort({ createdAt: -1 });
+    
+    const blogs = await Blog.find(query)
+      .populate('site_id', 'name domains')
+      .sort({ createdAt: -1 });
+      
     res.json(blogs);
   } catch (err) {
     console.error("Error fetching blogs:", err);

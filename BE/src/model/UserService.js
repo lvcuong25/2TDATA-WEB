@@ -13,6 +13,13 @@ const userServiceSchema = new mongoose.Schema(
       ref: "Service",
       required: true,
     },
+    site_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Site",
+      required: true,
+      index: true,
+      description: "Site where the user registered this service"
+    },
     status: {
       type: String,
       enum: ["waiting", "approved", "rejected"],

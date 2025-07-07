@@ -14,6 +14,23 @@ export const getPendingServices = async (req, res, next) => {
         if (status) {
             query.status = status;
         }
+        
+        // Apply site filter based on user role
+        // Super admin can see all user services across all sites
+        if (req.user && req.user.role === 'super_admin') {
+            // No site filter needed
+        }
+        // Site admin can only see user services from their site
+        else if (req.user && req.user.role === 'site_admin') {
+            const siteId = req.user.site_id || req.site?._id;
+            if (siteId) {
+                query.site_id = siteId;
+            }
+        }
+        // For other users, apply site filter from middleware
+        else if (req.siteId) {
+            query.site_id = req.siteId;
+        }
 
         // Handle combined user and service search
         if (search) {
@@ -211,15 +228,24 @@ export const addServiceToUser = async (req, res, next) => {
                 continue;
             }
 
+            // Get site_id from request context
+            const siteId = req.siteId || req.user.site_id;
+            if (!siteId) {
+                return res.status(400).json({
+                    message: "Site ID is required for service registration"
+                });
+            }
+
             // Tạo instance mới và lưu để trigger pre-save hook
             const userService = new UserService({
                 user: userId,
                 service: sid,
+                site_id: siteId, // Add site_id where service was registered
                 status: 'waiting',
-                customSlug: customSlug // Nếu có customSlug được cung cấp
+                customSlug: customSlug, // Nếu có customSlug được cung cấp
+                link: [] // Thêm mảng link rỗng
             });
             await userService.save();
-
             // Cập nhật service vào user
             await User.findByIdAndUpdate(
                 userId,
