@@ -36,8 +36,8 @@ export const getServiceById = async (req, res, next) => {
     try {
         const { id } = req.params;
 
-        // Nếu là admin, cho phép xem bất kỳ service nào
-        if (req.user.role === 'admin') {
+        // Nếu là admin hoặc super_admin, cho phép xem bất kỳ service nào
+        if (req.user.role === 'admin' || req.user.role === 'super_admin') {
             const service = await Service.findById(id);
             if (!service) {
                 return res.status(404).json({
@@ -78,8 +78,8 @@ export const getServiceBySlug = async (req, res, next) => {
         // Lấy thông tin user và populate danh sách service
         const user = await User.findById(userId).populate('service');
 
-        // Nếu là admin, cho phép xem bất kỳ service nào
-        if (req.user.role === 'admin') {
+        // Nếu là admin hoặc super_admin, cho phép xem bất kỳ service nào
+        if (req.user.role === 'admin' || req.user.role === 'super_admin') {
             const service = await Service.findOne({ slug });
             if (!service) {
                 return res.status(404).json({
