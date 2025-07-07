@@ -15,7 +15,7 @@ dotenv.config({ path: path.join(__dirname, '../BE/.env') });
 async function fixSiteAdmins() {
   try {
     // Connect to MongoDB
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/2tdata';
+    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/2tdata';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
 
