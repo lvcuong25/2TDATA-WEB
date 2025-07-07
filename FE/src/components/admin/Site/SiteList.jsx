@@ -145,7 +145,6 @@ const SiteList = () => {
               size="small"
               onClick={() => {
                 console.log('🟣 Button onClick triggered!');
-                alert('Delete button works!'); // Simple test
                 handleDelete(record._id, record.name);
               }}
               onMouseDown={() => console.log('🟠 Button mouseDown!')}
