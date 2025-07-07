@@ -22,15 +22,24 @@ const UsersForm = () => {
     const selectedRole = watch('role');
 
     // Fetch form metadata (assignable roles and sites)
-    const { data: metadata } = useQuery({
+    const { data: metadata, isLoading: metadataLoading, error: metadataError } = useQuery({
         queryKey: ["USER_FORM_METADATA"],
         queryFn: async () => {
-            const { data } = await instance.get(`/admin/metadata/user-form`);
-            return data;
-        },
-        onSuccess: (data) => {
-            setAssignableRoles(data.assignableRoles || []);
-            setAvailableSites(data.availableSites || []);
+            try {
+                const { data } = await instance.get(`/admin/metadata/user-form`);
+                console.log('Metadata response:', data);
+                setAssignableRoles(data.assignableRoles || []);
+                setAvailableSites(data.availableSites || []);
+                // Check if we should show site selection on load
+                if (data.availableSites && data.availableSites.length > 0 && !id) {
+                    setShowSiteSelect(true);
+                }
+                return data;
+            } catch (error) {
+                console.error('Error fetching metadata:', error);
+                toast.error('Không thể tải dữ liệu form: ' + error.message);
+                throw error;
+            }
         }
     });
 
@@ -201,19 +210,27 @@ const UsersForm = () => {
                                 render={({ field }) => (
                                     <Select 
                                         {...field}
+                                        loading={metadataLoading}
+                                        placeholder={metadataLoading ? "Đang tải..." : "Chọn vai trò"}
                                         onChange={(value) => {
                                             field.onChange(value);
                                             // Show site selection for non-super_admin roles
                                             setShowSiteSelect(value !== 'super_admin' && availableSites.length > 0);
                                         }}
                                     >
-                                        {assignableRoles.map(role => (
-                                            <Option key={role.value} value={role.value}>
-                                                <span style={{ color: role.color }}>
-                                                    {role.label}
-                                                </span>
-                                            </Option>
-                                        ))}
+                                        {metadataLoading ? (
+                                            <Option value="" disabled>Đang tải danh sách vai trò...</Option>
+                                        ) : assignableRoles.length > 0 ? (
+                                            assignableRoles.map(role => (
+                                                <Option key={role.value} value={role.value}>
+                                                    <span style={{ color: role.color }}>
+                                                        {role.label}
+                                                    </span>
+                                                </Option>
+                                            ))
+                                        ) : (
+                                            <Option value="" disabled>Không có vai trò nào có thể gán</Option>
+                                        )}
                                     </Select>
                                 )}
                             />
