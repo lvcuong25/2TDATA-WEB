@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../core/Auth';
 import RegisterOrganizationModal from './RegisterOrganizationModal';
-import { axiosGet } from '../../utils/axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 
 const UserDropdown = ({ onLogoutSuccess }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +32,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
       if (!currentUser || currentUser.role === 'admin') return;
       setLoadingOrg(true);
       try {
-        await axiosGet(`organization/user/${currentUser._id}`);
+        await axiosInstance.get(`/organization/user/${currentUser._id}`);
         setHasOrganization(true);
       } catch {
         setHasOrganization(false);
@@ -188,6 +188,18 @@ const UserDropdown = ({ onLogoutSuccess }) => {
           </div>
         </div>
       )}
+      
+      {/* Add the missing RegisterOrganizationModal */}
+      <RegisterOrganizationModal
+        isOpen={showOrgModal}
+        onClose={() => setShowOrgModal(false)}
+        onSuccess={() => {
+          setHasOrganization(true);
+          setShowOrgModal(false);
+        }}
+        hasOrganization={hasOrganization}
+        isAdmin={currentUser?.role === 'admin' || currentUser?.role === 'super_admin'}
+      />
      
     </div>
   );
