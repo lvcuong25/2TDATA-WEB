@@ -53,4 +53,16 @@ const PrivateRoute = ({ children }) => {
   );
 };
 
-export { LoginRoute, NoneLoginRoute, AdminRoute, PrivateRoute };
+const SuperAdminRoute = ({ children }) => {
+  const { currentUser } = useContext(AuthContext);
+  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "superadmin";
+  return (
+    <ConditionalRoute
+      condition={!!currentUser && isSuperAdmin}
+      redirectTo="/admin"
+      children={children}
+    />
+  );
+};
+
+export { LoginRoute, NoneLoginRoute, AdminRoute, PrivateRoute, SuperAdminRoute };

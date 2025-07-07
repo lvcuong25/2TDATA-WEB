@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
 import { Button, Input, Form, Spin, Select, Switch, Tag, Space, Card, Tooltip, Modal, Table, Popconfirm } from 'antd';
 import instance from "../../../utils/axiosInstance";
@@ -7,6 +7,7 @@ import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { uploadFileCloudinary } from "../../admin/libs/uploadImageCloud";
 import { InfoCircleOutlined, UserOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
+import { AuthContext } from '../../core/Auth';
 
 const { Option } = Select;
 
@@ -14,14 +15,19 @@ const UsersEdit = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const queryClient = useQueryClient();
+    const { currentUser } = useContext(AuthContext);
     const [avatar, setAvatar] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
     const [editingInfo, setEditingInfo] = useState(null);
     const [infoForm] = Form.useForm();
     const [isCopied, setIsCopied] = useState(false);
+    const [assignableRoles, setAssignableRoles] = useState([]);
+    const [availableSites, setAvailableSites] = useState([]);
+    const [showSiteSelect, setShowSiteSelect] = useState(false);
 
-    const { control, handleSubmit, setValue, reset, formState: { errors } } = useForm();
+    const { control, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm();
+    const selectedRole = watch('role');
 
     // Query để lấy dữ liệu user
     const { data: userData, isLoading: isFetchingUser } = useQuery({
@@ -41,6 +47,16 @@ const UsersEdit = () => {
         },
     });
 
+    // Query để lấy role metadata và sites
+    const { data: metadataResponse, isLoading: metadataLoading } = useQuery({
+        queryKey: ['role-metadata'],
+        queryFn: async () => {
+            const { data } = await instance.get('/user/role-metadata');
+            return data;
+        },
+        staleTime: 5 * 60 * 1000,
+    });
+
     useEffect(() => {
         if (userData) {
             reset({
@@ -48,6 +64,7 @@ const UsersEdit = () => {
                 name: userData.name,
                 phone: userData.phone,
                 role: userData.role,
+                site_id: userData.site_id?._id,
                 active: userData.active,
                 service: userData.service?.map(s => ({
                     id: s.service._id,
@@ -56,8 +73,27 @@ const UsersEdit = () => {
                 address: userData.address
             });
             if (userData.avatar) setAvatar(userData.avatar);
+            
+            // Show site select if user has a site and is not super_admin
+            if (userData.role !== 'super_admin' && userData.site_id) {
+                setShowSiteSelect(true);
+            }
         }
     }, [userData, reset]);
+
+    useEffect(() => {
+        if (metadataResponse) {
+            setAssignableRoles(metadataResponse.assignableRoles || []);
+            setAvailableSites(metadataResponse.sites || []);
+        }
+    }, [metadataResponse]);
+
+    useEffect(() => {
+        // Show/hide site selection based on selected role
+        if (selectedRole) {
+            setShowSiteSelect(selectedRole !== 'super_admin' && availableSites.length > 0);
+        }
+    }, [selectedRole, availableSites]);
 
     const mutation = useMutation({
         mutationFn: async (userData) => {
@@ -474,13 +510,68 @@ const UsersEdit = () => {
                                     control={control}
                                     rules={{ required: 'Vai trò không được bỏ trống' }}
                                     render={({ field }) => (
-                                        <Select {...field}>
-                                            <Option value="admin">Admin</Option>
-                                            <Option value="member">Member</Option>
+                                        <Select 
+                                            {...field}
+                                            loading={metadataLoading}
+                                            placeholder={metadataLoading ? "Đang tải..." : "Chọn vai trò"}
+                                            onChange={(value) => {
+                                                field.onChange(value);
+                                                // Show site selection for non-super_admin roles
+                                                setShowSiteSelect(value !== 'super_admin' && availableSites.length > 0);
+                                            }}
+                                        >
+                                            {metadataLoading ? (
+                                                <Option value="" disabled>Đang tải danh sách vai trò...</Option>
+                                            ) : assignableRoles.length > 0 ? (
+                                                assignableRoles.map(role => (
+                                                    <Option key={role.value} value={role.value}>
+                                                        <span style={{ color: role.color }}>
+                                                            {role.label}
+                                                        </span>
+                                                    </Option>
+                                                ))
+                                            ) : (
+                                                <Option value="" disabled>Không có vai trò nào có thể gán</Option>
+                                            )}
                                         </Select>
                                     )}
                                 />
                             </Form.Item>
+
+                            {/* Site selection - only show if needed */}
+                            {showSiteSelect && (
+                                <Form.Item 
+                                    label="Site" 
+                                    required
+                                    validateStatus={errors.site_id ? "error" : ""}
+                                    help={errors.site_id?.message}
+                                >
+                                    <Controller
+                                        name="site_id"
+                                        control={control}
+                                        rules={{ 
+                                            required: selectedRole !== 'super_admin' ? 'Site không được bỏ trống' : false 
+                                        }}
+                                        render={({ field }) => (
+                                            <Select 
+                                                {...field}
+                                                placeholder="Chọn site"
+                                            >
+                                                {availableSites.map(site => (
+                                                    <Option key={site.value} value={site.value}>
+                                                        {site.label}
+                                                        {site.domains && site.domains.length > 0 && (
+                                                            <span className="text-gray-500 text-sm ml-2">
+                                                                ({site.domains[0]})
+                                                            </span>
+                                                        )}
+                                                    </Option>
+                                                ))}
+                                            </Select>
+                                        )}
+                                    />
+                                </Form.Item>
+                            )}
 
                             <Form.Item
                                 label="Trạng thái hoạt động"
