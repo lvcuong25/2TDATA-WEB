@@ -667,6 +667,15 @@ export const deleteSite = async (req, res) => {
       });
     }
     
+    // Prevent deletion of main site
+    if (site.is_main_site) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete the main site. Main site is protected from deletion.',
+        error: 'MAIN_SITE_PROTECTED'
+      });
+    }
+    
     // Check if site has users (prevent deletion if has users)
     const userCount = await User.countDocuments({ site_id: id });
     if (userCount > 0) {
@@ -676,7 +685,22 @@ export const deleteSite = async (req, res) => {
       });
     }
     
+    // Delete site logo if exists
+    if (site.logo_url) {
+      try {
+        const logoPath = site.logo_url.replace('/api/uploads/logos/', '');
+        const fullPath = path.join(process.cwd(), 'uploads', 'logos', logoPath);
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+        }
+      } catch (error) {
+        console.error('Error deleting site logo:', error);
+      }
+    }
+    
     await Site.findByIdAndDelete(id);
+    
+    console.log(`✅ Site deleted successfully: ${site.name} (${id})`);
     
     res.status(200).json({
       success: true,
