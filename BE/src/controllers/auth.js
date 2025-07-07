@@ -69,7 +69,7 @@ export const signUp = async (req, res, next) => {
 export const signIn = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const userExist = await User.findOne({ email });
+        const userExist = await User.findOne({ email }).populate('site_id');
         if (!userExist) {
             return res.status(400).json({
                 message: "Email không tồn tại",
@@ -85,6 +85,21 @@ export const signIn = async (req, res, next) => {
             return res.status(400).json({
                 message: "Mật khẩu không đúng",
             });
+        }
+
+        // Check site access permissions
+        const currentSiteId = req.site?._id?.toString();
+        const userSiteId = userExist.site_id?._id?.toString() || userExist.site_id?.toString();
+        
+        // Super admin can login to any site
+        if (userExist.role !== 'super_admin') {
+            // Other users can only login to their assigned site
+            if (!userSiteId || userSiteId !== currentSiteId) {
+                return res.status(403).json({
+                    message: "Bạn không có quyền truy cập vào site này",
+                    error: "SITE_ACCESS_DENIED"
+                });
+            }
         }
 
         const accessToken = token({ _id: userExist._id }, "365d");
