@@ -39,6 +39,8 @@ const SiteList = () => {
   }, []);
 
   const handleDelete = (siteId, siteName) => {
+    console.log('🔴 Delete button clicked!', { siteId, siteName });
+    
     confirm({
       title: 'Xác nhận xóa trang web',
       content: `Bạn có chắc chắn muốn xóa trang web "${siteName}"? Hành động này không thể hoàn tác.`,
@@ -47,12 +49,15 @@ const SiteList = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
+          console.log('🟡 Making delete request to:', `/sites/${siteId}`);
           await axiosInstance.delete(`/sites/${siteId}`);
+          console.log('🟢 Delete successful!');
           message.success('Xóa trang web thành công');
           fetchSites(pagination.current, pagination.pageSize);
         } catch (error) {
-          message.error('Không thể xóa trang web');
-          console.error('Error deleting site:', error);
+          console.error('🔴 Delete error:', error);
+          const errorMsg = error.response?.data?.message || 'Không thể xóa trang web';
+          message.error(errorMsg);
         }
       },
     });
@@ -138,7 +143,14 @@ const SiteList = () => {
               danger
               icon={<DeleteOutlined />}
               size="small"
-              onClick={() => handleDelete(record._id, record.name)}
+              onClick={() => {
+                console.log('🟣 Button onClick triggered!');
+                alert('Delete button works!'); // Simple test
+                handleDelete(record._id, record.name);
+              }}
+              onMouseDown={() => console.log('🟠 Button mouseDown!')}
+              onMouseUp={() => console.log('🟢 Button mouseUp!')}
+              style={{ pointerEvents: 'all', zIndex: 999 }} // Force clickable
             />
           </Tooltip>
         </Space>
