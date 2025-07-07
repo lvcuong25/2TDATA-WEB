@@ -47,7 +47,8 @@ const serviceSchema = new mongoose.Schema({
       },
       title: {
         type: String,
-        required: true,
+        required: false,
+        default: '',
         description: "Tiêu đề hoặc mô tả của link"
       },
       description:{

@@ -114,10 +114,10 @@ export const createService = async (req, res, next) => {
     try {
         const { name, description, image, slug, authorizedLinks } = req.body;
         
-        // Only super admin can create services
-        if (req.user.role !== 'super_admin') {
+        // Only super admin or legacy admin can create services
+        if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
             return res.status(403).json({
-                message: "Only super admin can create services",
+                message: "Only admin can create services",
             });
         }
         
