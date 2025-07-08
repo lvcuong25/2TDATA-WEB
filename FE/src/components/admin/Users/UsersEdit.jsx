@@ -49,9 +49,9 @@ const UsersEdit = () => {
 
     // Query để lấy role metadata và sites
     const { data: metadataResponse, isLoading: metadataLoading } = useQuery({
-        queryKey: ['role-metadata'],
+        queryKey: ['USER_FORM_METADATA'],
         queryFn: async () => {
-            const { data } = await instance.get('/user/role-metadata');
+            const { data } = await instance.get('/admin/metadata/user-form');
             return data;
         },
         staleTime: 5 * 60 * 1000,
@@ -84,7 +84,7 @@ const UsersEdit = () => {
     useEffect(() => {
         if (metadataResponse) {
             setAssignableRoles(metadataResponse.assignableRoles || []);
-            setAvailableSites(metadataResponse.sites || []);
+            setAvailableSites(metadataResponse.availableSites || []);
         }
     }, [metadataResponse]);
 
