@@ -2,12 +2,8 @@ import mongoose from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
 const serviceSchema = new mongoose.Schema({
-  site_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Site',
-    required: true,
-    index: true
-  },
+  // Services are global - no site_id needed
+  // Only super admin can create/edit/delete services
   name: {
     type: String,
     required: true,
@@ -51,7 +47,8 @@ const serviceSchema = new mongoose.Schema({
       },
       title: {
         type: String,
-        required: true,
+        required: false,
+        default: '',
         description: "Tiêu đề hoặc mô tả của link"
       },
       description:{

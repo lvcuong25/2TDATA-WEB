@@ -18,6 +18,7 @@ import {
 } from '../middlewares/siteDetection.js';
 import { uploadLogo, uploadLogoToBase64, handleUploadErrors } from '../middlewares/upload.js';
 import { requirePermission, requireAnyPermission, applySiteIsolation } from '../middlewares/permissionMiddleware.js';
+import { getUserFormMetadata, getAllRoles } from '../controllers/metadata.js';
 
 const router = express.Router();
 
@@ -27,13 +28,7 @@ router.use(detectSiteMiddleware);
 // Then require authentication for all admin routes
 // Add extensive logging for Authorization header debugging
 router.use((req, res, next) => {
-  console.log('DEBUG Authorization header:', {
-    authorization: req.headers.authorization,
-    'content-type': req.headers['content-type'],
-    method: req.method,
-    url: req.url,
-    originalUrl: req.originalUrl
-  });
+  // Authorization header check for debugging
   next();
 });
 
@@ -162,6 +157,8 @@ router.use(applySiteIsolation);
 // Admin site management routes with permissions
 router.get('/sites', requirePermission('site.read'), getAllSites);
 router.post('/sites', requirePermission('site.create'), uploadLogoToBase64, handleUploadErrors, createSite);
+// Add route for /admin/sites/add to match frontend expectations
+router.post('/sites/add', requirePermission('site.create'), uploadLogoToBase64, handleUploadErrors, createSite);
 router.get('/sites/:id', requirePermission('site.read'), getSiteById);
 router.get('/sites/:id/stats', requirePermission('analytics.read'), getSiteStats);
 router.put('/sites/:id', requirePermission('site.update'), uploadLogo, handleUploadErrors, updateSite);
@@ -173,5 +170,9 @@ router.delete('/sites/:id', requirePermission('site.delete'), deleteSite);
 // Domain management
 router.post('/sites/:id/domains', requirePermission('site.update'), addDomainToSite);
 router.delete('/sites/:id/domains', requirePermission('site.update'), removeDomainFromSite);
+
+// Metadata endpoints
+router.get('/metadata/user-form', getUserFormMetadata);
+router.get('/metadata/roles', getAllRoles);
 
 export default router;

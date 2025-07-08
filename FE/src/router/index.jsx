@@ -6,7 +6,7 @@ import SignIn from "../components/signin.jsx";
 import ResetPassword from "../components/ResetPassword.jsx";
 import ServiceBySlug from "./ServiceBySlug.jsx";
 import LayoutAdmin from "../components/Layout/Admin.jsx";
-import { AdminRoute, PrivateRoute } from "./PrivateRoute.jsx";
+import { AdminRoute, PrivateRoute, SuperAdminRoute } from "./PrivateRoute.jsx";
 import BlogList from "../components/admin/Blog/BlogList.jsx";
 import BlogForm from "../components/admin/Blog/BlogForm.jsx";
 import BlogEdit from "../components/admin/Blog/BlogEdit.jsx";
@@ -119,9 +119,21 @@ const Router = () => {
             <Route path="edit/:id" element={<BlogEdit />} />
           </Route>
           <Route path="services">
-            <Route index element={<ServiceList />} />
-            <Route path="add" element={<ServiceForm />} />
-            <Route path="edit/:id" element={<ServiceEdit />} />
+            <Route index element={
+              <SuperAdminRoute>
+                <ServiceList />
+              </SuperAdminRoute>
+            } />
+            <Route path="add" element={
+              <SuperAdminRoute>
+                <ServiceForm />
+              </SuperAdminRoute>
+            } />
+            <Route path="edit/:id" element={
+              <SuperAdminRoute>
+                <ServiceEdit />
+              </SuperAdminRoute>
+            } />
           </Route>
           <Route path="status">
             <Route index element={<StatusList />} />
@@ -136,11 +148,31 @@ const Router = () => {
             <Route index element={<IframeList />} />
           </Route>
           <Route path="sites">
-            <Route index element={<SiteList />} />
-            <Route path="add" element={<SiteForm />} />
-            <Route path="edit/:id" element={<SiteForm />} />
-            <Route path="detail/:id" element={<SiteDetail />} />
-            <Route path=":siteId/admins" element={<SiteAdminList />} />
+            <Route index element={
+              <SuperAdminRoute>
+                <SiteList />
+              </SuperAdminRoute>
+            } />
+            <Route path="add" element={
+              <SuperAdminRoute>
+                <SiteForm />
+              </SuperAdminRoute>
+            } />
+            <Route path="edit/:id" element={
+              <SuperAdminRoute>
+                <SiteForm />
+              </SuperAdminRoute>
+            } />
+            <Route path="detail/:id" element={
+              <SuperAdminRoute>
+                <SiteDetail />
+              </SuperAdminRoute>
+            } />
+            <Route path=":siteId/admins" element={
+              <SuperAdminRoute>
+                <SiteAdminList />
+              </SuperAdminRoute>
+            } />
           </Route>
           <Route path="organization">
             <Route index element={<OrganizationList />} />

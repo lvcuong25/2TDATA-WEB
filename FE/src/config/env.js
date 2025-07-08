@@ -29,9 +29,6 @@ const config = {
 };
 
 // Log current configuration for debugging
-,
-  apiBaseURL: config.apiBaseURL,
-  isAffiliate: config.isAffiliateDomain()
-});
+// Configuration logging removed
 
 export default config;

@@ -182,7 +182,6 @@ const ServiceForm = () => {
                                             <Controller
                                                 name={`authorizedLinks.${index}.url`}
                                                 control={control}
-                                                rules={{ required: 'URL không được bỏ trống' }}
                                                 render={({ field }) => (
                                                     <Input 
                                                         {...field} 
@@ -205,7 +204,6 @@ const ServiceForm = () => {
                                         <Controller
                                             name={`authorizedLinks.${index}.title`}
                                             control={control}
-                                            rules={{ required: 'Tiêu đề không được bỏ trống' }}
                                             render={({ field }) => (
                                                 <Input 
                                                     {...field} 

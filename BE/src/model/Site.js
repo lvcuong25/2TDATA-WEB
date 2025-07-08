@@ -42,6 +42,10 @@ const siteSchema = new mongoose.Schema({
   logo_url: {
     type: String
   },
+  is_main_site: {
+    type: Boolean,
+    default: false
+  },
   status: {
     type: String,
     enum: ['active', 'inactive', 'suspended'],

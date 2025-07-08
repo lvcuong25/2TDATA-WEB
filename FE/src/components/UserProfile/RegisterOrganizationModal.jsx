@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, Button, Alert } from 'antd';
-import { axiosPost } from '../../utils/axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 import { toast } from 'react-toastify';
 
 const RegisterOrganizationModal = ({ isOpen, onClose, onSuccess, hasOrganization, isAdmin }) => {
@@ -10,7 +10,7 @@ const RegisterOrganizationModal = ({ isOpen, onClose, onSuccess, hasOrganization
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      await axiosPost('organization', values);
+      await axiosInstance.post('/organization', values);
       toast.success('Đăng ký tổ chức thành công!');
       onSuccess && onSuccess();
       onClose();

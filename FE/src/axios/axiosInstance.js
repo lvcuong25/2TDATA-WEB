@@ -47,9 +47,9 @@ axiosInstance.interceptors.request.use(
       delete config.headers['Content-Type'];
     }
     
-    // ✅ Removed manual X-Host header setting
-    // The browser automatically handles Host headers properly for same-origin requests
-    // The backend site detection middleware will use the natural Host header
+    // Add X-Host header for site detection
+    // This helps the backend identify which site is being accessed
+    config.headers['X-Host'] = window.location.hostname;
     
     return config;
   },

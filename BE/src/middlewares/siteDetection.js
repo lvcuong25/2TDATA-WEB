@@ -41,7 +41,7 @@ export const detectSiteMiddleware = async (req, res, next) => {
       // Debug: List all available sites if still not found
       if (!site) {
         const allSites = await Site.find({ status: 'active' });
-        console.log('Available sites:', allSites.map(s => ({ name: s.name, domains: s.domains })));
+        // Available sites check for development
       }
       
       // Cuối cùng, nếu hostname chính xác là 'localhost', lấy main site

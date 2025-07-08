@@ -24,12 +24,11 @@ const logoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     // Save to backend uploads directory that can be served as static
     const uploadsLogoDir = path.join(process.cwd(), 'uploads', 'logos');
-    );
     
     // Ensure directory exists at upload time
     if (!fs.existsSync(uploadsLogoDir)) {
       fs.mkdirSync(uploadsLogoDir, { recursive: true });
-      }
+    }
     
     cb(null, uploadsLogoDir);
   },

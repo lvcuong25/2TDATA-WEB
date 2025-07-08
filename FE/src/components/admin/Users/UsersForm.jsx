@@ -14,8 +14,34 @@ const UsersForm = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const [avatar, setAvatar] = useState('https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg');
+    const [assignableRoles, setAssignableRoles] = useState([]);
+    const [availableSites, setAvailableSites] = useState([]);
+    const [showSiteSelect, setShowSiteSelect] = useState(false);
 
-    const { control, handleSubmit, setValue, formState: { errors } } = useForm();
+    const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm();
+    const selectedRole = watch('role');
+
+    // Fetch form metadata (assignable roles and sites)
+    const { data: metadata, isLoading: metadataLoading, error: metadataError } = useQuery({
+        queryKey: ["USER_FORM_METADATA"],
+        queryFn: async () => {
+            try {
+                const { data } = await instance.get(`/admin/metadata/user-form`);
+                console.log('Metadata response:', data);
+                setAssignableRoles(data.assignableRoles || []);
+                setAvailableSites(data.availableSites || []);
+                // Check if we should show site selection on load
+                if (data.availableSites && data.availableSites.length > 0 && !id) {
+                    setShowSiteSelect(true);
+                }
+                return data;
+            } catch (error) {
+                console.error('Error fetching metadata:', error);
+                toast.error('Không thể tải dữ liệu form: ' + error.message);
+                throw error;
+            }
+        }
+    });
 
     // Fetch user data if editing
     const { data: userData } = useQuery({
@@ -182,13 +208,68 @@ const UsersForm = () => {
                                 control={control}
                                 rules={{ required: 'Vai trò không được bỏ trống' }}
                                 render={({ field }) => (
-                                    <Select {...field}>
-                                        <Option value="admin">Admin</Option>
-                                        <Option value="member">Member</Option>
+                                    <Select 
+                                        {...field}
+                                        loading={metadataLoading}
+                                        placeholder={metadataLoading ? "Đang tải..." : "Chọn vai trò"}
+                                        onChange={(value) => {
+                                            field.onChange(value);
+                                            // Show site selection for non-super_admin roles
+                                            setShowSiteSelect(value !== 'super_admin' && availableSites.length > 0);
+                                        }}
+                                    >
+                                        {metadataLoading ? (
+                                            <Option value="" disabled>Đang tải danh sách vai trò...</Option>
+                                        ) : assignableRoles.length > 0 ? (
+                                            assignableRoles.map(role => (
+                                                <Option key={role.value} value={role.value}>
+                                                    <span style={{ color: role.color }}>
+                                                        {role.label}
+                                                    </span>
+                                                </Option>
+                                            ))
+                                        ) : (
+                                            <Option value="" disabled>Không có vai trò nào có thể gán</Option>
+                                        )}
                                     </Select>
                                 )}
                             />
                         </Form.Item>
+
+                        {/* Site selection - only show if needed */}
+                        {showSiteSelect && (
+                            <Form.Item 
+                                label="Site" 
+                                required
+                                validateStatus={errors?.site_id ? "error" : ""}
+                                help={errors?.site_id?.message}
+                            >
+                                <Controller
+                                    name="site_id"
+                                    control={control}
+                                    rules={{ 
+                                        required: selectedRole !== 'super_admin' ? 'Site không được bỏ trống' : false 
+                                    }}
+                                    render={({ field }) => (
+                                        <Select 
+                                            {...field}
+                                            placeholder="Chọn site"
+                                        >
+                                            {availableSites.map(site => (
+                                                <Option key={site.value} value={site.value}>
+                                                    {site.label}
+                                                    {site.domains && site.domains.length > 0 && (
+                                                        <span className="text-gray-500 text-sm ml-2">
+                                                            ({site.domains[0]})
+                                                        </span>
+                                                    )}
+                                                </Option>
+                                            ))}
+                                        </Select>
+                                    )}
+                                />
+                            </Form.Item>
+                        )}
 
                         {!id && (
                             <Form.Item 

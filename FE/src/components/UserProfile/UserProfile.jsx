@@ -7,6 +7,7 @@ import instance from '../../utils/axiosInstance';
 
 const UserProfile = () => {
   const { currentUser, setCurrentUser } = useContext(AuthContext);
+  // Editing state if needed later
   const [isEditing, setIsEditing] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();

@@ -8,13 +8,6 @@ const { SECRET_KEY } = process.env;
 
 export const getUser = async (req, res, next) => {
     try {
-  ,
-    hasAuth: !!req.headers.authorization,
-    authHeader: req.headers.authorization || 'Missing',
-    allHeaders: Object.keys(req.headers),
-    host: req.headers.host,
-    userAgent: req.headers['user-agent']?.substring(0, 50) + '...' || 'Missing'
-  });
         
         const authorization = req.headers?.authorization;
         if (!authorization) {
