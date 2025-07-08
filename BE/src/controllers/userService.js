@@ -162,9 +162,16 @@ export const approveUserService = async (req, res, next) => {
             return res.status(400).json({ message: "Trạng thái không hợp lệ" });
         }
 
-        const userService = await UserService.findById(id);
+        const userService = await UserService.findById(id).populate('site_id');
         if (!userService) {
             return res.status(404).json({ message: "Không tìm thấy yêu cầu" });
+        }
+        
+        // Kiểm tra quyền: site_admin chỉ được xử lý request của site mình
+        if (req.user.role === 'site_admin' && req.user.site_id) {
+            if (userService.site_id && userService.site_id.toString() !== req.user.site_id.toString()) {
+                return res.status(403).json({ message: "Bạn không có quyền xử lý yêu cầu của site khác" });
+            }
         }
 
         if (status === 'approved') {
@@ -368,7 +375,10 @@ export const updateUserServiceLinks = async (req, res, next) => {
         }
 
         // Kiểm tra quyền cập nhật (chỉ user sở hữu hoặc admin mới được cập nhật)
-        if (userService.user.toString() !== userId.toString() && req.user.role !== 'admin') {
+        const isOwner = userService.user.toString() === userId.toString();
+        const isAdmin = req.user.role === 'super_admin' || req.user.role === 'site_admin';
+        
+        if (!isOwner && !isAdmin) {
             return res.status(403).json({ message: "Bạn không có quyền cập nhật service này" });
         }
 
