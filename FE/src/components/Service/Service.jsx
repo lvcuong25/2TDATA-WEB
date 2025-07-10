@@ -365,8 +365,21 @@ const Service = () => {
 
                 <div className="bg-blue-50 p-4 rounded-lg mb-4">
                   <p className="text-blue-800 text-sm">
-                    Thông tin của bạn sẽ được gửi đến admin để xác nhận đăng ký {selectedServices.length} dịch vụ.
+                    Thông tin đăng ký sẽ được xử lý và xác nhận trong thời gian sớm nhất.
                   </p>
+                </div>
+                <div className="bg-yellow-50 p-4 rounded-lg mb-4 border border-yellow-200">
+                  <div className="text-yellow-800 text-sm font-semibold mb-1">Liên hệ xác nhận & thanh toán qua Zalo:</div>
+                  <div className="text-yellow-800 text-base font-bold">0912345678</div>
+                  <a
+                    href="https://zalo.me/0912345678"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    Nhấn vào đây để chat Zalo
+                  </a>
+                  <div className="text-xs text-gray-500 mt-2">Sau khi đăng ký, bạn vui lòng liên hệ Zalo để được hướng dẫn thanh toán chi tiết nhé!</div>
                 </div>
 
                 <Form.Item>

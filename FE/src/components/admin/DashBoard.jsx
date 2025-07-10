@@ -63,10 +63,21 @@ const DashBoard = () => {
         onClick: () => handleLinkClick('/admin/blogs')
       },
       {
-        key: '/admin/status',
+        key: 'status',
         icon: <FileTextOutlined />,
-        label: <Link to="/admin/status">Quản lý trạng thái</Link>,
-        onClick: () => handleLinkClick('/admin/status')
+        label: 'Quản lý trạng thái',
+        children: [
+          {
+            key: '/admin/status',
+            label: <Link to="/admin/status">Cá nhân</Link>,
+            onClick: () => handleLinkClick('/admin/status')
+          },
+          {
+            key: '/admin/status/org-status',
+            label: <Link to="/admin/status/org-status">Tổ chức</Link>,
+            onClick: () => handleLinkClick('/admin/status/org-status')
+          }
+        ]
       },
       {
         key: '/admin/user-info',

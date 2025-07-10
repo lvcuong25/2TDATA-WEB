@@ -161,7 +161,7 @@ const OrgStatusList = () => {
           link_update: validLinkUpdates
         });
       }
-    } catch (error) {
+    } catch {
       toast.error("Vui lòng điền đầy đủ thông tin các link!");
     }
   };
@@ -310,15 +310,9 @@ const OrgStatusList = () => {
     <div>
       <div className="flex items-center justify-between bg-white rounded-lg shadow px-6 py-4 mb-6">
         <span className="text-xl font-semibold text-gray-800">
-          Danh sách yêu cầu dịch vụ của tổ chức
+          Quản lý trạng thái - Tổ chức
         </span>
-        <Button
-          type="default"
-          onClick={() => navigate("/admin/status")}
-          className="ml-4"
-        >
-          Quay lại
-        </Button>
+        
       </div>
       <div className="">
         <div className="flex justify-between items-center mb-4">

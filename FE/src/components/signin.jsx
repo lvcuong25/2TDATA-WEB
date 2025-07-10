@@ -7,7 +7,6 @@ import instance from "../utils/axiosInstance";
 import { useState } from "react";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import CryptoJS from 'crypto-js';
-import { useSearchParams } from 'react-router-dom';
 
 // Secret key for encryption (in production, this should be stored securely)
 const SECRET_KEY = 'your-secret-key-here';
@@ -27,15 +26,15 @@ const signinSchema = Joi.object({
     .email({ tlds: false })
     .required()
     .messages({
-      "string.empty": "Email không được để trống",
+      "string.empty": "Vui lòng nhập email",
       "string.email": "Email không đúng định dạng",
       "any.required": "Email là bắt buộc",
     }),
   password: Joi.string()
     .required()
-    .min(4)
+    .min(6)
     .messages({
-      "string.empty": "Mật khẩu không được để trống",
+      "string.empty": "Vui lòng nhập mật khẩu",
       "string.min": "Mật khẩu phải có ít nhất {#limit} ký tự",
       "any.required": "Mật khẩu là bắt buộc",
     }),
@@ -43,9 +42,6 @@ const signinSchema = Joi.object({
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [searchParams] = useSearchParams();
-  const redirectPath = searchParams.get('redirect') || '/service/my-service';
-
   const {
     register,
     handleSubmit,

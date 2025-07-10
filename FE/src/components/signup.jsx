@@ -72,7 +72,7 @@ const SignUp = () => {
       navigate("/login");
     },
     onError: () => {
-      toast.error("Tài khoản không được thêm");
+      toast.error("Email này đã được tạo, vui lòng dùng email khác.");
       navigate("/logup");
     },
   });

@@ -322,17 +322,9 @@ const StatusList = () => {
     <div>
       <div className="flex items-center justify-between bg-white rounded-lg shadow px-6 py-4 mb-6">
         <span className="text-xl font-semibold text-gray-800">
-          Danh sách yêu cầu dịch vụ
+          Quản lý trạng thái - Cá nhân
         </span>
-        <Button
-          type="primary"
-          icon={<CheckOutlined />}
-          onClick={() => navigate("/admin/status/org-status")}
-          className="flex items-center"
-          style={{ fontWeight: 500 }}
-        >
-          Quản lý trạng thái tổ chức
-        </Button>
+      
       </div>
       
       <div className="">
