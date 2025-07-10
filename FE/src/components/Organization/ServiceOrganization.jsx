@@ -71,21 +71,25 @@ const ServiceOrganization = () => {
       render: (_, record) => {
         const links = record.service?.authorizedLinks || [];
         const hasLink = links.length > 0;
-        return (
-          <Button
-            type="primary"
-            className="bg-blue-500 hover:bg-blue-600"
-            onClick={() => {
-              if (hasLink) {
-                window.open(links[0].url, '_blank');
-              } else {
-                toast.info('Dịch vụ này chưa có link kết nối.');
-              }
-            }}
-          >
-            Kết nối <span style={{ marginLeft: 4 }}>→</span>
-          </Button>
-        );
+        if (record.status === 'approved' && hasLink) {
+          return (
+            <Button
+              type="primary"
+              className="bg-blue-500 hover:bg-blue-600"
+              onClick={() => window.open(links[0].url, '_blank')}
+            >
+              Kết nối <span style={{ marginLeft: 4 }}>→</span>
+            </Button>
+          );
+        } else {
+          return (
+            <Tooltip title={record.status !== 'approved' ? 'Chờ admin xác nhận' : 'Chưa có link kết nối'}>
+              <Button type="primary" disabled>
+                Kết nối <span style={{ marginLeft: 4 }}>→</span>
+              </Button>
+            </Tooltip>
+          );
+        }
       },
     },
   ];
@@ -151,7 +155,8 @@ const ServiceOrganization = () => {
 
   // Lấy danh sách dịch vụ đúng từ org
   const orgServices = org?.data?.services || org?.services || [];
-  const paginatedServices = orgServices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  // Lọc chỉ dịch vụ đã được admin xác nhận
+  const approvedOrgServices = orgServices.filter(s => s.status === "approved");
 
   const members = (org?.data?.members || org?.members || []);
   const uniqueMembers = Array.from(
@@ -202,19 +207,29 @@ const ServiceOrganization = () => {
           {/* Bảng dịch vụ bên trái */}
           <div className="md:col-span-2 min-w-0 rounded-lg border p-4 flex flex-col h-full bg-gray-50">
             <h3 className="font-semibold text-lg mb-3">Bảng dịch vụ</h3>
-      <Table
-        columns={columns}
-              dataSource={paginatedServices}
-        rowKey="_id"
-              loading={orgLoading}
-              pagination={false}
-        scroll={{ x: 'max-content' }}
-      />
+        {approvedOrgServices.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600 mb-4">
+              {orgServices.length > 0
+                ? "Dịch vụ của bạn đang chờ admin xác nhận"
+                : "Bạn chưa đăng ký dịch vụ nào"}
+            </p>
+          </div>
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={approvedOrgServices.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
+            rowKey="_id"
+            loading={orgLoading}
+            pagination={false}
+            scroll={{ x: 'max-content' }}
+          />
+        )}
             <div className="flex justify-end mt-2">
               <Pagination
                 current={currentPage}
                 pageSize={pageSize}
-                total={orgServices.length}
+                total={approvedOrgServices.length}
                 showSizeChanger
                 pageSizeOptions={['10', '20', '50', '100']}
                 onChange={(page, size) => {

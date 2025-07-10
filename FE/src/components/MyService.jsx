@@ -356,9 +356,13 @@ const MyService = () => {
             </div>
           </div>
 
-          {!userServices || userServices.length === 0 ? (
+          {!approvedUserServices || approvedUserServices.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">Bạn chưa đăng ký dịch vụ nào</p>
+              <p className="text-gray-600 mb-4">
+                {userServices.length > 0 
+                  ? "Dịch vụ của bạn đang chờ admin xác nhận" 
+                  : "Bạn chưa đăng ký dịch vụ nào"}
+              </p>
               <button
                 onClick={() => navigate("/service")}
                 className="bg-red-500 text-white px-8 py-2 rounded-full hover:bg-red-600 transition"
@@ -405,15 +409,26 @@ const MyService = () => {
                       <div className="text-sm text-gray-600 mb-2">
                         Ngày đăng ký: {new Date(userService?.createdAt).toLocaleDateString("vi-VN")}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleServiceClick(userService);
-                        }}
-                        className="bg-blue-500 text-white rounded-full px-8 py-2 font-semibold flex items-center gap-2 hover:bg-blue-600 transition"
-                      >
-                        Kết nối<span>→</span>
-                      </button>
+                      {userService?.status === "approved" && authorizedLink ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleServiceClick(userService);
+                          }}
+                          className="bg-blue-500 text-white rounded-full px-8 py-2 font-semibold flex items-center gap-2 hover:bg-blue-600 transition"
+                        >
+                          Kết nối<span>→</span>
+                        </button>
+                      ) : (
+                        <Tooltip title={userService?.status !== 'approved' ? 'Chờ admin xác nhận' : 'Chưa có link kết nối'}>
+                          <button
+                            disabled
+                            className="bg-gray-300 text-gray-500 rounded-full px-8 py-2 font-semibold flex items-center gap-2 cursor-not-allowed"
+                          >
+                            Kết nối<span>→</span>
+                          </button>
+                        </Tooltip>
+                      )}
                     </div>
                   );
                 })}
@@ -422,7 +437,7 @@ const MyService = () => {
                 <Pagination
                   current={currentPage}
                   pageSize={pageSize}
-                  total={approvedUserServices.length}
+                  total={userData?.data?.totalServices || 0}
                   showSizeChanger
                   pageSizeOptions={['3', '6', '10', '20']}
                   onChange={(page, size) => {
@@ -441,7 +456,7 @@ const MyService = () => {
               pagination={{
                 current: currentPage,
                 pageSize: pageSize,
-                total: approvedUserServices.length,
+                total: userData?.data?.totalServices || 0,
                 showSizeChanger: true,
                 pageSizeOptions: ['3', '6', '10', '20'],
                 showTotal: (total) => `Tổng số ${total} dịch vụ`,
