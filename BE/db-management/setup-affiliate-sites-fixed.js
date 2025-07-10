@@ -1,17 +1,17 @@
-﻿import mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
 // Import models
-import User from '../src/model/User.js';
-import Site from '../src/model/Site.js';
-import Service from '../src/model/Service.js';
-import Blog from '../src/model/Blog.js';
-import UserService from '../src/model/UserService.js';
+import User from './src/model/User.js';
+import Site from './src/model/Site.js';
+import Service from './src/model/Service.js';
+import Blog from './src/model/Blog.js';
+import UserService from './src/model/UserService.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DB_URI || 'mongodb://admin:password@localhost:27017/2TDATA?authSource=admin';
+const MONGODB_URI = process.env.MONGODB_URI || process.env.DB_URI || 'mongodb://admin:password@2tdata-mongodb:27017/2TDATA?authSource=admin';
 
 /**
  * Setup complete affiliate site architecture
@@ -20,22 +20,30 @@ const setupAffiliateSites = async () => {
   try {
     // Connect to database
     await mongoose.connect(MONGODB_URI);
+    console.log('✅ Connected to MongoDB');
+    
     // Check if we should force setup
     const forceSetup = process.argv.includes('--force');
     const existingSites = await Site.countDocuments();
     
+    console.log(`Found ${existingSites} existing sites`);
+    
     if (existingSites > 0 && !forceSetup) {
+      console.log('Sites already exist. Use --force to recreate them.');
       return;
     }
 
     // If force setup, clear existing sites to avoid domain conflicts
     if (forceSetup && existingSites > 0) {
+      console.log('🧹 Clearing existing data...');
       await Site.deleteMany({});
       await User.deleteMany({});
       await Service.deleteMany({});
-      }
+      console.log('✅ Data cleared');
+    }
 
     // 1. Create Master/Main Site (2TDATA)
+    console.log('🏗️  Creating master site...');
     const masterSite = new Site({
       name: '2TDATA - Master Platform',
       domains: ['2tdata.com', 'www.2tdata.com', 'localhost'],
@@ -46,6 +54,7 @@ const setupAffiliateSites = async () => {
         logoUrl: '/assets/logos/2tdata-logo.png'
       },
       status: 'active',
+      is_main_site: true,
       settings: {
         allowRegistration: true,
         requireEmailVerification: true,
@@ -61,7 +70,10 @@ const setupAffiliateSites = async () => {
     });
 
     await masterSite.save();
+    console.log('✅ Master site created');
+
     // 2. Create Affiliate Sites
+    console.log('🏗️  Creating affiliate sites...');
     const affiliateSites = [
       {
         name: 'TechHub Affiliate',
@@ -143,12 +155,15 @@ const setupAffiliateSites = async () => {
       
       // Store category as a custom property for service creation
       site.category = siteData.category;
+      site.description = siteData.description;
 
       await site.save();
       createdAffiliateSites.push(site);
-      }
+      console.log(`✅ Created affiliate site: ${site.name}`);
+    }
 
     // 3. Create Super Admin (Global)
+    console.log('👑 Creating super admin...');
     const superAdminPassword = await bcrypt.hash('admin123', 12);
     const superAdmin = new User({
       email: 'superadmin@2tdata.com',
@@ -160,7 +175,10 @@ const setupAffiliateSites = async () => {
     });
 
     await superAdmin.save();
+    console.log('✅ Super admin created');
+
     // 4. Create Site Admins for each affiliate site
+    console.log('👨‍💼 Creating site admins...');
     const siteAdmins = [];
     for (let i = 0; i < createdAffiliateSites.length; i++) {
       const site = createdAffiliateSites[i];
@@ -187,10 +205,11 @@ const setupAffiliateSites = async () => {
         permissions: ['manage_users', 'manage_content', 'manage_settings', 'view_analytics']
       });
       await site.save();
-
-      }
+      console.log(`✅ Created site admin for: ${site.name}`);
+    }
 
     // 5. Create Sample Users for each affiliate site
+    console.log('👥 Creating sample users...');
     for (let i = 0; i < createdAffiliateSites.length; i++) {
       const site = createdAffiliateSites[i];
       const userPassword = await bcrypt.hash('user123', 12);
@@ -211,124 +230,11 @@ const setupAffiliateSites = async () => {
 
         await user.save();
       }
+      console.log(`✅ Created 3 sample users for: ${site.name}`);
+    }
 
-      }
-
-    // 6. Create Category-Specific Services for each affiliate site
-    const servicesByCategory = {
-      'technology': [
-        {
-          name: 'Cloud Hosting Services',
-          description: 'Professional cloud hosting solutions',
-          authorizedLinks: [
-            { url: 'https://cloudhost.example.com', title: 'Cloud Dashboard', description: 'Main hosting control panel' },
-            { url: 'https://cloudhost.example.com/api', title: 'API Access', description: 'Developer API endpoint' }
-          ]
-        },
-        {
-          name: 'Software Development Tools',
-          description: 'Development and deployment tools',
-          authorizedLinks: [
-            { url: 'https://devtools.example.com', title: 'Dev Portal', description: 'Development tools and resources' }
-          ]
-        }
-      ],
-      'finance': [
-        {
-          name: 'Investment Platform',
-          description: 'Professional investment and trading platform',
-          authorizedLinks: [
-            { url: 'https://invest.example.com', title: 'Trading Dashboard', description: 'Real-time trading interface' },
-            { url: 'https://invest.example.com/portfolio', title: 'Portfolio Management', description: 'Manage your investments' }
-          ]
-        },
-        {
-          name: 'Cryptocurrency Exchange',
-          description: 'Secure cryptocurrency trading',
-          authorizedLinks: [
-            { url: 'https://crypto.example.com', title: 'Crypto Exchange', description: 'Trade cryptocurrencies securely' }
-          ]
-        }
-      ],
-      'healthcare': [
-        {
-          name: 'Telemedicine Platform',
-          description: 'Online medical consultation services',
-          authorizedLinks: [
-            { url: 'https://telehealth.example.com', title: 'Patient Portal', description: 'Schedule and attend appointments' },
-            { url: 'https://telehealth.example.com/records', title: 'Medical Records', description: 'Access your health records' }
-          ]
-        },
-        {
-          name: 'Health Monitoring Tools',
-          description: 'Personal health tracking and monitoring',
-          authorizedLinks: [
-            { url: 'https://healthtrack.example.com', title: 'Health Dashboard', description: 'Monitor your health metrics' }
-          ]
-        }
-      ],
-      'education': [
-        {
-          name: 'Learning Management System',
-          description: 'Comprehensive online learning platform',
-          authorizedLinks: [
-            { url: 'https://lms.example.com', title: 'Course Portal', description: 'Access your courses and materials' },
-            { url: 'https://lms.example.com/library', title: 'Digital Library', description: 'Educational resources and books' }
-          ]
-        },
-        {
-          name: 'Certification Programs',
-          description: 'Professional certification courses',
-          authorizedLinks: [
-            { url: 'https://certify.example.com', title: 'Certification Hub', description: 'Professional certification programs' }
-          ]
-        }
-      ],
-      'gaming': [
-        {
-          name: 'Gaming Platform',
-          description: 'Multi-player gaming and tournaments',
-          authorizedLinks: [
-            { url: 'https://gameplatform.example.com', title: 'Game Launcher', description: 'Access games and tournaments' },
-            { url: 'https://gameplatform.example.com/leaderboards', title: 'Leaderboards', description: 'View rankings and scores' }
-          ]
-        },
-        {
-          name: 'Gaming Community',
-          description: 'Social platform for gamers',
-          authorizedLinks: [
-            { url: 'https://gamecommunity.example.com', title: 'Community Hub', description: 'Connect with other gamers' }
-          ]
-        }
-      ]
-    };
-
-    // Create services for each affiliate site
-    for (const site of createdAffiliateSites) {
-      const category = site.category;
-      const services = servicesByCategory[category] || [];
-      
-      for (const serviceData of services) {
-        const service = new Service({
-          site_id: site._id,
-          name: serviceData.name,
-          slug: serviceData.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, ''),
-          description: serviceData.description,
-          status: Math.random() > 0.3 ? 'approved' : 'waiting', // 70% approved
-          authorizedLinks: serviceData.authorizedLinks,
-          approvedBy: site.site_admins[0]?.user_id,
-          approvedAt: Math.random() > 0.3 ? new Date() : undefined
-        });
-
-        await service.save();
-      }
-
-      }
-
-    // 7. Update site statistics
+    // 6. Update site statistics
+    console.log('📊 Updating site statistics...');
     for (const site of [masterSite, ...createdAffiliateSites]) {
       const userCount = await User.countDocuments({ site_id: site._id });
       const serviceCount = await Service.countDocuments({ site_id: site._id });
@@ -344,24 +250,23 @@ const setupAffiliateSites = async () => {
     }
 
     // Display summary
-    }`);
-    }`);
-    }`);
-    }`);
-    }`);
-
-    :');
-    for (const site of createdAffiliateSites) {
-      }`);
+    console.log('\n🎉 Setup completed successfully!');
+    console.log('=================================');
+    console.log(`✅ Created 1 master site: ${masterSite.name}`);
+    console.log(`✅ Created ${createdAffiliateSites.length} affiliate sites`);
+    console.log(`✅ Created 1 super admin`);
+    console.log(`✅ Created ${siteAdmins.length} site admins`);
+    console.log(`✅ Created ${createdAffiliateSites.length * 3} sample users`);
+    
+    console.log('\n🌐 Available domains:');
+    for (const site of [masterSite, ...createdAffiliateSites]) {
+      console.log(`- ${site.name}: ${site.domains.join(', ')}`);
     }
-
-    :');
+    
+    console.log('\n🔑 Login credentials:');
+    console.log('- Super Admin: superadmin@2tdata.com / admin123');
     for (const site of createdAffiliateSites) {
-      }
-
-    ');
-    for (const site of createdAffiliateSites) {
-      `);
+      console.log(`- ${site.name} Admin: admin@${site.domains[0]} / siteadmin123`);
     }
 
   } catch (error) {
@@ -369,7 +274,8 @@ const setupAffiliateSites = async () => {
     throw error;
   } finally {
     await mongoose.disconnect();
-    }
+    console.log('👋 Disconnected from MongoDB');
+  }
 };
 
 // Run the setup

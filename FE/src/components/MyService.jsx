@@ -301,13 +301,16 @@ const MyService = () => {
 
   // LẤY DỮ LIỆU PHÂN TRANG ĐÚNG TỪ API MỚI
   const userServices = userData?.data?.services || [];
-  const totalServices = userData?.data?.totalServices || 0;
 
   // Lọc ra các dịch vụ có link kết quả cho danh sách dịch vụ (từ API riêng)
   const allServices = servicesWithLinksData?.data?.services || [];
   const servicesWithLinks = allServices.filter(service => 
     service.link && service.link.length > 0
   );
+
+  // LỌC CHỈ DỊCH VỤ ĐÃ ĐƯỢC ADMIN XÁC NHẬN
+  const approvedUserServices = userServices.filter(s => s.status === "approved");
+  const approvedServicesWithLinks = servicesWithLinks.filter(s => s.status === "approved");
 
   if (isLoading || isLoadingServicesWithLinks) {
     return (
@@ -366,7 +369,11 @@ const MyService = () => {
           ) : isCardView ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userServices.map((userService, idx) => {
+                {approvedUserServices.length === 0 ? (
+                  <div className="col-span-full text-center py-8">
+                    <p className="text-gray-600 mb-4">Chưa có dịch vụ nào được admin xác nhận</p>
+                  </div>
+                ) : approvedUserServices.map((userService, idx) => {
                   const authorizedLink = findAuthorizedLink(userService);
                   return (
                     <div
@@ -415,7 +422,7 @@ const MyService = () => {
                 <Pagination
                   current={currentPage}
                   pageSize={pageSize}
-                  total={totalServices}
+                  total={approvedUserServices.length}
                   showSizeChanger
                   pageSizeOptions={['3', '6', '10', '20']}
                   onChange={(page, size) => {
@@ -429,12 +436,12 @@ const MyService = () => {
           ) : (
             <Table
               columns={deployedColumns}
-              dataSource={userServices}
+              dataSource={approvedUserServices}
               rowKey={(record, idx) => `${record._id}_${idx}`}
               pagination={{
                 current: currentPage,
                 pageSize: pageSize,
-                total: totalServices,
+                total: approvedUserServices.length,
                 showSizeChanger: true,
                 pageSizeOptions: ['3', '6', '10', '20'],
                 showTotal: (total) => `Tổng số ${total} dịch vụ`,
@@ -448,19 +455,19 @@ const MyService = () => {
           <h2 className="text-2xl font-bold text-center mb-8">
             Danh sách dịch vụ
           </h2>
-          {!servicesWithLinks || servicesWithLinks.length === 0 ? (
+          {!approvedServicesWithLinks || approvedServicesWithLinks.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-600 mb-4">Chưa có dịch vụ nào có kết quả</p>
             </div>
           ) : (
             <Table
               columns={columns}
-              dataSource={servicesWithLinks}
+              dataSource={approvedServicesWithLinks}
               rowKey={(record, idx) => `${record._id}_${idx}`}
               pagination={{
                 current: currentPageServices,
                 pageSize: pageSizeServices,
-                total: servicesWithLinks.length,
+                total: approvedServicesWithLinks.length,
                 showSizeChanger: true,
                 pageSizeOptions: ['3', '6', '10', '20'],
                 showTotal: (total) => `Tổng số ${total} dịch vụ có kết quả`,

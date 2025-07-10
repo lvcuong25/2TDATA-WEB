@@ -23,6 +23,10 @@ services:
       - SEND_OTP_EMAIL_PASSWORD=qcps wsji smea gqxf
       - LOG_LEVEL=info
       - BCRYPT_SALT_ROUNDS=12
+      # Multi-tenant configuration
+      - MULTI_TENANT=true
+      - TENANT_HEADER=X-Tenant-ID
+      - TENANT_DOMAIN_HEADER=X-Tenant-Domain
 
   frontend:
     build:
@@ -34,9 +38,10 @@ services:
     ports:
       - "80:80"
     environment:
-      # Removed hardcoded VITE_API_BASE_URL to use dynamic detection
-      # The frontend will automatically detect the current domain
+      # Multi-tenant frontend configuration
       VITE_MONGO_EXPRESS_URL: "http://localhost:8081"
+      VITE_MULTI_TENANT: "true"
+      VITE_TENANT_DETECTION: "domain"
 
   mongodb:
     image: mongo:latest
