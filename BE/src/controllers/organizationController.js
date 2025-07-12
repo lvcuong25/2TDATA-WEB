@@ -7,7 +7,16 @@ export const createOrganization = async (req, res) => {
         const userId = req.user._id;
         const { name, email, phone, address, identifier, taxCode, logo } = req.body;
        
+        // Lấy site_id từ user hoặc request body
+        const site_id = req.user.role === 'super_admin' && req.body.site_id ? req.body.site_id : req.user.site_id;
+        
+        if (!site_id) {
+            return res.status(400).json({ 
+                error: "site_id is required" 
+            });
+        }
         const org = new Organization({
+            site_id, // Thêm site_id
             name,
             manager: userId,
             email,
@@ -66,6 +75,11 @@ export const getOrganizations = async (req, res) => {
         limit = Math.max(1, parseInt(limit));
         search = String(search || "").trim();
         const query = {};
+        
+        // Lọc theo site_id nếu user không phải super-admin
+        if (req.user.role !== 'super_admin' && req.user.site_id) {
+            query.site_id = req.user.site_id;
+        }
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: "i" } },

@@ -1,21 +1,15 @@
 import mongoose from 'mongoose';
-import User from '../BE/src/model/User.js';
-import Site from '../BE/src/model/Site.js';
+import User from './src/model/User.js';
+import Site from './src/model/Site.js';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../BE/.env') });
+dotenv.config();
 
 async function fixSiteAdmins() {
   try {
     // Connect to MongoDB
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/2tdata';
+    const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/2tdata';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
 

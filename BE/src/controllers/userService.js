@@ -317,49 +317,6 @@ export const getUserServiceDetail = async (req, res, next) => {
 };
 
 // Xóa service khỏi user
-export const removeUserService = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user._id;
-
-        // Tìm UserService
-        const userService = await UserService.findById(id);
-        if (!userService) {
-            return res.status(404).json({ message: "Không tìm thấy thông tin service" });
-        }
-
-        // Kiểm tra quyền xóa (chỉ user sở hữu hoặc admin mới được xóa)
-        if (userService.user.toString() !== userId.toString() && req.user.role !== 'admin') {
-            return res.status(403).json({ message: "Bạn không có quyền xóa service này" });
-        }
-
-        // Xóa UserService
-        await UserService.findByIdAndDelete(id);
-
-        // Cập nhật lại danh sách service của user
-        await User.findByIdAndUpdate(
-            userId,
-            { $pull: { service: id } }
-        );
-
-        // Lấy thông tin user đã cập nhật
-        const updatedUser = await User.findById(userId)
-            .populate({
-                path: 'service',
-                populate: [
-                    { path: 'service', select: 'name slug image status description' },
-                    { path: 'approvedBy', select: 'name email avatar' }
-                ]
-            });
-
-        return res.status(200).json({
-            data: updatedUser,
-            message: "Xóa service thành công"
-        });
-    } catch (error) {
-        next(error);
-    }
-};
 
 // Cập nhật link cho user service
 export const updateUserServiceLinks = async (req, res, next) => {
@@ -431,6 +388,70 @@ export const updateUserServiceLinks = async (req, res, next) => {
         return res.status(200).json({
             data: updatedUserService,
             message: "Cập nhật link thành công"
+        });
+    } catch (error) {
+        next(error);
+    }
+};// Xóa service khỏi user (chỉ khi status = rejected)
+export const removeUserService = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        // Tìm UserService
+        const userService = await UserService.findById(id).populate('site_id');
+        if (!userService) {
+            return res.status(404).json({ message: "Không tìm thấy thông tin service" });
+        }
+
+        // Kiểm tra status phải là rejected
+        if (userService.status !== 'rejected') {
+            return res.status(400).json({ message: "Chỉ có thể xóa service đã bị từ chối" });
+        }
+
+        // Kiểm tra quyền xóa
+        let canDelete = false;
+        
+        // Super-admin có thể xóa tất cả
+        if (req.user.role === 'super_admin') {
+            canDelete = true;
+        }
+        // Site-admin chỉ xóa được trong site của họ
+        else if (req.user.role === 'site-admin' && req.user.site_id && 
+                 userService.site_id && userService.site_id.toString() === req.user.site_id.toString()) {
+            canDelete = true;
+        }
+        // User owner có thể xóa service của chính mình nếu bị rejected
+        else if (userService.user.toString() === userId.toString()) {
+            canDelete = true;
+        }
+
+        if (!canDelete) {
+            return res.status(403).json({ message: "Bạn không có quyền xóa service này" });
+        }
+
+        // Xóa UserService
+        await UserService.findByIdAndDelete(id);
+
+        // Cập nhật lại danh sách service của user
+        await User.findByIdAndUpdate(
+            userService.user,
+            { $pull: { service: id } }
+        );
+
+        // Lấy thông tin user đã cập nhật
+        const updatedUser = await User.findById(userService.user)
+            .populate({
+                path: 'service',
+                populate: {
+                    path: 'service',
+                    select: 'name slug image status description'
+                }
+            });
+
+        return res.status(200).json({
+            data: updatedUser,
+            message: "Xóa service thành công"
         });
     } catch (error) {
         next(error);

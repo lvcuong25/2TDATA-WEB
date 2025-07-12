@@ -9,6 +9,12 @@ const organizationServiceSchema = new mongoose.Schema(
       required: true,
       description: "Tổ chức sử dụng dịch vụ",
     },
+    site_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Site",
+      required: true,
+      description: "ID của site liên kết với service",
+    },
     service: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
@@ -38,75 +44,36 @@ const organizationServiceSchema = new mongoose.Schema(
     customSlug: {
       type: String,
       unique: true,
+      sparse: true,
+      description: "Slug tùy chỉnh cho dịch vụ của tổ chức",
     },
-    link_update: [
-      {
-        url: {
-          type: String,
-          description: "URL cập nhật của service",
-        },
-        title: {
-          type: String,
-          description: "Tiêu đề hoặc mô tả của link cập nhật",
-        },
-        description: {
-          type: String,
-          description: "Mô tả chi tiết về link cập nhật",
-        },
-        visible: {
-          type: Boolean,
-          default: true,
-          description: "Link này có hiển thị cho member không?",
-        },
-        visibleFor: [{
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          description: "Chỉ định user nào được xem link này (nếu rỗng thì tất cả member đều xem được)"
-        }],
-      },
-    ],
-    link: [
-      {
-        url: {
-          type: String,
-          required: true,
-          description: "URL của service",
-        },
-        title: {
-          type: String,
-          required: true,
-          description: "Tiêu đề hoặc mô tả của link",
-        },
-        description: {
-          type: String,
-          description: "Mô tả chi tiết về link",
-        },
-        visible: {
-          type: Boolean,
-          default: true,
-          description: "Link này có hiển thị cho member không?",
-        },
-        visibleFor: [{
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          description: "Chỉ định user nào được xem link này (nếu rỗng thì tất cả member đều xem được)"
-        }],
-      },
-    ],
+    config: {
+      apiKey: String,
+      webhookUrl: String,
+      settings: mongoose.Schema.Types.Mixed,
+    },
+    requestInfo: {
+      requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      requestedAt: { type: Date, default: Date.now },
+      requestNote: String,
+    },
+    expires_at: {
+      type: Date,
+      required: false,
+      description: "Thời gian hết hạn dịch vụ",
+    },
   },
-  { timestamps: true, versionKey: false }
+  {
+    timestamps: true,
+    versionKey: false,
+  }
 );
 
-// Tự động tạo customSlug trước khi lưu
-organizationServiceSchema.pre("save", function (next) {
-  if (!this.customSlug) {
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 8);
-    this.customSlug = `orgservice-${timestamp}-${randomStr}`;
-  }
-  next();
-});
-
 organizationServiceSchema.plugin(mongoosePaginate);
+
+organizationServiceSchema.index({ organization: 1, service: 1 });
+organizationServiceSchema.index({ customSlug: 1 });
+organizationServiceSchema.index({ status: 1 });
+organizationServiceSchema.index({ expires_at: 1 });
 
 export default mongoose.model("OrganizationService", organizationServiceSchema);
