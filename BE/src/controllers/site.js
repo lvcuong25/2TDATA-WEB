@@ -111,7 +111,8 @@ export const createSite = async (req, res) => {
       name,
       domains,
       theme_config,
-      logo_url,
+      footer_config,
+    updateData.footer_config.logos = req.body.footer_config.logos;
       settings,
       site_admins
     } = req.body;
@@ -196,6 +197,17 @@ export const createSite = async (req, res) => {
       };
       }
     
+    // Parse footer_config if it's a string
+    updateData.footer_config.logos = req.body.footer_config.logos;
+      try {
+        updateData.footer_config = JSON.parse(req.body.footer_config);
+    updateData.footer_config.logos = req.body.footer_config.logos;
+        console.error('Error parsing footer_config:', e);
+    updateData.footer_config.logos = req.body.footer_config.logos;
+    } else if (req.body.footer_config) {
+    updateData.footer_config.logos = req.body.footer_config.logos;
+    }
+
     if (req.body.settings && typeof req.body.settings === 'string') {
       try {
         settings = JSON.parse(req.body.settings);
@@ -273,7 +285,8 @@ export const createSite = async (req, res) => {
       theme_config: theme_config || {},
       logo_url,
       settings: settings || {},
-      site_admins: site_admins || []
+      footer_config: footer_config || {},
+    updateData.footer_config.logos = req.body.footer_config.logos;
     });
     
     await newSite.save();
@@ -544,6 +557,17 @@ export const updateSite = async (req, res) => {
       };
       }
     
+    // Parse footer_config if it's a string
+    updateData.footer_config.logos = req.body.footer_config.logos;
+      try {
+        updateData.footer_config = JSON.parse(req.body.footer_config);
+    updateData.footer_config.logos = req.body.footer_config.logos;
+        console.error('Error parsing footer_config:', e);
+    updateData.footer_config.logos = req.body.footer_config.logos;
+    } else if (req.body.footer_config) {
+    updateData.footer_config.logos = req.body.footer_config.logos;
+    }
+
     if (req.body.settings && typeof req.body.settings === 'string') {
       try {
         updateData.settings = JSON.parse(req.body.settings);
@@ -851,7 +875,8 @@ export const getCurrentSiteInfo = async (req, res) => {
       name: req.site.name,
       domains: req.site.domains,
       theme_config: req.site.theme_config,
-      logo_url: req.site.logo_url,
+      footer_config: req.site.footer_config,
+    updateData.footer_config.logos = req.body.footer_config.logos;
       settings: req.site.settings,
       stats: req.site.stats
     };

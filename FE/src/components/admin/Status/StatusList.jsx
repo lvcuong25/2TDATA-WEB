@@ -387,7 +387,7 @@ const StatusList = () => {
         cancelText="Hủy"
         confirmLoading={approveMutation.isPending || updateLinksMutation.isPending}
         width={800}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           {selectedService && selectedService.user && (

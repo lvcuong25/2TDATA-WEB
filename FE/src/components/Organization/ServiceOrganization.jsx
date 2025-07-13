@@ -354,7 +354,7 @@ const ServiceOrganization = () => {
         cancelText="Hủy"
         okButtonProps={{ disabled: !selectedServiceIds.length }}
         width={900}
-        destroyOnClose
+        destroyOnHidden
         title="Chọn dịch vụ để thêm vào tổ chức"
       >
         {loadingAllServices ? (

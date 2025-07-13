@@ -287,7 +287,7 @@ const UserOrganization = () => {
         open={editModalOpen}
         onCancel={() => setEditModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
         width={800}
       >
         <div className="mb-4 p-3 bg-blue-50 rounded-lg">

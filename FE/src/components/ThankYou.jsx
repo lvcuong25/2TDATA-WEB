@@ -1,6 +1,6 @@
 import React from 'react'
 import Header from "./Header";
-import Footer from "./Footer";
+import FooterWrapper from "./FooterWrapper";
 import { Link } from 'react-router-dom';
 
 const ThankYou = () => {
@@ -23,7 +23,7 @@ const ThankYou = () => {
           </div>
         </div>
       </div>
-      <Footer />
+      <FooterWrapper />
     </div>
   )
 }

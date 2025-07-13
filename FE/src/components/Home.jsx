@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Header from "./Header";
-import Footer from "./Footer";
+import FooterWrapper from "./FooterWrapper";
 import { useMutation } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
 import { toast } from "react-toastify";

@@ -158,26 +158,7 @@ const SiteForm = () => {
   
   const handleFormChange = (changedValues) => {
     if (changedValues.footer_config) {
-      // Deep merge for nested objects like styles
-      setFooterConfig(prev => {
-        const newConfig = { ...prev };
-        
-        // Handle nested updates
-        Object.keys(changedValues.footer_config).forEach(key => {
-          if (typeof changedValues.footer_config[key] === "object" && !Array.isArray(changedValues.footer_config[key])) {
-            // Merge nested objects
-            newConfig[key] = {
-              ...prev[key],
-              ...changedValues.footer_config[key]
-            };
-          } else {
-            // Direct assignment for non-objects
-            newConfig[key] = changedValues.footer_config[key];
-          }
-        });
-        
-        return newConfig;
-      });
+      setFooterConfig(prev => ({ ...prev, ...changedValues.footer_config }));
     }
   };
 
