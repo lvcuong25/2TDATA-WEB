@@ -40,7 +40,7 @@ const Ifame = () => {
 
   // Kiểm tra authentication
   if (!currentUser && !loading) {
-    return <Navigate to="/auth/signin" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (loading) {
@@ -80,7 +80,7 @@ const Ifame = () => {
           </div>
           {error.includes('đăng nhập') && (
             <a 
-              href="/auth/signin" 
+              href="/login" 
               style={{ 
                 padding: '10px 20px', 
                 background: '#1890ff', 
