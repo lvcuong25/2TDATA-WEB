@@ -215,33 +215,92 @@ export const getOrganizationServiceDetail = async (req, res, next) => {
 export const removeOrganizationService = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const orgId = req.user.organization || req.body.organization || req.query.organization;
-    const orgService = await OrganizationService.findById(id);
+    const orgService = await OrganizationService.findById(id).populate({
+      path: 'organization',
+      populate: {
+        path: 'members.user',
+        select: '_id'
+      }
+    });
+    
     if (!orgService) {
       return res.status(404).json({ message: "Không tìm thấy thông tin service" });
     }
-    // Chỉ cho phép admin hoặc manager của tổ chức xóa
-    // (Cần bổ sung kiểm tra quyền nếu cần)
+    
+    // Lấy thông tin user và kiểm tra quyền
+    const userRole = req.user.role;
+    const userSiteId = req.user.site_id;
+    const userId = req.user._id.toString();
+    
+    const { organization } = orgService;
+    
+    // Kiểm tra các quyền admin
+    const isSuperAdmin = userRole === 'super_admin';
+    const isSiteAdmin = userRole === 'site_admin' && userSiteId && orgService.site_id && 
+                        userSiteId.toString() === orgService.site_id.toString();
+    
+    // Kiểm tra xem user có phải là owner hoặc manager của organization không
+    let isOwnerOrManager = false;
+    if (organization && organization.members) {
+      isOwnerOrManager = organization.members.some(member => 
+        member.user && member.user._id.toString() === userId && 
+        (member.role === 'owner' || member.role === 'manager')
+      );
+    }
+    
+    // Kiểm tra manager field (legacy support)
+    if (!isOwnerOrManager && organization && organization.manager) {
+      isOwnerOrManager = organization.manager.toString() === userId;
+    }
+    
+    // Cho phép xóa nếu:
+    // 1. Là super_admin
+    // 2. Là site_admin của site này
+    // 3. Là owner hoặc manager của organization (trừ khi service bị rejected)
+    if (!isSuperAdmin && !isSiteAdmin && !isOwnerOrManager) {
+      return res.status(403).json({ 
+        message: "Bạn không có quyền xóa service này. Chỉ owner hoặc manager của tổ chức mới có thể thực hiện thao tác này." 
+      });
+    }
+    
+    // Nếu service đã bị rejected, chỉ site_admin hoặc super_admin mới được xóa
+    if (orgService.status === 'rejected' && !isSiteAdmin && !isSuperAdmin) {
+      return res.status(403).json({ 
+        message: "Service đã bị từ chối. Chỉ site admin hoặc super admin mới có thể xóa" 
+      });
+    }
+    
+    // Xóa service
     await OrganizationService.findByIdAndDelete(id);
-    // Cập nhật lại danh sách service của organization
-    if (orgId) {
+    
+    // Cập nhật lại danh sách service của organization nếu có
+    if (organization && organization._id) {
       await Organization.findByIdAndUpdate(
-        orgId,
+        organization._id,
         { $pull: { services: id } }
       );
     }
-    const updatedOrg = orgId ? await Organization.findById(orgId).populate({
-      path: 'services',
-      populate: [
-        { path: 'service', select: 'name slug image status description' },
-        { path: 'approvedBy', select: 'name email avatar' }
-      ]
-    }) : null;
+    
+    // Lấy organization đã cập nhật để trả về (nếu có)
+    let updatedOrg = null;
+    if (organization && organization._id) {
+      updatedOrg = await Organization.findById(organization._id).populate({
+        path: 'services',
+        populate: [
+          { path: 'service', select: 'name slug image status description' },
+          { path: 'approvedBy', select: 'name email avatar' }
+        ]
+      });
+    }
+    
     return res.status(200).json({
       data: updatedOrg,
       message: "Xóa service thành công"
     });
-  } catch (error) { next(error); }
+  } catch (error) { 
+    console.error('Error in removeOrganizationService:', error);
+    next(error); 
+  }
 };
 
 // Cập nhật link cho organization service

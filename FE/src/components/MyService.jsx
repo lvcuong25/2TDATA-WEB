@@ -1,6 +1,6 @@
 ﻿import { useNavigate } from "react-router-dom";
 import Header from "./Header";
-import Footer from "./Footer";
+import FooterWrapper from "./FooterWrapper";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
 import { useQuery } from "@tanstack/react-query";
@@ -327,7 +327,7 @@ const MyService = () => {
             <p className="text-gray-600 mb-4">Không thể tải dữ liệu dịch vụ.</p>
           </section>
         </div>
-        <Footer />
+        <FooterWrapper />
       </div>
     );
   }
@@ -473,7 +473,7 @@ const MyService = () => {
           )}
         </section>
       </div>
-      <Footer/>
+      <FooterWrapper/>
     </div>
   );
 };

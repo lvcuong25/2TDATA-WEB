@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import instance from '../../../utils/axiosInstance';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
+import { AuthContext } from '../../core/Auth';
 
 const IframeList = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -12,6 +13,10 @@ const IframeList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const queryClient = useQueryClient();
+  
+  // Get current user context
+  const { currentUser } = useContext(AuthContext);
+  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "superadmin";
 
   // Fetch iframe data with pagination
   const { data, isLoading, error } = useQuery({
@@ -29,6 +34,16 @@ const IframeList = () => {
       const { data } = await instance.get(`/user?limit=1000`);
       return data.docs || data.data?.docs || [];
     },
+  });
+
+  // Fetch sites for super admin
+  const { data: sitesData } = useQuery({
+    queryKey: ["sites"],
+    queryFn: async () => {
+      const { data } = await instance.get("/sites");
+      return data.docs || data.data || data;
+    },
+    enabled: isSuperAdmin,
   });
 
   // Create iframe mutation
@@ -61,8 +76,8 @@ const IframeList = () => {
       queryClient.invalidateQueries(["IFRAME"]);
       toast.success('Cập nhật iframe thành công!');
       setIsModalVisible(false);
-      setEditingIframe(null);
       form.resetFields();
+      setEditingIframe(null);
     },
     onError: (error) => {
       // Kiểm tra lỗi trùng domain
@@ -86,7 +101,7 @@ const IframeList = () => {
       toast.success('Xóa iframe thành công!');
     },
     onError: (error) => {
-      toast.error('Có lỗi xảy ra: ' + (error.response?.data?.message || error.message));
+      toast.error('Có lỗi xảy ra khi xóa: ' + (error.response?.data?.message || error.message));
     },
   });
 
@@ -100,7 +115,8 @@ const IframeList = () => {
     setEditingIframe(record);
     form.setFieldsValue({
       ...record,
-      viewers: record.viewers?.map(u => typeof u === 'string' ? u : u._id)
+      viewers: record.viewers?.map(u => typeof u === 'string' ? u : u._id),
+      site_id: record.site_id?._id || record.site_id
     });
     setIsModalVisible(true);
   };
@@ -122,78 +138,135 @@ const IframeList = () => {
       title: 'Tiêu đề',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: true,
     },
     {
       title: 'Tên miền',
       dataIndex: 'domain',
       key: 'domain',
+      ellipsis: true,
       render: (domain) =>
         domain ? (
-          <a
-            href={`${window.location.origin}/${domain}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 hover:underline"
-          >
-            {`${window.location.origin}/${domain}`}
-          </a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <a
+              href={`${window.location.origin}/${domain}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ 
+                color: "#2563eb", 
+                textDecoration: "underline", 
+                cursor: "pointer",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "200px",
+                display: "inline-block"
+              }}
+              title={`${window.location.origin}/${domain}`}
+            >
+              {`${window.location.origin}/${domain}`}
+            </a>
+            <Button
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/${domain}`);
+                toast.success('Đã copy domain!');
+              }}
+              title="Copy domain"
+            />
+          </div>
         ) : 'Chưa đặt',
     },
     {
       title: 'URL',
       dataIndex: 'url',
       key: 'url',
+      ellipsis: true,
       render: (url) => (
-        <a href={url} target="_blank" rel="noopener noreferrer">
-          {url}
-        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ 
+              color: "#2563eb", 
+              textDecoration: "underline", 
+              cursor: "pointer",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: "250px",
+              display: "inline-block"
+            }}
+            title={url}
+          >
+            {url}
+          </a>
+          <Button
+            size="small"
+            icon={<CopyOutlined />}
+            onClick={() => {
+              navigator.clipboard.writeText(url);
+              toast.success('Đã copy URL!');
+            }}
+            title="Copy URL"
+          />
+        </div>
       ),
     },
     {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
+      title: 'Site',
+      dataIndex: 'site_id',
+      key: 'site_id',
+      width: 120,
+      render: (siteId) => {
+        const site = sitesData?.find(s => s._id === siteId);
+        return site ? site.name : "N/A";
+      },
+      hidden: !isSuperAdmin,
     },
     {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date) => new Date(date).toLocaleDateString('vi-VN'),
-    },
-    {
-      title: 'Thao tác',
+      title: 'Hành động',
       key: 'action',
+      width: 120,
+      align: 'center',
       render: (_, record) => (
         <Space size="middle">
           <Button
-            type="primary"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
-          >
-          </Button>
+            size="small"
+          />
           <Popconfirm
-            title="Bạn có chắc chắn muốn xóa iframe này?"
+            title="Bạn có chắc chắn muốn xóa?"
             onConfirm={() => handleDelete(record._id)}
             okText="Có"
             cancelText="Không"
           >
-            <Button type="primary" danger icon={<DeleteOutlined />}>
-            </Button>
+            <Button
+              icon={<DeleteOutlined />}
+              danger
+              size="small"
+            />
           </Popconfirm>
         </Space>
       ),
     },
-  ];
+  ].filter(col => !col.hidden);
+
+  const handlePageChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  };
 
   if (error) {
-    return <div>Có lỗi xảy ra: {error.message}</div>;
+    toast.error('Có lỗi xảy ra khi tải dữ liệu');
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quản lý Iframe</h1>
+    <div style={{ padding: "16px" }}>
+      <div style={{ marginBottom: "16px" }}>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -205,6 +278,7 @@ const IframeList = () => {
       </div>
 
       <Table
+        scroll={{ x: 1000 }}
         columns={columns}
         dataSource={data?.docs || []}
         loading={isLoading}
@@ -213,20 +287,14 @@ const IframeList = () => {
       />
 
       {data && (
-        <div className="flex justify-center mt-4">
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}>
           <Pagination
             current={currentPage}
-            total={data.totalDocs}
             pageSize={pageSize}
+            total={data.totalDocs}
+            onChange={handlePageChange}
             showSizeChanger
-            showQuickJumper
-            showTotal={(total, range) =>
-              `${range[0]}-${range[1]} của ${total} items`
-            }
-            onChange={(page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            }}
+            showTotal={(total) => `Tổng ${total} iframe`}
           />
         </div>
       )}
@@ -280,51 +348,63 @@ const IframeList = () => {
             name="description"
             label="Mô tả"
           >
-            <Input.TextArea
-              rows={4}
-              placeholder="Nhập mô tả (không bắt buộc)"
-            />
+            <Input.TextArea rows={4} placeholder="Nhập mô tả cho iframe" />
           </Form.Item>
 
           <Form.Item
             name="viewers"
-            label="Người dùng được phép truy cập"
+            label="Người xem"
           >
             <Select
               mode="multiple"
-              placeholder="Chọn người dùng"
+              placeholder="Chọn người xem"
               loading={loadingUsers}
-              optionFilterProp="children"
-              showSearch
               filterOption={(input, option) =>
-                (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                option.children.toLowerCase().includes(input.toLowerCase())
               }
             >
-              {userData?.map(user => (
+              {userData?.map((user) => (
                 <Select.Option key={user._id} value={user._id}>
-                  {user.name || user.email}
+                  {user.email}
                 </Select.Option>
               ))}
             </Select>
           </Form.Item>
 
-          <Form.Item className="mb-0">
-            <Space>
-              <Button
-                type="primary"
+          {isSuperAdmin && (
+            <Form.Item
+              name="site_id"
+              label="Site"
+              tooltip="Chỉ super admin mới có thể chọn site"
+            >
+              <Select
+                placeholder="Chọn site (mặc định là site hiện tại)"
+                allowClear
+              >
+                {sitesData?.map((site) => (
+                  <Select.Option key={site._id} value={site._id}>
+                    {site.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
+          <Form.Item>
+            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+              <Button onClick={() => {
+                setIsModalVisible(false);
+                setEditingIframe(null);
+                form.resetFields();
+              }}>
+                Hủy
+              </Button>
+              <Button 
+                type="primary" 
                 htmlType="submit"
-                loading={createMutation.isPending || updateMutation.isPending}
+                loading={createMutation.isLoading || updateMutation.isLoading}
               >
                 {editingIframe ? 'Cập nhật' : 'Thêm'}
-              </Button>
-              <Button
-                onClick={() => {
-                  setIsModalVisible(false);
-                  setEditingIframe(null);
-                  form.resetFields();
-                }}
-              >
-                Hủy
               </Button>
             </Space>
           </Form.Item>

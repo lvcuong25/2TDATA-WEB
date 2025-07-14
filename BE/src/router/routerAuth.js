@@ -1,4 +1,4 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import { 
     signUp, 
     signIn, 
@@ -10,14 +10,18 @@ import {
 import { getUser } from "../middlewares/getUser.js";
 import { checkRequestBody } from "../middlewares/checkRequestBody.js";
 import { registerSchema, resetPasswordSchema } from "../validations/auth.js";
+import { loginRateLimiter, otpRateLimiter } from "../middlewares/enhancedRateLimit.js";
 
 const routerAuth = Router();
 
-routerAuth.post("/send-otp", sendOTP);
+// Public routes với rate limiting
+routerAuth.post("/send-otp", otpRateLimiter, sendOTP);
 routerAuth.post("/reset-password", checkRequestBody(resetPasswordSchema), resetPassword);
 routerAuth.post("/sign-up", checkRequestBody(registerSchema), signUp);
-routerAuth.post("/sign-in", signIn);
-routerAuth.use(getUser)
+routerAuth.post("/sign-in", loginRateLimiter, signIn);
+
+// Protected routes - cần authentication
+routerAuth.use(getUser);
 routerAuth.get("/", getUserByToken);
 routerAuth.post("/change-password", changePassword);
 

@@ -7,6 +7,12 @@ const OrganizationSchema = new mongoose.Schema({
         // unique: true, // Tên tổ chức không trùng nhau
         trim: true,
     },
+    site_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Site",
+        required: true,
+        description: "ID của site liên kết với organization",
+    },
     manager: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -50,4 +56,4 @@ const OrganizationSchema = new mongoose.Schema({
 },
 { timestamps: true, versionKey: false });
 
-export default mongoose.model("Organization", OrganizationSchema); 
+export default mongoose.model("Organization", OrganizationSchema);

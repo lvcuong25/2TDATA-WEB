@@ -256,7 +256,7 @@ const UserProfile = () => {
           </Button>,
         ]}
         width={600}
-        destroyOnClose
+        destroyOnHidden
       >
         <div className="mb-4 p-3 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">

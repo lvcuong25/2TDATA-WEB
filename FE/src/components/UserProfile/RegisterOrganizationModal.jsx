@@ -30,7 +30,7 @@ const RegisterOrganizationModal = ({ isOpen, onClose, onSuccess, hasOrganization
       open={isOpen}
       onCancel={() => { onClose(); form.resetFields(); }}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       {disableForm && (
         <Alert

@@ -1,6 +1,6 @@
 import React from 'react'
 import Header from "./Header";
-import Footer from "./Footer";
+import FooterWrapper from "./FooterWrapper";
 
 const About = () => {
   return (
@@ -64,7 +64,7 @@ const About = () => {
       </p>
     </div>
     
-      <Footer />
+      <FooterWrapper />
     </div>
   )
 }
