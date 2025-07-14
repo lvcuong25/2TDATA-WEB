@@ -13,8 +13,6 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || process.env.DB_URI || 'mongodb://admin:password@localhost:27017/2TDATA?authSource=admin';
 
-);
-
 /**
  * Setup complete affiliate site architecture
  */
@@ -346,24 +344,28 @@ const setupAffiliateSites = async () => {
     }
 
     // Display summary
-    }`);
-    }`);
-    }`);
-    }`);
-    }`);
-
-    :');
+    console.log('\n🎉 Affiliate sites setup completed successfully!');
+    console.log('='.repeat(50));
+    console.log(`📊 Summary:`);
+    console.log(`• Master Site: ${masterSite.name}`);
+    console.log(`• Affiliate Sites: ${createdAffiliateSites.length}`);
+    console.log(`• Total Users: ${await User.countDocuments()}`);
+    console.log(`• Total Services: ${await Service.countDocuments()}`);
+    console.log('');
+    console.log('🏢 Affiliate Sites Created:');
     for (const site of createdAffiliateSites) {
-      }`);
+      console.log(`• ${site.name} (${site.domains[0]}) - ${site.category}`);
     }
-
-    :');
+    console.log('');
+    console.log('🔐 Default Login Credentials:');
+    console.log('• Super Admin: superadmin@2tdata.com / admin123');
     for (const site of createdAffiliateSites) {
-      }
-
-    ');
+      console.log(`• Site Admin (${site.name}): admin@${site.domains[0]} / siteadmin123`);
+    }
+    console.log('');
+    console.log('✅ You can now access the affiliate sites at:');
     for (const site of createdAffiliateSites) {
-      `);
+      console.log(`• ${site.name}: http://${site.domains[0]}:5173`);
     }
 
   } catch (error) {

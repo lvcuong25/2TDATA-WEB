@@ -68,6 +68,14 @@ export const signUp = async (req, res, next) => {
 
 export const signIn = async (req, res, next) => {
     try {
+        console.log('🔐 SignIn attempt:', {
+            email: req.body.email,
+            hasPassword: !!req.body.password,
+            userAgent: req.get('User-Agent'),
+            origin: req.get('Origin'),
+            site: req.site?.name || 'No site detected'
+        });
+        
         const { email, password } = req.body;
         const userExist = await User.findOne({ email }).populate('site_id');
         if (!userExist) {

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Test Login 2TDATA</h1>
+    <form id="loginForm">
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="superadmin@2tdata.com" required>
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" value="admin123" required>
+        </div>
+        <button type="submit">Login</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '<p>⏳ Testing API connection...</p>';
+            
+            try {
+                console.log('Attempting login to:', 'http://localhost:3000/api/auth/sign-in');
+                console.log('Data:', { email, password });
+                
+                const response = await axios.post('http://localhost:3000/api/auth/sign-in', {
+                    email,
+                    password
+                });
+                
+                console.log('Response:', response);
+                
+                resultDiv.innerHTML = `
+                    <h3 style="color: green;">✅ Login Successful!</h3>
+                    <p><strong>Message:</strong> ${response.data.message}</p>
+                    <p><strong>Token:</strong> ${response.data.accessToken.substring(0, 50)}...</p>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                `;
+                
+                // Store token
+                localStorage.setItem('accessToken', response.data.accessToken);
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                resultDiv.innerHTML = `
+                    <h3 style="color: red;">❌ Login Failed!</h3>
+                    <p><strong>Error:</strong> ${error.response?.data?.message || error.message}</p>
+                    <p><strong>Status:</strong> ${error.response?.status || 'Unknown'}</p>
+                    <p><strong>URL:</strong> ${error.config?.url || 'Unknown'}</p>
+                    <p><strong>Method:</strong> ${error.config?.method || 'Unknown'}</p>
+                    <details>
+                        <summary>Full Error Details</summary>
+                        <pre>${JSON.stringify(error.response?.data || error.message, null, 2)}</pre>
+                    </details>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
