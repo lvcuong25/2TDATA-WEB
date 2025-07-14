@@ -150,7 +150,8 @@ const ServiceOrganization = () => {
   if (orgLoading) return <div className="p-4">Đang tải thông tin tổ chức...</div>;
 
   // Lấy danh sách dịch vụ đúng từ org
-  const orgServices = org?.data?.services || org?.services || [];
+  const orgServicesRaw = org?.data?.services || org?.services || [];
+  const orgServices = orgServicesRaw.filter(service => service.status === 'approved');
   const paginatedServices = orgServices.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const members = (org?.data?.members || org?.members || []);

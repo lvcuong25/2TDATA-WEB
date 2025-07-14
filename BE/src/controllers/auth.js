@@ -62,7 +62,10 @@ export const signUp = async (req, res, next) => {
             accessToken,
         });
     } catch (error) {
-        next(error);
+        return res.status(400).json({
+            message: error.message || "Đăng ký thất bại",
+            error: error,
+        });
     }
 };
 
@@ -154,7 +157,10 @@ export const signIn = async (req, res, next) => {
             redirectPath: `/service/my-service`
         });
     } catch (error) {
-        next(error);
+        return res.status(400).json({
+            message: error.message || "Đăng nhập thất bại",
+            error: error,
+        });
     }
 };
 
@@ -164,7 +170,10 @@ export const getUserByToken = async (req, res, next) => {
         data.password = undefined;
         return res.status(200).json({ data });
     } catch (error) {
-        next(error);
+        return res.status(400).json({
+            message: error.message || "Lấy thông tin thất bại",
+            error: error,
+        });
     }
 }
 
@@ -218,9 +227,11 @@ export const sendOTP = async (req, res, next) => {
                 message: "Gửi email thất bại!",
             });
         }
-    }
-    catch (error) {
-        next(error);
+    } catch (error) {
+        return res.status(400).json({
+            message: error.message || "Gửi OTP thất bại",
+            error: error,
+        });
     }
 };
 
@@ -280,9 +291,11 @@ export const resetPassword = async (req, res, next) => {
             message: "Đặt lại mật khẩu thành công!",
             accessToken,
         });
-    }
-    catch (error) {
-        next(error);
+    } catch (error) {
+        return res.status(400).json({
+            message: error.message || "Đặt lại mật khẩu thất bại",
+            error: error,
+        });
     }
 }
 
@@ -308,8 +321,10 @@ export const changePassword = async (req, res, next) => {
         return res.status(200).json({
             message: "Đổi mật khẩu thành công!",
         });
-    }
-    catch (error) {
-        next(error);
+    } catch (error) {
+        return res.status(400).json({
+            message: error.message || "Đổi mật khẩu thất bại",
+            error: error,
+        });
     }
 }

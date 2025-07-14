@@ -322,7 +322,7 @@ const StatusList = () => {
     <div>
       <div className="flex items-center justify-between bg-white rounded-lg shadow px-6 py-4 mb-6">
         <span className="text-xl font-semibold text-gray-800">
-          Danh sách yêu cầu dịch vụ
+          Danh sách trạng thái cá nhân
         </span>
         <Button
           type="primary"

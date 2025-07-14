@@ -1,7 +1,7 @@
 import Header from "../Header";
 import FooterWrapper from "../FooterWrapper";  
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Modal, Form, Input, Button, Spin, Checkbox, Table, Tag, Switch, Pagination } from 'antd';
+import { Modal, Form, Input, Button, Spin, Checkbox, Table, Tag, Switch, Pagination, Alert, Typography } from 'antd';
 import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from "../core/Auth";
 import instance from "../../utils/axiosInstance";
@@ -9,6 +9,8 @@ import { useForm, Controller } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
 import { AppstoreOutlined, TableOutlined } from "@ant-design/icons";
+
+const { Text, Link } = Typography;
 
 const Service = () => {
   const { currentUser } = useContext(AuthContext);
@@ -368,6 +370,30 @@ const Service = () => {
                     Thông tin của bạn sẽ được gửi đến admin để xác nhận đăng ký {selectedServices.length} dịch vụ.
                   </p>
                 </div>
+
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ background: "#FFFBEA", border: "1px solid #FFE58F", margin: "16px 0" }}
+                  message={
+                    <div>
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                        Liên hệ xác nhận & thanh toán qua Zalo:
+                      </div>
+                      <div style={{ fontWeight: "bold", fontSize: 20, color: "#B8860B", marginBottom: 4 }}>
+                        0899657688
+                      </div>
+                      <div style={{ marginBottom: 4 }}>
+                        <Link href="https://zalo.me/0899657688" target="_blank" style={{ color: "#1890ff" }}>
+                          Nhấn vào đây để chat Zalo
+                        </Link>
+                      </div>
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        Sau khi đăng ký, bạn vui lòng liên hệ Zalo để được hướng dẫn chi tiết nhé!
+                      </Text>
+                    </div>
+                  }
+                />
 
                 <Form.Item>
                   <div className="flex justify-end gap-2">

@@ -300,7 +300,8 @@ const MyService = () => {
   };
 
   // LẤY DỮ LIỆU PHÂN TRANG ĐÚNG TỪ API MỚI
-  const userServices = userData?.data?.services || [];
+  const userServicesRaw = userData?.data?.services || [];
+  const userServices = userServicesRaw.filter(service => service.status === "approved");
   const totalServices = userData?.data?.totalServices || 0;
 
   // Lọc ra các dịch vụ có link kết quả cho danh sách dịch vụ (từ API riêng)
