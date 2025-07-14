@@ -55,11 +55,9 @@ const siteSchema = new mongoose.Schema({
       partners: [{
         image: { type: String, default: "" },
         alt: { type: String, default: "" },
-        link: { type: String, default: "#" },
-        height: { type: String, default: "60px" }
+        link: { type: String, default: "#" }
       }]
     },
-    partnersTitle: { type: String, default: "Thành viên 2T Group" },
     quickLinks: [{
       title: { type: String, required: true },
       url: { type: String, required: true }

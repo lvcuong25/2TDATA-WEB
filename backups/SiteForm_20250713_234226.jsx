@@ -7,7 +7,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, UploadOutlined, EyeOutlined } from '@ant-design/icons';
 import axiosInstance from '../../../axios/axiosInstance';
 import DynamicFooter from '../../DynamicFooter';
-import PartnerLogosManager from './PartnerLogosManager';
 import { defaultFooterConfig } from '../../../config/footerConfig';
 
 const { Title, Text } = Typography;
@@ -157,27 +156,6 @@ const SiteForm = () => {
     }
   };
   
-  // Handle partner logos change
-  const handlePartnerLogosChange = (newLogos) => {
-    setFooterConfig(prev => ({
-      ...prev,
-      logos: {
-        ...prev.logos,
-        partners: newLogos
-      }
-    }));
-    form.setFieldsValue({
-      footer_config: {
-        ...form.getFieldValue('footer_config'),
-        logos: {
-          ...form.getFieldValue(['footer_config', 'logos']),
-          partners: newLogos
-        }
-      }
-    });
-  };
-
-
   const handleFormChange = (changedValues) => {
     if (changedValues.footer_config) {
       // Deep merge for nested objects like styles
@@ -473,25 +451,6 @@ const SiteForm = () => {
                     <ColorPicker showText/>
                   </Form.Item>
                 </Card>
-              </Col>
-            </Row>
-            
-            <Row gutter={24} style={{marginTop: 16}}>
-              <Col span={24}>
-                <Card title="Tiêu đề Logo Đối tác" size="small">
-                  <Form.Item label="Tiêu đề" name={["footer_config", "partnersTitle"]}>
-                    <Input placeholder="Nhập tiêu đề cho phần logo đối tác (VD: Thành viên 2T Group)" />
-                  </Form.Item>
-                </Card>
-              </Col>
-            </Row>
-            <Row gutter={24} style={{marginTop: 16}}>
-              <Col span={24}>
-                <PartnerLogosManager 
-                  logos={footerConfig?.logos?.partners || []}
-                  onChange={handlePartnerLogosChange}
-                  siteName={form.getFieldValue("name") || "site"}
-                />
               </Col>
             </Row>
           </TabPane>
