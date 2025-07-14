@@ -126,6 +126,7 @@ export const createUser = async (req, res, next) => {
         
         // Validate site_id requirement
         let finalSiteId = site_id;
+        console.log("DEBUG createUser:", { site_id, userSiteId: req.user.site_id, userSiteIdStr: req.user.site_id?.toString(), reqSiteId: req.siteId });
         
         // For non-super_admin roles, site_id is required
         if (role !== ROLES.SUPER_ADMIN) {
@@ -146,10 +147,13 @@ export const createUser = async (req, res, next) => {
             }
             
             // Validate that site_admin can only create users for their own site
-            if (creatorRole === ROLES.SITE_ADMIN && finalSiteId.toString() !== req.user.site_id.toString()) {
-                return res.status(403).json({ 
-                    message: "Site admins can only create users for their own site" 
-                });
+            if (creatorRole === ROLES.SITE_ADMIN) {
+                const userSiteId = req.user.site_id._id || req.user.site_id;
+                if (finalSiteId.toString() !== userSiteId.toString()) {
+                    return res.status(403).json({ 
+                        message: "Site admins can only create users for their own site" 
+                    });
+                }
             }
         }
         
