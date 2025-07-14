@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Card, Descriptions, Button, Tag, Space, Typography, Row, Col, Avatar, Spin, message, Modal, Statistic } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, UserOutlined, GlobalOutlined, SettingOutlined } from '@ant-design/icons';
@@ -23,7 +23,6 @@ const SiteDetail = () => {
   const fetchSiteDetail = async () => {
     try {
       const response = await axiosInstance.get(`/sites/${id}`);
-      console.log('Site detail response:', response.data);
       setSite(response.data.data || response.data);
     } catch (error) {
       message.error('Không thể tải thông tin trang web');
@@ -36,7 +35,6 @@ const SiteDetail = () => {
   const fetchSiteStats = async () => {
     try {
       const response = await axiosInstance.get(`/sites/${id}/stats`);
-      console.log('Site stats response:', response.data);
       setStats(response.data.data || response.data);
     } catch (error) {
       console.error('Error fetching site stats:', error);
@@ -44,7 +42,7 @@ const SiteDetail = () => {
   };
 
   const handleEdit = () => {
-    navigate(`/admin/sites/${id}/edit`);
+    navigate(`/admin/sites/edit/${id}`);
   };
 
   const handleDelete = () => {

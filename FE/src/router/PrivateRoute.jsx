@@ -1,7 +1,6 @@
-import { useContext } from "react";
+﻿import { useContext } from "react";
 import { Navigate, useLocation } from "react-router";
 import { AuthContext } from "../components/core/Auth";
-
 
 const ConditionalRoute = ({ condition, redirectTo, children }) => {
   return condition ? children : <Navigate to={redirectTo} />;
@@ -31,7 +30,7 @@ const NoneLoginRoute = ({ children }) => {
 
 const AdminRoute = ({ children }) => {
   const { currentUser } = useContext(AuthContext);
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "super_admin";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "super_admin" || currentUser?.role === "superadmin" || currentUser?.role === "site_admin";
   return (
     <ConditionalRoute
       condition={!!currentUser && isAdmin}
@@ -54,4 +53,16 @@ const PrivateRoute = ({ children }) => {
   );
 };
 
-export { LoginRoute, NoneLoginRoute, AdminRoute, PrivateRoute };
+const SuperAdminRoute = ({ children }) => {
+  const { currentUser } = useContext(AuthContext);
+  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "superadmin";
+  return (
+    <ConditionalRoute
+      condition={!!currentUser && isSuperAdmin}
+      redirectTo="/admin"
+      children={children}
+    />
+  );
+};
+
+export { LoginRoute, NoneLoginRoute, AdminRoute, PrivateRoute, SuperAdminRoute };

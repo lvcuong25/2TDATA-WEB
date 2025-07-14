@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+﻿import React, { useState, useContext } from 'react';
 import { Card, Avatar, Descriptions, Button, Divider, message, Row, Col, Tag, Spin, Form, Input, Modal } from 'antd';
 import { UserOutlined, EditOutlined, SaveOutlined, CloseOutlined, MailOutlined, CalendarOutlined, PhoneOutlined } from '@ant-design/icons';
 import { AuthContext } from '../core/Auth';
@@ -7,7 +7,7 @@ import instance from '../../utils/axiosInstance';
 
 const UserProfile = () => {
   const { currentUser, setCurrentUser } = useContext(AuthContext);
-  console.log(currentUser)
+  // Editing state if needed later
   const [isEditing, setIsEditing] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -87,29 +87,29 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Thông tin cá nhân</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">Quản lý thông tin tài khoản của bạn</p>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Thông tin cá nhân</h1>
+        <p className="text-gray-600 dark:text-gray-400">Quản lý thông tin tài khoản của bạn</p>
       </div>
 
-      <Row gutter={[24, 24]}>
+      <Row gutter={[32, 32]}>
         {/* Profile Card */}
         <Col xs={24} lg={16}>
-          <Card className="shadow-sm">
-            <div className="flex items-center mb-6">
+          <Card className="shadow-sm p-6">
+            <div className="flex items-center mb-8">
               <Avatar 
-                size={80} 
+                size={90} 
                 icon={<UserOutlined />} 
-                className="bg-blue-600 text-white text-2xl font-bold"
+                className="bg-blue-600 text-white text-3xl font-bold mr-8"
               >
                 {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
               </Avatar>
               <div className="ml-6 flex-1">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
                   {currentUser.name || 'Chưa có tên'}
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-600 dark:text-gray-400 mb-2">
                   {currentUser.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
                 </p>
                 <div className="mt-2">
@@ -130,13 +130,13 @@ const UserProfile = () => {
               </div>
             </div>
 
-            <Divider />
+            <Divider className="my-6" />
 
             <Descriptions 
               title="Thông tin chi tiết" 
               bordered 
               column={1}
-              className="mt-6"
+              className="mt-8"
             >
               <Descriptions.Item 
                 label={
@@ -184,15 +184,14 @@ const UserProfile = () => {
 
         {/* Stats Card */}
         <Col xs={24} lg={8}>
-          <Card className="shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <Card className="shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
               Thống kê tài khoản
             </h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-blue-600 font-medium">Dịch vụ đang sử dụng</p>
+                  <p className="text-sm text-blue-600 font-medium mb-1">Dịch vụ đang sử dụng</p>
                   <div className="text-2xl font-bold text-blue-900">
                     {servicesLoading ? (
                       <Spin size="small" />
@@ -206,9 +205,9 @@ const UserProfile = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-green-600 font-medium">Trạng thái tài khoản</p>
+                  <p className="text-sm text-green-600 font-medium mb-1">Trạng thái tài khoản</p>
                   <p className="text-lg font-semibold text-green-900">Hoạt động</p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -216,9 +215,9 @@ const UserProfile = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-purple-600 font-medium">Vai trò</p>
+                  <p className="text-sm text-purple-600 font-medium mb-1">Vai trò</p>
                   <p className="text-lg font-semibold text-purple-900">
                     {currentUser.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
                   </p>
@@ -231,9 +230,6 @@ const UserProfile = () => {
           </Card>
         </Col>
       </Row>
-
-      {/* Services Section */}
-     
 
       {/* Edit Profile Modal */}
       <Modal
@@ -260,7 +256,7 @@ const UserProfile = () => {
           </Button>,
         ]}
         width={600}
-        destroyOnClose
+        destroyOnHidden
       >
         <div className="mb-4 p-3 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">

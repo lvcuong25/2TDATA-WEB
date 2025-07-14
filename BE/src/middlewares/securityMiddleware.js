@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+﻿import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
 // Rate limiting middleware
@@ -44,7 +44,7 @@ export const inputSanitizationMiddleware = (req, res, next) => {
 export const auditMiddleware = (req, res, next) => {
   // Log request for audit purposes
   if (process.env.NODE_ENV !== 'test') {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - IP: ${req.ip}`);
+    // Request audit logging
   }
   next();
 };

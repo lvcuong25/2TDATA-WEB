@@ -1,15 +1,13 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Header from "./Header";
-import Footer from "./Footer";
+import FooterWrapper from "./FooterWrapper";
 import { useMutation } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance";
 import { toast } from "react-toastify";
-import axiosInstance from "../axios/axiosInstance";
 import { useSite } from "../context/SiteContext";
 
 const Home = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [iframeUrl, setIframeUrl] = useState('https://www.hcwvietnam.com/2tdata_soltuion'); // default
   const { currentSite, refreshSiteConfig } = useSite();
   const [formData, setFormData] = useState({
@@ -43,13 +41,8 @@ const Home = () => {
     }
   }, [currentSite]);
 
+  // Effect for periodic site config refresh
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem("accessToken");
-      setIsLoggedIn(!!token);
-    };
-    checkAuth();
-
     // Set up periodic refresh of site config (every 30 seconds)
     const configRefreshInterval = setInterval(() => {
       refreshSiteConfig();
@@ -69,6 +62,22 @@ const Home = () => {
     };
     window.addEventListener('focus', handleFocus);
 
+    // Cleanup function
+    return () => {
+      clearInterval(configRefreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refreshSiteConfig]);
+
+  // Separate effect for livechat script - only runs once
+  useEffect(() => {
+    // Check if script already exists to prevent duplicates
+    const existingScript = document.querySelector('script[src*="rocketchat-livechat.min.js"]');
+    if (existingScript) {
+      return;
+    }
+
     // Add Rocket.Chat Livechat script
     const script = document.createElement('script');
     script.type = 'text/javascript';
@@ -87,11 +96,8 @@ const Home = () => {
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
-      clearInterval(configRefreshInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  }, []); // Empty dependency array - runs only once
 
   const handleSubmit = (e) => {
     e.preventDefault();

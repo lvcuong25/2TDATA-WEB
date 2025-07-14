@@ -1,17 +1,38 @@
-import Blog from "../model/Blog.js";
-
+﻿import Blog from "../model/Blog.js";
 
 // Lấy danh sách các bài blog
 export const getAllBlogs = async (req, res) => {
   try {
     let query = {};
+    
+    // Apply site filter based on user role
+    // Super admin can see all blogs across all sites
+    if (req.user && req.user.role === 'super_admin') {
+      // No site filter needed - can see all blogs
+    }
+    // Site admin can only see blogs from their site
+    else if (req.user && req.user.role === 'site_admin') {
+      const siteId = req.user.site_id || req.site?._id;
+      if (siteId) {
+        query.site_id = siteId;
+      }
+    }
+    // For public/member access, use site filter from middleware
+    else if (req.siteId) {
+      query.site_id = req.siteId;
+    }
+    
     if (req.query.name) {
       query.$or = [
         { title: { $regex: new RegExp(req.query.name, 'i') } },
         { content: { $regex: new RegExp(req.query.name, 'i') } }
       ];
     }
-    const blogs = await Blog.find(query).sort({ createdAt: -1 });
+    
+    const blogs = await Blog.find(query)
+      .populate('site_id', 'name domains')
+      .sort({ createdAt: -1 });
+      
     res.json(blogs);
   } catch (err) {
     console.error("Error fetching blogs:", err);
@@ -35,8 +56,6 @@ export const getOneBlogById = async (req, res) => {
 export const createBlog = async (req, res) => {
   const { title, content, image } = req.body;
 
-  console.log("Received blog data:", req.body);
-
   // Validation
   if (!title || typeof title !== 'string' || title.trim().length < 5) {
     return res.status(400).json({ message: "Tiêu đề phải có ít nhất 5 ký tự" });
@@ -50,10 +69,17 @@ export const createBlog = async (req, res) => {
     return res.status(400).json({ message: "Ảnh phải là một URL hợp lệ" });
   }
 
+  // Get site_id from middleware
+  const siteId = req.siteId;
+  if (!siteId) {
+    return res.status(400).json({ message: "Site ID is required" });
+  }
+
   const blog = new Blog({
     title: title.trim(),
     content: content.trim(),
-    image
+    image,
+    site_id: siteId // Add site_id from middleware
   });
 
   try {

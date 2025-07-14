@@ -123,12 +123,38 @@ const UsersList = () => {
       title: "Vai trò",
       dataIndex: "role",
       key: "role",
-      width: 100,
-      render: (role) => (
-        <Tag color={role === "admin" ? "red" : "blue"}>
-          {role === "admin" ? "Admin" : "User"}
-        </Tag>
-      ),
+      width: 120,
+      render: (role) => {
+        const roleConfig = {
+          super_admin: { label: "Super Admin", color: "red" },
+          site_admin: { label: "Site Admin", color: "orange" },
+          site_moderator: { label: "Site Moderator", color: "blue" },
+          member: { label: "Member", color: "green" },
+          admin: { label: "Admin", color: "purple" }, // legacy support
+        };
+        
+        const config = roleConfig[role] || { label: role || "User", color: "default" };
+        
+        return (
+          <Tag color={config.color}>
+            {config.label}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Site",
+      dataIndex: "site_id",
+      key: "site_id",
+      width: 150,
+      render: (site) => {
+        if (!site) return <Tag color="default">N/A</Tag>;
+        return (
+          <Tag color="blue">
+            {site.name || 'Unknown'}
+          </Tag>
+        );
+      },
     },
     {
       title: "Trạng thái",

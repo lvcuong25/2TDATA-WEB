@@ -14,24 +14,24 @@ import {
 const routerUserService = Router();
 
 // Lấy danh sách service đang chờ xác nhận (chỉ admin)
-routerUserService.get('/pending', checkPermission(), getPendingServices);
+routerUserService.get("/pending", checkPermission(), getPendingServices);
 
 // Lấy danh sách service của user
-routerUserService.get('/user/:userId', getUserServices);
+routerUserService.get("/user/:userId", getUserServices);
 
 // Thêm service vào user (sẽ ở trạng thái chờ xác nhận)
-routerUserService.post('/add', getUser, addServiceToUser);
+routerUserService.post("/add", getUser, addServiceToUser);
 
 // Admin xác nhận/từ chối service cho user
-routerUserService.put('/:id/approve', getUser, checkPermission(), approveUserService);
+routerUserService.put("/:id/approve", getUser, checkPermission(), approveUserService);
 
 // Lấy chi tiết của một user service
-routerUserService.get('/:id', getUserServiceDetail);
+routerUserService.get("/:id", getUserServiceDetail);
 
 // Xóa service khỏi user
-routerUserService.delete('/:id', getUser, removeUserService);
+routerUserService.delete("/:id", getUser, removeUserService);
 
 // Cập nhật link cho user service
-routerUserService.put('/:id/links', getUser, updateUserServiceLinks);
+routerUserService.put("/:id/links", getUser, updateUserServiceLinks);
 
 export default routerUserService;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 import axiosInstance from '../axios/axiosInstance';
 
 const SiteContext = createContext();
@@ -23,8 +23,7 @@ const updateDynamicFavicon = (siteData) => {
     link.href = faviconUrl;
     document.getElementsByTagName('head')[0].appendChild(link);
     
-    console.log('🎨 Favicon updated to:', faviconUrl);
-  } catch (error) {
+    } catch (error) {
     console.error('Error updating favicon:', error);
   }
 };
@@ -53,8 +52,7 @@ const updateLogoMetaTags = (siteData) => {
       }
       twitterImage.setAttribute('content', logoUrl);
       
-      console.log('🏷️ Logo meta tags updated to:', logoUrl);
-    }
+      }
   } catch (error) {
     console.error('Error updating logo meta tags:', error);
   }
@@ -79,7 +77,6 @@ export const SiteProvider = ({ children }) => {
   const detectAndLoadSite = async () => {
     try {
       // Build timestamp: 2025-07-01T06:57:00Z - Force rebuild
-      console.log('Site detection starting...', new Date().toISOString());
       // Use the public /sites/current endpoint that detects site based on hostname
       const response = await axiosInstance.get('/sites/current');
       if (response.data.success) {
@@ -89,17 +86,13 @@ export const SiteProvider = ({ children }) => {
         // Update document title with site name
         const newTitle = siteData.name || '2T DATA';
         document.title = newTitle;
-        console.log('🏷️ Document title updated to:', newTitle);
-        
         // Update favicon if available
         updateDynamicFavicon(siteData);
         
         // Update any logo meta tags if needed
         updateLogoMetaTags(siteData);
         
-        console.log('Site detected:', siteData);
-        console.log('Document title updated to:', siteData.name);
-      } else {
+        } else {
         throw new Error('No site data received');
       }
       
@@ -124,7 +117,6 @@ export const SiteProvider = ({ children }) => {
     }
   };
 
-
   const refreshSiteConfig = async () => {
     if (!currentSite?._id) {
       // If no current site ID, re-detect the site
@@ -145,8 +137,7 @@ export const SiteProvider = ({ children }) => {
         const newTitle = siteData.name || '2T DATA';
         document.title = newTitle;
         
-        console.log('✅ Site config refreshed:', siteData);
-      }
+        }
     } catch (error) {
       console.error('Error refreshing site config:', error);
     }

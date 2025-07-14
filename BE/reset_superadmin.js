@@ -1,4 +1,4 @@
-import User from './src/model/User.js';
+﻿import User from './src/model/User.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -17,11 +17,7 @@ mongoose.connect('mongodb://admin:password@172.18.0.3:27017/2TDATA?authSource=ad
       }
     );
     
-    console.log(`✅ Password reset successful for ${email}`);
-    console.log(`📧 Email: ${email}`);
-    console.log(`🔑 New password: ${newPassword}`);
-    
-  } catch (error) {
+    } catch (error) {
     console.error('Error:', error);
   } finally {
     mongoose.disconnect();

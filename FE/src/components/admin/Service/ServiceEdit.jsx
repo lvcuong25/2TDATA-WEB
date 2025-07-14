@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Button, Input, Form, Spin, Switch, Typography, Space, Tooltip } from 'antd';
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -65,14 +65,14 @@ const ServiceEdit = () => {
 
     useEffect(() => {
         if (serviceData) {
-            console.log('Service Data:', serviceData); // Debug log
+            // Debug log
             setValue('name', serviceData.name);
             setValue('slug', serviceData.slug);
             setValue('description', serviceData.description);
             setValue('status', serviceData.status);
             // Đảm bảo link là một mảng
             const links = Array.isArray(serviceData.authorizedLinks) ? serviceData.authorizedLinks : [];
-            console.log('Setting links:', links); // Debug log
+            // Debug log
             setValue('authorizedLinks', links);
             setImage(serviceData.image);
         }

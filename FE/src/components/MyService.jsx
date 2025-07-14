@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import Header from "./Header";
-import Footer from "./Footer";
+import FooterWrapper from "./FooterWrapper";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
 import { useQuery } from "@tanstack/react-query";
@@ -34,7 +34,6 @@ const MyService = () => {
           limit: pageSize,
         },
       });
-      console.log(response?.data)
       return response?.data;
     },
     enabled: !!currentUser?._id,
@@ -56,30 +55,50 @@ const MyService = () => {
     enabled: !!currentUser?._id,
   });
 
+  // Hàm sinh state base64
+  function generateState(userId, name, serviceId) {
+    const obj = { userId, name, serviceId };
+    return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+  }
+  // Hàm thêm/thay thế state vào url
+  function appendStateToUrl(url, stateValue) {
+    try {
+      const urlObj = new URL(url, window.location.origin);
+      urlObj.searchParams.set('state', stateValue);
+      return urlObj.toString();
+    } catch {
+      return url;
+    }
+  }
+
   const handleServiceClick = async (service) => {
     try {
       if (!accessToken || !currentUser?._id) {
         console.error('Missing access token or user ID');
         return;
       }
-
       // Make the webhook request
       const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
         userId: currentUser?._id,
         accessToken: accessToken
       });
-
       if (response?.status !== 200) {
         throw new Error('Webhook request failed');
       }
-
       // Find the first authorized link
       const authorizedLink = service?.service?.authorizedLinks?.[0];
       if (authorizedLink) {
-        window.location.href = authorizedLink?.url;
-      } else {
-        console.log("No authorized link found for this service.", service);
-      }
+        const stateObj = {
+          userId: currentUser?._id || "",
+          name: currentUser?.name || "",
+          serviceId: service?._id || ""
+        };
+        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId);
+        const urlWithState = appendStateToUrl(authorizedLink.url, state);
+        window.location.href = urlWithState;
+        } else {
+          console.error('No authorized link found for service');
+        }
     } catch (error) {
       console.error('Error making webhook request:', error);
     }
@@ -103,7 +122,7 @@ const MyService = () => {
                 },
                 mode: 'cors' // Explicitly set CORS mode
               }).catch(error => {
-                console.log('Link update request failed (expected):', error.message);
+                console.error('Error calling update link:', error.message);
                 return null; // Don't throw, just log
               });
             }
@@ -210,6 +229,65 @@ const MyService = () => {
     },
   ];
 
+  const deployedColumns = [
+    {
+      title: "Dịch vụ",
+      dataIndex: "service",
+      key: "service",
+      render: (service) => (
+        <div className="flex items-center gap-2">
+          <img
+            src={service.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
+            alt={service.name}
+            className="w-10 h-10 object-cover rounded"
+          />
+          <div>
+            <div className="font-medium">{service.name}</div>
+            <div className="text-sm text-gray-500">{service.slug}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Thời gian",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (date) => new Date(date).toLocaleDateString("vi-VN"),
+    },
+    {
+      title: "Kết nối",
+      key: "connect",
+      width: 120,
+      render: (_, record) => {
+        const links = record.service?.authorizedLinks || [];
+        const hasLink = links.length > 0;
+        return (
+          <Tooltip title={hasLink ? 'Kết nối dịch vụ' : 'Chưa có link kết nối'}>
+            <Button
+              type="primary"
+              className="bg-blue-500 hover:bg-blue-600"
+              onClick={() => {
+                if (hasLink) {
+                  const stateObj = {
+                    userId: currentUser?._id || "",
+                    name: currentUser?.name || "",
+                    serviceId: record.service._id || ""
+                  };
+                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId);
+                  const urlWithState = appendStateToUrl(links[0].url, state);
+                  window.location.href = urlWithState;
+                }
+              }}
+              disabled={!hasLink}
+            >
+              Kết nối <span style={{ marginLeft: 4 }}>→</span>
+            </Button>
+          </Tooltip>
+        );
+      }
+    },
+  ];
+
   // Find if there is an authorized link for conditional rendering
   const findAuthorizedLink = (userService) => {
     return userService?.service?.authorizedLinks?.[0];
@@ -249,7 +327,7 @@ const MyService = () => {
             <p className="text-gray-600 mb-4">Không thể tải dữ liệu dịch vụ.</p>
           </section>
         </div>
-        <Footer />
+        <FooterWrapper />
       </div>
     );
   }
@@ -350,7 +428,7 @@ const MyService = () => {
             </>
           ) : (
             <Table
-              columns={columns}
+              columns={deployedColumns}
               dataSource={userServices}
               rowKey={(record, idx) => `${record._id}_${idx}`}
               pagination={{
@@ -395,7 +473,7 @@ const MyService = () => {
           )}
         </section>
       </div>
-      <Footer/>
+      <FooterWrapper/>
     </div>
   );
 };

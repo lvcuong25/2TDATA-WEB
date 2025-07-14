@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Upload, Image, Edit, Save, X, RefreshCw, Search } from 'lucide-react';
 import axiosInstance from '../../axios/axiosInstance';
 
@@ -115,8 +115,7 @@ const SuperAdminLogoManager = () => {
 
         setPreviewUrl('');
         setEditingSite(null);
-        console.log('✅ Logo uploaded successfully for site:', site.name);
-      } else {
+        } else {
         throw new Error(response.data.message || 'Upload failed');
       }
     } catch (error) {

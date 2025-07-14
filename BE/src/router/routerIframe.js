@@ -1,32 +1,33 @@
-import express from 'express';
-import {
+import express from "express";
+import { 
   getAllIframes,
   getIframeById,
   getIframeByDomain,
   createIframe,
   updateIframe,
   deleteIframe
-} from '../controllers/iframe.js';
-import { getUser } from '../middlewares/getUser.js';
+} from "../controllers/iframe.js";
+import { requireAuth } from "../middlewares/requireAuth.js";
 
 const router = express.Router();
 
-// Lấy danh sách tất cả iframe
-router.get('/', getAllIframes);
+// Tất cả route iframe đều yêu cầu authentication
+// Lấy danh sách tất cả iframe - yêu cầu auth
+router.get("/", requireAuth, getAllIframes);
 
-// Lấy 1 iframe theo id
-router.get('/:id', getIframeById);
+// Lấy 1 iframe theo id - yêu cầu auth
+router.get("/:id", requireAuth, getIframeById);
 
-// Lấy iframe theo domain
-router.get('/domain/:domain', getUser, getIframeByDomain);
+// Lấy iframe theo domain - yêu cầu auth
+router.get("/domain/:domain", requireAuth, getIframeByDomain);
 
-// Thêm mới iframe
-router.post('/', createIframe);
+// Thêm mới iframe - yêu cầu auth
+router.post("/", requireAuth, createIframe);
 
-// Sửa iframe
-router.put('/:id', updateIframe);
+// Sửa iframe - yêu cầu auth
+router.put("/:id", requireAuth, updateIframe);
 
-// Xóa iframe
-router.delete('/:id', deleteIframe);  
+// Xóa iframe - yêu cầu auth
+router.delete("/:id", requireAuth, deleteIframe);  
 
-export default router; 
+export default router;

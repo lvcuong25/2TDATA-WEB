@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
@@ -13,36 +13,25 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || process.env.DB_URI || 'mongodb://admin:password@localhost:27017/2TDATA?authSource=admin';
 
-console.log('🔗 Connecting to MongoDB:', MONGODB_URI.replace(/password@/, '***@'));
+);
 
 /**
  * Seed database with sample data for development
  */
 const seedData = async () => {
   try {
-    console.log('🌱 Starting database seeding...');
-    
     // Connect to database
     await mongoose.connect(MONGODB_URI);
-    console.log('✅ Connected to MongoDB');
-
     // Check if data already exists
     const existingSites = await Site.countDocuments();
     const existingUsers = await User.countDocuments();
 
     if (existingSites > 0 || existingUsers > 0) {
-      console.log('⚠️  Database already contains data.');
-      console.log('   Sites:', existingSites);
-      console.log('   Users:', existingUsers);
-      
       const confirm = process.argv.includes('--force');
       if (!confirm) {
-        console.log('   Use --force flag to add data anyway.');
         return;
       }
     }
-
-    console.log('🏗️  Creating seed data...');
 
     // 1. Create additional sites
     const sites = [
@@ -73,8 +62,7 @@ const seedData = async () => {
       const site = new Site(siteData);
       await site.save();
       createdSites.push(site);
-      console.log(`   ✅ Created site: ${site.name}`);
-    }
+      }
 
     // Get the main site
     let mainSite = await Site.findOne({ domains: { $in: ['localhost:3000', '2tdata.com'] } });
@@ -85,8 +73,7 @@ const seedData = async () => {
         status: 'active'
       });
       await mainSite.save();
-      console.log('   ✅ Created main site');
-    }
+      }
 
     // 2. Create sample users for each site
     const users = [
@@ -132,7 +119,7 @@ const seedData = async () => {
       });
       
       await user.save();
-      console.log(`   ✅ Created user: ${user.email} (${user.role})`);
+      `);
 
       // Add site admins to their respective sites
       if (user.role === 'site_admin') {
@@ -190,7 +177,7 @@ const seedData = async () => {
     for (const serviceData of services) {
       const service = new Service(serviceData);
       await service.save();
-      console.log(`   ✅ Created service: ${service.name} (${service.status})`);
+      `);
     }
 
     // 4. Create sample blog posts (if Blog model exists)
@@ -215,23 +202,17 @@ const seedData = async () => {
       for (const blogData of blogPosts) {
         const blog = new Blog(blogData);
         await blog.save();
-        console.log(`   ✅ Created blog post: ${blog.title}`);
-      }
+        }
     } catch (error) {
-      console.log('   ⚠️  Blog model not available, skipping blog posts');
-    }
+      }
 
-    console.log('\n🎉 Database seeding completed successfully!');
-    console.log('\n📊 Summary:');
-    console.log(`   🌍 Sites: ${await Site.countDocuments()}`);
-    console.log(`   👥 Users: ${await User.countDocuments()}`);
-    console.log(`   🔧 Services: ${await Service.countDocuments()}`);
+    }`);
+    }`);
+    }`);
     
-    console.log('\n🔑 Default password for all users: password123');
-    console.log('\n📧 Sample accounts:');
     const sampleUsers = await User.find().select('email role site_id').populate('site_id', 'name');
     for (const user of sampleUsers) {
-      console.log(`   ${user.email} (${user.role}) - ${user.site_id?.name || 'No Site'}`);
+      - ${user.site_id?.name || 'No Site'}`);
     }
 
   } catch (error) {
@@ -239,14 +220,12 @@ const seedData = async () => {
     throw error;
   } finally {
     await mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
-  }
+    }
 };
 
 // Run the seeding
 seedData()
   .then(() => {
-    console.log('✅ Seeding process completed');
     process.exit(0);
   })
   .catch((error) => {

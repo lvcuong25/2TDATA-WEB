@@ -39,8 +39,49 @@ const siteSchema = new mongoose.Schema({
       default: 'default'
     }
   },
+  footer_config: {
+    companyInfo: {
+      name: { type: String, default: "Company Name" },
+      address: { type: String, default: "" },
+      hotline: { type: String, default: "" },
+      email: { type: String, default: "" },
+      website: { type: String, default: "" }
+    },
+    logos: {
+      main: {
+        image: { type: String, default: "" },
+        alt: { type: String, default: "Main Logo" }
+      },
+      partners: [{
+        image: { type: String, default: "" },
+        alt: { type: String, default: "" },
+        link: { type: String, default: "#" }
+      }]
+    },
+    quickLinks: [{
+      title: { type: String, required: true },
+      url: { type: String, required: true }
+    }],
+    socialLinks: [{
+      platform: { type: String },
+      url: { type: String },
+      icon: { type: String }
+    }],
+    copyright: { type: String, default: "© 2025 Company. All rights reserved." },
+    styles: {
+      backgroundColor: { type: String, default: "#ffffff" },
+      textColor: { type: String, default: "#000000" },
+      copyrightBgColor: { type: String, default: "#f5f5f5" },
+      copyrightTextColor: { type: String, default: "#666666" },
+      linkHoverColor: { type: String, default: "#0066cc" }
+    }
+  },
   logo_url: {
     type: String
+  },
+  is_main_site: {
+    type: Boolean,
+    default: false
   },
   status: {
     type: String,

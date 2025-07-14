@@ -1,19 +1,18 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import routerUser from "./routerUser.js";
 import routerAuth from "./routerAuth.js";
 import routerService from "./routerService.js";
 import routerBlog from "./routerBlog.js";
 import routerIframe from "./routerIframe.js";
+
 import userInfoRouter from "./userInfoRouter.js";
 import userServiceRouter from "./userService.js";
 import routerSite from "./routerSite.js";
 import siteAdminRoutes from "./siteAdminRoutes.js";
 import routerAsset from "./routerAsset.js";
 import adminRouter from "./adminRouter.js";
-import debugRouter from "./debugRouter.js";
 
-
-
+import routerOrganization from "./routerOrganization.js";
 
 const router = Router();
 
@@ -51,6 +50,7 @@ router.use("/user", routerUser);
 router.use("/blogs", routerBlog);
 router.use("/requests", userServiceRouter);
 router.use("/userInfo", userInfoRouter);
+
 router.use("/iframe", routerIframe);
 router.use("/sites", routerSite);
 router.use("/site-admins", siteAdminRoutes);
@@ -59,10 +59,7 @@ router.use("/assets", routerAsset);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 
-// Debug routes (only in development)
-if (process.env.NODE_ENV !== 'production') {
-  router.use("/debug", debugRouter);
-}
 
+router.use("/organization", routerOrganization);
 export default router;
  

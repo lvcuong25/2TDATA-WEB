@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 /**
  * 🌐 Multi-Site Axios Utils Instance
@@ -37,7 +37,6 @@ instance.interceptors.request.use((config) => {
   }
   return config;
 });
-
 
 export const axiosGet = async (url) => {
   try {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🌐 Multi-Site Environment Configuration
  * 
  * ✅ Updated to support dynamic API base URLs for affiliate domains
@@ -29,10 +29,6 @@ const config = {
 };
 
 // Log current configuration for debugging
-console.log('🌐 Multi-Site Config:', {
-  currentDomain: config.getCurrentDomain(),
-  apiBaseURL: config.apiBaseURL,
-  isAffiliate: config.isAffiliateDomain()
-});
+// Configuration logging removed
 
 export default config;

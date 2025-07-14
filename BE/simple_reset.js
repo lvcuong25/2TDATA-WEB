@@ -1,16 +1,14 @@
-import User from './src/model/User.js';
+﻿import User from './src/model/User.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 // Use environment variable for MongoDB connection
 const mongoUri = process.env.MONGODB_URI || process.env.DB_URI || 'mongodb://admin:password@host.docker.internal:27017/2TDATA?authSource=admin';
 
-console.log('Connecting to MongoDB:', mongoUri.replace(/password@/, '***@'));
+);
 
 mongoose.connect(mongoUri).then(async () => {
   try {
-    console.log('✅ Connected to MongoDB');
-    
     const email = 'superadmin@2tdata.com';
     const newPassword = 'admin123';
     
@@ -30,8 +28,7 @@ mongoose.connect(mongoUri).then(async () => {
           role: 'super_admin'
         }
       );
-      console.log(`✅ Password reset successful for existing user: ${email}`);
-    } else {
+      } else {
       // Create new superadmin user
       const newUser = new User({
         email,
@@ -41,19 +38,13 @@ mongoose.connect(mongoUri).then(async () => {
         active: true
       });
       await newUser.save();
-      console.log(`✅ New superadmin user created: ${email}`);
-    }
+      }
     
-    console.log(`📧 Email: ${email}`);
-    console.log(`🔑 Password: ${newPassword}`);
-    console.log(`🔐 Role: super_admin`);
-    
-  } catch (error) {
+    } catch (error) {
     console.error('❌ Error:', error);
   } finally {
     mongoose.disconnect();
-    console.log('🔌 Disconnected from MongoDB');
-  }
+    }
 }).catch(error => {
   console.error('❌ MongoDB connection error:', error);
 });

@@ -123,7 +123,7 @@ const Header = () => {
                     Dịch vụ
                   </Link>
                 </li>
-                {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
+                {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') && (
                   <li>
                     <Link
                       to="/admin"

@@ -1,6 +1,6 @@
-import React from "react";
+﻿import React from "react";
 import Header from "../Header";
-import Footer from "../Footer";
+import FooterWrapper from "../FooterWrapper";
 import { useQuery } from "@tanstack/react-query";
 import instance from "../../utils/axiosInstance";
 import { useParams } from "react-router-dom";
@@ -247,7 +247,6 @@ const ServiceFacebook = () => {
       <MyService/>
       </section>
 
-  
       <Footer />
     </div>
   );

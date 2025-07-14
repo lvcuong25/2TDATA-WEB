@@ -1,5 +1,5 @@
 import Header from "../Header";
-import Footer from "../Footer";  
+import FooterWrapper from "../FooterWrapper";  
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Modal, Form, Input, Button, Spin, Checkbox, Table, Tag, Switch, Pagination } from 'antd';
 import { useContext, useState, useEffect } from 'react';
@@ -394,7 +394,7 @@ const Service = () => {
           )}
         </>
       )}
-      <Footer />
+      <FooterWrapper />
     </div>
   );
 };

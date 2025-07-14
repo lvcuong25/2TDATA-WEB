@@ -1,21 +1,28 @@
 import mongoose from "mongoose";
 import User from "../model/User.js";
 import { hashPassword } from "../utils/password.js";
-import { logger } from "../utils/logger.js";
-
+import logger from '../utils/logger.js';
+import { canAssignRole, getAssignableRoles, ROLES } from '../utils/roleHierarchy.js';
+import Site from '../model/Site.js';
 export const getAllUser = async (req, res, next) => {
     try {
         const options = {
             page: req.query.page ? +req.query.page : 1,
             limit: req.query.limit ? +req.query.limit : 10,
             sort: req.query.sort ? req.query.sort : { createdAt: -1 },
-            populate: {
-                path: 'service',
-                populate: [
-                    { path: 'service', select: 'name slug image status description authorizedLinks' },
-                    { path: 'approvedBy', select: 'name email avatar' }
-                ]
-            }
+            populate: [
+                {
+                    path: 'service',
+                    populate: [
+                        { path: 'service', select: 'name slug image status description authorizedLinks' },
+                        { path: 'approvedBy', select: 'name email avatar' }
+                    ]
+                },
+                {
+                    path: 'site_id',
+                    select: 'name domains'
+                }
+            ]
         };
         let query = {};
         if (req.query.name) {
@@ -32,9 +39,40 @@ export const getAllUser = async (req, res, next) => {
             query.active = req.query.active;
         }
         
-        // Apply site filter if available
-        const siteFilter = req.siteFilter || {};
-        const finalFilter = { ...query, ...siteFilter };
+        // Apply site filter based on user role
+        let finalFilter = { ...query };
+        
+        // Super admin can see all users across all sites
+        if (req.user && req.user.role === 'super_admin') {
+            // No filter needed, can see all users
+            logger.info('Super admin accessing all users', {
+                adminId: req.user._id,
+                adminEmail: req.user.email
+            });
+            // Don't add any site filter for super admin
+        } 
+        // Site admin can only see users from their site
+        else if (req.user && req.user.role === 'site_admin') {
+            // Use user's site_id if available, otherwise use detected site
+            const siteId = req.user.site_id || req.site?._id;
+            if (siteId) {
+                finalFilter.site_id = siteId;
+                logger.info('Site admin accessing site users', {
+                    adminId: req.user._id,
+                    adminEmail: req.user.email,
+                    siteId: siteId,
+                    siteName: req.site?.name
+                });
+            }
+        }
+        // Regular admin or member - apply site filter from middleware
+        else if (req.siteFilter && Object.keys(req.siteFilter).length > 0) {
+            finalFilter = { ...finalFilter, ...req.siteFilter };
+        }
+        // Default case - filter by current site if available
+        else if (req.site) {
+            finalFilter.site_id = req.site._id;
+        }
         
         const result = await User.paginate(finalFilter, options);
         return !result ? res.status(400).json({ message: "Get all user failed" }) : res.status(200).json({ data: result })
@@ -62,22 +100,91 @@ export const getUserById = async (req, res, next) => {
 
 export const createUser = async (req, res, next) => {
     try {
-        req.body.password = await hashPassword(req.body.password);
-        const data = await User.create(req.body);
+        const { email, name, password, role, site_id } = req.body;
+        const creatorRole = req.user?.role || 'member';
         
-        if (data) {
-            logger.audit('User created', {
-                adminId: req.user?._id,
-                adminEmail: req.user?.email,
-                targetUserId: data._id,
-                targetUserEmail: data.email,
-                userRole: data.role,
-                siteId: req.site?._id,
-                ip: req.ip
-            });
+        // Log request to debug duplicate calls
+        logger.info('Create user request received', {
+            email,
+            name,
+            role,
+            creatorId: req.user?._id,
+            creatorRole,
+            requestId: req.headers['x-request-id'] || 'no-request-id',
+            timestamp: new Date().toISOString()
+        });
+        
+        // Validate role assignment
+        if (role) {
+            if (!canAssignRole(creatorRole, role)) {
+                return res.status(403).json({ 
+                    message: `You cannot assign ${role} role. You can only assign roles lower than your own.`,
+                    assignableRoles: getAssignableRoles(creatorRole)
+                });
+            }
         }
         
-        return !data ? res.status(500).json({ message: "Tạo user thất bại" }) : res.status(201).json({ data });
+        // Validate site_id requirement
+        let finalSiteId = site_id;
+        
+        // For non-super_admin roles, site_id is required
+        if (role !== ROLES.SUPER_ADMIN) {
+            if (!finalSiteId) {
+                // If creator is site_admin, use their site_id
+                if (creatorRole === ROLES.SITE_ADMIN && req.user.site_id) {
+                    finalSiteId = req.user.site_id;
+                }
+                // If site detection middleware provided site_id
+                else if (req.siteId) {
+                    finalSiteId = req.siteId;
+                }
+                else {
+                    return res.status(400).json({ 
+                        message: "Site ID is required for non-super_admin users" 
+                    });
+                }
+            }
+            
+            // Validate that site_admin can only create users for their own site
+            if (creatorRole === ROLES.SITE_ADMIN && finalSiteId.toString() !== req.user.site_id.toString()) {
+                return res.status(403).json({ 
+                    message: "Site admins can only create users for their own site" 
+                });
+            }
+        }
+        
+        // Hash password
+        const hashedPassword = await hashPassword(password);
+        
+// Check if email already exists
+        const existingUser = await User.findOne({ email });
+
+        if (existingUser) {
+            return res.status(400).json({ 
+                message: "Email is already registered. Please use a different email." 
+            });
+        }
+
+        // Create user
+        const userData = {
+            email,
+            name,
+            password: hashedPassword,
+            role: role || 'member',
+            site_id: finalSiteId
+        };
+
+        const data = await User.create(userData);
+
+        // Populate site info
+        await data.populate('site_id', 'name domains');
+
+        // User created successfully
+
+        return res.status(201).json({
+            data,
+            message: "User created successfully"
+        });
     } catch (error) {
         logger.error('User creation failed', {
             error: error.message,
@@ -99,19 +206,7 @@ export const removeUserById = async (req, res, next) => {
 
         const data = await User.findByIdAndUpdate(req.params.id, { active: false }, { new: true });
         
-        if (data) {
-            logger.audit('User deactivated', {
-                adminId: req.user?._id,
-                adminEmail: req.user?.email,
-                targetUserId: data._id,
-                targetUserEmail: data.email,
-                targetUserRole: data.role,
-                previousStatus: userData.active,
-                newStatus: data.active,
-                siteId: req.site?._id,
-                ip: req.ip
-            });
-        }
+        // User deactivated successfully
         
         return !data ? 
             res.status(500).json({ message: "Vô hiệu hóa người dùng thất bại" }) : 
@@ -137,19 +232,7 @@ export const restoreUserById = async (req, res, next) => {
 
         const data = await User.findByIdAndUpdate(req.params.id, { active: true }, { new: true });
         
-        if (data) {
-            logger.audit('User restored', {
-                adminId: req.user?._id,
-                adminEmail: req.user?.email,
-                targetUserId: data._id,
-                targetUserEmail: data.email,
-                targetUserRole: data.role,
-                previousStatus: userData.active,
-                newStatus: data.active,
-                siteId: req.site?._id,
-                ip: req.ip
-            });
-        }
+        // User restored successfully
         
         return !data ? 
             res.status(500).json({ message: "Khôi phục người dùng thất bại" }) : 
@@ -167,10 +250,29 @@ export const restoreUserById = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
     try {
+        // Log request to debug duplicate calls
+        logger.info('Update user request received', {
+            userId: req.params.id,
+            updateData: { ...req.body, password: req.body.password ? '[REDACTED]' : undefined },
+            adminId: req.user?._id,
+            requestId: req.headers['x-request-id'] || 'no-request-id',
+            timestamp: new Date().toISOString()
+        });
+        
         // Get original user data for audit logging
         const originalUser = await User.findById(req.params.id);
         if (!originalUser) {
             return res.status(404).json({ message: "User not found" });
+        }
+
+        // Check if email is being updated and if it already exists
+        if (req.body.email && req.body.email !== originalUser.email) {
+            const existingUser = await User.findOne({ email: req.body.email });
+            if (existingUser) {
+                return res.status(400).json({ 
+                    message: "Email is already registered. Please use a different email." 
+                });
+            }
         }
 
         // Hash password if it is being updated
@@ -227,31 +329,7 @@ export const updateUser = async (req, res, next) => {
             ]
         });
 
-        if (data) {
-            // Log the changes made
-            const changes = {};
-            for (const key in req.body) {
-                if (key !== 'password' && originalUser[key] !== req.body[key]) {
-                    changes[key] = {
-                        from: originalUser[key],
-                        to: req.body[key]
-                    };
-                }
-            }
-            if (req.body.password) {
-                changes.password = 'updated';
-            }
-
-            logger.audit('User updated', {
-                adminId: req.user?._id,
-                adminEmail: req.user?.email,
-                targetUserId: data._id,
-                targetUserEmail: data.email,
-                changes,
-                siteId: req.site?._id,
-                ip: req.ip
-            });
-        }
+        // User updated successfully
 
         return !data ? 
             res.status(500).json({ message: "Cập nhật thông tin thất bại!" }) : 
@@ -267,7 +345,6 @@ export const updateUser = async (req, res, next) => {
         next(error);
     }
 }
-
 
 export const getUserByEmail = async (req, res, next) => {
     try {
@@ -325,7 +402,6 @@ export const updateUserProfile = async (req, res, next) => {
         next(error);
     }
 }
-
 
 // Xóa dịch vụ khỏi user theo userId truyền params
 export const removeServiceFromUser = async (req, res, next) => {

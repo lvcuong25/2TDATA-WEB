@@ -14,6 +14,23 @@ export const getPendingServices = async (req, res, next) => {
         if (status) {
             query.status = status;
         }
+        
+        // Apply site filter based on user role
+        // Super admin can see all user services across all sites
+        if (req.user && req.user.role === 'super_admin') {
+            // No site filter needed
+        }
+        // Site admin can only see user services from their site
+        else if (req.user && req.user.role === 'site_admin') {
+            const siteId = req.user.site_id || req.site?._id;
+            if (siteId) {
+                query.site_id = siteId;
+            }
+        }
+        // For other users, apply site filter from middleware
+        else if (req.siteId) {
+            query.site_id = req.siteId;
+        }
 
         // Handle combined user and service search
         if (search) {
@@ -145,9 +162,16 @@ export const approveUserService = async (req, res, next) => {
             return res.status(400).json({ message: "Trạng thái không hợp lệ" });
         }
 
-        const userService = await UserService.findById(id);
+        const userService = await UserService.findById(id).populate('site_id');
         if (!userService) {
             return res.status(404).json({ message: "Không tìm thấy yêu cầu" });
+        }
+        
+        // Kiểm tra quyền: site_admin chỉ được xử lý request của site mình
+        if (req.user.role === 'site_admin' && req.user.site_id) {
+            if (userService.site_id && userService.site_id.toString() !== req.user.site_id.toString()) {
+                return res.status(403).json({ message: "Bạn không có quyền xử lý yêu cầu của site khác" });
+            }
         }
 
         if (status === 'approved') {
@@ -211,15 +235,24 @@ export const addServiceToUser = async (req, res, next) => {
                 continue;
             }
 
+            // Get site_id from request context
+            const siteId = req.siteId || req.user.site_id;
+            if (!siteId) {
+                return res.status(400).json({
+                    message: "Site ID is required for service registration"
+                });
+            }
+
             // Tạo instance mới và lưu để trigger pre-save hook
             const userService = new UserService({
                 user: userId,
                 service: sid,
+                site_id: siteId, // Add site_id where service was registered
                 status: 'waiting',
-                customSlug: customSlug // Nếu có customSlug được cung cấp
+                customSlug: customSlug, // Nếu có customSlug được cung cấp
+                link: [] // Thêm mảng link rỗng
             });
             await userService.save();
-
             // Cập nhật service vào user
             await User.findByIdAndUpdate(
                 userId,
@@ -284,49 +317,6 @@ export const getUserServiceDetail = async (req, res, next) => {
 };
 
 // Xóa service khỏi user
-export const removeUserService = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user._id;
-
-        // Tìm UserService
-        const userService = await UserService.findById(id);
-        if (!userService) {
-            return res.status(404).json({ message: "Không tìm thấy thông tin service" });
-        }
-
-        // Kiểm tra quyền xóa (chỉ user sở hữu hoặc admin mới được xóa)
-        if (userService.user.toString() !== userId.toString() && req.user.role !== 'admin') {
-            return res.status(403).json({ message: "Bạn không có quyền xóa service này" });
-        }
-
-        // Xóa UserService
-        await UserService.findByIdAndDelete(id);
-
-        // Cập nhật lại danh sách service của user
-        await User.findByIdAndUpdate(
-            userId,
-            { $pull: { service: id } }
-        );
-
-        // Lấy thông tin user đã cập nhật
-        const updatedUser = await User.findById(userId)
-            .populate({
-                path: 'service',
-                populate: [
-                    { path: 'service', select: 'name slug image status description' },
-                    { path: 'approvedBy', select: 'name email avatar' }
-                ]
-            });
-
-        return res.status(200).json({
-            data: updatedUser,
-            message: "Xóa service thành công"
-        });
-    } catch (error) {
-        next(error);
-    }
-};
 
 // Cập nhật link cho user service
 export const updateUserServiceLinks = async (req, res, next) => {
@@ -342,7 +332,10 @@ export const updateUserServiceLinks = async (req, res, next) => {
         }
 
         // Kiểm tra quyền cập nhật (chỉ user sở hữu hoặc admin mới được cập nhật)
-        if (userService.user.toString() !== userId.toString() && req.user.role !== 'admin') {
+        const isOwner = userService.user.toString() === userId.toString();
+        const isAdmin = req.user.role === 'super_admin' || req.user.role === 'site_admin';
+        
+        if (!isOwner && !isAdmin) {
             return res.status(403).json({ message: "Bạn không có quyền cập nhật service này" });
         }
 
@@ -395,6 +388,70 @@ export const updateUserServiceLinks = async (req, res, next) => {
         return res.status(200).json({
             data: updatedUserService,
             message: "Cập nhật link thành công"
+        });
+    } catch (error) {
+        next(error);
+    }
+};// Xóa service khỏi user (chỉ khi status = rejected)
+export const removeUserService = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        // Tìm UserService
+        const userService = await UserService.findById(id).populate('site_id');
+        if (!userService) {
+            return res.status(404).json({ message: "Không tìm thấy thông tin service" });
+        }
+
+        // Kiểm tra status phải là rejected
+        if (userService.status !== 'rejected') {
+            return res.status(400).json({ message: "Chỉ có thể xóa service đã bị từ chối" });
+        }
+
+        // Kiểm tra quyền xóa
+        let canDelete = false;
+        
+        // Super-admin có thể xóa tất cả
+        if (req.user.role === 'super_admin') {
+            canDelete = true;
+        }
+        // Site-admin chỉ xóa được trong site của họ
+        else if (req.user.role === 'site-admin' && req.user.site_id && 
+                 userService.site_id && userService.site_id.toString() === req.user.site_id.toString()) {
+            canDelete = true;
+        }
+        // User owner có thể xóa service của chính mình nếu bị rejected
+        else if (userService.user.toString() === userId.toString()) {
+            canDelete = true;
+        }
+
+        if (!canDelete) {
+            return res.status(403).json({ message: "Bạn không có quyền xóa service này" });
+        }
+
+        // Xóa UserService
+        await UserService.findByIdAndDelete(id);
+
+        // Cập nhật lại danh sách service của user
+        await User.findByIdAndUpdate(
+            userService.user,
+            { $pull: { service: id } }
+        );
+
+        // Lấy thông tin user đã cập nhật
+        const updatedUser = await User.findById(userService.user)
+            .populate({
+                path: 'service',
+                populate: {
+                    path: 'service',
+                    select: 'name slug image status description'
+                }
+            });
+
+        return res.status(200).json({
+            data: updatedUser,
+            message: "Xóa service thành công"
         });
     } catch (error) {
         next(error);

@@ -1,4 +1,4 @@
-import { Router } from "express";
+﻿import { Router } from "express";
 import { 
     getServices, 
     getServiceById, 
@@ -9,7 +9,7 @@ import {
 } from "../controllers/service.js";
 import { checkServiceAccess } from "../middlewares/checkServiceAccess.js";
 import { getUser } from "../middlewares/getUser.js";
-
+import { webhookRealtime } from '../controllers/webhookRealtime.js';
 
 const routerService = Router();
 
@@ -33,5 +33,7 @@ routerService.put("/:id",getUser, updateService);
 
 // Xóa dịch vụ (chỉ admin mới có quyền)
 routerService.delete("/:id",getUser, deleteService);
+
+routerService.post('/webhook-realtime', webhookRealtime);
 
 export default routerService; 
