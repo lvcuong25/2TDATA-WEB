@@ -200,12 +200,12 @@ export const createSite = async (req, res) => {
     // Parse footer_config if it's a string
     if (req.body.footer_config && typeof req.body.footer_config === 'string') {
       try {
-        updateData.footer_config = JSON.parse(req.body.footer_config);
+        footer_config = JSON.parse(req.body.footer_config);
       } catch (e) {
         console.error('Error parsing footer_config:', e);
       }
     } else if (req.body.footer_config) {
-      updateData.footer_config = req.body.footer_config;
+      footer_config = req.body.footer_config;
     }
 
     if (req.body.settings && typeof req.body.settings === 'string') {
