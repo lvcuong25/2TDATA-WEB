@@ -59,7 +59,6 @@ const siteSchema = new mongoose.Schema({
         height: { type: String, default: "60px" }
       }]
     },
-    partnersTitle: { type: String, default: "Thành viên 2T Group" },
     quickLinks: [{
       title: { type: String, required: true },
       url: { type: String, required: true }

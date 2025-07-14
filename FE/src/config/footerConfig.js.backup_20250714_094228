@@ -7,16 +7,19 @@ export const defaultFooterConfig = {
     email: "sales@2tdata.com",
     website: "https://2tdata.com/"
   },
-  partnersTitle: "Thành viên 2T Group",
   quickLinks: [
     { title: "Trang chủ", url: "#" },
     { title: "Dịch vụ", url: "#" },
     { title: "Chính sách bán hàng", url: "#" },
     { title: "Liên hệ", url: "#" }
   ],
-  logos: {
-    main: { image: "", alt: "2T DATA" },
-    partners: []
+  groupInfo: {
+    title: "THÀNH VIÊN CỦA 2T GROUP",
+    members: [
+      { name: "HCW", url: "https://hcw.com.vn/", logo: null },
+      { name: "2T DATA", url: null, logo: null },
+      { name: "REMOBPO", url: "https://remobpo.com/", logo: null }
+    ]
   },
   copyright: "Copyright © 2025 2T Data Solution | Powered by 2T Data Solution",
   styles: {
