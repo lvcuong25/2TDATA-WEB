@@ -180,6 +180,12 @@ export const approveUserService = async (req, res, next) => {
                 userService.user,
                 { $addToSet: { services: userService._id } }
             );
+        } else if (status === 'rejected') {
+            // Xóa UserService khỏi user khi bị từ chối
+            await User.findByIdAndUpdate(
+                userService.user,
+                { $pull: { service: userService._id } }
+            );
         }
 
         // Cập nhật trạng thái xác nhận
@@ -420,7 +426,8 @@ export const removeUserService = async (req, res, next) => {
             // Check if userService has site_id and handle both populated and non-populated cases
             if (userService.site_id) {
                 const serviceSiteId = userService.site_id._id ? userService.site_id._id.toString() : userService.site_id.toString();
-                canDelete = serviceSiteId === req.user.site_id.toString();
+                const adminSiteId = req.user.site_id._id ? req.user.site_id._id.toString() : req.user.site_id.toString();
+                canDelete = serviceSiteId === adminSiteId; // Site admin can delete any status
                 
                 // Log for debugging
                 console.log('Site admin permission check:', {
@@ -483,6 +490,22 @@ export const deleteUserService = async (req, res, next) => {
             return res.status(404).json({ 
                 message: "Không tìm thấy dịch vụ này" 
             });
+        }
+        // Kiểm tra quyền site_admin với site_id
+        if (req.user.role === 'site_admin' && req.user.site_id) {
+            // Lấy user info để kiểm tra site_id
+            const userInfo = await User.findById(userService.user).select('site_id');
+            
+            if (userInfo && userInfo.site_id) {
+                const userSiteId = userInfo.site_id.toString();
+                const adminSiteId = req.user.site_id.toString();
+                
+                if (userSiteId !== adminSiteId) {
+                    return res.status(403).json({ 
+                        message: "Bạn chỉ có thể xóa dịch vụ của users trong site của mình" 
+                    });
+                }
+            }
         }
 
         // Xóa reference từ User model

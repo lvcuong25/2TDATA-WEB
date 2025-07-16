@@ -7,6 +7,11 @@ export const getPendingOrganizationServices = async (req, res, next) => {
   try {
     const { search, status } = req.query;
     const query = {};
+    
+    // Apply site filter based on user role
+    if (req.user && req.user.role === 'site_admin' && req.user.site_id) {
+      query.site_id = req.user.site_id;
+    }
     if (status) query.status = status;
     if (search) {
       // Tìm organization
@@ -66,7 +71,18 @@ export const getOrganizationServices = async (req, res, next) => {
         { path: 'approvedBy', select: 'name email avatar' }
       ]
     };
-    const data = await OrganizationService.paginate({ organization: req.params.orgId }, options);
+    // Build query với site_id filter
+    const query = { organization: req.params.orgId };
+    
+    // Nếu không phải super_admin, chỉ lấy services của site hiện tại
+    if (req.user.role !== 'super_admin') {
+      const siteId = req.user.site_id || req.site?._id;
+      if (siteId) {
+        query.site_id = siteId;
+      }
+    }
+    
+    const data = await OrganizationService.paginate(query, options);
     // Lọc link theo quyền
     const userRole = req.user?.role || null;
     const userId = req.user?._id?.toString() || null;

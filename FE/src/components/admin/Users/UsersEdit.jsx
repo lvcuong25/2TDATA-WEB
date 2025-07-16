@@ -583,9 +583,15 @@ const UsersEdit = () => {
                                     control={control}
                                     render={({ field }) => (
                                         <Switch
-                                            checked={field.value}
-                                            onChange={field.onChange}
-                                        
+                                                                                <Tag color={service?.status === "waiting" ? "orange" : service?.status === "rejected" ? "red" : "green"} className="text-sm">
+                                                                                    {service?.status === "waiting" ? "Chưa xác nhận" : service?.status === "rejected" ? "Bị từ chối" : "Đã xác nhận"}
+                                                                                </Tag>
+                                                                                <Tag color={service?.status === "waiting" ? "orange" : service?.status === "rejected" ? "red" : "green"} className="text-sm">
+                                                                                    {service?.status === "waiting" ? "Chưa xác nhận" : service?.status === "rejected" ? "Bị từ chối" : "Đã xác nhận"}
+                                                                                </Tag>
+                                                                                <Tag color={service?.status === "waiting" ? "orange" : service?.status === "rejected" ? "red" : "green"} className="text-sm">
+                                                                                    {service?.status === "waiting" ? "Chưa xác nhận" : service?.status === "rejected" ? "Bị từ chối" : "Đã xác nhận"}
+                                                                                </Tag>
                                         />
                                     )}
                                 />
@@ -654,8 +660,10 @@ const UsersEdit = () => {
                                                                             </div>
                                                                             <div className="flex items-center gap-2">
                                                                                 <span className="font-medium text-gray-700">Xác nhận:</span>
-                                                                                <Tag color={service?.status === "waiting" ? "orange" : "green"} className="text-sm">
-                                                                                    {service?.status === "waiting" ? "Chưa xác nhận" : "Đã xác nhận"}
+                                                                                <Tag color={service?.status === "waiting" ? "orange" : service?.status === "rejected" ? "red" : "green"} className="text-sm">
+                                                                                    {service?.status === "waiting" ? "Chưa xác nhận" : service?.status === "rejected" ? "Bị từ chối" : "Đã xác nhận"}
+                                                                                <Tag color={service?.status === "waiting" ? "orange" : service?.status === "rejected" ? "red" : "green"} className="text-sm">
+                                                                                    {service?.status === "waiting" ? "Chưa xác nhận" : service?.status === "rejected" ? "Bị từ chối" : "Đã xác nhận"}
                                                                                 </Tag>
                                                                             </div>
                                                                             <div className="flex items-center gap-2">
