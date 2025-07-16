@@ -4,6 +4,7 @@ import { hashPassword } from "../utils/password.js";
 import logger from '../utils/logger.js';
 import { canAssignRole, getAssignableRoles, ROLES } from '../utils/roleHierarchy.js';
 import Site from '../model/Site.js';
+import UserService from '../model/UserService.js';
 export const getAllUser = async (req, res, next) => {
     try {
         const options = {
@@ -90,7 +91,8 @@ export const getUserById = async (req, res, next) => {
                     { path: 'service', select: 'name slug image status description authorizedLinks' },
                     { path: 'approvedBy', select: 'name email avatar' }
                 ]
-            });
+            })
+            .populate('site_id', 'name domains');
         return !data ? res.status(500).json({ message: "Get user by id failed" }) : res.status(200).json({ data });
     }
     catch (error) {
@@ -289,8 +291,30 @@ export const updateUser = async (req, res, next) => {
             // Ensure service is an array of objects with id and status
             const newServices = Array.isArray(req.body.service) ? req.body.service : [req.body.service];
             
-            // Create UserService documents for each service
+            // Get existing UserServices for this user
             const UserService = mongoose.model('UserService');
+            const existingUserServices = await UserService.find({ user: req.params.id });
+            const existingServiceIds = existingUserServices.map(us => us.service.toString());
+            const newServiceIds = newServices.map(s => s.id);
+            
+            // Find services to delete (exist in DB but not in new list)
+            const servicesToDelete = existingServiceIds.filter(id => !newServiceIds.includes(id));
+            
+            // Delete removed UserServices
+            if (servicesToDelete.length > 0) {
+                await UserService.deleteMany({
+                    user: req.params.id,
+                    service: { $in: servicesToDelete }
+                });
+                
+                logger.info('Deleted UserServices', {
+                    userId: req.params.id,
+                    deletedServices: servicesToDelete,
+                    adminId: req.user?._id
+                });
+            }
+            
+            // Create or update UserService documents for each service
             const servicePromises = newServices.map(async (service) => {
                 // Check if service already exists for this user
                 const existingService = await UserService.findOne({
@@ -306,10 +330,14 @@ export const updateUser = async (req, res, next) => {
                     }
                     return existingService._id;
                 } else {
+                    // Get site_id from the original user or from current site context
+                    const siteId = originalUser.site_id || req.site?._id;
+                    
                     // Create new service with default 'waiting' status
                     const newUserService = await UserService.create({
                         user: req.params.id,
                         service: service.id,
+                        site_id: siteId,
                         status: service.status || 'waiting'
                     });
                     return newUserService._id;
@@ -420,7 +448,22 @@ export const removeServiceFromUser = async (req, res, next) => {
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
+        // Xóa reference từ user
         user.service = user.service.filter(s => s.toString() !== serviceId);
+
+        // Xóa UserService document
+        const deleteResult = await UserService.deleteOne({
+            user: userId,
+            service: serviceId
+        });
+
+        if (deleteResult.deletedCount > 0) {
+            logger.info('Deleted UserService document', {
+                userId, 
+                serviceId,
+                adminId: req.user?._id
+            });
+        }
 
         const updatedUser = await user.save();
 
@@ -455,7 +498,21 @@ export const removeServiceFromProfile = async (req, res, next) => {
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
+        // Xóa reference từ user
         user.service = user.service.filter(s => s.toString() !== serviceId);
+
+        // Xóa UserService document
+        const deleteResult = await UserService.deleteOne({
+            user: userId,
+            service: serviceId
+        });
+
+        if (deleteResult.deletedCount > 0) {
+            logger.info('Deleted UserService document from profile', {
+                userId, 
+                serviceId
+            });
+        }
 
         const updatedUser = await user.save();
 

@@ -32,8 +32,8 @@ const UserDropdown = ({ onLogoutSuccess }) => {
       if (!currentUser || currentUser.role === 'admin') return;
       setLoadingOrg(true);
       try {
-        await axiosInstance.get(`/organization/user/${currentUser._id}`);
-        setHasOrganization(true);
+        const response = await axiosInstance.get(`/organization/user/${currentUser._id}`);
+        setHasOrganization(!!response.data);
       } catch {
         setHasOrganization(false);
       } finally {

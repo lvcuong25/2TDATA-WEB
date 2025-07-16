@@ -17,6 +17,20 @@ export default defineConfig({
       'www.trunglq8.com',
       '.2tdata.com',
       '.trunglq8.com'
-    ]
+    ],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3004',
+        changeOrigin: true
+      },
+      '/uploads': {
+        target: 'http://localhost:3004',
+        changeOrigin: true
+      },
+      '/logos': {
+        target: 'http://localhost:3004',
+        changeOrigin: true
+      }
+    }
   }
 })

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, Button, Card, List, message, Modal, Input, Form, Space } from 'antd';
-import { UploadOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { Upload, Button, Card, List, message, Modal, Input, Form, Space, Popconfirm } from 'antd';
+import { UploadOutlined, DeleteOutlined, EditOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons';
 import instance from '../../../axios/axiosInstance';
 
 const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
@@ -8,6 +8,7 @@ const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
   const [editModal, setEditModal] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [form] = Form.useForm();
+  const [deletedLogos, setDeletedLogos] = useState([]); // Store deleted logos for undo
 
   // Generate standardized filename
   const generateFilename = (originalName, index) => {
@@ -69,30 +70,42 @@ const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
     return false; // Prevent default upload
   };
 
-  // Delete logo
-  const handleDelete = async (index) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa',
-      content: 'Bạn có chắc muốn xóa logo này?',
-      onOk: async () => {
-        const logo = logos[index];
-        
-        // Delete from server if it's an uploaded file
-        if (logo.image && logo.image.startsWith('/uploads/')) {
-          const filename = logo.image.split('/').pop();
-          try {
-            await instance.delete(`/footer/delete/${filename}`);
-          } catch (error) {
-            console.error('Delete file error:', error);
-          }
-        }
-        
-        // Remove from array
-        const newLogos = logos.filter((_, i) => i !== index);
-        onChange(newLogos);
-        message.success('Đã xóa logo');
-      }
-    });
+  // Delete logo - simplified version
+  const handleDelete = (index) => {
+    // Store deleted logo with its original index for undo
+    const deletedLogo = { ...logos[index], originalIndex: index };
+    setDeletedLogos(prev => [...prev, deletedLogo]);
+    
+    // Remove from array
+    const newLogos = logos.filter((_, i) => i !== index);
+    onChange(newLogos);
+    message.success('Đã xóa logo');
+  };
+
+  // Undo last delete
+  const handleUndo = () => {
+    if (deletedLogos.length === 0) {
+      message.info('Không có logo nào để khôi phục');
+      return;
+    }
+
+    // Get the last deleted logo
+    const lastDeleted = deletedLogos[deletedLogos.length - 1];
+    const { originalIndex, ...logoData } = lastDeleted;
+    
+    // Insert back at original position or at the end
+    const newLogos = [...logos];
+    if (originalIndex <= newLogos.length) {
+      newLogos.splice(originalIndex, 0, logoData);
+    } else {
+      newLogos.push(logoData);
+    }
+    
+    onChange(newLogos);
+    
+    // Remove from deleted history
+    setDeletedLogos(prev => prev.slice(0, -1));
+    message.success('Đã khôi phục logo');
   };
 
   // Edit logo details
@@ -123,15 +136,26 @@ const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
 
   return (
     <Card title="Logo đối tác (Thành viên 2T Group)" extra={
-      <Upload
-        beforeUpload={(file) => handleUpload(file)}
-        showUploadList={false}
-        accept="image/*"
-      >
-        <Button icon={<PlusOutlined />} loading={uploading}>
-          Thêm logo mới
-        </Button>
-      </Upload>
+      <Space>
+        {deletedLogos.length > 0 && (
+          <Button 
+            icon={<UndoOutlined />} 
+            onClick={handleUndo}
+            type="text"
+          >
+            Hoàn tác ({deletedLogos.length})
+          </Button>
+        )}
+        <Upload
+          beforeUpload={(file) => handleUpload(file)}
+          showUploadList={false}
+          accept="image/*"
+        >
+          <Button icon={<PlusOutlined />} loading={uploading}>
+            Thêm logo mới
+          </Button>
+        </Upload>
+      </Space>
     }>
       <List
         grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 3 }}
@@ -162,7 +186,16 @@ const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
                   <UploadOutlined key="upload" />
                 </Upload>,
                 <EditOutlined key="edit" onClick={() => handleEdit(index)} />,
-                <DeleteOutlined key="delete" onClick={() => handleDelete(index)} style={{color: 'red'}} />
+                <Popconfirm
+                  key="delete"
+                  title="Xác nhận xóa"
+                  description="Bạn có chắc muốn xóa logo này?"
+                  onConfirm={() => handleDelete(index)}
+                  okText="Xóa"
+                  cancelText="Hủy"
+                >
+                  <DeleteOutlined style={{color: 'red'}} />
+                </Popconfirm>
               ]}
             >
               <Card.Meta
