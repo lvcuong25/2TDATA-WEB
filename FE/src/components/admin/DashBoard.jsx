@@ -16,6 +16,7 @@ import {
   FormOutlined,
   LinkOutlined,
   GlobalOutlined,
+  CloudServerOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -99,7 +100,7 @@ const DashBoard = () => {
       },
       {
         key: '/admin/servers',
-        icon: <LaptopOutlined />,
+        icon: <CloudServerOutlined />,
         label: <Link to="/admin/servers">Quản lý server</Link>,
         onClick: () => handleLinkClick('/admin/servers')
       }

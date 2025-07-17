@@ -179,7 +179,11 @@ const Router = () => {
             <Route index element={<OrganizationList />} />
           </Route>
           <Route path="servers">
-            <Route index element={<ServerList />} />
+            <Route index element={
+              <SuperAdminRoute>
+                <ServerList />
+              </SuperAdminRoute>
+            } />
           </Route>
         </Route>
       </Routes>
