@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react-swc'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3006,
+    port: 5173,
     host: '0.0.0.0',
     hmr: {
       host: 'dev.2tdata.com',
@@ -16,7 +16,12 @@ export default defineConfig({
       'trunglq8.com',
       'www.trunglq8.com',
       '.2tdata.com',
-      '.trunglq8.com'
+      '.trunglq8.com',
+      'site1.localhost',
+      'site2.localhost',
+      'affiliate1.localhost',
+      'affiliate2.localhost',
+      'partner.localhost'
     ],
     proxy: {
       '/api': {
