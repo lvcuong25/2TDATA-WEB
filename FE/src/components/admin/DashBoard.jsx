@@ -96,6 +96,12 @@ const DashBoard = () => {
         icon: <LaptopOutlined />,
         label: <Link to="/admin/organization">Quản lý tổ chức</Link>,
         onClick: () => handleLinkClick('/admin/organization')
+      },
+      {
+        key: '/admin/servers',
+        icon: <LaptopOutlined />,
+        label: <Link to="/admin/servers">Quản lý server</Link>,
+        onClick: () => handleLinkClick('/admin/servers')
       }
     );
 
