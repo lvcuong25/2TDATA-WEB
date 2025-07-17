@@ -65,7 +65,7 @@ const DashBoard = () => {
       },
       {
         key: 'status-submenu',
-        icon: <FileTextOutlined />,
+        icon: <FlagOutlined />,
         label: 'Quản lý trạng thái',
         children: [
           {
