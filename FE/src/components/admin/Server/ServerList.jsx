@@ -189,7 +189,7 @@ const ServerList = () => {
         onCancel={() => { setModalOpen(false); setEditingServer(null); }}
         footer={null}
         destroyOnClose
-        width={650}
+        width={900}
         bodyStyle={{ padding: 32 }}
       >
         {(() => {
