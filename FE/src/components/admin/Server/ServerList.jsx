@@ -3,6 +3,7 @@ import { Table, Button, Tag, Modal, Popconfirm, Space, Select, Tooltip } from 'a
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import axios from '../../../api/axiosConfig';
 import ServerForm from './ServerForm';
+import './ServerList.css';
 
 const { Option } = Select;
 
@@ -20,6 +21,8 @@ const ServerList = () => {
   const [users, setUsers] = useState([]);
   const [filterStatus, setFilterStatus] = useState('');
   const [viewServer, setViewServer] = useState(null);
+  // Thêm state để lưu chi tiết server khi xem
+  const [serverDetail, setServerDetail] = useState(null);
 
   // Fetch servers
   const fetchServers = async () => {
@@ -43,6 +46,18 @@ const ServerList = () => {
     } catch {
       // handle error (bỏ qua)
     }
+  };
+
+  // Hàm lấy chi tiết server
+  const fetchServerDetail = async (id) => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`/server/${id}`);
+      setServerDetail(res.data.data);
+    } catch {
+      // handle error (bỏ qua)
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -86,12 +101,10 @@ const ServerList = () => {
   // Table columns
   const columns = [
     {
-      title: 'User',
-      dataIndex: 'userId',
-      key: 'userId',
-      render: (user) => user ? (
-        <Tooltip title={user.email}><span>{user.name}</span></Tooltip>
-      ) : '-',
+      title: 'Người dùng',
+      dataIndex: 'users',
+      key: 'users',
+      render: (users) => Array.isArray(users) && users.length > 0 ? `${users.length} người dùng` : '-',
     },
     {
       title: 'Link',
@@ -132,7 +145,7 @@ const ServerList = () => {
       key: 'action',
       render: (_, record) => (
         <Space>
-          <Button icon={<EyeOutlined />} onClick={() => setViewServer(record)} />
+          <Button icon={<EyeOutlined />} onClick={() => { fetchServerDetail(record._id); setViewServer(record); }} />
           <Button icon={<EditOutlined />} onClick={() => { setEditingServer(record); setModalOpen(true); }} />
           <Popconfirm title="Xóa server này?" onConfirm={() => handleDelete(record._id)}>
             <Button icon={<DeleteOutlined />} danger />
@@ -176,28 +189,89 @@ const ServerList = () => {
         onCancel={() => { setModalOpen(false); setEditingServer(null); }}
         footer={null}
         destroyOnClose
+        width={650}
+        bodyStyle={{ padding: 32 }}
       >
-        <ServerForm
-          initialValues={editingServer || { status: 'active' }}
-          onSubmit={handleSubmit}
-          loading={loading}
-          users={users}
-        />
+        {(() => {
+          // Merge users mặc định với các user đang gán cho server (nếu chưa có)
+          const allUserIds = new Set(users.map(u => u._id));
+          const mergedUsers = [
+            ...users,
+            ...(editingServer?.users?.filter(u => !allUserIds.has(u._id)) || [])
+          ];
+          return (
+            <ServerForm
+              initialValues={editingServer ? {
+                ...editingServer,
+                users: Array.isArray(editingServer.users)
+                  ? editingServer.users.map(u => (typeof u === 'string' ? u : u._id))
+                  : []
+              } : { status: 'active', users: [] }}
+              onSubmit={handleSubmit}
+              loading={loading}
+              users={mergedUsers}
+            />
+          );
+        })()}
       </Modal>
       <Modal
         open={!!viewServer}
         title="Chi tiết server"
-        onCancel={() => setViewServer(null)}
+        onCancel={() => { setViewServer(null); setServerDetail(null); }}
         footer={null}
+        width={900}
+        bodyStyle={{ padding: 32 }}
       >
-        {viewServer && (
+        {serverDetail && (
           <div>
-            <p><b>User:</b> {viewServer.userId?.name} ({viewServer.userId?.email})</p>
-            <p><b>Link:</b> <a href={viewServer.link} target="_blank" rel="noopener noreferrer">{viewServer.link}</a></p>
-            <p><b>API Code:</b> {viewServer.apiCode}</p>
-            <p><b>Mô tả:</b> {viewServer.description}</p>
-            <p><b>Trạng thái:</b> <Tag color={statusColors[viewServer.status]}>{viewServer.status}</Tag></p>
-            <p><b>Ngày tạo:</b> {viewServer.createdAt ? new Date(viewServer.createdAt).toLocaleString('vi-VN') : ''}</p>
+            <div style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>Người dùng:</div>
+            {Array.isArray(serverDetail.users) && serverDetail.users.length > 0 ? (
+              <div style={{ maxHeight: 340, overflow: 'auto', marginBottom: 24 }}>
+                <Table
+                  dataSource={serverDetail.users}
+                  rowKey="_id"
+                  pagination={false}
+                  size="middle"
+                  style={{ minWidth: 600 }}
+                  columns={[
+                    {
+                      title: 'Tên',
+                      dataIndex: 'name',
+                      key: 'name',
+                      render: (text, u) => (
+                        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <img
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'U')}&background=0D8ABC&color=fff&size=32`}
+                            alt={u.name}
+                            style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', background: '#e5e7eb', marginRight: 8 }}
+                          />
+                          {text}
+                        </span>
+                      )
+                    },
+                    {
+                      title: 'Email',
+                      dataIndex: 'email',
+                      key: 'email',
+                    },
+                    {
+                      title: 'Site',
+                      dataIndex: ['site_id', 'name'],
+                      key: 'site',
+                      render: (_, u) => u.site_id && u.site_id.name ? u.site_id.name : '-',
+                    },
+                  ]}
+                  rowClassName={() => 'custom-user-row'}
+                />
+              </div>
+            ) : (
+              <span>-</span>
+            )}
+            <div style={{ fontSize: 16, marginBottom: 8 }}><b>Link:</b> <a href={serverDetail.link} target="_blank" rel="noopener noreferrer">{serverDetail.link}</a></div>
+            <div style={{ fontSize: 16, marginBottom: 8 }}><b>API Code:</b> {serverDetail.apiCode}</div>
+            <div style={{ fontSize: 16, marginBottom: 8 }}><b>Mô tả:</b> {serverDetail.description}</div>
+            <div style={{ fontSize: 16, marginBottom: 8 }}><b>Trạng thái:</b> <Tag color={statusColors[serverDetail.status]}>{serverDetail.status}</Tag></div>
+            <div style={{ fontSize: 16 }}><b>Ngày tạo:</b> {serverDetail.createdAt ? new Date(serverDetail.createdAt).toLocaleString('vi-VN') : ''}</div>
           </div>
         )}
       </Modal>

@@ -18,17 +18,21 @@ const ServerForm = ({ initialValues = {}, onSubmit, loading, users = [] }) => {
   return (
     <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
       <Form.Item
-        label="Người quản lý (User)"
-        required
-        validateStatus={errors.userId ? 'error' : ''}
-        help={errors.userId?.message}
+        label="Người dùng"
+        validateStatus={errors.users ? 'error' : ''}
+        help={errors.users?.message}
       >
         <Controller
-          name="userId"
+          name="users"
           control={control}
-          rules={{ required: 'Vui lòng chọn user!' }}
           render={({ field }) => (
-            <Select {...field} placeholder="Chọn user">
+            <Select
+              mode="multiple"
+              placeholder="Chọn người dùng (có thể bỏ trống hoặc chọn nhiều)"
+              allowClear
+              value={Array.isArray(field.value) ? field.value : field.value ? [field.value] : []}
+              onChange={val => field.onChange(Array.isArray(val) ? val : [val])}
+            >
               {users.map(user => (
                 <Option key={user._id} value={user._id}>{user.name} ({user.email})</Option>
               ))}
