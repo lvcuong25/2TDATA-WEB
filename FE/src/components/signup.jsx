@@ -46,6 +46,7 @@ const SignUp = () => {
   const {
     register,
     handleSubmit,
+    setError, // Thêm setError để gán lỗi thủ công
     formState: { errors },
   } = useForm({
     resolver: joiResolver(signupChema),
@@ -53,7 +54,6 @@ const SignUp = () => {
       email: "",
       password: "",
       confirmPassword: "",
-   
       role: "member"
     },
   });
@@ -71,9 +71,30 @@ const SignUp = () => {
       toast.success("Tài khoản đã được thêm thành công!");
       navigate("/login");
     },
-    onError: () => {
-      toast.error("Tài khoản không được thêm");
-      navigate("/logup");
+    onError: (error) => {
+      // Ưu tiên lấy message từ nhiều tầng
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "";
+
+      console.error("Full error object:", error);
+
+      if (
+        errMsg.toLowerCase().includes("email") ||
+        errMsg.toLowerCase().includes("đã được sử dụng")
+      ) {
+        toast.error("Email đã được đăng ký");
+      } else if (errMsg.toLowerCase().includes("mật khẩu")) {
+        toast.error(errMsg);
+      } else if (errMsg.toLowerCase().includes("xác nhận")) {
+        toast.error(errMsg);
+      } else if (errMsg) {
+        toast.error(errMsg);
+      } else {
+        toast.error("Đăng ký thất bại. Vui lòng thử lại!");
+      }
     },
   });
 

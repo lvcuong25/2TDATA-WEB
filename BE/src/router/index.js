@@ -5,6 +5,7 @@ import routerService from "./routerService.js";
 import routerBlog from "./routerBlog.js";
 import routerIframe from "./routerIframe.js";
 import routerFooterUpload from "./routerFooterUpload.js";
+import routerServer from "./routerServer.js";
 
 import userInfoRouter from "./userInfoRouter.js";
 import userServiceRouter from "./userService.js";
@@ -51,6 +52,7 @@ router.use("/user", routerUser);
 router.use("/blogs", routerBlog);
 router.use("/requests", userServiceRouter);
 router.use("/userInfo", userInfoRouter);
+router.use("/server", routerServer);
 
 router.use("/iframe", routerIframe);
 router.use("/footer", routerFooterUpload);

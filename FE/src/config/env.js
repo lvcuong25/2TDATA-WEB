@@ -7,6 +7,12 @@
 
 // Dynamic API base URL function for multi-site support
 const getApiBaseURL = () => {
+  // In development mode, always use localhost:3000
+  if (import.meta.env.DEV || window.location.port === '5173') {
+    return 'http://localhost:3000/api';
+  }
+  
+  // In production, use dynamic URL
   const protocol = window.location.protocol;
   const host = window.location.host;
   return `${protocol}//${host}/api`;

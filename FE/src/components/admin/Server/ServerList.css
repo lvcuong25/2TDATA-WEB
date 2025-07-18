@@ -1,0 +1,8 @@
+.custom-user-row {
+  height: 56px !important;
+}
+
+.ant-table-tbody > tr.custom-user-row > td {
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+} 

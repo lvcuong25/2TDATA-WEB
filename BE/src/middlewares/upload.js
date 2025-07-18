@@ -9,7 +9,6 @@ const __dirname = dirname(__filename);
 // Ensure directories exist
 const uploadsDir = path.join(process.cwd(), 'uploads');
 const logosDir = path.join(uploadsDir, 'logos');
-const feImageDir = path.join(__dirname, '../../../FE/src/image');
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -17,10 +16,6 @@ if (!fs.existsSync(uploadsDir)) {
 
 if (!fs.existsSync(logosDir)) {
   fs.mkdirSync(logosDir, { recursive: true });
-}
-
-if (!fs.existsSync(feImageDir)) {
-  fs.mkdirSync(feImageDir, { recursive: true });
 }
 
 // Configure multer storage for logos

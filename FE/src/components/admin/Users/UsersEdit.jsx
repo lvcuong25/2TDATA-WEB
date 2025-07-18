@@ -43,6 +43,7 @@ const UsersEdit = () => {
         queryKey: ['services'],
         queryFn: async () => {
             const { data } = await instance.get('/service');
+            
             return data;
         },
     });

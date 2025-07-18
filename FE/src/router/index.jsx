@@ -46,6 +46,7 @@ import OrganizationList from "../components/admin/Organization/OrganizationList.
 import OrgStatusList from "../components/admin/Status/OrgStatusList.jsx";
 import UserOrganization from "../components/Organization/UserOrganization.jsx";
 import ServiceOrganization from "../components/Organization/ServiceOrganization.jsx";
+import ServerList from '../components/admin/Server/ServerList.jsx';
 
 const Router = () => {
   return (
@@ -176,6 +177,13 @@ const Router = () => {
           </Route>
           <Route path="organization">
             <Route index element={<OrganizationList />} />
+          </Route>
+          <Route path="servers">
+            <Route index element={
+              <SuperAdminRoute>
+                <ServerList />
+              </SuperAdminRoute>
+            } />
           </Route>
         </Route>
       </Routes>
