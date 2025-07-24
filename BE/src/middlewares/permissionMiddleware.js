@@ -1,47 +1,53 @@
-﻿import Permission from '../model/Permission.js';
-import RolePermission from '../model/RolePermission.js';
 import { sendError } from '../utils/responseHelper.js';
 
 /**
- * Cache for role permissions to avoid repeated DB queries
+ * Hardcoded permissions based on roles
  */
-const permissionCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-/**
- * Get permissions for a role (with caching)
- */
-async function getRolePermissions(role, siteId = null) {
-  const cacheKey = `${role}_${siteId || 'global'}`;
-  const cached = permissionCache.get(cacheKey);
-  
-  if (cached && cached.expires > Date.now()) {
-    return cached.permissions;
-  }
-  
-  // Query permissions
-  const query = { role };
-  if (siteId) {
-    query.$or = [
-      { site_id: siteId },
-      { site_id: null } // Global permissions
-    ];
-  }
-  
-  const rolePermissions = await RolePermission.find(query)
-    .populate('permission_id')
-    .lean();
-  
-  const permissions = rolePermissions.map(rp => rp.permission_id.name);
-  
-  // Cache the result
-  permissionCache.set(cacheKey, {
-    permissions,
-    expires: Date.now() + CACHE_TTL
-  });
-  
-  return permissions;
-}
+const rolePermissions = {
+  super_admin: ['*'], // All permissions
+  site_admin: [
+    'site.read',
+    'site.update', // Only for their own site
+    'user.create',
+    'user.read',
+    'user.update',
+    'user.delete',
+    'analytics.read',
+    'content.create',
+    'content.read',
+    'content.update',
+    'content.delete',
+    'userservice.read',
+    'userservice.update',
+    'userservice.delete',
+    'orgservice.read',
+    'orgservice.update',
+    'orgservice.delete',
+    'org.read',
+    'org.create',
+    'org.update',
+    'org.delete',
+    'blog.read',
+    'blog.create',
+    'blog.update',
+    'blog.delete',
+    'iframe.read',
+    'iframe.create',
+    'iframe.update',
+    'iframe.delete'
+  ],
+  site_moderator: [
+    'user.read',
+    'content.read',
+    'content.create',
+    'content.update',
+    'analytics.read'
+  ],
+  member: [
+    'user.read',
+    'content.read'
+  ]
+};
 
 /**
  * Check if user has specific permission(s)
@@ -57,29 +63,20 @@ export const requirePermission = (...requiredPermissions) => {
         });
       }
       
-      // Super admin bypass - has all permissions
-      if (req.user.role === 'super_admin') {
-        req.userPermissions = ['*']; // Wildcard for all permissions
+      // Get user permissions based on role
+      const userPermissions = rolePermissions[req.user.role] || [];
+      
+      // Store permissions in request for later use
+      req.userPermissions = userPermissions;
+      
+      // Wildcard check for super_admin
+      if (userPermissions.includes('*')) {
         return next();
       }
       
-      // For now, use hardcoded permissions based on role
-      // until RolePermission collection is populated
-      let userPermissions = [];
-      
+      // Special handling for site_admin
       if (req.user.role === 'site_admin') {
-        // Site admin permissions
-        userPermissions = [
-          'site.read',
-          'site.update', // Only for their own site
-          'user.create',
-          'user.read',
-          'user.update',
-          'user.delete',
-          'analytics.read'
-        ];
-        
-        // Additional check for site-specific operations
+        // Site admins cannot create or delete sites
         if (requiredPermissions.includes('site.create') || 
             requiredPermissions.includes('site.delete')) {
           return res.status(403).json({
@@ -88,35 +85,26 @@ export const requirePermission = (...requiredPermissions) => {
             error: 'INSUFFICIENT_PERMISSIONS'
           });
         }
-      } else if (req.user.role === 'admin') {
-        userPermissions = [
-          'user.read',
-          'user.update',
-          'analytics.read'
-        ];
-      } else if (req.user.role === 'member') {
-        userPermissions = ['user.read'];
+        
+        // Additional check for site-specific operations
+        if (requiredPermissions.includes('site.update')) {
+          const siteId = req.params.id || req.params.siteId;
+          if (siteId && req.user.site_id) {
+            // Allow if they're updating their own site
+            if (siteId.toString() !== req.user.site_id.toString()) {
+              return res.status(403).json({
+                success: false,
+                message: 'You can only update your own site',
+                error: 'SITE_ACCESS_DENIED'
+              });
+            }
+          }
+        }
       }
-      
-      // Try to get from database if available
-      try {
-        const dbPermissions = await getRolePermissions(
-          req.user.role,
-          req.user.site_id || req.site?._id
-        );
-        if (dbPermissions && dbPermissions.length > 0) {
-          userPermissions = dbPermissions;
-        }
-      } catch (err) {
-        // Use hardcoded permissions if DB fails
-        }
-      
-      // Store permissions in request for later use
-      req.userPermissions = userPermissions;
       
       // Check if user has required permissions
       const hasPermission = requiredPermissions.every(permission => 
-        userPermissions.includes(permission) || userPermissions.includes('*')
+        userPermissions.includes(permission)
       );
       
       if (!hasPermission) {
@@ -149,23 +137,18 @@ export const requireAnyPermission = (...permissions) => {
         return sendError(res, 'Authentication required', 401);
       }
       
-      // Super admin bypass
-      if (req.user.role === 'super_admin') {
-        req.userPermissions = ['*'];
+      // Get user permissions based on role
+      const userPermissions = rolePermissions[req.user.role] || [];
+      req.userPermissions = userPermissions;
+      
+      // Wildcard check for super_admin
+      if (userPermissions.includes('*')) {
         return next();
       }
       
-      // Get user's permissions
-      const userPermissions = await getRolePermissions(
-        req.user.role,
-        req.user.site_id || req.site?._id
-      );
-      
-      req.userPermissions = userPermissions;
-      
       // Check if user has any of the required permissions
       const hasPermission = permissions.some(permission => 
-        userPermissions.includes(permission) || userPermissions.includes('*')
+        userPermissions.includes(permission)
       );
       
       if (!hasPermission) {
@@ -187,9 +170,15 @@ export const requireAnyPermission = (...permissions) => {
  * Apply data isolation based on site context
  */
 export const applySiteIsolation = (req, res, next) => {
-  // Skip for super admin
+  // Skip for super admin - they can see all data
   if (req.user?.role === 'super_admin') {
-    req.siteFilter = {}; // No filter for super admin
+    // Check if super admin wants to filter by specific site
+    const filterSiteId = req.query.site_id || req.headers['x-site-id'];
+    if (filterSiteId) {
+      req.siteFilter = { site_id: filterSiteId };
+    } else {
+      req.siteFilter = {}; // No filter for super admin by default
+    }
     return next();
   }
   
@@ -210,16 +199,8 @@ export const applySiteIsolation = (req, res, next) => {
   next();
 };
 
-/**
- * Clear permission cache (call when permissions are updated)
- */
-export const clearPermissionCache = () => {
-  permissionCache.clear();
-};
-
 export default {
   requirePermission,
   requireAnyPermission,
-  applySiteIsolation,
-  clearPermissionCache
+  applySiteIsolation
 };

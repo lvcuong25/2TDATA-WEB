@@ -1,56 +1,20 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
-/**
- * 🌐 Multi-Site Axios Instance
- * 
- * This instance provides:
- * ✅ Dynamic base URL for multi-site support
- * ✅ Automatic authentication token handling
- * ✅ Proper CORS handling without forbidden headers
- * ✅ Compatible with localhost development and custom domains
- */
-
-// Create axios instance with dynamic base configuration for multi-site support
-const getApiBaseURL = () => {
-  const protocol = window.location.protocol;
-  const host = window.location.host;
-  return `${protocol}//${host}/api`;
-};
-
-const axiosInstance = axios.create({
-  baseURL: getApiBaseURL(),
+const instance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3005/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
-  }
+  },
 });
 
 // Request interceptor to add auth token
-axiosInstance.interceptors.request.use(
+instance.interceptors.request.use(
   (config) => {
-    // Debug logging for all requests
-    
-    // Don't add token for public endpoints
-    const publicEndpoints = ['/auth/sign-in', '/auth/sign-up', '/auth/send-otp', '/auth/reset-password'];
-    const isPublicEndpoint = publicEndpoints.some(endpoint => config.url.includes(endpoint));
-    
-    if (!isPublicEndpoint) {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // Handle multipart/form-data requests
-    if (config.data instanceof FormData) {
-      // Remove Content-Type header for FormData - let browser set it with boundary
-      delete config.headers['Content-Type'];
-    }
-    
-    // Add X-Host header for site detection
-    // This helps the backend identify which site is being accessed
-    config.headers['X-Host'] = window.location.hostname;
-    
     return config;
   },
   (error) => {
@@ -58,19 +22,35 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle common errors
-axiosInstance.interceptors.response.use(
+// Response interceptor to handle errors
+instance.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
+    // Log error details for debugging
+    console.error('Axios error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      message: error.response?.data?.message || error.message
+    });
+    
     // Handle authentication errors
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      // Redirect to login page
-      window.location.href = '/auth/signin';
+      // Don't redirect for iframe routes
+      const isIframeRoute = error.config?.url?.includes('/iframe/');
+      
+      // Check if we're already on login page to avoid redirect loop
+      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin') && !isIframeRoute) {
+        console.log('401 error detected, redirecting to login...');
+        // Token expired or invalid
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('accessToken');
+        // Redirect to login page with current path as redirect param
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+      }
     }
     
     // Handle network errors
@@ -82,4 +62,4 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance;
+export default instance;

@@ -12,16 +12,6 @@ import { useSearchParams } from 'react-router-dom';
 // Secret key for encryption (in production, this should be stored securely)
 const SECRET_KEY = 'your-secret-key-here';
 
-// Encryption functions
-// const encryptData = (data) => {
-//   return CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
-// };
-
-// const decryptData = (encryptedData) => {
-//   const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
-//   return bytes.toString(CryptoJS.enc.Utf8);
-// };
-
 const signinSchema = Joi.object({
   email: Joi.string()
     .email({ tlds: false })
@@ -44,7 +34,9 @@ const signinSchema = Joi.object({
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [searchParams] = useSearchParams();
-  const redirectPath = searchParams.get('redirect') || '/service/my-service';
+  
+  // Lấy redirect param từ URL nếu có
+  const urlRedirect = searchParams.get('redirect');
 
   const {
     register,
@@ -64,13 +56,37 @@ const SignIn = () => {
       return data;
     },
     onSuccess: (data) => {
+      console.log('Login response:', data);
+      console.log('Redirect path:', data.redirectPath);
+      console.log('Redirect domain:', data.redirectDomain);
+      console.log('User role:', data.data?.role);
+      console.log('User service:', data.data?.service);
       localStorage.setItem('accessToken', data.accessToken);
       sessionStorage.setItem('accessToken', data.accessToken);
       toast.success('Đăng nhập thành công!');
-      window.location.href = '/service/my-service';
+      
+      // Xử lý redirect với logic ưu tiên:
+      // 1. Nếu có URL param redirect và user không phải admin -> dùng URL param
+      // 2. Nếu không -> dùng redirect từ backend
+      
+      if (urlRedirect && data.data.role !== 'super_admin' && data.data.role !== 'site_admin' && data.data.role !== 'admin') {
+        // User thường có thể dùng redirect param từ URL
+        window.location.href = urlRedirect;
+      } else {
+        // Admin hoặc không có URL param -> dùng logic từ backend
+        if (data.redirectDomain) {
+          // Nếu backend trả về domain cụ thể (cho admin)
+          const fullUrl = new URL(data.redirectPath, data.redirectDomain);
+          window.location.href = fullUrl.toString();
+        } else {
+          // Redirect trong cùng domain
+          window.location.href = data.redirectPath || '/';
+        }
+      }
     },
-    onError: () => {
-      toast.error('Email hoặc mật khẩu không đúng!');
+    onError: (error) => {
+      const message = error.response?.data?.message || 'Email hoặc mật khẩu không đúng!';
+      toast.error(message);
     },
   });
 

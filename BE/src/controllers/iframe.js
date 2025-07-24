@@ -95,22 +95,87 @@ export const getIframeByDomain = async (req, res) => {
     // Kiểm tra authentication - BẮT BUỘC
     if (!req.user || !req.user._id) {
       return res.status(401).json({ 
-        message: "Authentication required",
+        message: "Vui lòng đăng nhập để xem nội dung này",
         error: "NO_AUTH"
       });
     }
 
+    const iframe = await Iframe.findOne({ domain: req.params.domain })
+      .populate("viewers", "_id")
+      .populate("site_id", "_id name");
+      
+    if (!iframe) {
+      return res.status(404).json({ message: "Không tìm thấy iframe" });
+    }
+
+    // Super admin có thể xem tất cả
+    if (req.user.role === "super_admin") {
+      return res.status(200).json(iframe);
+    }
+
+    // Site admin chỉ xem được iframe của site mình
+    if (req.user.role === "site_admin") {
+      if (req.user.site_id && iframe.site_id._id.toString() === req.user.site_id.toString()) {
+        return res.status(200).json(iframe);
+      }
+    }
+
+    // Kiểm tra user có cùng site_id với iframe không
+    if (req.user.site_id && iframe.site_id._id.toString() === req.user.site_id.toString()) {
+      // Kiểm tra xem user có trong danh sách viewers không
+      const isViewer = iframe.viewers.some(viewer => 
+        viewer._id.toString() === req.user._id.toString()
+      );
+      
+      if (isViewer) {
+        return res.status(200).json(iframe);
+      }
+    }
+
+    // Không có quyền xem
+    return res.status(403).json({ 
+      message: "Bạn không có quyền xem nội dung này",
+      error: "NOT_AUTHORIZED"
+    });
+
+  } catch (error) {
+    console.error('GetIframeByDomain error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// Lấy iframe theo domain - CHO PHÉP ANONYMOUS nếu iframe là public
+export const getIframeByDomainPublic = async (req, res) => {
+  try {
     const iframe = await Iframe.findOne({ domain: req.params.domain }).populate("viewers", "_id");
     if (!iframe) {
       return res.status(404).json({ message: "Iframe not found" });
     }
 
-    // Nếu là admin hoặc super_admin thì cho phép xem
+    // Kiểm tra nếu iframe là public
+    if (iframe.isPublic) {
+      // Trả về iframe nhưng ẩn danh sách viewers
+      const publicIframe = {
+        ...iframe.toObject(),
+        viewers: [] // Ẩn danh sách viewers cho anonymous users
+      };
+      return res.status(200).json(publicIframe);
+    }
+
+    // Nếu không phải public, kiểm tra authentication
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ 
+        message: "Authentication required for private iframe",
+        error: "NO_AUTH"
+      });
+    }
+
+    // Logic kiểm tra quyền như cũ
     if (req.user.role === "admin" || req.user.role === "super_admin") {
       return res.status(200).json(iframe);
     }
 
-    // Kiểm tra xem user có trong danh sách viewers không
     const isViewer = iframe.viewers.some(viewer => 
       viewer._id.toString() === req.user._id.toString()
     );
@@ -124,10 +189,11 @@ export const getIframeByDomain = async (req, res) => {
 
     res.status(200).json(iframe);
   } catch (error) {
-    console.error('GetIframeByDomain error:', error);
+    console.error('GetIframeByDomainPublic error:', error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Thêm mới iframe
 export const createIframe = async (req, res) => {
@@ -138,7 +204,7 @@ export const createIframe = async (req, res) => {
     }
 
     // Chỉ admin và super_admin mới được tạo iframe
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.role !== 'site_admin') {
       return res.status(403).json({ message: "Admin access required" });
     }
 
@@ -202,7 +268,7 @@ export const deleteIframe = async (req, res) => {
     }
 
     // Chỉ admin và super_admin mới được xóa
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.role !== 'site_admin') {
       return res.status(403).json({ message: "Admin access required" });
     }
 

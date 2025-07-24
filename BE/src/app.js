@@ -4,7 +4,8 @@ import router from './router/index.js';
 import { connectDB } from "./config/db.js";
 import cors from 'cors';
 import logger from './utils/logger.js';
-import { detectSiteMiddleware, applySiteFilterMiddleware } from './middlewares/siteDetection.js';
+import { authAndSiteDetectionMiddleware } from './middlewares/authAndSiteDetection.js';
+import { applySiteFilterMiddleware } from './middlewares/siteDetection.js';
 
 // Load environment variables
 dotenv.config();
@@ -20,21 +21,8 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // Allow common development and production origins
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://trunglq8.com',
-      'https://trunglq8.com',
-      'http://test.2tdata.com',
-      'https://test.2tdata.com'
-    ];
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Allow all for now to avoid issues
-    }
+    // Allow all origins for now
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -48,13 +36,11 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files for uploads
 app.use('/uploads', express.static('uploads'));
-// Serve logos directly at /logos/ for frontend compatibility
 app.use('/logos', express.static('uploads/logos'));
 
-// Apply site detection middleware selectively
-// Skip site detection for auth routes and health checks
+// Apply combined auth and site detection middleware
 app.use("/api", (req, res, next) => {
-    // Skip site detection for certain routes
+    // Skip for certain routes
     const skipRoutes = [
         '/api/health',
         '/api/auth/sign-up',
@@ -67,8 +53,8 @@ app.use("/api", (req, res, next) => {
         return next();
     }
     
-    // Apply site detection for other routes
-    detectSiteMiddleware(req, res, (err) => {
+    // Apply auth and site detection
+    authAndSiteDetectionMiddleware(req, res, (err) => {
         if (err) return next(err);
         applySiteFilterMiddleware(req, res, next);
     });
@@ -124,25 +110,20 @@ app.get('/api/test', (req, res) => {
 // Start server function
 async function startServer() {
   try {
-    // Try to connect to database, but don't fail if it's not available
+    // Try to connect to database
     if (DB_URI) {
       try {
         await connectDB(DB_URI);
         console.log('✅ Database connected successfully');
       } catch (dbError) {
-        console.warn('⚠️ Database connection failed, starting without database:', dbError.message);
-        console.log('🚀 Server will start in database-less mode');
+        console.warn('⚠️ Database connection failed:', dbError.message);
       }
-    } else {
-      console.log('🚀 No database URI provided, starting without database');
     }
     
-    // Start the server regardless of database connection
+    // Start the server
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server started on port ${PORT}`);
       console.log(`🔗 API available at: http://localhost:${PORT}/api`);
-      console.log(`🌐 Frontend should be accessible at: http://trunglq8.com`);
-      console.log(`💡 Test API: http://localhost:${PORT}/api/test`);
     });
     
     server.on('error', (err) => {
@@ -158,4 +139,3 @@ async function startServer() {
 
 // Start the server
 startServer();
-

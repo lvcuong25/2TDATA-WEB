@@ -61,7 +61,7 @@ axiosConfig.interceptors.response.use(
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       // Redirect to login page
-      window.location.href = '/auth/signin';
+      window.location.href = '/login';
     }
     
     // Handle network errors

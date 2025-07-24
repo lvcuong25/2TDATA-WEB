@@ -37,7 +37,7 @@ export const getServiceById = async (req, res, next) => {
         const { id } = req.params;
 
         // Nếu là admin hoặc super_admin, cho phép xem bất kỳ service nào
-        if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+        if (req.user.role === 'admin' || user.role === 'site_admin' || req.user.role === 'super_admin') {
             const service = await Service.findById(id);
             if (!service) {
                 return res.status(404).json({
@@ -79,7 +79,7 @@ export const getServiceBySlug = async (req, res, next) => {
         const user = await User.findById(userId).populate('service');
 
         // Nếu là admin hoặc super_admin, cho phép xem bất kỳ service nào
-        if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+        if (req.user.role === 'admin' || user.role === 'site_admin' || req.user.role === 'super_admin') {
             const service = await Service.findOne({ slug });
             if (!service) {
                 return res.status(404).json({
@@ -115,7 +115,7 @@ export const createService = async (req, res, next) => {
         const { name, description, image, slug, authorizedLinks } = req.body;
         
         // Only super admin or legacy admin can create services
-        if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
+        if (req.user.role !== 'super_admin' && req.user.role !== 'admin' && req.user.role !== 'site_admin') {
             return res.status(403).json({
                 message: "Only admin can create services",
             });

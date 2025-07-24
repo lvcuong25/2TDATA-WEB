@@ -1,84 +1,96 @@
-﻿import User from "../model/User.js";
+import pkg from "bcryptjs";
+const { hashSync, compareSync } = pkg;
+import User from "../model/User.js";
+import { registerSchema as signUpValidator } from "../validations/auth.js";
+import jwt from "jsonwebtoken";
 import Service from "../model/Service.js";
-import UserSession from "../model/UserSession.js";
-import { token } from "../utils/jwt.js";
-import { comparePassword, hashPassword } from "../utils/password.js";
-import sendEmail from "../utils/sendEmail.js";
+import UserSession from '../model/UserSession.js';
+
+const hashPassword = (password) => hashSync(password, 10);
+const comparePassword = (password, hashPassword) => compareSync(password, hashPassword);
+const token = (payload, expiresIn) => jwt.sign(payload, process.env.JWT_SECRET || process.env.SECRET_KEY, { expiresIn });
 
 export const signUp = async (req, res, next) => {
     try {
-        const { email, password, role } = req.body;
-        
-        // Get site_id from middleware (for regular users)
-        // Super admin can specify site_id in request body
-        let siteId = req.siteId; // From site detection middleware
-        
-        // If super admin is creating user, they can specify site_id
-        if (req.user?.role === 'super_admin' && req.body.site_id) {
-            siteId = req.body.site_id;
-        }
-        
-        // For non-super_admin roles, site_id is required
-        if (!siteId && role !== 'super_admin') {
+        // Validate dữ liệu
+        const { error } = signUpValidator.validate(req.body, { abortEarly: false });
+        if (error) {
+            const errorMessage = error.details.map(detail => detail.message);
             return res.status(400).json({
-                message: "Site ID is required for user registration",
+                message: errorMessage,
             });
         }
+
+        const { email, password, role = "member", site_id, service } = req.body;
+
+        // Check current site context
+        const currentSiteId = req.site?._id?.toString();
         
+        // Auto-assign site_id logic
+        let finalSiteId = site_id;
+        
+        // Nếu không có site_id được cung cấp
+        if (!site_id) {
+            // Super admin không cần site_id
+            if (role === 'super_admin') {
+                finalSiteId = null;
+            } else {
+                // Tự động lấy site_id từ current site context
+                if (currentSiteId) {
+                    finalSiteId = currentSiteId;
+                } else {
+                    // Nếu không detect được site, báo lỗi với thông tin debug
+                    return res.status(400).json({
+                        message: "Cannot determine site context. Please specify site_id or access from a valid domain.",
+                        debug: {
+                            hostname: req.get('host'),
+                            detectedHostname: req.detectedHostname,
+                            originalHostname: req.originalHostname,
+                            site: req.site ? 'detected' : 'not detected'
+                        }
+                    });
+                }
+            }
+        }
+
+        // For non-super_admin users with explicit site_id, ensure site_id matches current site
+        if (role !== 'super_admin' && site_id && site_id !== currentSiteId) {
+            return res.status(403).json({
+                message: "Cannot create user for different site",
+                error: "SITE_MISMATCH"
+            });
+        }
+
+        // Kiểm tra user đã tồn tại chưa
         const userExist = await User.findOne({ email });
         if (userExist) {
             return res.status(400).json({
-                message: "Email đã được sử dụng",
+                message: "Email đã tồn tại",
             });
         }
 
-        // // Kiểm tra xem service đã được gán cho user khác chưa
-        // const serviceInUse = await User.findOne({ service: serviceId });
-        // if (serviceInUse) {
-        //     return res.status(400).json({
-        //         message: "Dịch vụ này đã được gán cho người dùng khác",
-        //     });
-        // }
-
-        // const service = await Service.findById(serviceId);
-        // if (!service) {
-        //     return res.status(400).json({
-        //         message: "Dịch vụ không tồn tại",
-        //     });
-        // }
-
-        const hashPasswordUser = await hashPassword(password);
-        const user = await User.create({
-            email,
-            password: hashPasswordUser,
-            role: role || 'member', // Default role is 'member'
-            site_id: siteId, // Required for multi-tenant
-            // service: serviceId
+        const hashedPassword = hashPassword(password);
+        const newUser = await User.create({
+            ...req.body,
+            password: hashedPassword,
+            role,
+            site_id: finalSiteId,
+            service: service || null
         });
-
-        const accessToken = token({ _id: user._id }, "365d");
+        
+        const accessToken = token({ _id: newUser._id }, "365d");
         return res.status(201).json({
             message: "Đăng ký thành công!",
+            data: newUser,
             accessToken,
         });
     } catch (error) {
-        return res.status(400).json({
-            message: error.message || "Đăng ký thất bại",
-            error: error,
-        });
+        next(error);
     }
-};
+}
 
 export const signIn = async (req, res, next) => {
     try {
-        console.log('🔐 SignIn attempt:', {
-            email: req.body.email,
-            hasPassword: !!req.body.password,
-            userAgent: req.get('User-Agent'),
-            origin: req.get('Origin'),
-            site: req.site?.name || 'No site detected'
-        });
-        
         const { email, password } = req.body;
         const userExist = await User.findOne({ email }).populate('site_id');
         if (!userExist) {
@@ -124,207 +136,129 @@ export const signIn = async (req, res, next) => {
             365 * 24 * 60 * 60 // 365 days in seconds
         );
         
-        // Nếu là admin hoặc super_admin, chuyển hướng đến trang admin
-        if (userExist.role === 'admin' || userExist.role === 'super_admin' || userExist.role === 'site_admin') {
-            return res.status(200).json({
-                message: "Đăng nhập thành công!",
-                accessToken,
-                redirectPath: '/admin',
-                data: {
-                    _id: userExist._id,
-                    email: userExist.email,
-                    name: userExist.name,
-                    role: userExist.role,
-                    site_id: userExist.site_id
-                }
-            });
+        // Tạo logic redirect thông minh dựa trên role và site
+        let redirectPath = '/';
+        let redirectDomain = null;
+        
+        // Super admin - luôn redirect về dashboard của 2tdata.com
+        if (userExist.role === 'super_admin') {
+            redirectPath = '/admin';
+            redirectDomain = 'https://2tdata.com';
+        } 
+        // Site admin - redirect về dashboard của site họ quản lý
+        else if (userExist.role === 'site_admin' || userExist.role === 'admin') {
+            redirectPath = '/admin';
+            
+            // Lấy domain của site
+            if (userExist.site_id && userExist.site_id.domains && userExist.site_id.domains.length > 0) {
+                // Ưu tiên domain chính (domain đầu tiên)
+                const primaryDomain = userExist.site_id.domains[0];
+                redirectDomain = `https://${primaryDomain}`;
+            }
+        }
+        // User thường - redirect về homepage của site họ
+        else {
+            // Tất cả user thường đều redirect về /service/my-service
+            redirectPath = '/service/my-service';
+            
+            // Lấy domain của site user
+            if (userExist.site_id && userExist.site_id.domains && userExist.site_id.domains.length > 0) {
+                const primaryDomain = userExist.site_id.domains[0];
+                redirectDomain = `https://${primaryDomain}`;
+            }
         }
 
-        // Nếu là user thường và chưa có service
-        if (!userExist.service) {
-            return res.status(200).json({
-                message: "Đăng nhập thành công!",
-                accessToken,
-                redirectPath: '/service/my-service'
-            });
-        }
-
-        // Nếu là user thường và đã có service
         return res.status(200).json({
             message: "Đăng nhập thành công!",
             accessToken,
-            service: userExist.service,
-            redirectPath: `/service/my-service`
+            redirectPath,
+            redirectDomain,
+            data: {
+                _id: userExist._id,
+                email: userExist.email,
+                name: userExist.name,
+                role: userExist.role,
+                site_id: userExist.site_id,
+                service: userExist.service
+            }
         });
     } catch (error) {
-        return res.status(400).json({
-            message: error.message || "Đăng nhập thất bại",
-            error: error,
-        });
-    }
-};
-
-export const getUserByToken = async (req, res, next) => {
-    try {
-        const data = req.user;
-        data.password = undefined;
-        return res.status(200).json({ data });
-    } catch (error) {
-        return res.status(400).json({
-            message: error.message || "Lấy thông tin thất bại",
-            error: error,
-        });
+        next(error);
     }
 }
 
-export const sendOTP = async (req, res, next) => {
+export const logout = async (req, res, next) => {
     try {
-        const email = req.body.email;
-        if (!email) {
-            return res.status(400).json({
-                message: "Email không được để trống!",
-            });
+        const userId = req.user._id;
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (token) {
+            await UserSession.invalidateSession(userId, token);
         }
-        const otp = Math.floor(100000 + Math.random() * 900000);
-        const checkEmail = await User.findOne({ email });
-        if (!checkEmail) {
-            return res.status(400).json({
-                message: "Email không tồn tại!",
-            });
-        }
-        const updateOTP = await User.findByIdAndUpdate(checkEmail.id, {
-            otp: otp,
-            otpCreatedAt: new Date(),
+        
+        return res.status(200).json({
+            message: "Đăng xuất thành công"
         });
-        if (!updateOTP) {
-            return res.status(400).json({
-                message: "Có lỗi xảy ra!",
-            });
-        }
-        if (sendEmail(checkEmail.email, "Đặt lại mật khẩu", `<div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
-    <div style="margin:50px auto;width:70%;padding:20px 0">
-    <div style="border-bottom:1px solid #eee">
-        <a href="" style="font-size:1.4em;color: #00466a;text-decoration:none;font-weight:600"></a>
-    </div>
-    <p style="font-size:1.1em">Xin chào,</p>
-    <p>Cảm ơn bạn đã chọn website của chúng tôi. Sử dụng OTP sau đây để hoàn tất quy trình khôi phục mật khẩu của bạn. OTP có hiệu lực trong 5 phút</p>
-    <h2 style="background: #00466a;margin: 0 auto;width: max-content;padding: 0 10px;color: #fff;border-radius: 4px;">${otp}</h2>
-    <p style="font-size:0.9em;">Trân trọng,<br />
-    <hr style="border:none;border-top:1px solid #eee" />
-    <div style="float:right;padding:8px 0;color:#aaa;font-size:0.8em;line-height:1;font-weight:300">
-        <p></p>
-        <p>Việt Nam</p>
-    </div>
-    </div>
-</div>`)) {
-            return res.status(200).json({
-                message: "Gửi email thành công!",
-                id: checkEmail.id,
-            });
-        }
-        else {
-            return res.status(400).json({
-                message: "Gửi email thất bại!",
-            });
-        }
     } catch (error) {
-        return res.status(400).json({
-            message: error.message || "Gửi OTP thất bại",
-            error: error,
-        });
+        next(error);
     }
-};
+}
 
 export const resetPassword = async (req, res, next) => {
     try {
-        const { email, password, otp, cPassword } = req.body;
-        if(password !== cPassword) {
+        const { email, newPassword } = req.body;
+        const userExist = await User.findOne({ email });
+        if (!userExist) {
             return res.status(400).json({
-                message: "Mật khẩu không trùng khớp!",
+                message: "Email không tồn tại",
             });
         }
-        const checkUser = await User.findOne({ email });
-        if (!checkUser) {
-            return res.status(400).json({
-                message: "Người dùng không tồn tại!",
-            });
-        }
-        if (checkUser.otp === null || checkUser.otpCreatedAt === null) {
-            return res.status(400).json({
-                message: "Bạn chưa gửi OTP!",
-            });
-        }
-        if (checkUser.otp !== otp) {
-            return res.status(400).json({
-                message: "OTP không đúng!",
-            });
-        }
-        const otpCreatedAt = new Date(checkUser.otpCreatedAt);
-        const now = new Date();
-        const diff = Math.abs(now - otpCreatedAt);
-        const diffMinutes = Math.floor((diff / 1000) / 60);
-        if (diffMinutes > 60) {
-            return res.status(400).json({
-                message: "OTP đã hết hạn!",
-            });
-        }
-        const hashPasswordUser = await hashPassword(password);
-        const updatePassword = await User.findByIdAndUpdate(checkUser.id, {
-            password: hashPasswordUser,
-        });
-        if (!updatePassword) {
-            return res.status(400).json({
-                message: "Có lỗi xảy ra!",
-            });
-        }
-        const removeOTP = await User.findByIdAndUpdate(checkUser.id, {
-            otp: null,
-            otpCreatedAt: null,
-        });
-        if (!removeOTP) {
-            return res.status(400).json({
-                message: "Có lỗi xảy ra!",
-            });
-        }
-        const accessToken = token({ _id: checkUser.id }, "365d");
-        return res.status(201).json({
-            message: "Đặt lại mật khẩu thành công!",
-            accessToken,
+        const hashedPassword = hashPassword(newPassword);
+        await User.findByIdAndUpdate(userExist._id, { password: hashedPassword });
+        return res.status(200).json({
+            message: "Reset Password thành công!",
         });
     } catch (error) {
-        return res.status(400).json({
-            message: error.message || "Đặt lại mật khẩu thất bại",
-            error: error,
-        });
+        next(error);
     }
 }
 
 export const changePassword = async (req, res, next) => {
     try {
-        const data = req.user;
         const { oldPassword, newPassword } = req.body;
-        const checkPassword = await comparePassword(oldPassword, data.password);
+        const userExist = await User.findById(req.user._id);
+        const checkPassword = await comparePassword(oldPassword, userExist.password);
         if (!checkPassword) {
             return res.status(400).json({
-                message: "Mật khẩu cũ không đúng!",
+                message: "Mật khẩu cũ không đúng",
             });
         }
-        const hashPasswordUser = await hashPassword(newPassword);
-        const updatePassword = await User.findByIdAndUpdate(data.id, {
-            password: hashPasswordUser,
-        });
-        if (!updatePassword) {
-            return res.status(400).json({
-                message: "Có lỗi xảy ra!",
-            });
-        }
+        const hashedPassword = hashPassword(newPassword);
+        await User.findByIdAndUpdate(req.user._id, { password: hashedPassword });
         return res.status(200).json({
             message: "Đổi mật khẩu thành công!",
         });
     } catch (error) {
-        return res.status(400).json({
-            message: error.message || "Đổi mật khẩu thất bại",
-            error: error,
+        next(error);
+    }
+}
+
+export const getMe = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user._id)
+            .select('-password')
+            .populate('site_id', 'name domains');
+            
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+        
+        return res.status(200).json({
+            data: user
         });
+    } catch (error) {
+        next(error);
     }
 }

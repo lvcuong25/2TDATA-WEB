@@ -38,6 +38,14 @@ export const upload = multer({
   fileFilter
 });
 
+// Predefined size configurations for partner logos
+const PARTNER_SIZES = {
+  'small': { height: 60 },    // For smaller logos like HCW, REMOBPO
+  'medium': { height: 80 },   // Medium size
+  'large': { height: 100 },   // For main partner like 2T DATA
+  'custom': null              // Use provided dimensions
+};
+
 // Upload and process footer logo
 export const uploadFooterLogo = async (req, res) => {
   try {
@@ -45,7 +53,12 @@ export const uploadFooterLogo = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const { type = 'partner' } = req.body; // 'main' or 'partner'
+    const { 
+      type = 'partner', 
+      size = 'medium',  // 'small', 'medium', 'large', 'custom'
+      customHeight,     // Custom height if size is 'custom'
+      preserveOriginal = false // Whether to keep original size version
+    } = req.body;
     
     // Create directory path
     const uploadDir = path.join(__dirname, '../../uploads/footer');
@@ -54,47 +67,92 @@ export const uploadFooterLogo = async (req, res) => {
     // Generate unique filename
     const timestamp = Date.now();
     const originalName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filename = `${type}_${timestamp}_${originalName}`;
-    const filepath = path.join(uploadDir, filename);
-
-    // Process image with Sharp
-    let processedImage = sharp(req.file.buffer);
+    const baseFilename = `${type}_${timestamp}_${originalName}`;
     
-    // Resize based on type
-    if (type === 'partner') {
-      // Resize partner logos to max height 100px, maintain aspect ratio
-      processedImage = processedImage.resize(null, 100, {
-        fit: 'inside',
-        withoutEnlargement: true
-      });
-    } else {
-      // Main logo - resize to max width 200px
-      processedImage = processedImage.resize(200, null, {
-        fit: 'inside',
-        withoutEnlargement: true
+    // Get original image metadata
+    const metadata = await sharp(req.file.buffer).metadata();
+    
+    // Process and save different versions
+    const versions = [];
+    
+    // 1. Save original size if requested
+    if (preserveOriginal) {
+      const originalFilename = `original_${baseFilename}`;
+      const originalPath = path.join(uploadDir, originalFilename);
+      
+      await sharp(req.file.buffer)
+        .toFile(originalPath);
+        
+      versions.push({
+        type: 'original',
+        url: `/uploads/footer/${originalFilename}`,
+        width: metadata.width,
+        height: metadata.height
       });
     }
-
-    // Convert to webp for better compression
-    await processedImage
+    
+    // 2. Save resized version based on size parameter
+    let targetHeight;
+    if (size === 'custom' && customHeight) {
+      targetHeight = parseInt(customHeight);
+    } else if (PARTNER_SIZES[size]) {
+      targetHeight = PARTNER_SIZES[size].height;
+    } else {
+      targetHeight = PARTNER_SIZES.medium.height; // Default to medium
+    }
+    
+    const resizedFilename = `${size}_${baseFilename}`;
+    const resizedPath = path.join(uploadDir, resizedFilename);
+    
+    // Resize maintaining aspect ratio
+    const resizedImage = await sharp(req.file.buffer)
+      .resize(null, targetHeight, {
+        fit: 'inside',
+        withoutEnlargement: true
+      });
+    
+    // Save in original format
+    await resizedImage.toFile(resizedPath);
+    
+    // Get resized dimensions
+    const resizedMetadata = await resizedImage.metadata();
+    
+    versions.push({
+      type: size,
+      url: `/uploads/footer/${resizedFilename}`,
+      width: resizedMetadata.width,
+      height: resizedMetadata.height
+    });
+    
+    // 3. Create WebP version for better performance
+    const webpFilename = resizedFilename.replace(/\.[^.]+$/, '.webp');
+    const webpPath = path.join(uploadDir, webpFilename);
+    
+    await resizedImage
       .webp({ quality: 85 })
-      .toFile(filepath.replace(/\.[^.]+$/, '.webp'));
+      .toFile(webpPath);
+      
+    versions.push({
+      type: `${size}_webp`,
+      url: `/uploads/footer/${webpFilename}`,
+      width: resizedMetadata.width,
+      height: resizedMetadata.height
+    });
 
-    // Also save original format
-    await processedImage
-      .toFile(filepath);
-
-    // Return the file URL
-    const fileUrl = `/uploads/footer/${filename}`;
-    const webpUrl = `/uploads/footer/${filename.replace(/\.[^.]+$/, '.webp')}`;
-
+    // Return all versions with the main URL being the resized version
     res.json({
       success: true,
       data: {
-        url: fileUrl,
-        webpUrl: webpUrl,
-        filename: filename,
-        type: type
+        url: versions.find(v => v.type === size).url,
+        webpUrl: versions.find(v => v.type === `${size}_webp`).url,
+        filename: resizedFilename,
+        type: type,
+        size: size,
+        dimensions: {
+          width: resizedMetadata.width,
+          height: resizedMetadata.height
+        },
+        versions: versions
       }
     });
 
@@ -107,7 +165,7 @@ export const uploadFooterLogo = async (req, res) => {
   }
 };
 
-// Delete footer logo
+// Delete footer logo (all versions)
 export const deleteFooterLogo = async (req, res) => {
   try {
     const { filename } = req.params;
@@ -116,25 +174,41 @@ export const deleteFooterLogo = async (req, res) => {
       return res.status(400).json({ message: 'Filename is required' });
     }
 
-    const filepath = path.join(__dirname, '../../uploads/footer', filename);
-    const webpPath = filepath.replace(/\.[^.]+$/, '.webp');
-
-    // Delete both files if they exist
-    try {
-      await fs.unlink(filepath);
-    } catch (err) {
-      // File might not exist
-    }
+    const uploadDir = path.join(__dirname, '../../uploads/footer');
     
-    try {
-      await fs.unlink(webpPath);
-    } catch (err) {
-      // WebP file might not exist
+    // Extract base filename (remove size prefix if exists)
+    const baseFilename = filename.replace(/^(small_|medium_|large_|custom_|original_)/, '');
+    
+    // Try to delete all possible versions
+    const prefixes = ['small_', 'medium_', 'large_', 'custom_', 'original_', ''];
+    const deletedFiles = [];
+    
+    for (const prefix of prefixes) {
+      const versionFilename = prefix + baseFilename;
+      const filepath = path.join(uploadDir, versionFilename);
+      const webpPath = filepath.replace(/\.[^.]+$/, '.webp');
+      
+      // Try to delete original format
+      try {
+        await fs.unlink(filepath);
+        deletedFiles.push(versionFilename);
+      } catch (err) {
+        // File might not exist
+      }
+      
+      // Try to delete WebP version
+      try {
+        await fs.unlink(webpPath);
+        deletedFiles.push(versionFilename.replace(/\.[^.]+$/, '.webp'));
+      } catch (err) {
+        // WebP file might not exist
+      }
     }
 
     res.json({
       success: true,
-      message: 'Logo deleted successfully'
+      message: 'Logo deleted successfully',
+      deletedFiles: deletedFiles
     });
 
   } catch (error) {
@@ -142,6 +216,39 @@ export const deleteFooterLogo = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: error.message || 'Failed to delete logo' 
+    });
+  }
+};
+
+// Get recommended size for partner name
+export const getRecommendedSize = async (req, res) => {
+  try {
+    const { partnerName } = req.query;
+    
+    // Recommendations based on common partner names
+    const sizeRecommendations = {
+      'HCW': 'small',
+      'REMOBPO': 'small',
+      '2T DATA': 'large',
+      'default': 'medium'
+    };
+    
+    const recommendedSize = sizeRecommendations[partnerName] || sizeRecommendations.default;
+    const sizeConfig = PARTNER_SIZES[recommendedSize];
+    
+    res.json({
+      success: true,
+      data: {
+        recommendedSize: recommendedSize,
+        height: sizeConfig.height,
+        message: `Recommended size for ${partnerName || 'partner'} logo`
+      }
+    });
+    
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: error.message || 'Failed to get recommendation' 
     });
   }
 };

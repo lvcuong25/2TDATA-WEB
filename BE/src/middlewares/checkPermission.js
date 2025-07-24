@@ -71,9 +71,19 @@ export const checkPermission = (permission) => {
                     return next();
                 }
                 
+                // Site admin có quyền quản lý trong site của họ
+                if (user.role === 'site_admin') {
+                    // Site admin có quyền read, write, update, delete trong phạm vi site của họ
+                    const siteAdminPermissions = ['read', 'write', 'update', 'delete'];
+                    if (siteAdminPermissions.includes(permission)) {
+                        return next();
+                    }
+                }
+                
                 // Mapping basic permissions
                 const rolePermissions = {
                     admin: ['read', 'write', 'update', 'delete'],
+                    site_admin: ['read', 'write', 'update', 'delete'], // trong phạm vi site
                     user: ['read']
                 };
                 

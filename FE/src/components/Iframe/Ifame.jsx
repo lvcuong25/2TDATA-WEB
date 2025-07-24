@@ -15,7 +15,7 @@ const Ifame = () => {
     const fetchIframe = async () => {
       try {
         setLoading(true);
-        const { data } = await instance.get(`/iframe/domain/${domain}`);
+        const { data } = await instance.get(`/iframe/view/${domain}`);
         setIframeData(data);
         setError(null);
       } catch (err) {
