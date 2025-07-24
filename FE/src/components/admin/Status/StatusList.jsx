@@ -5,7 +5,6 @@ import { toast } from "react-toastify";
 import { CheckOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, EditOutlined, LinkOutlined, SearchOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
 import LinkFieldArray from '../shared/LinkFieldArray';
-import { useNavigate } from "react-router-dom";
 
 const StatusList = () => {
   const queryClient = useQueryClient();
@@ -22,7 +21,6 @@ const StatusList = () => {
     current: 1,
     pageSize: 10,
   });
-  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -320,19 +318,10 @@ const StatusList = () => {
   
   return (
     <div>
-      <div className="flex items-center justify-between bg-white rounded-lg shadow px-6 py-4 mb-6">
+      <div className="flex items-center bg-white rounded-lg shadow px-6 py-4 mb-6">
         <span className="text-xl font-semibold text-gray-800">
-          Danh sách yêu cầu dịch vụ
+          Danh sách trạng thái cá nhân
         </span>
-        <Button
-          type="primary"
-          icon={<CheckOutlined />}
-          onClick={() => navigate("/admin/status/org-status")}
-          className="flex items-center"
-          style={{ fontWeight: 500 }}
-        >
-          Quản lý trạng thái tổ chức
-        </Button>
       </div>
       
       <div className="">

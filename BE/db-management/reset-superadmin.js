@@ -5,9 +5,7 @@ import User from '../src/model/User.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DB_URI || 'mongodb://admin:password@localhost:27017/2TDATA?authSource=admin';
-
-);
+const MONGODB_URI = process.env.MONGODB_URI || process.env.DB_URI || 'mongodb://admin:password123@mongodb:27017/2TDATA?authSource=admin';
 
 /**
  * Reset or create superadmin account
@@ -36,7 +34,8 @@ const resetSuperAdmin = async () => {
           name: existingUser.name || 'Super Administrator'
         }
       );
-      } else {
+      console.log('✅ Superadmin account updated successfully');
+    } else {
       // Create new superadmin user
       const newUser = new User({
         email,
@@ -47,9 +46,14 @@ const resetSuperAdmin = async () => {
         // Note: super_admin doesn't need site_id
       });
       await newUser.save();
-      }
+      console.log('✅ Superadmin account created successfully');
+    }
     
-    } catch (error) {
+    console.log('🔐 Login credentials:');
+    console.log(`📧 Email: ${email}`);
+    console.log(`🔑 Password: ${newPassword}`);
+    
+  } catch (error) {
     console.error('❌ Reset failed:', error);
     throw error;
   } finally {
