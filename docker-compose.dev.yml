@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: 2tdata-mongodb-dev
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: 2TDATA
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data_dev:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - 2tdata-network-dev
+
+  # Backend API with hot reload
+  backend-dev:
+    build:
+      context: ./BE
+      dockerfile: Dockerfile.dev
+    container_name: 2tdata-backend-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_URI: mongodb://admin:password123@mongodb:27017/2TDATA?authSource=admin
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/2TDATA?authSource=admin
+      SECRET_KEY: your-super-secret-jwt-key-development
+      JWT_SECRET: your-super-secret-jwt-key-development
+      JWT_EXPIRES_IN: 24h
+      SEND_OTP_EMAIL: your_email@gmail.com
+      SEND_OTP_EMAIL_PASSWORD: your_app_password
+      LOG_LEVEL: debug
+      BCRYPT_SALT_ROUNDS: 12
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./BE:/app
+      - /app/node_modules
+      - backend_uploads_dev:/app/uploads
+    networks:
+      - 2tdata-network-dev
+    command: npm run dev
+
+  # Frontend with hot reload
+  frontend-dev:
+    build:
+      context: ./FE
+      dockerfile: Dockerfile.dev
+    container_name: 2tdata-frontend-dev
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: http://localhost:3000/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend-dev
+    volumes:
+      - ./FE:/app
+      - /app/node_modules
+    networks:
+      - 2tdata-network-dev
+    command: npm run dev
+
+  # MongoDB Express for development
+  mongo-express-dev:
+    image: mongo-express:latest
+    container_name: 2tdata-mongo-express-dev
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password123@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - 2tdata-network-dev
+
+volumes:
+  mongodb_data_dev:
+    driver: local
+  backend_uploads_dev:
+    driver: local
+
+networks:
+  2tdata-network-dev:
+    driver: bridge
