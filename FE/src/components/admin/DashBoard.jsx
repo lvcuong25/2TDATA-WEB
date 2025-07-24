@@ -16,6 +16,7 @@ import {
   FormOutlined,
   LinkOutlined,
   GlobalOutlined,
+  CloudServerOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -63,10 +64,21 @@ const DashBoard = () => {
         onClick: () => handleLinkClick('/admin/blogs')
       },
       {
-        key: '/admin/status',
-        icon: <FileTextOutlined />,
-        label: <Link to="/admin/status">Quản lý trạng thái</Link>,
-        onClick: () => handleLinkClick('/admin/status')
+        key: 'status-submenu',
+        icon: <FlagOutlined />,
+        label: 'Quản lý trạng thái',
+        children: [
+          {
+            key: '/admin/status',
+            label: <Link to="/admin/status">Trạng thái cá nhân</Link>,
+            onClick: () => handleLinkClick('/admin/status')
+          },
+          {
+            key: '/admin/status/org-status',
+            label: <Link to="/admin/status/org-status">Trạng thái tổ chức</Link>,
+            onClick: () => handleLinkClick('/admin/status/org-status')
+          }
+        ]
       },
       {
         key: '/admin/user-info',
@@ -85,6 +97,12 @@ const DashBoard = () => {
         icon: <LaptopOutlined />,
         label: <Link to="/admin/organization">Quản lý tổ chức</Link>,
         onClick: () => handleLinkClick('/admin/organization')
+      },
+      {
+        key: '/admin/servers',
+        icon: <CloudServerOutlined />,
+        label: <Link to="/admin/servers">Quản lý server</Link>,
+        onClick: () => handleLinkClick('/admin/servers')
       }
     );
 

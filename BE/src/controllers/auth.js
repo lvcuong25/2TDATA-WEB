@@ -26,15 +26,35 @@ export const signUp = async (req, res, next) => {
         // Check current site context
         const currentSiteId = req.site?._id?.toString();
         
-        // Validate site assignment
-        if (role !== 'super_admin' && !site_id) {
-            return res.status(400).json({
-                message: "site_id is required for non-super_admin users"
-            });
+        // Auto-assign site_id logic
+        let finalSiteId = site_id;
+        
+        // Nếu không có site_id được cung cấp
+        if (!site_id) {
+            // Super admin không cần site_id
+            if (role === 'super_admin') {
+                finalSiteId = null;
+            } else {
+                // Tự động lấy site_id từ current site context
+                if (currentSiteId) {
+                    finalSiteId = currentSiteId;
+                } else {
+                    // Nếu không detect được site, báo lỗi với thông tin debug
+                    return res.status(400).json({
+                        message: "Cannot determine site context. Please specify site_id or access from a valid domain.",
+                        debug: {
+                            hostname: req.get('host'),
+                            detectedHostname: req.detectedHostname,
+                            originalHostname: req.originalHostname,
+                            site: req.site ? 'detected' : 'not detected'
+                        }
+                    });
+                }
+            }
         }
 
-        // For non-super_admin users, ensure site_id matches current site
-        if (role !== 'super_admin' && site_id !== currentSiteId) {
+        // For non-super_admin users with explicit site_id, ensure site_id matches current site
+        if (role !== 'super_admin' && site_id && site_id !== currentSiteId) {
             return res.status(403).json({
                 message: "Cannot create user for different site",
                 error: "SITE_MISMATCH"
@@ -54,7 +74,7 @@ export const signUp = async (req, res, next) => {
             ...req.body,
             password: hashedPassword,
             role,
-            site_id: site_id || null,
+            site_id: finalSiteId,
             service: service || null
         });
         
