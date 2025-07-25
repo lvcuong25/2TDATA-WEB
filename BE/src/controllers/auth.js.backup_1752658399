@@ -25,30 +25,16 @@ export const signUp = async (req, res, next) => {
 
         // Check current site context
         const currentSiteId = req.site?._id?.toString();
-        console.log('DEBUG signup:', {
-            currentSiteId,
-            reqSite: req.site?.name,
-            reqSiteId: req.site?._id,
-            hostname: req.hostname,
-            role,
-            site_id
-        });
         
         // Validate site assignment
-        let effectiveSiteId = site_id;
-        
-        // If no site_id provided and not super_admin, use current site
         if (role !== 'super_admin' && !site_id) {
-            if (!currentSiteId) {
-                return res.status(400).json({
-                    message: "Could not determine site context"
-                });
-            }
-            effectiveSiteId = currentSiteId;
+            return res.status(400).json({
+                message: "site_id is required for non-super_admin users"
+            });
         }
 
         // For non-super_admin users, ensure site_id matches current site
-        if (role !== 'super_admin' && site_id && site_id !== currentSiteId) {
+        if (role !== 'super_admin' && site_id !== currentSiteId) {
             return res.status(403).json({
                 message: "Cannot create user for different site",
                 error: "SITE_MISMATCH"
@@ -68,7 +54,7 @@ export const signUp = async (req, res, next) => {
             ...req.body,
             password: hashedPassword,
             role,
-            site_id: role === 'super_admin' ? null : effectiveSiteId,
+            site_id: site_id || null,
             service: service || null
         });
         
@@ -86,7 +72,7 @@ export const signUp = async (req, res, next) => {
 export const signIn = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const userExist = await User.findOne({ email }).populate('site_id');
+        const userExist = await User.findOne({ email }).populate('site_id').populate('service');
         if (!userExist) {
             return res.status(400).json({
                 message: "Email không tồn tại",
@@ -152,8 +138,11 @@ export const signIn = async (req, res, next) => {
         }
         // User thường - redirect về homepage của site họ
         else {
-            // Tất cả user thường đều redirect về /service/my-service
-            redirectPath = '/service/my-service';
+            if (!userExist.service || userExist.service.length === 0) {
+                redirectPath = '/service/my-service';
+            } else {
+                redirectPath = '/';
+            }
             
             // Lấy domain của site user
             if (userExist.site_id && userExist.site_id.domains && userExist.site_id.domains.length > 0) {

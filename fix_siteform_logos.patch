@@ -1,0 +1,18 @@
+--- a/FE/src/components/admin/Site/SiteForm.jsx
++++ b/FE/src/components/admin/Site/SiteForm.jsx
+@@ -47,7 +47,14 @@ const SiteForm = () => {
+       });
+ 
+       setDomains(site.domains?.length ? site.domains : ['']);
+-      setFooterConfig(site.footer_config || defaultFooterConfig);
++      
++      // Process footer config and mark existing logos as not new
++      const processedFooterConfig = site.footer_config || defaultFooterConfig;
++      if (processedFooterConfig.logos?.partners) {
++        processedFooterConfig.logos.partners = processedFooterConfig.logos.partners.map(logo => ({ ...logo, isNew: false }));
++      }
++      
++      setFooterConfig(processedFooterConfig);
+ 
+       if (site.logo_url) {
+         setLogoFileList([{

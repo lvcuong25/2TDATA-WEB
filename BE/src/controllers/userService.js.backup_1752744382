@@ -169,17 +169,8 @@ export const approveUserService = async (req, res, next) => {
         
         // Kiểm tra quyền: site_admin chỉ được xử lý request của site mình
         if (req.user.role === 'site_admin' && req.user.site_id) {
-            const userSiteId = req.user.site_id._id ? req.user.site_id._id.toString() : req.user.site_id.toString();
-            const requestSiteId = userService.site_id._id ? userService.site_id._id.toString() : userService.site_id.toString();
-            
-            if (userSiteId !== requestSiteId) {
-                return res.status(403).json({ 
-                    message: "Bạn không có quyền xử lý yêu cầu của site khác",
-                    debug: {
-                        userSiteId,
-                        requestSiteId
-                    }
-                });
+            if (userService.site_id && userService.site_id.toString() !== req.user.site_id.toString()) {
+                return res.status(403).json({ message: "Bạn không có quyền xử lý yêu cầu của site khác" });
             }
         }
 

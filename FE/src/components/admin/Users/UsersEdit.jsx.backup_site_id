@@ -25,6 +25,7 @@ const UsersEdit = () => {
     const [assignableRoles, setAssignableRoles] = useState([]);
     const [availableSites, setAvailableSites] = useState([]);
     const [showSiteSelect, setShowSiteSelect] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { control, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm();
     const selectedRole = watch('role');
@@ -177,6 +178,12 @@ const UsersEdit = () => {
     });
 
     const onSubmit = (data) => {
+        if (isSubmitting) {
+            console.log("Already submitting, prevented double submit");
+            return;
+        }
+        setIsSubmitting(true);
+
         setIsLoading(true);
         // Debug log
 
@@ -203,7 +210,10 @@ const UsersEdit = () => {
                 console.error("Error updating user:", error);
                 toast.error(error.response?.data?.message || "Không thể cập nhật thông tin người dùng");
             },
-            onSettled: () => setIsLoading(false)
+            onSettled: () => {
+                setIsLoading(false);
+                setIsSubmitting(false);
+            }
         });
     };
 
@@ -321,7 +331,7 @@ const UsersEdit = () => {
                     <Button type="default">Quay lại</Button>
                 </Link>
             </div>
-            <Form onFinish={handleSubmit(onSubmit)} layout="vertical">
+            <Form onFinish={onSubmit} layout="vertical">
                 <div className="flex flex-col md:flex-row gap-6">
                     <div className="md:w-1/3">
                         <Card className="text-center">
