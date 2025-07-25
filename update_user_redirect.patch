@@ -1,0 +1,16 @@
+--- a/BE/src/controllers/auth.js
++++ b/BE/src/controllers/auth.js
+@@ -138,11 +138,8 @@
+         }
+         // User thường - redirect về homepage của site họ
+         else {
+-            if (!userExist.service || userExist.service.length === 0) {
+-                redirectPath = '/service/my-service';
+-            } else {
+-                redirectPath = '/';
+-            }
++            // Tất cả user thường đều redirect về /service/my-service
++            redirectPath = '/service/my-service';
+             
+             // Lấy domain của site user
+             if (userExist.site_id && userExist.site_id.domains && userExist.site_id.domains.length > 0) {

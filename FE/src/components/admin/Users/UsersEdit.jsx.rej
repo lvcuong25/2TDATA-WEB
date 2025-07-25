@@ -1,0 +1,11 @@
+--- FE/src/components/admin/Users/UsersEdit.jsx
++++ FE/src/components/admin/Users/UsersEdit.jsx
+@@ -600,7 +600,7 @@
+                                             showSearch
+                                             filterOption={(input, option) => option.children.toLowerCase().includes(input.toLowerCase())}
+                                         >
+-                                                {availableSites.map(site => (
++                                                {(availableSites || []).map(site => (
+                                                     <Option key={site.value} value={site.value}>
+                                                         {site.label} ({site.domains?.join(', ') || 'No domains'})
+                                                     </Option>

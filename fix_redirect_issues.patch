@@ -1,0 +1,17 @@
+--- a/BE/src/controllers/auth.js
++++ b/BE/src/controllers/auth.js
+@@ -119,12 +119,12 @@ export const signIn = async (req, res, next) => {
+         
+         // Super admin - luôn redirect về dashboard của 2tdata.com
+         if (userExist.role === 'super_admin') {
+-            redirectPath = '/admin/dashboard';
++            redirectPath = '/admin';
+             redirectDomain = 'https://2tdata.com';
+         } 
+         // Site admin - redirect về dashboard của site họ quản lý
+         else if (userExist.role === 'site_admin' || userExist.role === 'admin') {
+-            redirectPath = '/admin/dashboard';
++            redirectPath = '/admin';
+             
+             // Lấy domain của site
+             if (userExist.site_id && userExist.site_id.domains && userExist.site_id.domains.length > 0) {

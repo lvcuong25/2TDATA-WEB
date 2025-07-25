@@ -25,34 +25,16 @@ export const signUp = async (req, res, next) => {
 
         // Check current site context
         const currentSiteId = req.site?._id?.toString();
-        console.log('DEBUG signup:', {
-            currentSiteId,
-            reqSite: req.site?.name,
-            reqSiteId: req.site?._id,
-            hostname: req.hostname,
-            role,
-            site_id
-        });
         
-        // Determine final site_id assignment
-        let finalSiteId = site_id;
-        // If not super_admin and no site_id provided, use current site context
+        // Validate site assignment
         if (role !== 'super_admin' && !site_id) {
-            if (!currentSiteId) {
-                return res.status(400).json({
-                    message: "Cannot determine site context. Please specify site_id or access from a valid domain.",
-                    debug: {
-                        hostname: req.get('host'),
-                        detectedHostname: req.detectedHostname,
-                        originalHostname: req.originalHostname,
-                        site: req.site ? 'detected' : 'not detected'
-                    }
-                });
-            }
-            finalSiteId = currentSiteId;
+            return res.status(400).json({
+                message: "site_id is required for non-super_admin users"
+            });
         }
-        // For non-super_admin users with explicit site_id, ensure site_id matches current site
-        if (role !== 'super_admin' && site_id && site_id !== currentSiteId) {
+
+        // For non-super_admin users, ensure site_id matches current site
+        if (role !== 'super_admin' && site_id !== currentSiteId) {
             return res.status(403).json({
                 message: "Cannot create user for different site",
                 error: "SITE_MISMATCH"
@@ -72,7 +54,7 @@ export const signUp = async (req, res, next) => {
             ...req.body,
             password: hashedPassword,
             role,
-            site_id: role === 'super_admin' ? null : finalSiteId,
+            site_id: site_id || null,
             service: service || null
         });
         

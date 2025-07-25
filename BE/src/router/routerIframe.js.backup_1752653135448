@@ -5,26 +5,29 @@ import {
   getIframeByDomain,
   createIframe,
   updateIframe,
-  deleteIframe,
-  checkAuthStatus
+  deleteIframe
 } from "../controllers/iframe.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
-import { checkIframeAccess } from "../middlewares/checkIframeAccess.js";
-import { requestLogger } from "../middlewares/requestLogger.js";
 
 const router = express.Router();
-// Check authentication status
-router.get("/auth/status", checkIframeAccess, checkAuthStatus);
 
-// Public route for viewing iframe (with optional auth)
-router.get("/view/:domain", requestLogger, checkIframeAccess, getIframeByDomain);
-
-// Admin routes - require authentication
+// Tất cả route iframe đều yêu cầu authentication
+// Lấy danh sách tất cả iframe - yêu cầu auth
 router.get("/", requireAuth, getAllIframes);
+
+// Lấy 1 iframe theo id - yêu cầu auth
 router.get("/:id", requireAuth, getIframeById);
+
+// Lấy iframe theo domain - yêu cầu auth
 router.get("/domain/:domain", requireAuth, getIframeByDomain);
+
+// Thêm mới iframe - yêu cầu auth
 router.post("/", requireAuth, createIframe);
+
+// Sửa iframe - yêu cầu auth
 router.put("/:id", requireAuth, updateIframe);
+
+// Xóa iframe - yêu cầu auth
 router.delete("/:id", requireAuth, deleteIframe);  
 
 export default router;

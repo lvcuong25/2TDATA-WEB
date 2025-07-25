@@ -1,0 +1,31 @@
+--- a/BE/src/controllers/user.js
++++ b/BE/src/controllers/user.js
+@@ -65,11 +65,28 @@ export const updateUser = async (req, res, next) => {
+             // Ensure service is an array of objects with id and status
+             const newServices = Array.isArray(req.body.service) ? req.body.service : [req.body.service];
+             
++            // Get existing UserServices for this user
++            const UserService = mongoose.model('UserService');
++            const existingUserServices = await UserService.find({ user: req.params.id });
++            const existingServiceIds = existingUserServices.map(us => us.service.toString());
++            const newServiceIds = newServices.map(s => s.id);
++            
++            // Find services to delete (exist in DB but not in new list)
++            const servicesToDelete = existingServiceIds.filter(id => !newServiceIds.includes(id));
++            
++            // Delete removed UserServices
++            if (servicesToDelete.length > 0) {
++                await UserService.deleteMany({
++                    user: req.params.id,
++                    service: { $in: servicesToDelete }
++                });
++            }
++            
+             // Create UserService documents for each service
+-            const UserService = mongoose.model('UserService');
+             const servicePromises = newServices.map(async (service) => {
+                 // Check if service already exists for this user
+                 const existingService = await UserService.findOne({
+                     user: req.params.id,
+                     service: service.id
+                 });
