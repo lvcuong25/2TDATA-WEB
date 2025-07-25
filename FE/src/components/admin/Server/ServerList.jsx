@@ -116,11 +116,25 @@ const ServerList = () => {
       title: 'API Code',
       dataIndex: 'apiCode',
       key: 'apiCode',
+      width: 200,
+      ellipsis: true,
+      render: (text) => (
+        <Tooltip title={text} placement="topLeft">
+          <span className="api-code-ellipsis">{text}</span>
+        </Tooltip>
+      ),
     },
     {
       title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
+      width: 220,
+      ellipsis: true,
+      render: (text) => (
+        <Tooltip title={text} placement="topLeft">
+          <span className="description-ellipsis">{text}</span>
+        </Tooltip>
+      ),
     },
     {
       title: 'Trạng thái',

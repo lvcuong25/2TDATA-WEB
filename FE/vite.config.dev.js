@@ -13,30 +13,6 @@ export default defineConfig({
     },
     hmr: {
       port: 5173
-    },
-    // Allow access from different localhost subdomains
-    allowedHosts: [
-      'localhost',
-      'site1.localhost',
-      'site2.localhost', 
-      'techhub.localhost',
-      'finance.localhost',
-      '.localhost'
-    ],
-    // Proxy API requests to backend
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      },
-      '/uploads': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      },
-      '/logos': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      }
     }
   }
 })

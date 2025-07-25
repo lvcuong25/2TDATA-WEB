@@ -8,7 +8,7 @@ export default defineConfig({
     sourcemap: true
   },
   server: {
-    port: 5173,
+    port: 3006,
     host: '0.0.0.0',
     hmr: {
       host: 'dev.2tdata.com',
@@ -20,24 +20,19 @@ export default defineConfig({
       'trunglq8.com',
       'www.trunglq8.com',
       '.2tdata.com',
-      '.trunglq8.com',
-      'site1.localhost',
-      'site2.localhost',
-      'affiliate1.localhost',
-      'affiliate2.localhost',
-      'partner.localhost'
+      '.trunglq8.com'
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3004',
         changeOrigin: true
       },
       '/uploads': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3004',
         changeOrigin: true
       },
       '/logos': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3004',
         changeOrigin: true
       }
     }

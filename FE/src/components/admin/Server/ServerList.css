@@ -5,4 +5,22 @@
 .ant-table-tbody > tr.custom-user-row > td {
   padding-top: 14px !important;
   padding-bottom: 14px !important;
+}
+
+.api-code-ellipsis {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.description-ellipsis {
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
 } 

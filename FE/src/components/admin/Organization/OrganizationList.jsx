@@ -2,7 +2,7 @@
 import instance from '../../../utils/axiosInstance';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select, Upload, Switch, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, TeamOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, TeamOutlined, AppstoreOutlined, MailOutlined, PhoneOutlined, HomeOutlined, IdcardOutlined, NumberOutlined, PictureOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 import { uploadFileCloudinary } from '../libs/uploadImageCloud';
 
@@ -333,10 +333,12 @@ const OrganizationList = () => {
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           {/* Form fields for organization */}
-          <Form.Item name="name" label="Tên tổ chức" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="manager" label="Quản lý" rules={[{ required: true }]}>
+          <Form.Item name="name" label="Tên tổ chức" rules={[{ required: true, message: 'Vui lòng nhập tên tổ chức!' }]} help="Nhập tên đầy đủ của tổ chức">
+            <Input placeholder="Tên tổ chức" prefix={<AppstoreOutlined />} />
+          </Form.Item>
+          <Form.Item name="manager" label="Quản lý" rules={[{ required: true, message: 'Vui lòng chọn quản lý!' }]} help="Chọn người quản lý tổ chức">
             <Select 
-              placeholder="Chọn quản lý" 
+              placeholder={<><TeamOutlined /> Chọn quản lý</>} 
               loading={loadingUsers} 
               showSearch 
               filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
@@ -344,19 +346,35 @@ const OrganizationList = () => {
               {userData?.map(user => (<Select.Option key={user._id} value={user._id} label={user.name || user.email}>{user.name || user.email}</Select.Option>))}
             </Select>
           </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ type: 'email' }]}><Input /></Form.Item>
-          <Form.Item name="phone" label="Số điện thoại"><Input /></Form.Item>
-          <Form.Item name="address" label="Địa chỉ"><Input /></Form.Item>
-          <Form.Item name="identifier" label="Mã định danh"><Input /></Form.Item>
-          <Form.Item name="taxCode" label="Mã số thuế"><Input /></Form.Item>
+          <Form.Item name="email" label="Email" rules={[{ type: 'email', message: 'Email không hợp lệ!' }]} help="Email liên hệ của tổ chức">
+            <Input placeholder="Email liên hệ" prefix={<MailOutlined />} />
+          </Form.Item>
+          <Form.Item name="phone" label="Số điện thoại" help="Số điện thoại liên hệ của tổ chức">
+            <Input placeholder="Số điện thoại liên hệ" prefix={<PhoneOutlined />} />
+          </Form.Item>
+          <Form.Item name="address" label="Địa chỉ" help="Địa chỉ tổ chức">
+            <Input placeholder="Địa chỉ tổ chức" prefix={<HomeOutlined />} />
+          </Form.Item>
+          <Form.Item name="identifier" label="Mã định danh"
+            rules={[{ required: true, message: 'Vui lòng nhập mã định danh!' }, { pattern: /^\d{12}$/, message: 'Mã định danh phải gồm đúng 12 số!' }]}
+            help="Mã định danh tổ chức gồm đúng 12 số">
+            <Input placeholder="Ví dụ: 012345678901" maxLength={12} prefix={<IdcardOutlined />} />
+          </Form.Item>
+          <Form.Item name="taxCode" label="Mã số thuế"
+            rules={[{ pattern: /^(\d{10}|\d{13})$/, message: 'Mã số thuế phải gồm 10 hoặc 13 số!' }]}
+            help="Mã số thuế tổ chức gồm 10 hoặc 13 số (nếu có)">
+            <Input placeholder="Ví dụ: 0123456789 hoặc 0123456789012" maxLength={13} prefix={<NumberOutlined />} />
+          </Form.Item>
           <Form.Item name="logo" label="Logo">
             <Upload name="logo" listType="picture" showUploadList={false} customRequest={({ file, onSuccess }) => { onSuccess("ok"); handleLogoUpload({ file: { originFileObj: file } }); }}>
-              <Button icon={<UploadOutlined />}>Tải logo</Button>
+              <Button icon={<PictureOutlined />}>Tải logo</Button>
               {logoUrl && <img src={logoUrl} alt="logo" className="w-16 h-16 object-contain mt-2" />}
             </Upload>
           </Form.Item>
           {editingOrg && <Form.Item name="active" label="Trạng thái" valuePropName="checked"><Switch /></Form.Item>}
-          <Form.Item><Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending}>Lưu</Button></Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending}>Lưu</Button>
+          </Form.Item>
         </Form>
       </Modal>
 

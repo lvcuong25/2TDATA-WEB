@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 🌐 Multi-Site Environment Configuration
  * 
  * ✅ Updated to support dynamic API base URLs for affiliate domains
@@ -7,15 +7,13 @@
 
 // Dynamic API base URL function for multi-site support
 const getApiBaseURL = () => {
-  // In development mode, always use localhost:3000
-  if (import.meta.env.DEV || window.location.port === '5173') {
-    return 'http://localhost:3000/api';
+  // In development mode on local machine
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:3004/api';
   }
   
-  // In production, use dynamic URL
-  const protocol = window.location.protocol;
-  const host = window.location.host;
-  return `${protocol}//${host}/api`;
+  // In production/staging, use relative URL (goes through Nginx)
+  return '/api';
 };
 
 // Dynamic configuration based on current domain

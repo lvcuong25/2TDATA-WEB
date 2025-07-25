@@ -184,7 +184,17 @@ export const updateMemberRole = async (req, res) => {
             return res.status(404).json({ error: "Không tìm thấy tổ chức." });
         }
         
-        // TODO: Thêm logic kiểm tra quyền của người dùng hiện tại (chỉ owner mới được sửa)
+        // Kiểm tra quyền của người dùng hiện tại (chỉ owner mới được sửa)
+        const currentUserId = req.user._id;
+        const currentUserRole = req.user.role;
+        
+        // Admin có thể sửa
+        if (currentUserRole !== 'super_admin' && currentUserRole !== 'site_admin') {
+            const currentMember = organization.members.find(m => m.user.equals(currentUserId));
+            if (!currentMember || currentMember.role !== 'owner') {
+                return res.status(403).json({ error: "Chỉ owner hoặc admin mới được thay đổi vai trò thành viên." });
+            }
+        }
 
         const memberToUpdate = organization.members.find(member => member.user.equals(userId));
         if (!memberToUpdate) {
@@ -216,7 +226,17 @@ export const removeMember = async (req, res) => {
             return res.status(404).json({ error: "Không tìm thấy tổ chức." });
         }
         
-        // TODO: Thêm logic kiểm tra quyền của người dùng hiện tại (chỉ owner mới được xóa)
+        // Kiểm tra quyền của người dùng hiện tại (chỉ owner mới được xóa)
+        const currentUserId = req.user._id;
+        const currentUserRole = req.user.role;
+        
+        // Admin có thể xóa
+        if (currentUserRole !== 'super_admin' && currentUserRole !== 'site_admin') {
+            const currentMember = organization.members.find(m => m.user.equals(currentUserId));
+            if (!currentMember || currentMember.role !== 'owner') {
+                return res.status(403).json({ error: "Chỉ owner hoặc admin mới được xóa thành viên." });
+            }
+        }
         
         const memberToRemove = organization.members.find(member => member.user.equals(userId));
         if (!memberToRemove) {
