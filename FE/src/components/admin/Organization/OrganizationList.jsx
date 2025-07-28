@@ -27,6 +27,7 @@ const OrganizationList = () => {
   const [isMembersModalVisible, setIsMembersModalVisible] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [addMemberForm] = Form.useForm();
+  const [selectedSiteForMember, setSelectedSiteForMember] = useState(null);
 
   // Fetch organization data with pagination
   const { data, isLoading, error } = useQuery({
@@ -163,11 +164,14 @@ const OrganizationList = () => {
 
   const handleAdd = () => {
     setEditingOrg(null);
-    form.resetFields();
     setLogoUrl('');
     setCloudinaryPublicId('');
     setSelectedSite(null);
     setIsModalVisible(true);
+    // Reset form sau khi modal đã mở
+    setTimeout(() => {
+      form.resetFields();
+    }, 100);
   };
 
   const handleEdit = (record) => {
@@ -175,10 +179,11 @@ const OrganizationList = () => {
     form.setFieldsValue({
       ...record,
       manager: typeof record.manager === 'object' ? record.manager?._id : record.manager,
+      selectedSite: record.site_id?._id || record.site_id,
     });
     setLogoUrl(record.logo || '');
     setCloudinaryPublicId(record.logo_public_id || ''); // Load existing public_id
-    setSelectedSite(null);
+    setSelectedSite(record.site_id?._id || record.site_id); // Set selected site for editing
     setIsModalVisible(true);
   };
 
@@ -187,11 +192,27 @@ const OrganizationList = () => {
   };
 
   const handleSubmit = async (values) => {
+    // Lọc bỏ selectedSite khỏi dữ liệu gửi lên backend
+    const { selectedSite, ...otherValues } = values;
+    
     const submitValues = { 
-      ...values, 
+      ...otherValues, 
       logo: logoUrl,
-      logo_public_id: cloudinaryPublicId // Gửi public_id để backend lưu trữ
+      logo_public_id: cloudinaryPublicId, // Gửi public_id để backend lưu trữ
+      site_id: selectedSite || currentUser?.site_id // Sử dụng selectedSite hoặc currentUser's site
     };
+    
+    console.log('Form values:', values);
+    console.log('Selected site:', selectedSite);
+    console.log('Current user site:', currentUser?.site_id);
+    console.log('Submitting values:', submitValues); // Debug log
+    
+    // Kiểm tra xem có manager không
+    if (!submitValues.manager) {
+      toast.error('Vui lòng chọn người quản lý!');
+      return;
+    }
+    
     if (editingOrg) {
       updateMutation.mutate({ id: editingOrg._id, values: submitValues });
     } else {
@@ -247,9 +268,46 @@ const OrganizationList = () => {
 
   const columns = [
     {
+      title: 'Logo',
+      dataIndex: 'logo',
+      key: 'logo',
+      width: 64,
+      render: (logo) =>
+        logo ? (
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 8, background: '#f5f5f5' }}
+          />
+        ) : (
+          <span style={{ color: '#bbb' }}>—</span>
+        ),
+    },
+    {
       title: 'Tên tổ chức',
       dataIndex: 'name',
       key: 'name',
+    },
+    {
+      title: 'Site',
+      dataIndex: 'site_id',
+      key: 'site_id',
+      render: (site) => {
+        if (!site) return '---';
+        if (typeof site === 'object') {
+          const siteName = site.name || '---';
+          const domain = site.domains?.[0];
+          return (
+            <div>
+              <div className="font-medium">{siteName}</div>
+              {domain && (
+                <div className="text-xs text-gray-500">{domain}</div>
+              )}
+            </div>
+          );
+        }
+        return '---';
+      },
     },
     {
       title: 'Quản lý',
@@ -601,7 +659,11 @@ const OrganizationList = () => {
                           placeholder="Chọn site để lọc người dùng"
                           allowClear
                           showSearch
-                          style={{ width: 200 }}
+                          value={selectedSiteForMember}
+                          onChange={value => {
+                            setSelectedSiteForMember(value);
+                            addMemberForm.setFieldsValue({ selectedSiteForMember: value, userId: undefined });
+                          }}
                           filterOption={(input, option) =>
                               (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
                           }
@@ -628,11 +690,9 @@ const OrganizationList = () => {
                           filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                       >
                           {(() => {
-                              const selectedSiteForMember = addMemberForm.getFieldValue('selectedSiteForMember');
                               const availableUsers = userData?.filter(user => 
                                   !selectedOrgData?.members.some(m => m.user._id === user._id)
                               );
-                              
                               const filteredAvailableUsers = selectedSiteForMember 
                                   ? availableUsers?.filter(user => {
                                       const userSiteId = user.site_id?._id || user.site_id;

@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Spin, Typography, Breadcrumb, Tag, Divider, message, Space } from 'antd';
+import { Spin, Typography, Breadcrumb, Tag, Divider, message, Space, Button } from 'antd';
 import { CalendarOutlined, UserOutlined, TagOutlined, ShareAltOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -9,6 +9,7 @@ import remarkGfm from 'remark-gfm';
 import instance from '../../utils/axiosInstance';
 import Header from '../Header';
 import Footer from '../Footer';
+import { toast } from 'react-toastify';
 
 const { Title, Paragraph } = Typography;
 
@@ -46,46 +47,68 @@ const DetailBlogPage: React.FC = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  const shareUrl = window.location.href;
+  const shareTitle = blog.title;
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: `Xem bài viết: ${shareTitle}`,
+          url: shareUrl,
+        });
+      } catch (err) {
+        // Người dùng hủy share
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Đã sao chép link bài viết!');
+      } catch {
+        toast.error('Không thể sao chép link!');
+      }
+    }
+  };
+
   return (
     <div className="bg-gray-100 min-h-screen pt-12">
       <Header/>
       <div className="container mx-auto  max-w-4xl pb-10">
-        <Breadcrumb className="mb-6 mt-12">
-          <Breadcrumb.Item><Link to="/">Home</Link></Breadcrumb.Item>
+        <Breadcrumb className="mb-6 mt-12 px-2 text-sm">
+          <Breadcrumb.Item><Link to="/">Trang chủ</Link></Breadcrumb.Item>
           <Breadcrumb.Item><Link to="/blogs">Blogs</Link></Breadcrumb.Item>
           <Breadcrumb.Item>{blog.title}</Breadcrumb.Item>
         </Breadcrumb>
 
-        <article className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <article className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
           {blog.image && (
-            <div className="w-full h-[400px] relative">
+            <div className="w-full h-[340px] relative overflow-hidden">
               <img
                 src={blog.image}
                 alt={blog.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                style={{ borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}
                 onError={(e) => {
-                  console.error("Error loading image:", e);
                   e.currentTarget.src = '/assets/images/fallback-image.jpg';
-                  message.warning("Failed to load blog image.");
                 }}
               />
             </div>
           )}
 
-          <div className="p-8">
-            <Title level={1} className="mb-4">{blog.title}</Title>
-            
-            <Space className="text-black mb-6" size={16} wrap>
-              <span><CalendarOutlined className="mr-2" />{formatDate(blog.createdAt)}</span>
-              <span><UserOutlined className="mr-2" />{blog.author}</span>
+          <div className="p-8 pb-4">
+            <Title level={1} className="mb-2 text-3xl font-bold text-gray-900">{blog.title}</Title>
+            <Space className="text-gray-500 mb-4" size={16} wrap>
+              <span><CalendarOutlined className="mr-1" />{formatDate(blog.createdAt)}</span>
+              <span><UserOutlined className="mr-1" />{blog.author}</span>
               {blog.tags && blog.tags.length > 0 && (
-                <span><TagOutlined className="mr-2" />{blog.tags.join(', ')}</span>
+                <span><TagOutlined className="mr-1" />{blog.tags.map(tag => <Tag key={tag}>{tag}</Tag>)}</span>
               )}
             </Space>
 
             <Divider />
 
-            <div className="content-area prose max-w-none text-black">
+            <div className="content-area prose max-w-none text-gray-800 leading-7 px-8 pb-8">
               <ReactMarkdown 
                 rehypePlugins={[rehypeRaw]}
                 remarkPlugins={[remarkGfm]}
@@ -117,16 +140,32 @@ const DetailBlogPage: React.FC = () => {
 
             <Divider />
 
-            <Space className="mt-8" size={16} wrap>
+            <Space className="mt-6 px-8 pb-8" size={16} wrap>
               <Link
                 to="/blogs"
-                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition duration-300"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-300"
               >
-                Back to Blogs
+                Quay lại danh sách
               </Link>
-              <button className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded transition duration-300">
-                <ShareAltOutlined className="mr-2" />Share
-              </button>
+              <Button
+                type="primary"
+                icon={<ShareAltOutlined />}
+                onClick={handleShare}
+                style={{
+                  background: 'linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%)',
+                  border: 'none',
+                  color: '#fff',
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  boxShadow: '0 2px 8px rgba(59,130,246,0.15)',
+                  padding: '0 20px',
+                  height: 40,
+                  transition: 'background 0.3s',
+                }}
+                className="hover:scale-105 active:scale-95"
+              >
+                Chia sẻ bài viết
+              </Button>
             </Space>
           </div>
         </article>

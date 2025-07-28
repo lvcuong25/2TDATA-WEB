@@ -228,7 +228,7 @@ export const createSite = async (req, res) => {
     if (!name || !domains || !Array.isArray(domains) || domains.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Name and at least one domain are required'
+        message: 'Vui lòng nhập tên và ít nhất một tên miền!'
       });
     }
     

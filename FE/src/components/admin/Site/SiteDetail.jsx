@@ -1,8 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Card, Descriptions, Button, Tag, Space, Typography, Row, Col, Avatar, Spin, message, Modal, Statistic } from 'antd';
+import { Card, Descriptions, Button, Tag, Space, Typography, Row, Col, Avatar, Spin, Modal, Statistic } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, UserOutlined, GlobalOutlined, SettingOutlined } from '@ant-design/icons';
 import axiosInstance from '../../../axios/axiosInstance';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const { Title, Text, Paragraph } = Typography;
 const { confirm } = Modal;
@@ -15,7 +17,7 @@ const SiteDetail = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
 
-  useEffect(() => {
+  useEffect(() => {zok 
     fetchSiteDetail();
     fetchSiteStats();
   }, [id]);
@@ -24,8 +26,9 @@ const SiteDetail = () => {
     try {
       const response = await axiosInstance.get(`/sites/${id}`);
       setSite(response.data.data || response.data);
+      toast.success('Tải chi tiết trang web thành công!');
     } catch (error) {
-      message.error('Không thể tải thông tin trang web');
+      toast.error('Không thể tải thông tin trang web');
       console.error('Error fetching site:', error);
     } finally {
       setLoading(false);
@@ -36,7 +39,9 @@ const SiteDetail = () => {
     try {
       const response = await axiosInstance.get(`/sites/${id}/stats`);
       setStats(response.data.data || response.data);
+      toast.success('Tải thống kê trang web thành công!');
     } catch (error) {
+      toast.error('Không thể tải thống kê trang web');
       console.error('Error fetching site stats:', error);
     }
   };
@@ -55,11 +60,11 @@ const SiteDetail = () => {
       onOk: async () => {
         try {
           await axiosInstance.delete(`/sites/${id}`);
-          message.success('Xóa trang web thành công');
+          toast.success('Xóa trang web thành công');
           navigate('/admin/sites');
         } catch (error) {
           const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra khi xóa trang web';
-          message.error(errorMsg);
+          toast.error(errorMsg);
         }
       },
     });

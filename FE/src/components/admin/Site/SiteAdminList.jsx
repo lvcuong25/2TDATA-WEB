@@ -16,6 +16,8 @@ import {
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import axios from '../../../api/axiosConfig';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const { Option } = Select;
 
@@ -36,9 +38,10 @@ const SiteAdminList = () => {
       setLoading(true);
       const response = await axios.get(`/api/site-admins/site/${siteId}`);
       setSiteAdmins(response.data.data);
+      toast.success('Tải danh sách quản trị viên thành công!');
     } catch (error) {
       console.error('Error fetching site admins:', error);
-      message.error('Failed to fetch site administrators');
+      toast.error('Không thể tải danh sách quản trị viên');
     } finally {
       setLoading(false);
     }
@@ -65,11 +68,11 @@ const SiteAdminList = () => {
   const handleDelete = async (adminId) => {
     try {
       await axios.delete(`/api/site-admins/${adminId}`);
-      message.success('Site administrator deleted successfully');
+      toast.success('Site administrator deleted successfully');
       fetchSiteAdmins();
     } catch (error) {
       console.error('Error deleting site admin:', error);
-      message.error('Failed to delete site administrator');
+      toast.error('Failed to delete site administrator');
     }
   };
 
@@ -82,17 +85,17 @@ const SiteAdminList = () => {
 
       if (editingAdmin) {
         await axios.put(`/api/site-admins/${editingAdmin._id}`, adminData);
-        message.success('Site administrator updated successfully');
+        toast.success('Cập nhật quản trị viên thành công!');
       } else {
         await axios.post('/api/site-admins', adminData);
-        message.success('Site administrator created successfully');
+        toast.success('Thêm quản trị viên thành công!');
       }
 
       setModalVisible(false);
       fetchSiteAdmins();
     } catch (error) {
       console.error('Error saving site admin:', error);
-      message.error('Failed to save site administrator');
+      toast.error('Lưu quản trị viên thất bại!');
     }
   };
 

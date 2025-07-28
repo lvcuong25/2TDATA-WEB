@@ -119,9 +119,9 @@ const ServerList = () => {
       width: 200,
       ellipsis: true,
       render: (text) => (
-        <Tooltip title={text} placement="topLeft">
-          <span className="api-code-ellipsis">{text}</span>
-        </Tooltip>
+        <span className="api-code-ellipsis">
+          {text ? '*'.repeat(text.length) : ''}
+        </span>
       ),
     },
     {
@@ -131,9 +131,18 @@ const ServerList = () => {
       width: 220,
       ellipsis: true,
       render: (text) => (
-        <Tooltip title={text} placement="topLeft">
-          <span className="description-ellipsis">{text}</span>
-        </Tooltip>
+        <span
+          className="description-ellipsis"
+          style={{
+            whiteSpace: 'nowrap', // chỉ 1 dòng, không xuống dòng
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: 'block',
+            maxWidth: 200, // hoặc width phù hợp
+          }}
+        >
+          {text}
+        </span>
       ),
     },
     {
@@ -283,7 +292,12 @@ const ServerList = () => {
             )}
             <div style={{ fontSize: 16, marginBottom: 8 }}><b>Link:</b> <a href={serverDetail.link} target="_blank" rel="noopener noreferrer">{serverDetail.link}</a></div>
             <div style={{ fontSize: 16, marginBottom: 8 }}><b>API Code:</b> {serverDetail.apiCode}</div>
-            <div style={{ fontSize: 16, marginBottom: 8 }}><b>Mô tả:</b> {serverDetail.description}</div>
+            <div style={{ fontSize: 16, marginBottom: 8 }}>
+              <b>Mô tả:</b>
+              <div style={{ whiteSpace: 'pre-line', marginTop: 4 }}>
+                {serverDetail.description}
+              </div>
+            </div>
             <div style={{ fontSize: 16, marginBottom: 8 }}><b>Trạng thái:</b> <Tag color={statusColors[serverDetail.status]}>{serverDetail.status}</Tag></div>
             <div style={{ fontSize: 16 }}><b>Ngày tạo:</b> {serverDetail.createdAt ? new Date(serverDetail.createdAt).toLocaleString('vi-VN') : ''}</div>
           </div>
