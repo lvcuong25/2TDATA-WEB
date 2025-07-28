@@ -76,65 +76,48 @@ const AllBlogPage: React.FC = () => {
     <div className="bg-gray-50 min-h-screen pt-12">
 
       <Header/>
-      <div className="container mx-auto px-4 pb-10">
+      <div className="container mx-auto px-4 pb-10 max-w-7xl">
         <Title level={2} className="text-center mb-8 text-gray-800">Danh sách bài viết</Title>
         <Row gutter={[32, 32]}>
           <Col xs={24} lg={6}>
-            <Card className="shadow-sm sticky top-4">
-              <div className="space-y-6">
-                <Search
-                  placeholder="Search blogs..."
-                  allowClear
-                  enterButton={<SearchOutlined />}
-                  className="mb-4"
-                />
-                
-                <div>
-                  <Title level={4} className="text-gray-700 mb-4">Bài viết mới nhất</Title>
-                  <List
-                    dataSource={blogs.slice(0, 3)}
-                    renderItem={blog => (
-                      <List.Item>
-                        <Link to={`/blogs/${blog._id}`} className="text-gray-600 hover:text-blue-600">
-                          {blog.title}
-                        </Link>
-                      </List.Item>
-                    )}
-                  />
-                </div>
-              </div>
+            <Card className="shadow-sm sticky top-4 rounded-xl">
+              <Search
+                placeholder="Tìm kiếm blog..."
+                allowClear
+                enterButton={<SearchOutlined />}
+                className="mb-6"
+                size="large"
+              />
+              <Title level={4} className="text-gray-700 mb-4">Bài viết mới nhất</Title>
+              <List
+                dataSource={blogs.slice(0, 3)}
+                renderItem={blog => (
+                  <List.Item>
+                    <Link to={`/blogs/${blog._id}`} className="text-gray-600 hover:text-blue-600 line-clamp-2">
+                      {blog.title}
+                    </Link>
+                  </List.Item>
+                )}
+              />
             </Card>
           </Col>
           <Col xs={24} lg={18}>
-            <Card className="shadow-sm mb-6 bg-white">
-              <div className="flex justify-between items-center">
-                <Text className="text-gray-600">
-                  Showing {blogs.length} of {totalBlogs} results
-                </Text>
-                <Space>
-                  <Tag icon={<FireOutlined />} color="red">Hot</Tag>
-                  <Tag color="blue">New</Tag>
-                </Space>
-              </div>
-            </Card>
             <Row gutter={[24, 24]}>
               {blogs.map((blog: Blog) => (
                 <Col xs={24} sm={12} xl={8} key={blog._id}>
                   <Card
                     hoverable
                     cover={
-                      <div className="relative">
-                        <img
-                          alt={blog.title}
-                          src={blog.image}
-                          className="h-48 w-full object-cover"
-                        />
-                        <div className="absolute top-2 right-2">
-                          <Tag color="blue">New</Tag>
-                        </div>
-                      </div>
+                      <img
+                        alt={blog.title}
+                        src={blog.image}
+                        className="h-48 w-full object-cover rounded-t-xl"
+                        style={{ transition: 'transform 0.3s', objectFit: 'cover' }}
+                        onError={e => e.currentTarget.src = '/assets/images/fallback-image.jpg'}
+                      />
                     }
-                    className="shadow-sm h-full flex flex-col transition-all duration-300 hover:shadow-md"
+                    className="shadow-sm h-full flex flex-col rounded-xl transition-all duration-300 hover:shadow-lg"
+                    bodyStyle={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                   >
                     <Card.Meta
                       title={
@@ -144,9 +127,13 @@ const AllBlogPage: React.FC = () => {
                       }
                       description={
                         <>
-                          <div className="text-gray-600 prose prose-sm max-w-none line-clamp-3"
-                            dangerouslySetInnerHTML={{ __html: truncateHTML(blog.content, 150) }}
-                          >
+                          <div className="text-gray-600 prose prose-sm max-w-none line-clamp-3" style={{
+                            overflow: 'hidden',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical'
+                          }}>
+                            {blog.content.replace(/<[^>]+>/g, '').slice(0, 150)}...
                           </div>
                           <Space className="mt-3" size={[0, 8]} wrap>
                             {blog.tags && blog.tags.map(tag => (
@@ -163,8 +150,9 @@ const AllBlogPage: React.FC = () => {
                     <Link 
                       to={`/blogs/${blog._id}`} 
                       className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-300"
+                      style={{ alignSelf: 'flex-start' }}
                     >
-                      Read More
+                      Đọc tiếp
                       <EyeOutlined className="ml-2" />
                     </Link>
                   </Card>
