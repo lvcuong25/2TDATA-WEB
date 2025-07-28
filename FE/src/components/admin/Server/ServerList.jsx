@@ -203,8 +203,8 @@ const ServerList = () => {
         onCancel={() => { setModalOpen(false); setEditingServer(null); }}
         footer={null}
         destroyOnClose
-        width={900}
-        bodyStyle={{ padding: 32 }}
+        width={1200}
+        bodyStyle={{ padding: 16 }}
       >
         {(() => {
           // Merge users mặc định với các user đang gán cho server (nếu chưa có)
