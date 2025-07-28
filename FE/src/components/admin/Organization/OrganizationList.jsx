@@ -1,10 +1,11 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useContext } from 'react';
 import instance from '../../../utils/axiosInstance';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select, Upload, Switch, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, TeamOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select, Switch, Tag, Row, Col, Card } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, TeamOutlined, AppstoreOutlined, MailOutlined, PhoneOutlined, HomeOutlined, IdcardOutlined, NumberOutlined, PictureOutlined, GlobalOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 import { uploadFileCloudinary } from '../libs/uploadImageCloud';
+import { AuthContext } from '../../core/Auth';
 
 const OrganizationList = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -15,6 +16,12 @@ const OrganizationList = () => {
   const [logoUrl, setLogoUrl] = useState('');
   const [searchValue, setSearchValue] = useState("");
   const queryClient = useQueryClient();
+  
+  // Get current user context
+  const { currentUser } = useContext(AuthContext);
+  
+  // Watch form values for filtering
+  const [selectedSite, setSelectedSite] = useState(null);
 
   // State for member management
   const [isMembersModalVisible, setIsMembersModalVisible] = useState(false);
@@ -43,6 +50,23 @@ const OrganizationList = () => {
       return data.docs || data.data?.docs || [];
     },
   });
+
+  // Fetch sites for filtering
+  const { data: sitesData } = useQuery({
+    queryKey: ['sites'],
+    queryFn: async () => {
+      const { data } = await instance.get('/sites', { params: { limit: 100 } });
+      return data.data || [];
+    },
+  });
+
+  // Filter users by selected site
+  const filteredUsers = selectedSite 
+    ? userData?.filter(user => {
+        const userSiteId = user.site_id?._id || user.site_id;
+        return userSiteId === selectedSite;
+      })
+    : userData;
 
   // Fetch details of the selected organization for member management
   const { data: selectedOrgData, isLoading: isLoadingSelectedOrg, refetch: refetchSelectedOrg } = useQuery({
@@ -119,10 +143,30 @@ const OrganizationList = () => {
     onError: (error) => toast.error('Lỗi: ' + (error.response?.data?.error || error.message)),
   });
 
+  // Logo upload mutation
+  const uploadMutation = useMutation({
+    mutationFn: uploadFileCloudinary,
+    onSuccess: (data) => {
+      setLogoUrl(data.url);
+      setCloudinaryPublicId(data.public_id);
+      form.setFieldsValue({ logo: data.url });
+      toast.success('Tải logo tổ chức thành công!');
+    },
+    onError: (error) => {
+      console.error("Error uploading image:", error);
+      toast.error("Không thể tải logo lên");
+    },
+  });
+
+  // State to store Cloudinary public_id for deletion
+  const [cloudinaryPublicId, setCloudinaryPublicId] = useState('');
+
   const handleAdd = () => {
     setEditingOrg(null);
     form.resetFields();
     setLogoUrl('');
+    setCloudinaryPublicId('');
+    setSelectedSite(null);
     setIsModalVisible(true);
   };
 
@@ -133,6 +177,8 @@ const OrganizationList = () => {
       manager: typeof record.manager === 'object' ? record.manager?._id : record.manager,
     });
     setLogoUrl(record.logo || '');
+    setCloudinaryPublicId(record.logo_public_id || ''); // Load existing public_id
+    setSelectedSite(null);
     setIsModalVisible(true);
   };
 
@@ -141,7 +187,11 @@ const OrganizationList = () => {
   };
 
   const handleSubmit = async (values) => {
-    const submitValues = { ...values, logo: logoUrl };
+    const submitValues = { 
+      ...values, 
+      logo: logoUrl,
+      logo_public_id: cloudinaryPublicId // Gửi public_id để backend lưu trữ
+    };
     if (editingOrg) {
       updateMutation.mutate({ id: editingOrg._id, values: submitValues });
     } else {
@@ -149,15 +199,32 @@ const OrganizationList = () => {
     }
   };
 
-  const handleLogoUpload = async (info) => {
-    if (info.file.status === 'done' || info.file.status === 'uploading') {
-      const file = info.file.originFileObj;
-      if (file) {
-        const url = await uploadFileCloudinary(file);
-        setLogoUrl(url);
-        form.setFieldsValue({ logo: url });
-        toast.success('Tải logo thành công!');
+  const handleLogoChange = async ({ target }) => {
+    if (target?.files?.length > 0) {
+      const file = target?.files[0];
+      setLogoUrl(URL.createObjectURL(file));
+      uploadMutation.mutate(file);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    // Clear the logo from form and state
+    setLogoUrl('');
+    form.setFieldsValue({ logo: '' });
+    
+    // Delete from Cloudinary if we have public_id
+    if (cloudinaryPublicId) {
+      try {
+        // Note: This would require a backend endpoint to handle Cloudinary deletion
+        // For now, we'll just clear the local state
+        setCloudinaryPublicId('');
+        toast.success('Đã xóa logo khỏi form');
+      } catch (error) {
+        console.error('Error deleting from Cloudinary:', error);
+        toast.error('Lỗi khi xóa file khỏi Cloudinary');
       }
+    } else {
+      toast.success('Đã xóa logo khỏi form');
     }
   };
   
@@ -329,80 +396,287 @@ const OrganizationList = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
-        width={600}
+        width={1000}
+        bodyStyle={{ padding: 16 }}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          {/* Form fields for organization */}
-          <Form.Item name="name" label="Tên tổ chức" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="manager" label="Quản lý" rules={[{ required: true }]}>
-            <Select 
-              placeholder="Chọn quản lý" 
-              loading={loadingUsers} 
-              showSearch 
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-            >
-              {userData?.map(user => (<Select.Option key={user._id} value={user._id} label={user.name || user.email}>{user.name || user.email}</Select.Option>))}
-            </Select>
-          </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ type: 'email' }]}><Input /></Form.Item>
-          <Form.Item name="phone" label="Số điện thoại"><Input /></Form.Item>
-          <Form.Item name="address" label="Địa chỉ"><Input /></Form.Item>
-          <Form.Item name="identifier" label="Mã định danh"><Input /></Form.Item>
-          <Form.Item name="taxCode" label="Mã số thuế"><Input /></Form.Item>
-          <Form.Item name="logo" label="Logo">
-            <Upload name="logo" listType="picture" showUploadList={false} customRequest={({ file, onSuccess }) => { onSuccess("ok"); handleLogoUpload({ file: { originFileObj: file } }); }}>
-              <Button icon={<UploadOutlined />}>Tải logo</Button>
-              {logoUrl && <img src={logoUrl} alt="logo" className="w-16 h-16 object-contain mt-2" />}
-            </Upload>
-          </Form.Item>
-          {editingOrg && <Form.Item name="active" label="Trạng thái" valuePropName="checked"><Switch /></Form.Item>}
-          <Form.Item><Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending}>Lưu</Button></Form.Item>
+          <Row gutter={24}>
+            {/* Left Column - Basic Information */}
+            <Col span={12}>
+              <Card title="Thông tin cơ bản" className="mb-3">
+                <Form.Item name="name" label="Tên tổ chức" rules={[{ required: true, message: 'Vui lòng nhập tên tổ chức!' }]} help="Nhập tên đầy đủ của tổ chức">
+                  <Input placeholder="Tên tổ chức" prefix={<AppstoreOutlined />} />
+                </Form.Item>
+                
+                <Form.Item name="email" label="Email" rules={[{ type: 'email', message: 'Email không hợp lệ!' }]} help="Email liên hệ của tổ chức">
+                  <Input placeholder="Email liên hệ" prefix={<MailOutlined />} />
+                </Form.Item>
+                
+                <Form.Item name="phone" label="Số điện thoại" help="Số điện thoại liên hệ của tổ chức">
+                  <Input placeholder="Số điện thoại liên hệ" prefix={<PhoneOutlined />} />
+                </Form.Item>
+                
+                <Form.Item name="address" label="Địa chỉ" help="Địa chỉ tổ chức">
+                  <Input placeholder="Địa chỉ tổ chức" prefix={<HomeOutlined />} />
+                </Form.Item>
+              </Card>
+
+              <Card title="Thông tin pháp lý" className="mb-3">
+                <Form.Item name="identifier" label="Mã định danh"
+                  rules={[{ required: true, message: 'Vui lòng nhập mã định danh!' }, { pattern: /^\d{12}$/, message: 'Mã định danh phải gồm đúng 12 số!' }]}
+                  help="Mã định danh tổ chức gồm đúng 12 số">
+                  <Input placeholder="Ví dụ: 012345678901" maxLength={12} prefix={<IdcardOutlined />} />
+                </Form.Item>
+                
+                <Form.Item name="taxCode" label="Mã số thuế"
+                  rules={[{ pattern: /^(\d{10}|\d{13})$/, message: 'Mã số thuế phải gồm 10 hoặc 13 số!' }]}
+                  help="Mã số thuế tổ chức gồm 10 hoặc 13 số (nếu có)">
+                  <Input placeholder="Ví dụ: 0123456789 hoặc 0123456789012" maxLength={13} prefix={<NumberOutlined />} />
+                </Form.Item>
+              </Card>
+            </Col>
+
+            {/* Right Column - Management & Media */}
+            <Col span={12}>
+              <Card title="Quản lý & Phân quyền" className="mb-2">
+                {/* Site Selection for Manager */}
+                <Form.Item name="selectedSite" label={
+                  <span>
+                    <GlobalOutlined className="mr-1" />
+                    Chọn site
+                  </span>
+                } help="Chọn site để lọc người quản lý (tùy chọn)">
+                  <Select
+                    placeholder="Chọn site để lọc người quản lý"
+                    allowClear
+                    showSearch
+                    value={selectedSite}
+                    onChange={(value) => {
+                      setSelectedSite(value);
+                      form.setFieldsValue({ selectedSite: value });
+                    }}
+                    filterOption={(input, option) =>
+                      (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                  >
+                    {sitesData?.map(site => (
+                      <Select.Option key={site._id} value={site._id}>
+                        {site.name}
+                        {site.domains && site.domains.length > 0 && (
+                          <span className="text-gray-500 text-sm ml-2">
+                            ({site.domains[0]})
+                          </span>
+                        )}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                
+                <Form.Item name="manager" label="Quản lý" rules={[{ required: true, message: 'Vui lòng chọn quản lý!' }]} help="Chọn người quản lý tổ chức">
+                  <Select 
+                    placeholder={
+                      selectedSite 
+                        ? `Chọn quản lý từ site đã chọn (${filteredUsers?.length || 0} người dùng)`
+                        : <><TeamOutlined /> Chọn quản lý</>
+                    } 
+                    loading={loadingUsers} 
+                    showSearch 
+                    filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                  >
+                    {filteredUsers?.map(user => (
+                      <Select.Option key={user._id} value={user._id} label={user.name || user.email}>
+                        {user.name || user.email}
+                        {user.site_id?.name && (
+                          <span className="text-gray-500 text-sm ml-2">
+                            - {user.site_id.name}
+                          </span>
+                        )}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Card>
+
+              <Card title="Logo & Trạng thái">
+                <Form.Item name="logo" label="Logo tổ chức">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-24 h-24 mb-3 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 hover:border-blue-400 transition-colors">
+                        {logoUrl ? (
+                          <img 
+                            src={logoUrl} 
+                            alt="Logo tổ chức" 
+                            className="w-full h-full object-contain rounded-lg" 
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              toast.error('Không thể hiển thị logo');
+                            }}
+                          />
+                        ) : (
+                          <PictureOutlined className="text-3xl text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex gap-2 mb-2">
+                        <Button 
+                          type="primary"
+                          icon={<PictureOutlined />}
+                          onClick={() => {
+                            const fileInput = document?.getElementById('logo-file');
+                            if (fileInput) {
+                              fileInput.click();
+                            }
+                          }}
+                          loading={uploadMutation.isPending}
+                        >
+                          {uploadMutation.isPending ? 'Đang tải...' : 'Tải logo tổ chức'}
+                        </Button>
+                        {logoUrl && (
+                          <Button 
+                            type="default"
+                            danger
+                            onClick={handleRemoveLogo}
+                          >
+                            Xóa logo
+                          </Button>
+                        )}
+                      </div>
+                      <input 
+                        type="file" 
+                        id="logo-file" 
+                        accept="image/jpg, image/jpeg, image/png, image/gif, image/webp" 
+                        onChange={handleLogoChange}
+                        style={{ display: 'none' }}
+                      />
+                      {logoUrl && (
+                        <div className="flex items-center text-sm text-green-600">
+                          <span className="mr-1">✓</span>
+                          Logo đã tải thành công
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Form.Item>
+                
+                {editingOrg && (
+                  <Form.Item name="active" label="Trạng thái hoạt động" valuePropName="checked">
+                    <Switch />
+                  </Form.Item>
+                )}
+              </Card>
+            </Col>
+          </Row>
+
+          <div className="flex justify-end mt-3">
+            <Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending} size="large">
+              {editingOrg ? 'Cập nhật' : 'Tạo tổ chức'}
+            </Button>
+          </div>
         </Form>
       </Modal>
 
       {/* Modal for Member Management */}
       <Modal
-          title={`Quản lý thành viên: ${selectedOrg?.name}`}
+          title={
+              <div className="flex items-center">
+                  <TeamOutlined className="mr-2 text-blue-500" />
+                  <span>Quản lý thành viên: {selectedOrg?.name}</span>
+              </div>
+          }
           open={isMembersModalVisible}
           onCancel={() => setIsMembersModalVisible(false)}
           footer={null}
-          width={800}
+          width={1000}
+          bodyStyle={{ padding: 12 }}
       >
-          <Form form={addMemberForm} onFinish={handleAddMemberSubmit} layout="inline" style={{ marginBottom: 16 }}>
-              <Form.Item name="userId" rules={[{ required: true, message: 'Vui lòng chọn người dùng' }]}>
-                  <Select
-                      showSearch
-                      placeholder="Tìm và chọn người dùng để thêm"
-                      loading={loadingUsers}
-                      style={{ width: 300 }}
-                      filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                  >
-                      {userData?.filter(user => !selectedOrgData?.members.some(m => m.user._id === user._id))
-                          .map(user => (
-                              <Select.Option key={user._id} value={user._id} label={`${user.name} (${user.email})`}>
-                                  {user.name} ({user.email})
+          <Card title="Thêm thành viên mới" className="mb-3" size="small">
+              <Form form={addMemberForm} onFinish={handleAddMemberSubmit} layout="inline">
+                  {/* Site Selection for Member */}
+                  <Form.Item name="selectedSiteForMember" label={
+                      <span>
+                          <GlobalOutlined className="mr-1" />
+                          Chọn site
+                      </span>
+                  }>
+                      <Select
+                          placeholder="Chọn site để lọc người dùng"
+                          allowClear
+                          showSearch
+                          style={{ width: 200 }}
+                          filterOption={(input, option) =>
+                              (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                          }
+                      >
+                          {sitesData?.map(site => (
+                              <Select.Option key={site._id} value={site._id}>
+                                  {site.name}
+                                  {site.domains && site.domains.length > 0 && (
+                                      <span className="text-gray-500 text-sm ml-2">
+                                          ({site.domains[0]})
+                                      </span>
+                                  )}
                               </Select.Option>
                           ))}
-                  </Select>
-              </Form.Item>
-              <Form.Item name="role" initialValue="member">
-                  <Select style={{ width: 120 }}>
-                      <Select.Option value="manager">Manager</Select.Option>
-                      <Select.Option value="member">Member</Select.Option>
-                  </Select>
-              </Form.Item>
-              <Form.Item>
-                  <Button type="primary" htmlType="submit" loading={addMemberMutation.isLoading}>Thêm</Button>
-              </Form.Item>
-          </Form>
+                      </Select>
+                  </Form.Item>
+                  
+                  <Form.Item name="userId" rules={[{ required: true, message: 'Vui lòng chọn người dùng' }]}>
+                      <Select
+                          showSearch
+                          placeholder="Tìm và chọn người dùng để thêm"
+                          loading={loadingUsers}
+                          style={{ width: 300 }}
+                          filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                      >
+                          {(() => {
+                              const selectedSiteForMember = addMemberForm.getFieldValue('selectedSiteForMember');
+                              const availableUsers = userData?.filter(user => 
+                                  !selectedOrgData?.members.some(m => m.user._id === user._id)
+                              );
+                              
+                              const filteredAvailableUsers = selectedSiteForMember 
+                                  ? availableUsers?.filter(user => {
+                                      const userSiteId = user.site_id?._id || user.site_id;
+                                      return userSiteId === selectedSiteForMember;
+                                    })
+                                  : availableUsers;
+                              
+                              return filteredAvailableUsers?.map(user => (
+                                  <Select.Option key={user._id} value={user._id} label={`${user.name} (${user.email})`}>
+                                      {user.name} ({user.email})
+                                      {user.site_id?.name && (
+                                          <span className="text-gray-500 text-sm ml-2">
+                                              - {user.site_id.name}
+                                          </span>
+                                      )}
+                                  </Select.Option>
+                              ));
+                          })()}
+                      </Select>
+                  </Form.Item>
+                  <Form.Item name="role" initialValue="member">
+                      <Select style={{ width: 120 }}>
+                          <Select.Option value="manager">Manager</Select.Option>
+                          <Select.Option value="member">Member</Select.Option>
+                      </Select>
+                  </Form.Item>
+                  <Form.Item>
+                      <Button type="primary" htmlType="submit" loading={addMemberMutation.isLoading} icon={<PlusOutlined />}>
+                          Thêm thành viên
+                      </Button>
+                  </Form.Item>
+              </Form>
+          </Card>
 
-          <Table
-              columns={memberColumns}
-              dataSource={selectedOrgData?.members || []}
-              rowKey={(record) => record?.user?._id}
-              loading={isLoadingSelectedOrg}
-              pagination={false}
-          />
+          <Card title="Danh sách thành viên hiện tại" size="small">
+              <Table
+                  columns={memberColumns}
+                  dataSource={selectedOrgData?.members || []}
+                  rowKey={(record) => record?.user?._id}
+                  loading={isLoadingSelectedOrg}
+                  pagination={false}
+                  size="middle"
+              />
+          </Card>
       </Modal>
     </div>
   );

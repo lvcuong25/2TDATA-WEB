@@ -1,7 +1,7 @@
 ﻿import React, { useContext, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Table, Button, Tag, Input, Tooltip, Pagination, Space, Modal, Checkbox, Card, Spin, message, Row, Col, Avatar } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Input, Tooltip, Pagination, Space, Modal, Checkbox, Card, Spin, message, Row, Col, Avatar, Badge, Divider } from 'antd';
+import { SearchOutlined, PlusOutlined, CheckCircleOutlined, AppstoreOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 import instance from '../../utils/axiosInstance';
 import { AuthContext } from '../core/Auth';
@@ -20,6 +20,7 @@ const ServiceOrganization = () => {
   const [loadingAllServices, setLoadingAllServices] = useState(false);
   const [shareModal, setShareModal] = useState({ open: false, link: null, record: null });
   const [selectedShareUsers, setSelectedShareUsers] = useState([]);
+  const [serviceSearchText, setServiceSearchText] = useState('');
 
   // ===== Lấy thông tin tổ chức của user =====
   const { data: org, isLoading: orgLoading } = useQuery({
@@ -116,6 +117,7 @@ const ServiceOrganization = () => {
   // Fetch all services when open modal
   const handleOpenAddModal = async () => {
     setIsAddModalOpen(true);
+    setServiceSearchText('');
     if (allServices.length === 0) {
       setLoadingAllServices(true);
       try {
@@ -139,12 +141,20 @@ const ServiceOrganization = () => {
       toast.success('Đã thêm dịch vụ thành công!');
       setIsAddModalOpen(false);
       setSelectedServiceIds([]);
+      setServiceSearchText('');
       // Refetch lại danh sách dịch vụ tổ chức
       queryClient.invalidateQueries(['organization', currentUser?._id]);
     } catch {
       toast.error('Không thể thêm dịch vụ');
     }
   };
+
+  // Filter services based on search text
+  const filteredServices = allServices.filter(service =>
+    service.name?.toLowerCase().includes(serviceSearchText.toLowerCase()) ||
+    service.slug?.toLowerCase().includes(serviceSearchText.toLowerCase()) ||
+    service.description?.toLowerCase().includes(serviceSearchText.toLowerCase())
+  );
 
   // ===== Render UI =====
   if (orgLoading) return <div className="p-4">Đang tải thông tin tổ chức...</div>;
@@ -346,60 +356,181 @@ const ServiceOrganization = () => {
           </div>
         </div>
       </div>
-      {/* Modal thêm nhiều dịch vụ dạng card */}
+      
+      {/* Modal thêm nhiều dịch vụ với giao diện đẹp */}
       <Modal
         open={isAddModalOpen}
         onOk={handleAddServices}
-        onCancel={() => setIsAddModalOpen(false)}
+        onCancel={() => {
+          setIsAddModalOpen(false);
+          setSelectedServiceIds([]);
+          setServiceSearchText('');
+        }}
         okText="Thêm dịch vụ"
         cancelText="Hủy"
-        okButtonProps={{ disabled: !selectedServiceIds.length }}
-        width={900}
-        destroyOnHidden
-        title="Chọn dịch vụ để thêm vào tổ chức"
+        okButtonProps={{ 
+          disabled: !selectedServiceIds.length,
+          className: 'bg-blue-600 hover:bg-blue-700'
+        }}
+        width={1400}
+        destroyOnClose
+        title={
+          <div className="flex items-center gap-3">
+            <AppstoreOutlined className="text-blue-600 text-xl" />
+            <span className="text-lg font-semibold">Chọn dịch vụ để thêm vào tổ chức</span>
+          </div>
+        }
+        bodyStyle={{ padding: '24px' }}
       >
         {loadingAllServices ? (
-          <div className="text-center py-8"><Spin /> Đang tải...</div>
+          <div className="flex flex-col items-center justify-center py-16">
+            <Spin size="large" />
+            <div className="mt-4 text-gray-600">Đang tải danh sách dịch vụ...</div>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-            {allServices.length === 0 ? (
-              <div className="col-span-full text-center text-gray-500">Không có dịch vụ nào</div>
+          <div className="space-y-6">
+            {/* Header với search và counter */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Tìm kiếm dịch vụ theo tên, slug hoặc mô tả..."
+                  prefix={<SearchOutlined className="text-gray-400" />}
+                  value={serviceSearchText}
+                  onChange={(e) => setServiceSearchText(e.target.value)}
+                  allowClear
+                  size="large"
+                  className="max-w-md"
+                />
+              </div>
+                                            <div className="flex items-center gap-4">
+                 <div className="relative">
+                   <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm font-medium">
+                     Đã chọn: {selectedServiceIds.length} dịch vụ
+                   </div>
+                   {selectedServiceIds.length > 0 && (
+                     <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                       {selectedServiceIds.length}
+                     </div>
+                   )}
+                 </div>
+                 {selectedServiceIds.length > 0 && (
+                   <Button 
+                     type="text" 
+                     size="small"
+                     onClick={() => setSelectedServiceIds([])}
+                     className="text-red-500 hover:text-red-700"
+                   >
+                     Bỏ chọn tất cả
+                   </Button>
+                 )}
+               </div>
+            </div>
+
+            <Divider />
+
+            {/* Grid dịch vụ */}
+            {filteredServices.length === 0 ? (
+              <div className="text-center py-16">
+                <AppstoreOutlined className="text-6xl text-gray-300 mb-4" />
+                <div className="text-xl font-medium text-gray-500 mb-2">
+                  {serviceSearchText ? 'Không tìm thấy dịch vụ phù hợp' : 'Không có dịch vụ nào'}
+                </div>
+                <div className="text-gray-400">
+                  {serviceSearchText ? 'Thử tìm kiếm với từ khóa khác' : 'Vui lòng liên hệ admin để thêm dịch vụ'}
+                </div>
+              </div>
             ) : (
-              allServices.map(s => {
-                  const checked = selectedServiceIds.includes(s._id);
+                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-h-[50vh] overflow-y-auto pr-2">
+                {filteredServices.map(service => {
+                  const isSelected = selectedServiceIds.includes(service._id);
+                  const hasLinks = service.authorizedLinks && service.authorizedLinks.length > 0;
+                  
                   return (
-                  <Card
-                      key={s._id}
-                    className={`cursor-pointer transition-all duration-200 shadow-sm hover:shadow-lg flex flex-col items-center ${checked ? 'border-blue-500 ring-2 ring-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}
+                    <Card
+                      key={service._id}
+                      className={`
+                        cursor-pointer transition-all duration-300 transform hover:scale-105
+                        ${isSelected 
+                          ? 'border-blue-500 ring-2 ring-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg' 
+                          : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
+                        }
+                      `}
                       onClick={() => {
-                        setSelectedServiceIds(ids => checked ? ids.filter(id => id !== s._id) : [...ids, s._id]);
+                        setSelectedServiceIds(ids => 
+                          isSelected 
+                            ? ids.filter(id => id !== service._id) 
+                            : [...ids, service._id]
+                        );
                       }}
-                    bordered
+                      bodyStyle={{ padding: '20px' }}
+                      hoverable
                     >
-                      <img
-                        src={s.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
-                        alt={s.name}
-                        className="w-20 h-20 object-cover rounded mb-2 border"
-                      />
-                      <div className="font-semibold text-base text-center mb-1">{s.name}</div>
-                      <div className="text-xs text-gray-500 mb-1">{s.slug}</div>
-                      <div className="text-xs text-gray-700 mb-2 line-clamp-2 text-center" style={{ minHeight: 32 }}>{s.description || 'Không có mô tả'}</div>
-                    <Checkbox
-                        checked={checked}
-                        onChange={e => {
-                          e.stopPropagation();
-                          setSelectedServiceIds(ids => checked ? ids.filter(id => id !== s._id) : [...ids, s._id]);
-                        }}
-                        className="mt-2"
-                      />
-                      <span className="text-xs mt-1">{checked ? 'Đã chọn' : 'Chọn'}</span>
-                  </Card>
+                      {/* Service Image */}
+                      <div className="relative mb-4">
+                        <img
+                          src={service.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+                          alt={service.name}
+                          className="w-full h-32 object-cover rounded-lg border"
+                        />
+                        
+
+                      </div>
+
+                                               {/* Service Info */}
+                       <div className="space-y-3">
+                         <div>
+                           <h3 className="font-semibold text-lg text-gray-800 mb-1 line-clamp-1">
+                             {service.name}
+                           </h3>
+                         </div>
+
+                         {service.description && (
+                           <div className="text-sm text-gray-600 leading-relaxed overflow-hidden" style={{
+                             display: '-webkit-box',
+                             WebkitLineClamp: 2,
+                             WebkitBoxOrient: 'vertical',
+                             textOverflow: 'ellipsis'
+                           }}>
+                             {service.description}
+                           </div>
+                         )}
+
+                         {/* Status */}
+                         <div className="flex items-center justify-end">
+                           {isSelected && (
+                             <Checkbox
+                               checked={isSelected}
+                               onChange={(e) => {
+                                 e.stopPropagation();
+                                 setSelectedServiceIds(ids => 
+                                   isSelected 
+                                     ? ids.filter(id => id !== service._id) 
+                                     : [...ids, service._id]
+                                 );
+                               }}
+                             />
+                           )}
+                         </div>
+                       </div>
+                    </Card>
                   );
-                })
+                })}
+              </div>
             )}
+
+            {/* Footer info */}
+            <Divider />
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <InfoCircleOutlined />
+              <span>
+                Tìm thấy {filteredServices.length} dịch vụ 
+                {serviceSearchText && ` phù hợp với "${serviceSearchText}"`}
+              </span>
+            </div>
           </div>
         )}
       </Modal>
+
       {/* Modal chỉnh chia sẻ link */}
       <Modal
         open={shareModal.open}

@@ -20,6 +20,8 @@ const Ifame = () => {
         setError(null);
       } catch (err) {
         console.error('Error fetching iframe:', err);
+        console.log('[IFRAME] Error status:', err.response?.status);
+        console.log('[IFRAME] Current user:', currentUser);
         if (err.response?.status === 401) {
           setError('Vui lòng đăng nhập để xem nội dung này');
         } else if (err.response?.status === 403) {
@@ -38,8 +40,9 @@ const Ifame = () => {
     }
   }, [domain]);
 
-  // Kiểm tra authentication
-  if (!currentUser && !loading) {
+  // Kiểm tra authentication - chỉ redirect khi có lỗi 401
+  if (!currentUser && !loading && error && error.includes('đăng nhập')) {
+    console.log('[IFRAME] Redirecting to login due to 401 error');
     return <Navigate to="/login" replace />;
   }
 

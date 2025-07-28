@@ -79,6 +79,7 @@ export const getIframeById = async (req, res) => {
         viewer._id.toString() === req.user._id.toString()
       );
       if (!isViewer) {
+        console.log('[IFRAME] Access denied. Viewer list:', iframe.viewers.map(v => v._id.toString()), 'User:', req.user._id.toString());
         return res.status(403).json({ message: "Access denied" });
       }
     }
@@ -92,54 +93,89 @@ export const getIframeById = async (req, res) => {
 // Lấy iframe theo domain - CẦN AUTHENTICATION
 export const getIframeByDomain = async (req, res) => {
   try {
-    // Kiểm tra authentication - BẮT BUỘC
+    console.log('[IFRAME] getIframeByDomain called for domain:', req.params.domain);
+    console.log('[IFRAME] User:', req.user ? req.user.email : 'No user');
+    
+    // STEP 1: Bắt buộc phải đăng nhập
     if (!req.user || !req.user._id) {
+      console.log('[IFRAME] No authentication, returning 401');
       return res.status(401).json({ 
         message: "Vui lòng đăng nhập để xem nội dung này",
-        error: "NO_AUTH"
+        error: "NO_AUTH",
+        requireLogin: true
       });
     }
 
+    // STEP 2: Tìm iframe
     const iframe = await Iframe.findOne({ domain: req.params.domain })
-      .populate("viewers", "_id")
+      .populate("viewers", "_id name email avatar")
       .populate("site_id", "_id name");
-      
+    
     if (!iframe) {
       return res.status(404).json({ message: "Không tìm thấy iframe" });
     }
 
-    // Super admin có thể xem tất cả
+    console.log('[IFRAME] Found iframe:', iframe.title);
+    console.log('[IFRAME] Iframe site_id:', iframe.site_id?._id);
+    console.log('[IFRAME] Viewers count:', iframe.viewers.length);
+    console.log('[IFRAME] Viewer IDs:', iframe.viewers.map(v => v._id.toString()));
+
+    // STEP 3: Kiểm tra quyền xem
+    // 3.1 - Super admin có thể xem tất cả
     if (req.user.role === "super_admin") {
+      console.log(`[IFRAME] Super admin ${req.user.email} accessing iframe ${iframe.title}`);
       return res.status(200).json(iframe);
     }
-
-    // Site admin chỉ xem được iframe của site mình
-    if (req.user.role === "site_admin") {
-      if (req.user.site_id && iframe.site_id._id.toString() === req.user.site_id.toString()) {
-        return res.status(200).json(iframe);
-      }
-    }
-
-    // Kiểm tra user có cùng site_id với iframe không
-    if (req.user.site_id && iframe.site_id._id.toString() === req.user.site_id.toString()) {
-      // Kiểm tra xem user có trong danh sách viewers không
-      const isViewer = iframe.viewers.some(viewer => 
-        viewer._id.toString() === req.user._id.toString()
-      );
+    
+    // 3.2 - Site admin có thể xem iframe của site mình
+    if (req.user.role === "site_admin" && req.user.site_id) {
+      const userSiteId = req.user.site_id._id ? req.user.site_id._id.toString() : req.user.site_id.toString();
+      const iframeSiteId = iframe.site_id ? iframe.site_id._id.toString() : iframe.site_id.toString();
       
-      if (isViewer) {
+      console.log('[IFRAME] Site admin check - User site:', userSiteId, 'Iframe site:', iframeSiteId);
+      
+      if (userSiteId === iframeSiteId) {
+        console.log(`[IFRAME] Site admin ${req.user.email} accessing iframe from their site`);
         return res.status(200).json(iframe);
       }
     }
 
-    // Không có quyền xem
-    return res.status(403).json({ 
-      message: "Bạn không có quyền xem nội dung này",
-      error: "NOT_AUTHORIZED"
+    // 3.3 - Kiểm tra user có trong danh sách viewers không
+    console.log('[IFRAME] Checking viewer access for user ID:', req.user._id.toString());
+    
+    const isViewer = iframe.viewers.some(viewer => {
+      const viewerId = viewer._id ? viewer._id.toString() : viewer.toString();
+      const userId = req.user._id.toString();
+      console.log('[IFRAME] Comparing viewer:', viewerId, 'with user:', userId);
+      return viewerId === userId;
     });
+    
+    console.log('[IFRAME] Is viewer:', isViewer);
+    
+    // STEP 4: Nếu không có quyền xem, trả về 403 (không redirect)
+    if (!isViewer) {
+      console.log('[IFRAME] Access denied for user:', req.user.email);
+      return res.status(403).json({ 
+        message: "Bạn không có quyền xem nội dung này",
+        error: "NOT_AUTHORIZED",
+        requireLogin: false // Đã đăng nhập nhưng không có quyền
+      });
+    }
+
+    // STEP 5: User có quyền xem
+    console.log(`[IFRAME] User ${req.user.email} has viewer access to iframe ${iframe.title}`);
+    
+    // Add cache headers to prevent unnecessary re-fetches
+    res.set({
+      'Cache-Control': 'private, max-age=300', // Cache for 5 minutes
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN'
+    });
+    
+    return res.status(200).json(iframe);
 
   } catch (error) {
-    console.error('GetIframeByDomain error:', error);
+    console.error('[IFRAME] GetIframeByDomain error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -288,5 +324,102 @@ export const deleteIframe = async (req, res) => {
     res.status(200).json({ message: "Iframe deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+// Check authentication status endpoint
+export const checkAuthStatus = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        authenticated: false,
+        message: "Not authenticated"
+      });
+    }
+    
+    return res.status(200).json({
+      authenticated: true,
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        role: req.user.role,
+        site_id: req.user.site_id
+      }
+    });
+  } catch (error) {
+    console.error('[IFRAME] Check auth status error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Preload iframe data - ensure authentication is complete before loading iframe
+export const preloadIframe = async (req, res) => {
+  try {
+    console.log('[IFRAME] Preload called for domain:', req.params.domain);
+    
+    // Step 1: Ensure user is authenticated
+    if (!req.user || !req.user._id) {
+      console.log('[IFRAME] Preload - No authentication');
+      return res.status(401).json({ 
+        preloaded: false,
+        requireAuth: true,
+        message: "Authentication required"
+      });
+    }
+    
+    // Step 2: Find iframe
+    const iframe = await Iframe.findOne({ domain: req.params.domain })
+      .select('title domain site_id viewers')
+      .populate('viewers', '_id')
+      .populate('site_id', '_id name');
+    
+    if (!iframe) {
+      return res.status(404).json({ 
+        preloaded: false,
+        message: "Iframe not found" 
+      });
+    }
+    
+    // Step 3: Check permissions (same logic as getIframeByDomain)
+    let hasAccess = false;
+    
+    if (req.user.role === "super_admin") {
+      hasAccess = true;
+    } else if (req.user.role === "site_admin" && req.user.site_id) {
+      const userSiteId = req.user.site_id._id ? req.user.site_id._id.toString() : req.user.site_id.toString();
+      const iframeSiteId = iframe.site_id ? iframe.site_id._id.toString() : iframe.site_id.toString();
+      hasAccess = (userSiteId === iframeSiteId);
+    } else {
+      // Check if user is in viewers list
+      hasAccess = iframe.viewers.some(viewer => {
+        const viewerId = viewer._id ? viewer._id.toString() : viewer.toString();
+        return viewerId === req.user._id.toString();
+      });
+    }
+    
+    console.log('[IFRAME] Preload - User has access:', hasAccess);
+    
+    // Return preload status
+    return res.status(200).json({
+      preloaded: true,
+      hasAccess: hasAccess,
+      iframe: {
+        title: iframe.title,
+        domain: iframe.domain,
+        site: iframe.site_id?.name || 'Unknown'
+      },
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        role: req.user.role
+      }
+    });
+    
+  } catch (error) {
+    console.error('[IFRAME] Preload error:', error);
+    res.status(500).json({ 
+      preloaded: false,
+      message: error.message 
+    });
   }
 };

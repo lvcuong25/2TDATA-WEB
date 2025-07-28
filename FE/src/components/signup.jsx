@@ -72,6 +72,11 @@ const SignUp = () => {
       navigate("/login");
     },
     onError: (error) => {
+      // Nếu trả về mảng lỗi, hiển thị từng lỗi lên toast
+      if (Array.isArray(error?.response?.data?.errors)) {
+        error.response.data.errors.forEach(msg => toast.error(msg));
+        return;
+      }
       // Ưu tiên lấy message từ nhiều tầng
       const errMsg =
         error?.response?.data?.message ||

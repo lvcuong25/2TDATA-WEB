@@ -41,6 +41,9 @@ const OrganizationSchema = new mongoose.Schema({
     logo: {
         type: String, // Đường dẫn ảnh logo
     },
+    logo_public_id: {
+        type: String, // Public ID của Cloudinary để xóa file
+    },
     active: {
         type: Boolean,
         default: true,

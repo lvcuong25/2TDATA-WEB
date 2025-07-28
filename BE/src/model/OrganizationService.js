@@ -69,10 +69,20 @@ const organizationServiceSchema = new mongoose.Schema(
   }
 );
 
+// Pre-save hook to auto-generate customSlug if not provided
+organizationServiceSchema.pre("save", function (next) {
+  if (!this.customSlug) {
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    this.customSlug = `org-service-${timestamp}-${randomStr}`;
+  }
+  next();
+});
+
 organizationServiceSchema.plugin(mongoosePaginate);
 
 organizationServiceSchema.index({ organization: 1, service: 1 });
-organizationServiceSchema.index({ customSlug: 1 });
+// Remove the conflicting customSlug index - the unique sparse index in the schema is sufficient
 organizationServiceSchema.index({ status: 1 });
 organizationServiceSchema.index({ expires_at: 1 });
 

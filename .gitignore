@@ -25,3 +25,6 @@ yarn-error.log*
 
 # Bỏ qua file backup
 *.backup
+/PROJECT_DOCUMENTATION.md
+/DETAILED_PROJECT_ANALYSIS.md
+/SYSTEM_FLOWS.md

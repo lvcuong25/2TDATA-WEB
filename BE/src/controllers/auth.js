@@ -25,34 +25,32 @@ export const signUp = async (req, res, next) => {
 
         // Check current site context
         const currentSiteId = req.site?._id?.toString();
+        console.log('DEBUG signup:', {
+            currentSiteId,
+            reqSite: req.site?.name,
+            reqSiteId: req.site?._id,
+            hostname: req.hostname,
+            role,
+            site_id
+        });
         
-        // Auto-assign site_id logic
+        // Determine final site_id assignment
         let finalSiteId = site_id;
-        
-        // Nếu không có site_id được cung cấp
-        if (!site_id) {
-            // Super admin không cần site_id
-            if (role === 'super_admin') {
-                finalSiteId = null;
-            } else {
-                // Tự động lấy site_id từ current site context
-                if (currentSiteId) {
-                    finalSiteId = currentSiteId;
-                } else {
-                    // Nếu không detect được site, báo lỗi với thông tin debug
-                    return res.status(400).json({
-                        message: "Cannot determine site context. Please specify site_id or access from a valid domain.",
-                        debug: {
-                            hostname: req.get('host'),
-                            detectedHostname: req.detectedHostname,
-                            originalHostname: req.originalHostname,
-                            site: req.site ? 'detected' : 'not detected'
-                        }
-                    });
-                }
+        // If not super_admin and no site_id provided, use current site context
+        if (role !== 'super_admin' && !site_id) {
+            if (!currentSiteId) {
+                return res.status(400).json({
+                    message: "Cannot determine site context. Please specify site_id or access from a valid domain.",
+                    debug: {
+                        hostname: req.get('host'),
+                        detectedHostname: req.detectedHostname,
+                        originalHostname: req.originalHostname,
+                        site: req.site ? 'detected' : 'not detected'
+                    }
+                });
             }
+            finalSiteId = currentSiteId;
         }
-
         // For non-super_admin users with explicit site_id, ensure site_id matches current site
         if (role !== 'super_admin' && site_id && site_id !== currentSiteId) {
             return res.status(403).json({
@@ -74,7 +72,7 @@ export const signUp = async (req, res, next) => {
             ...req.body,
             password: hashedPassword,
             role,
-            site_id: finalSiteId,
+            site_id: role === 'super_admin' ? null : finalSiteId,
             service: service || null
         });
         

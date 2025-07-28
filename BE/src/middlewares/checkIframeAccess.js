@@ -1,25 +1,54 @@
 import jwt from 'jsonwebtoken';
+import User from '../model/User.js';
 
-export const checkIframeAccess = (req, res, next) => {
-    try {
-        // Lấy token từ header hoặc query parameter
-        const token = req.header('Authorization')?.replace('Bearer ', '') || req.query.token;
-        
-        if (token) {
-            try {
-                // Xác thực token nếu có
-                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production');
-                req.user = decoded;
-            } catch (error) {
-                // Nếu token không hợp lệ, tiếp tục mà không set user
-                console.log('Invalid token for iframe access:', error.message);
-            }
-        }
-        
-        // Tiếp tục xử lý request (có thể có hoặc không có user)
-        next();
-    } catch (error) {
-        console.error('Error in checkIframeAccess middleware:', error);
-        next();
+export const checkIframeAccess = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('[IFRAME ACCESS] No valid authorization header');
+      return next();
     }
+
+    const token = authHeader.split(' ')[1];
+    
+    try {
+      // Use same secret key logic as in auth controller
+      const secret = process.env.JWT_SECRET || process.env.SECRET_KEY;
+      const payload = jwt.verify(token, secret);
+      
+      // Wait for user data to be fully loaded
+      const user = await User.findById(payload._id)
+        .populate('site_id')
+        .select('-password')
+        .lean(); // Use lean() for better performance
+      
+      if (!user) {
+        console.log('[IFRAME ACCESS] User not found for ID:', payload._id);
+        return next();
+      }
+      
+      if (!user.active) {
+        console.log('[IFRAME ACCESS] User is not active:', user.email);
+        return next();
+      }
+      
+      // Set user in request
+      req.user = user;
+      console.log('[IFRAME ACCESS] User authenticated:', user.email);
+      
+    } catch (error) {
+      console.log('[IFRAME ACCESS] Token verification failed:', error.message);
+      
+      if (error.name === 'TokenExpiredError') {
+        console.log('[IFRAME ACCESS] Token expired at:', error.expiredAt);
+      }
+    }
+    
+    next();
+    
+  } catch (error) {
+    console.error('[IFRAME ACCESS] Unexpected error:', error);
+    next();
+  }
 };

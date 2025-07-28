@@ -1,11 +1,12 @@
 import Organization from '../model/Organization.js';
 import User from '../model/User.js';
+import { deleteFromCloudinary, extractPublicIdFromUrl } from '../utils/cloudinary.js';
 
 // Thêm tổ chức
 export const createOrganization = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { name, email, phone, address, identifier, taxCode, logo } = req.body;
+        const { name, email, phone, address, identifier, taxCode, logo, logo_public_id } = req.body;
        
         // Lấy site_id từ user hoặc request body
         const site_id = req.user.role === 'super_admin' && req.body.site_id ? req.body.site_id : req.user.site_id;
@@ -25,6 +26,7 @@ export const createOrganization = async (req, res) => {
             identifier,
             taxCode,
             logo,
+            logo_public_id,
             members: [{ user: userId, role: 'owner' }]
         });
         await org.save();
@@ -43,6 +45,23 @@ export const updateOrganization = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
+        
+        // Nếu có logo mới, xóa logo cũ khỏi Cloudinary
+        if (updateData.logo) {
+            const currentOrg = await Organization.findById(id);
+            if (currentOrg && currentOrg.logo && currentOrg.logo !== updateData.logo) {
+                try {
+                    const publicId = currentOrg.logo_public_id || extractPublicIdFromUrl(currentOrg.logo);
+                    if (publicId) {
+                        await deleteFromCloudinary(publicId);
+                        console.log(`✅ Old logo deleted from Cloudinary for organization: ${currentOrg.name}`);
+                    }
+                } catch (error) {
+                    console.error('Error deleting old logo from Cloudinary:', error);
+                }
+            }
+        }
+        
         const org = await Organization.findByIdAndUpdate(id, updateData, { new: true });
         if (!org) return res.status(404).json({ error: 'Organization not found' });
         res.json(org);
@@ -59,10 +78,34 @@ export const updateOrganization = async (req, res) => {
 export const deleteOrganization = async (req, res) => {
     try {
         const { id } = req.params;
-        const org = await Organization.findByIdAndDelete(id);
-        if (!org) return res.status(404).json({ error: 'Organization not found' });
+        const org = await Organization.findById(id);
+        
+        if (!org) {
+            return res.status(404).json({ error: 'Organization not found' });
+        }
+
+        // Xóa logo khỏi Cloudinary nếu có
+        if (org.logo) {
+            try {
+                // Ưu tiên sử dụng logo_public_id nếu có, nếu không thì extract từ URL
+                const publicId = org.logo_public_id || extractPublicIdFromUrl(org.logo);
+                if (publicId) {
+                    await deleteFromCloudinary(publicId);
+                    console.log(`✅ Logo deleted from Cloudinary for organization: ${org.name}`);
+                }
+            } catch (error) {
+                console.error('Error deleting logo from Cloudinary:', error);
+                // Không dừng quá trình xóa nếu lỗi xóa logo
+            }
+        }
+
+        // Xóa tổ chức
+        await Organization.findByIdAndDelete(id);
+        
+        console.log(`✅ Organization deleted successfully: ${org.name} (${id})`);
         res.json({ message: 'Deleted successfully' });
     } catch (err) {
+        console.error('Error deleting organization:', err);
         res.status(400).json({ error: err.message });
     }
 };
@@ -184,7 +227,17 @@ export const updateMemberRole = async (req, res) => {
             return res.status(404).json({ error: "Không tìm thấy tổ chức." });
         }
         
-        // TODO: Thêm logic kiểm tra quyền của người dùng hiện tại (chỉ owner mới được sửa)
+        // Kiểm tra quyền của người dùng hiện tại (chỉ owner mới được sửa)
+        const currentUserId = req.user._id;
+        const currentUserRole = req.user.role;
+        
+        // Admin có thể sửa
+        if (currentUserRole !== 'super_admin' && currentUserRole !== 'site_admin') {
+            const currentMember = organization.members.find(m => m.user.equals(currentUserId));
+            if (!currentMember || currentMember.role !== 'owner') {
+                return res.status(403).json({ error: "Chỉ owner hoặc admin mới được thay đổi vai trò thành viên." });
+            }
+        }
 
         const memberToUpdate = organization.members.find(member => member.user.equals(userId));
         if (!memberToUpdate) {
@@ -216,7 +269,17 @@ export const removeMember = async (req, res) => {
             return res.status(404).json({ error: "Không tìm thấy tổ chức." });
         }
         
-        // TODO: Thêm logic kiểm tra quyền của người dùng hiện tại (chỉ owner mới được xóa)
+        // Kiểm tra quyền của người dùng hiện tại (chỉ owner mới được xóa)
+        const currentUserId = req.user._id;
+        const currentUserRole = req.user.role;
+        
+        // Admin có thể xóa
+        if (currentUserRole !== 'super_admin' && currentUserRole !== 'site_admin') {
+            const currentMember = organization.members.find(m => m.user.equals(currentUserId));
+            if (!currentMember || currentMember.role !== 'owner') {
+                return res.status(403).json({ error: "Chỉ owner hoặc admin mới được xóa thành viên." });
+            }
+        }
         
         const memberToRemove = organization.members.find(member => member.user.equals(userId));
         if (!memberToRemove) {

@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { Link } from "react-router-dom";
 import instance from '../../../utils/axiosInstance';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select } from 'antd';
@@ -148,10 +149,8 @@ const IframeList = () => {
       render: (domain) =>
         domain ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <a
-              href={`${window.location.origin}/${domain}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to={`/${domain}`}
               style={{ 
                 color: "#2563eb", 
                 textDecoration: "underline", 
@@ -165,7 +164,7 @@ const IframeList = () => {
               title={`${window.location.origin}/${domain}`}
             >
               {`${window.location.origin}/${domain}`}
-            </a>
+            </Link>
             <Button
               size="small"
               icon={<CopyOutlined />}

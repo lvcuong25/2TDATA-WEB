@@ -5,15 +5,19 @@ import {
   getIframeByDomain,
   createIframe,
   updateIframe,
-  deleteIframe
+  deleteIframe,
+  checkAuthStatus
 } from "../controllers/iframe.js";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { checkIframeAccess } from "../middlewares/checkIframeAccess.js";
+import { requestLogger } from "../middlewares/requestLogger.js";
 
 const router = express.Router();
+// Check authentication status
+router.get("/auth/status", checkIframeAccess, checkAuthStatus);
 
 // Public route for viewing iframe (with optional auth)
-router.get("/view/:domain", checkIframeAccess, getIframeByDomain);
+router.get("/view/:domain", requestLogger, checkIframeAccess, getIframeByDomain);
 
 // Admin routes - require authentication
 router.get("/", requireAuth, getAllIframes);

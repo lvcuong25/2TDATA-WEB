@@ -1,7 +1,7 @@
 const AUTH_KEY = 'user';
 
 const getAuth = () => {
-    const lsValue = sessionStorage?.getItem(AUTH_KEY);
+    const lsValue = localStorage?.getItem(AUTH_KEY);
     if (!lsValue) return;
 
     try {
@@ -14,13 +14,18 @@ const getAuth = () => {
 const setAuth = (auth) => {
     try {
         const lsValue = JSON.stringify(auth);
-        sessionStorage?.setItem(AUTH_KEY, lsValue);
+        localStorage?.setItem(AUTH_KEY, lsValue);
     } catch { /* empty */ }
 };
 
 const removeAuth = () => {
     try {
+        // Clear localStorage
         localStorage.clear();
+        
+        // Clear sessionStorage (including accessToken)
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('user');
         sessionStorage.clear();
     } catch { /* empty */ }
 };
