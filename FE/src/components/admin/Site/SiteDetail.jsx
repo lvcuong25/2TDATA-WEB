@@ -17,7 +17,7 @@ const SiteDetail = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
 
-  useEffect(() => {zok 
+  useEffect(() => {
     fetchSiteDetail();
     fetchSiteStats();
   }, [id]);
