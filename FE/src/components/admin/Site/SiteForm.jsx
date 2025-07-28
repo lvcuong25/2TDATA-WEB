@@ -9,6 +9,8 @@ import axiosInstance from '../../../axios/axiosInstance';
 import DynamicFooter from '../../DynamicFooter';
 import PartnerLogosManager from './PartnerLogosManager';
 import { defaultFooterConfig } from '../../../config/footerConfig';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -62,7 +64,7 @@ const SiteForm = () => {
         }]);
       }
     } catch (error) {
-      message.error('Không thể tải thông tin trang web');
+      toast.error('Không thể tải thông tin trang web');
       console.error('Error fetching site:', error);
     } finally {
       setLoading(false);
@@ -146,11 +148,11 @@ const SiteForm = () => {
         }
       }
 
-      message.success(isEdit ? 'Cập nhật trang web thành công' : 'Tạo trang web thành công');
+      toast.success(isEdit ? 'Cập nhật trang web thành công' : 'Tạo trang web thành công');
       navigate('/admin/sites');
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra';
-      message.error(errorMsg);
+      toast.error(errorMsg);
       console.error('Error saving site:', error);
     } finally {
       setSubmitting(false);
@@ -211,12 +213,14 @@ const SiteForm = () => {
 
   const addDomain = () => {
     setDomains([...domains, '']);
+    toast.success('Đã thêm tên miền mới!');
   };
 
   const removeDomain = (index) => {
     if (domains.length > 1) {
       const newDomains = domains.filter((_, i) => i !== index);
       setDomains(newDomains);
+      toast.success('Đã xóa tên miền!');
     }
   };
 
@@ -224,17 +228,22 @@ const SiteForm = () => {
     let fileList = [...info.fileList];
     fileList = fileList.slice(-1);
     setLogoFileList(fileList);
+    if (info.file.status === 'done') {
+      toast.success('Tải logo thành công!');
+    } else if (info.file.status === 'error') {
+      toast.error('Tải logo thất bại!');
+    }
   };
 
   const beforeUpload = (file) => {
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
-      message.error('Chỉ có thể tải lên file hình ảnh!');
+      toast.error('Chỉ có thể tải lên file hình ảnh!');
       return false;
     }
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('Kích thước file phải nhỏ hơn 2MB!');
+      toast.error('Kích thước file phải nhỏ hơn 2MB!');
       return false;
     }
     return true;

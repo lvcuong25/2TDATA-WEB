@@ -5,21 +5,36 @@ import { deleteFromCloudinary, extractPublicIdFromUrl } from '../utils/cloudinar
 // Thêm tổ chức
 export const createOrganization = async (req, res) => {
     try {
-        const userId = req.user._id;
-        const { name, email, phone, address, identifier, taxCode, logo, logo_public_id } = req.body;
-       
+        const { name, email, phone, address, identifier, taxCode, logo, logo_public_id, manager, site_id: bodySiteId } = req.body;
+
         // Lấy site_id từ user hoặc request body
-        const site_id = req.user.role === 'super_admin' && req.body.site_id ? req.body.site_id : req.user.site_id;
-        
+        const site_id = req.user.role === 'super_admin' && bodySiteId ? bodySiteId : req.user.site_id;
+
         if (!site_id) {
-            return res.status(400).json({ 
-                error: "site_id is required" 
+            return res.status(400).json({
+                error: "site_id is required"
             });
         }
+
+        // Nếu có manager (super_admin chọn), kiểm tra user này có thuộc site không
+        let managerId = req.user._id;
+        if (req.user.role === 'super_admin' && manager) {
+            const managerUser = await User.findById(manager);
+            if (!managerUser) {
+                return res.status(404).json({ error: "Không tìm thấy người quản lý được chọn" });
+            }
+            // Kiểm tra user này có thuộc site không
+            const managerSiteId = managerUser.site_id?.toString();
+            if (managerSiteId !== site_id.toString()) {
+                return res.status(400).json({ error: "Người quản lý phải thuộc site đã chọn" });
+            }
+            managerId = manager;
+        }
+
         const org = new Organization({
-            site_id, // Thêm site_id
+            site_id,
             name,
-            manager: userId,
+            manager: managerId,
             email,
             phone,
             address,
@@ -27,7 +42,7 @@ export const createOrganization = async (req, res) => {
             taxCode,
             logo,
             logo_public_id,
-            members: [{ user: userId, role: 'owner' }]
+            members: [{ user: managerId, role: 'owner' }]
         });
         await org.save();
         res.status(201).json(org);
@@ -45,7 +60,7 @@ export const updateOrganization = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
-        
+
         // Nếu có logo mới, xóa logo cũ khỏi Cloudinary
         if (updateData.logo) {
             const currentOrg = await Organization.findById(id);
@@ -61,7 +76,24 @@ export const updateOrganization = async (req, res) => {
                 }
             }
         }
-        
+
+        // Nếu đổi manager, cập nhật owner trong members
+        if (updateData.manager) {
+            const org = await Organization.findById(id);
+            if (org) {
+                // Tìm owner cũ
+                const ownerIndex = org.members.findIndex(m => m.role === 'owner');
+                if (ownerIndex !== -1) {
+                    // Đổi sang user mới
+                    org.members[ownerIndex].user = updateData.manager;
+                } else {
+                    // Nếu chưa có owner, thêm mới
+                    org.members.push({ user: updateData.manager, role: 'owner' });
+                }
+                await org.save();
+            }
+        }
+
         const org = await Organization.findByIdAndUpdate(id, updateData, { new: true });
         if (!org) return res.status(404).json({ error: 'Organization not found' });
         res.json(org);
@@ -136,6 +168,7 @@ export const getOrganizations = async (req, res) => {
         const totalDocs = await Organization.countDocuments(query);
         const orgs = await Organization.find(query)
             .populate('manager', 'name email')
+            .populate('site_id', 'name domains')
             .skip((page - 1) * limit)
             .limit(limit)
             .sort({ createdAt: -1 });
@@ -157,6 +190,7 @@ export const getOrganizationById = async (req, res) => {
         const { id } = req.params;
         const org = await Organization.findById(id)
             .populate('manager', 'name email')
+            .populate('site_id', 'name domains')
             .populate('members.user', 'name email avatar')
             .populate({
                 path: 'services',
@@ -191,9 +225,23 @@ export const addMember = async (req, res) => {
 
         // Lấy user hiện tại từ req.user
         const currentUserId = req.user._id;
-        const currentMember = organization.members.find(m => m.user.equals(currentUserId));
-        if (!currentMember || (currentMember.role !== 'owner' && currentMember.role !== 'manager')) {
-            return res.status(403).json({ error: "Chỉ owner hoặc manager mới được thêm thành viên." });
+        const currentUserRole = req.user.role;
+        // Nếu không phải super_admin thì phải là owner/manager mới được thêm
+        if (currentUserRole !== 'super_admin') {
+            const currentMember = organization.members.find(m => m.user.equals(currentUserId));
+            if (!currentMember || (currentMember.role !== 'owner' && currentMember.role !== 'manager')) {
+                return res.status(403).json({ error: "Chỉ owner, manager hoặc super_admin mới được thêm thành viên." });
+            }
+        }
+
+        const userToAdd = await User.findById(userId);
+        if (!userToAdd) {
+            return res.status(404).json({ error: "Không tìm thấy người dùng để thêm." });
+        }
+        const orgSiteId = organization.site_id?.toString();
+        const userSiteId = userToAdd.site_id?.toString();
+        if (orgSiteId && userSiteId && orgSiteId !== userSiteId) {
+            return res.status(400).json({ error: "Chỉ được thêm người dùng cùng site với tổ chức." });
         }
 
         const isMember = organization.members.some(member => member.user.equals(userId));

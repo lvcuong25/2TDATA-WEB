@@ -1,6 +1,7 @@
 ﻿import Service from "../model/Service.js";
 import User from "../model/User.js";
 import UserService from "../model/UserService.js";
+import { deleteFromCloudinary, extractPublicIdFromUrl } from '../utils/cloudinary.js';
 
 // Lấy danh sách dịch vụ
 export const getServices = async (req, res, next) => {
@@ -112,7 +113,7 @@ export const getServiceBySlug = async (req, res, next) => {
 // Tạo dịch vụ mới - Only super admin can create
 export const createService = async (req, res, next) => {
     try {
-        const { name, description, image, slug, authorizedLinks } = req.body;
+        const { name, description, image, image_public_id, slug, authorizedLinks } = req.body;
         
         // Only super admin or legacy admin can create services
         if (req.user.role !== 'super_admin' && req.user.role !== 'admin' && req.user.role !== 'site_admin') {
@@ -149,6 +150,7 @@ export const createService = async (req, res, next) => {
             name,
             description,
             image,
+            image_public_id,
             slug,
             authorizedLinks: filteredLinks
             // No site_id - services are global
@@ -166,14 +168,31 @@ export const createService = async (req, res, next) => {
 // Cập nhật dịch vụ
 export const updateService = async (req, res, next) => {
     try {
-        const { name, description, image, status, slug, authorizedLinks } = req.body;
+        const { name, description, image, image_public_id, status, slug, authorizedLinks } = req.body;
         
+        // Nếu có ảnh mới, xóa ảnh cũ khỏi Cloudinary
+        if (image) {
+            const currentService = await Service.findById(req.params.id);
+            if (currentService && currentService.image && currentService.image !== image) {
+                try {
+                    const publicId = currentService.image_public_id || extractPublicIdFromUrl(currentService.image);
+                    if (publicId) {
+                        await deleteFromCloudinary(publicId);
+                        console.log(`✅ Old image deleted from Cloudinary for service: ${currentService.name}`);
+                    }
+                } catch (error) {
+                    console.error('Error deleting old image from Cloudinary:', error);
+                }
+            }
+        }
+
         const service = await Service.findByIdAndUpdate(
             req.params.id,
             {
                 name,
                 description,
                 image,
+                image_public_id,
                 status,
                 slug,
                 authorizedLinks
@@ -199,7 +218,7 @@ export const updateService = async (req, res, next) => {
 // Xóa dịch vụ
 export const deleteService = async (req, res, next) => {
     try {
-        const service = await Service.findByIdAndDelete(req.params.id);
+        const service = await Service.findById(req.params.id);
         
         if (!service) {
             return res.status(404).json({
@@ -207,10 +226,30 @@ export const deleteService = async (req, res, next) => {
             });
         }
 
+        // Xóa ảnh khỏi Cloudinary nếu có
+        if (service.image) {
+            try {
+                // Ưu tiên sử dụng image_public_id nếu có, nếu không thì extract từ URL
+                const publicId = service.image_public_id || extractPublicIdFromUrl(service.image);
+                if (publicId) {
+                    await deleteFromCloudinary(publicId);
+                    console.log(`✅ Image deleted from Cloudinary for service: ${service.name}`);
+                }
+            } catch (error) {
+                console.error('Error deleting image from Cloudinary:', error);
+                // Không dừng quá trình xóa nếu lỗi xóa ảnh
+            }
+        }
+
+        // Xóa service
+        await Service.findByIdAndDelete(req.params.id);
+        
+        console.log(`✅ Service deleted successfully: ${service.name} (${req.params.id})`);
         return res.status(200).json({
             message: "Xóa dịch vụ thành công"
         });
     } catch (error) {
+        console.error('Error deleting service:', error);
         next(error);
     }
 };

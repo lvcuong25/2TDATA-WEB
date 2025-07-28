@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Upload, Button, Card, List, message, Modal, Input, Form, Space, Popconfirm } from 'antd';
 import { UploadOutlined, DeleteOutlined, EditOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons';
 import instance from '../../../axios/axiosInstance';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
   const [uploading, setUploading] = useState(false);
@@ -59,10 +61,10 @@ const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
         }
         
         onChange(newLogos);
-        message.success('Upload logo thành công!');
+        toast.success('Upload logo thành công!');
       }
     } catch (error) {
-      message.error('Lỗi upload: ' + (error.response?.data?.message || error.message));
+      toast.error('Lỗi upload: ' + (error.response?.data?.message || error.message));
     } finally {
       setUploading(false);
     }
@@ -79,13 +81,13 @@ const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
     // Remove from array
     const newLogos = logos.filter((_, i) => i !== index);
     onChange(newLogos);
-    message.success('Đã xóa logo');
+    toast.success('Đã xóa logo');
   };
 
   // Undo last delete
   const handleUndo = () => {
     if (deletedLogos.length === 0) {
-      message.info('Không có logo nào để khôi phục');
+      toast.info('Không có logo nào để khôi phục');
       return;
     }
 
@@ -105,7 +107,7 @@ const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
     
     // Remove from deleted history
     setDeletedLogos(prev => prev.slice(0, -1));
-    message.success('Đã khôi phục logo');
+    toast.success('Đã khôi phục logo');
   };
 
   // Edit logo details
@@ -130,7 +132,7 @@ const PartnerLogosManager = ({ logos = [], onChange, siteName = 'site' }) => {
       };
       onChange(newLogos);
       setEditModal(false);
-      message.success('Đã cập nhật thông tin logo');
+      toast.success('Đã cập nhật thông tin logo');
     });
   };
 

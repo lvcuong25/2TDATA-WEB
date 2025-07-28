@@ -3,6 +3,8 @@ import { Table, Button, Modal, message, Space, Tag, Typography, Card, Tooltip } 
 import { Link } from 'react-router-dom';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, GlobalOutlined } from '@ant-design/icons';
 import axiosInstance from '../../../axios/axiosInstance';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
@@ -26,8 +28,9 @@ const SiteList = () => {
         pageSize: limit,
         total: response.data.pagination?.totalDocs || 0,
       });
+      toast.success('Tải danh sách trang web thành công!');
     } catch (error) {
-      message.error('Không thể tải danh sách trang web');
+      toast.error('Không thể tải danh sách trang web');
       console.error('Error fetching sites:', error);
     } finally {
       setLoading(false);
@@ -49,12 +52,12 @@ const SiteList = () => {
         console.log('🟡 Making delete request to:', `/sites/${siteId}`);
         const response = await axiosInstance.delete(`/sites/${siteId}`);
         console.log('🟢 Delete successful!', response);
-        message.success('Xóa trang web thành công');
+        toast.success('Xóa trang web thành công');
         fetchSites(pagination.current, pagination.pageSize);
       } catch (error) {
         console.error('🔴 Delete error:', error);
         const errorMsg = error.response?.data?.message || 'Không thể xóa trang web';
-        message.error(errorMsg);
+        toast.error(errorMsg);
       }
     } else {
       console.log('❌ Delete cancelled');

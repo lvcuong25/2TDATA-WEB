@@ -39,6 +39,9 @@ const serviceSchema = new mongoose.Schema({
     image: {
       type: String,
     },
+    image_public_id: {
+      type: String, // Public ID của Cloudinary để xóa file
+    },
     authorizedLinks: [{
       url: {
         type: String,

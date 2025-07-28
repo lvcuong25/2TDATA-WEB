@@ -59,8 +59,9 @@ const ServiceForm = () => {
     const uploadMutation = useMutation({
         mutationFn: uploadFileCloudinary,
         onSuccess: (data) => {
-            setValue('image', data);
-            setImage(data);
+            setValue('image', data.url);
+            setValue('image_public_id', data.public_id);
+            setImage(data.url);
         },
         onError: (error) => {
             console.error("Error uploading image:", error);

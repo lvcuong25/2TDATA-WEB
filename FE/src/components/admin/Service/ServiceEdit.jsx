@@ -70,6 +70,7 @@ const ServiceEdit = () => {
             setValue('slug', serviceData.slug);
             setValue('description', serviceData.description);
             setValue('status', serviceData.status);
+            setValue('image_public_id', serviceData.image_public_id);
             // Đảm bảo link là một mảng
             const links = Array.isArray(serviceData.authorizedLinks) ? serviceData.authorizedLinks : [];
             // Debug log
@@ -96,8 +97,9 @@ const ServiceEdit = () => {
     const uploadMutation = useMutation({
         mutationFn: uploadFileCloudinary,
         onSuccess: (data) => {
-            setValue('image', data);
-            setImage(data);
+            setValue('image', data.url);
+            setValue('image_public_id', data.public_id);
+            setImage(data.url);
         },
         onError: (error) => {
             console.error("Error uploading image:", error);
