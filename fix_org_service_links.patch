@@ -1,0 +1,61 @@
+--- a/BE/src/model/OrganizationService.js
++++ b/BE/src/model/OrganizationService.js
+@@ -52,6 +52,32 @@ const organizationServiceSchema = new mongoose.Schema(
+       required: false,
+       description: "Thời gian hết hạn dịch vụ",
+     },
++    link: [{
++      url: {
++        type: String,
++        required: true,
++        description: "URL của link"
++      },
++      title: {
++        type: String,
++        required: true,
++        description: "Tiêu đề của link"
++      },
++      description: {
++        type: String,
++        description: "Mô tả chi tiết"
++      },
++      visible: {
++        type: Boolean,
++        default: true,
++        description: "Hiển thị link hay không"
++      },
++      visibleFor: [{
++        type: mongoose.Schema.Types.ObjectId,
++        ref: "User",
++        description: "Danh sách user được phép xem link"
++      }]
++    }],
++    link_update: [{
++      url: {
++        type: String,
++        required: true,
++        description: "URL của link cập nhật"
++      },
++      title: {
++        type: String,
++        required: true,
++        description: "Tiêu đề của link cập nhật"
++      },
++      description: {
++        type: String,
++        description: "Mô tả chi tiết"
++      },
++      visible: {
++        type: Boolean,
++        default: true,
++        description: "Hiển thị link hay không"
++      },
++      visibleFor: [{
++        type: mongoose.Schema.Types.ObjectId,
++        ref: "User",
++        description: "Danh sách user được phép xem link"
++      }]
++    }],
+   },
+   {
+     timestamps: true,
