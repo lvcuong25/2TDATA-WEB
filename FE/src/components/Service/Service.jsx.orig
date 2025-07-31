@@ -21,12 +21,12 @@ const Service = () => {
   const { control, handleSubmit, reset, formState: { errors } } = useForm();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data: services, isLoading: isLoadingServices } = useQuery({
     queryKey: ['userServices', page, pageSize],
     queryFn: async () => {
-      const { data } = await instance.get(`service?page=${page}&limit=${pageSize}&status=approved`);
+      const { data } = await instance.get(`service?page=${page}&limit=${pageSize}`);
       return data;
     },
   });
@@ -186,7 +186,7 @@ const Service = () => {
 
   const docs = services?.data?.docs || [];
   const totalDocs = services?.data?.totalDocs || 0;
-  const current = services?.data?.page || 1;
+  const current = services?.data?.page || page;
   const limit = services?.data?.limit || pageSize;
 
   return (
@@ -256,7 +256,7 @@ const Service = () => {
                       pageSize={limit}
                       total={totalDocs}
                       showSizeChanger
-                      pageSizeOptions={['6', '12', '24', '48']}
+                      pageSizeOptions={['3', '6', '10', '20']}
                       onChange={handleCardPagination}
                       showTotal={total => `Tổng số ${total} dịch vụ`}
                     />
@@ -272,7 +272,7 @@ const Service = () => {
                     pageSize: limit,
                     total: totalDocs,
                     showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50', '100'],
+                    pageSizeOptions: ['3', '6', '10', '20'],
                     showTotal: (total) => `Tổng số ${total} dịch vụ`,
                   }}
                   onChange={handleTableChange}
