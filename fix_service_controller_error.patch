@@ -1,0 +1,20 @@
+--- a/BE/src/controllers/service.js
++++ b/BE/src/controllers/service.js
+@@ -38,7 +38,7 @@ export const getServiceById = async (req, res, next) => {
+         const { id } = req.params;
+ 
+         // Nếu là admin hoặc super_admin, cho phép xem bất kỳ service nào
+-        if (req.user.role === 'admin' || user.role === 'site_admin' || req.user.role === 'super_admin') {
++        if (req.user.role === 'admin' || req.user.role === 'site_admin' || req.user.role === 'super_admin') {
+             const service = await Service.findById(id);
+             if (!service) {
+                 return res.status(404).json({
+@@ -80,7 +80,7 @@ export const getServiceBySlug = async (req, res, next) => {
+         const user = await User.findById(userId).populate('service');
+ 
+         // Nếu là admin hoặc super_admin, cho phép xem bất kỳ service nào
+-        if (req.user.role === 'admin' || user.role === 'site_admin' || req.user.role === 'super_admin') {
++        if (req.user.role === 'admin' || req.user.role === 'site_admin' || req.user.role === 'super_admin') {
+             const service = await Service.findOne({ slug: slug });
+             if (!service) {
+                 return res.status(404).json({

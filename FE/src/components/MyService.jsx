@@ -418,7 +418,7 @@ const MyService = () => {
                   pageSize={pageSize}
                   total={totalServices}
                   showSizeChanger
-                  pageSizeOptions={['3', '6', '10', '20']}
+                  pageSizeOptions={['3', '6', '9', '18']}
                   onChange={(page, size) => {
                     setCurrentPage(page);
                     setPageSize(size);
@@ -437,7 +437,7 @@ const MyService = () => {
                 pageSize: pageSize,
                 total: totalServices,
                 showSizeChanger: true,
-                pageSizeOptions: ['3', '6', '10', '20'],
+                pageSizeOptions: ['3', '6', '9', '18'],
                 showTotal: (total) => `Tổng số ${total} dịch vụ`,
               }}
               onChange={handleTableChange}
@@ -463,7 +463,7 @@ const MyService = () => {
                 pageSize: pageSizeServices,
                 total: servicesWithLinks.length,
                 showSizeChanger: true,
-                pageSizeOptions: ['3', '6', '10', '20'],
+                pageSizeOptions: ['3', '6', '9', '18'],
                 showTotal: (total) => `Tổng số ${total} dịch vụ có kết quả`,
               }}
               onChange={(pagination) => {
