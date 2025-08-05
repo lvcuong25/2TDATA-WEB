@@ -1,0 +1,265 @@
+import { joiResolver } from '@hookform/resolvers/joi';
+import { useMutation } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import Joi from 'joi';
+import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import instance from '../utils/axiosInstance';
+import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
+
+const signupChema = Joi.object({
+  email: Joi.string()
+    .email({ tlds: { allow: false } })
+    .required()
+    .min(3)
+    .messages({
+      'string.email': 'Email không hợp lệ',
+      'string.empty': 'Email là bắt buộc',
+      'string.min': 'Email phải có ít nhất 3 ký tự',
+    }),
+  password: Joi.string()
+    .required()
+    .min(6)
+    .messages({
+      'string.empty': 'Mật khẩu là bắt buộc',
+      'string.min': 'Mật khẩu phải có ít nhất 6 ký tự',
+    }),
+  confirmPassword: Joi.string()
+    .valid(Joi.ref('password'))
+    .required()
+    .messages({
+      'string.empty': 'Cần xác nhận mật khẩu',
+      'any.only': 'Mật khẩu xác nhận không khớp',
+    }),
+  role: Joi.string().default('member'),
+  agreeAllTerms: Joi.boolean()
+    .valid(true)
+    .required()
+    .messages({
+      'any.only': 'Bạn phải đồng ý với tất cả các điều khoản và chính sách',
+      'boolean.base': 'Bạn phải đồng ý với tất cả các điều khoản và chính sách',
+    }),
+});
+
+const SignUp = () => {
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    setError, // Thêm setError để gán lỗi thủ công
+    formState: { errors, isValid, isSubmitting },
+  } = useForm({
+    resolver: joiResolver(signupChema),
+    mode: 'onChange',
+    defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'member',
+      agreeAllTerms: false,
+    },
+  });
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (signup) => {
+      const { data } = await instance.post(
+        'auth/sign-up',
+        signup
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      localStorage.setItem('accessToken', data.accessToken);
+      toast.success('Tài khoản đã được thêm thành công!');
+      navigate('/login');
+    },
+    onError: (error) => {
+      if (Array.isArray(error?.response?.data?.errors)) {
+        error.response.data.errors.forEach(msg => toast.error(msg));
+        return;
+      }
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        '';
+      console.error('Full error object:', error);
+      if (
+        errMsg.toLowerCase().includes('email') ||
+        errMsg.toLowerCase().includes('đã được sử dụng')
+      ) {
+        toast.error('Email đã được đăng ký');
+      } else if (errMsg.toLowerCase().includes('mật khẩu')) {
+        toast.error(errMsg);
+      } else if (errMsg.toLowerCase().includes('xác nhận')) {
+        toast.error(errMsg);
+      } else if (errMsg.toLowerCase().includes('điều khoản') || errMsg.toLowerCase().includes('chính sách')) {
+        toast.error(errMsg);
+      } else if (errMsg) {
+        toast.error(errMsg);
+      } else {
+        toast.error('Đăng ký thất bại. Vui lòng thử lại!');
+      }
+    },
+  });
+
+  const onSubmit = (data) => {
+    const submitData = {
+      ...data,
+      agreeTermsOfService: data.agreeAllTerms,
+      agreeDataPolicy: data.agreeAllTerms,
+      agreeSecurityPolicy: data.agreeAllTerms,
+    };
+    delete submitData.agreeAllTerms; // Xóa trường tạm thời
+    mutate(submitData);
+  };
+
+  return (
+    <div className='bg-sky-100 flex justify-center items-center min-h-screen'>
+      <div className='w-1/2 h-screen hidden lg:block'>
+        <img 
+          src='https://img.freepik.com/fotos-premium/imagen-fondo_910766-187.jpg?w=826' 
+          alt='Placeholder Image' 
+          className='object-cover w-full h-full'
+        />
+      </div>
+      <div className='lg:p-36 md:p-52 sm:20 p-8 w-full lg:w-1/2 overflow-y-auto'>
+        <h1 className='text-2xl font-semibold mb-4'>Tạo tài khoản mới</h1>
+        <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+          <div className='mb-4'>
+            <label htmlFor='email' className='block text-gray-600'>Email</label>
+            <input
+              {...register('email', { required: true })}
+              type='email'
+              id='email'
+              className='w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500'
+              placeholder='email'
+              autoComplete='off'
+            />
+            {errors?.email && <span className='text-red-500 text-sm'>{errors?.email?.message}</span>}
+          </div>
+          <div className='mb-4'>
+            <label htmlFor='password' className='block text-gray-800'>Mật khẩu</label>
+            <div className='relative'>
+              <input
+                {...register('password', { required: true })}
+                type={showPassword ? 'text' : 'password'}
+                id='password'
+                className='w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500'
+                placeholder='••••••••'
+                autoComplete='off'
+              />
+              <button
+                type='button'
+                className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700'
+              >
+                {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </button>
+            </div>
+            {errors?.password && <span className='text-red-500 text-sm'>{errors?.password?.message}</span>}
+          </div>
+          <div className='mb-4'>
+            <label htmlFor='confirm-password' className='block text-gray-800'>Xác nhận mật khẩu</label>
+            <div className='relative'>
+              <input
+                {...register('confirmPassword', { required: true })}
+                type={showConfirmPassword ? 'text' : 'password'}
+                id='confirm-password'
+                className='w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:border-blue-500'
+                placeholder='••••••••'
+                autoComplete='off'
+              />
+              <button
+                type='button'
+                className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700'
+              >
+                {showConfirmPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+              </button>
+            </div>
+            {errors?.confirmPassword && (
+              <span className='text-red-500 text-sm'>{errors?.confirmPassword?.message}</span>
+            )}
+          </div>
+          <div className='mb-6 space-y-3 border-t pt-4'>
+            <h3 className='text-lg font-medium text-gray-800 mb-3'>Điều khoản và Chính sách</h3>
+            <div className='flex items-start space-x-3'>
+              <input
+                {...register('agreeAllTerms')}
+                type='checkbox'
+                id='agreeAllTerms'
+                className='mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
+              />
+              <div className='flex-1'>
+                <label htmlFor='agreeAllTerms' className='text-sm text-gray-700'>
+                  Tôi đồng ý với tất cả các điều khoản và chính sách sau:
+                </label>
+                <div className='mt-2 ml-4 space-y-1 text-sm text-gray-600'>
+                  <div>
+                    • <a 
+                        href='/policy/dieu-khoan-su-dung-dich-vu' 
+                        target='_blank' 
+                        rel='noopener noreferrer'
+                        className='text-blue-600 hover:text-blue-800 underline'
+                      >
+                        Điều khoản sử dụng dịch vụ
+                      </a>
+                  </div>
+                  <div>
+                    • <a 
+                        href='/policy/chinh-sach-thu-thap-va-xu-ly-du-lieu-ca-nhan-khach-hang' 
+                        target='_blank'
+                        rel='noopener noreferrer' 
+                        className='text-blue-600 hover:text-blue-800 underline'
+                      >
+                        Chính sách thu thập và xử lý dữ liệu cá nhân
+                      </a>
+                  </div>
+                  <div>
+                    • <a 
+                        href='/policy/chinh-sach-bao-mat-va-xu-ly-du-lieu-khach-hang' 
+                        target='_blank'
+                        rel='noopener noreferrer' 
+                        className='text-blue-600 hover:text-blue-800 underline'
+                      >
+                        Chính sách bảo mật và xử lý dữ liệu khách hàng
+                      </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {errors?.agreeAllTerms && (
+              <span className='text-red-500 text-sm block ml-7'>{errors?.agreeAllTerms?.message}</span>
+            )}
+          </div>
+          <div>
+            <input
+              {...register('role')}
+              type='hidden'
+            />
+          </div>
+          <button
+            type='submit'
+            className='bg-red-500 hover:bg-blue-600 text-white font-semibold rounded-md py-2 px-4 w-full'
+          >
+            {isPending ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
+          </button>
+        </form>
+        <div className='mt-6 text-green-500 text-center'>
+          <p className='text-sm font-light text-gray-500'>
+            Bạn đã có tài khoản?{' '}
+            <a href='/login' className='hover:underline'>
+              Đăng nhập tại đây
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SignUp;
+

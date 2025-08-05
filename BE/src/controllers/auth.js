@@ -68,9 +68,17 @@ export const signUp = async (req, res, next) => {
         }
 
         const hashedPassword = hashPassword(password);
+        // Prepare terms acceptance data
+        const termsAcceptance = {
+            agreeTermsOfService: req.body.agreeTermsOfService || false,
+            agreeDataPolicy: req.body.agreeDataPolicy || false,
+            agreeSecurityPolicy: req.body.agreeSecurityPolicy || false,
+            acceptedAt: new Date()
+        };
         const newUser = await User.create({
             ...req.body,
             password: hashedPassword,
+            termsAcceptance,
             role,
             site_id: role === 'super_admin' ? null : finalSiteId,
             service: service || null

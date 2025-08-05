@@ -69,7 +69,26 @@ const userSchema = new mongoose.Schema(
         type: String,
         description: "Mô tả chi tiết về link"
       }
-    }]
+    }],
+    // Thêm các trường lưu trữ trạng thái đồng ý điều khoản
+    termsAcceptance: {
+      agreeTermsOfService: {
+        type: Boolean,
+        default: false
+      },
+      agreeDataPolicy: {
+        type: Boolean,
+        default: false
+      },
+      agreeSecurityPolicy: {
+        type: Boolean,
+        default: false
+      },
+      acceptedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
   },
   { timestamps: true, versionKey: false }
 );
