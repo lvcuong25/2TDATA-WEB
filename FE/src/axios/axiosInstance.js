@@ -36,21 +36,42 @@ instance.interceptors.response.use(
       message: error.response?.data?.message || error.message
     });
     
-    // Handle authentication errors
+    // Handle authentication errors (401)
     if (error.response?.status === 401) {
-      // Don't redirect for iframe routes
-      const isIframeRoute = error.config?.url?.includes('/iframe/');
+      console.log('401 error detected, clearing auth data...');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('accessToken');
       
-      // Check if we're already on login page to avoid redirect loop
-      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin') && !isIframeRoute) {
-        console.log('401 error detected, redirecting to login...');
-        // Token expired or invalid
+      // Don't redirect for iframe routes to avoid breaking iframe functionality
+      const isIframeRoute = error.config?.url?.includes('/iframe/');
+      if (!isIframeRoute && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+      }
+    }
+    
+    // Handle authorization errors (403) - specifically USER_INACTIVE
+    if (error.response?.status === 403) {
+      const errorData = error.response?.data;
+      
+      // Check if user is inactive
+      if (errorData?.error === 'USER_INACTIVE') {
+        console.log('User inactive detected, clearing auth data...');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('user');
         sessionStorage.removeItem('accessToken');
-        // Redirect to login page with current path as redirect param
-        const currentPath = window.location.pathname + window.location.search;
-        window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+        
+        // Show user-friendly message
+        if (typeof window !== 'undefined' && window.toast) {
+          window.toast.error('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.');
+        }
+        
+        // Redirect to login page
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+          const currentPath = window.location.pathname + window.location.search;
+          window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+        }
       }
     }
     

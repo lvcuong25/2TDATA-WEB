@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, Avatar, Table, Button, Form, Select, Tag, Popconfirm, Typography, Divider, Input, Modal, Descriptions, Row, Col } from 'antd';
 import { DeleteOutlined, EditOutlined, MailOutlined, PhoneOutlined, HomeOutlined, IdcardOutlined, PictureOutlined, NumberOutlined } from '@ant-design/icons';
 import { AuthContext } from '../core/Auth';
+import { useSite } from '../../context/SiteContext';
 import instance from '../../utils/axiosInstance';
 import { toast } from 'react-toastify';
 
@@ -10,6 +11,7 @@ const { Title, Text } = Typography;
 
 const UserOrganization = () => {
   const { currentUser } = useContext(AuthContext);
+  const { currentSite } = useSite();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const [pendingRoleChange, setPendingRoleChange] = useState({ userId: null, newRole: null });
@@ -30,13 +32,15 @@ const UserOrganization = () => {
     retry: false,
   });
 
-  // Lấy danh sách user để thêm thành viên
-  const { data: userData, isLoading: loadingUsers } = useQuery({
-    queryKey: ['user'],
+  // Lấy danh sách users chưa thuộc tổ chức nào
+  const { data: availableUsers, isLoading: loadingUsers } = useQuery({
+    queryKey: ['availableUsers', currentSite?._id],
     queryFn: async () => {
-      const { data } = await instance.get(`/user?limit=1000`);
-      return data.docs || data.data?.docs || [];
+      if (!currentSite?._id) return [];
+      const { data } = await instance.get(`/organization/available-users?siteId=${currentSite._id}`);
+      return data || [];
     },
+    enabled: !!currentSite?._id,
   });
 
   // Mutations
@@ -44,6 +48,7 @@ const UserOrganization = () => {
     mutationFn: (values) => instance.post(`/organization/${org?.data?._id}/members`, values),
     onSuccess: () => {
       queryClient.invalidateQueries(['organization', currentUser?._id]);
+      queryClient.invalidateQueries(['availableUsers', currentSite?._id]);
       form.resetFields();
       toast.success('Thêm thành viên thành công!');
     },
@@ -56,6 +61,7 @@ const UserOrganization = () => {
     mutationFn: (userId) => instance.delete(`/organization/${org?.data?._id}/members/${userId}`),
     onSuccess: () => {
       queryClient.invalidateQueries(['organization', currentUser?._id]);
+      queryClient.invalidateQueries(['availableUsers', currentSite?._id]);
       toast.success('Xóa thành viên thành công!');
     },
     onError: (err) => {
@@ -242,12 +248,11 @@ const UserOrganization = () => {
               style={{ width: 300 }}
               filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
             >
-              {userData?.filter(user => !orgData.members.some(m => m.user._id === user._id))
-                .map(user => (
-                  <Select.Option key={user._id} value={user._id} label={`${user.name} (${user.email})`}>
-                    {user.name} ({user.email})
-                  </Select.Option>
-                ))}
+              {availableUsers?.map(user => (
+                <Select.Option key={user._id} value={user._id} label={`${user.name} (${user.email})`}>
+                  {user.name} ({user.email})
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
           <Form.Item name="role" initialValue="member">

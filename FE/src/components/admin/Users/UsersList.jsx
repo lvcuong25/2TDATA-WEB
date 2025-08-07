@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Space, Table, Button, Popconfirm, Tag, Input } from "antd";
 import { toast } from "react-toastify";
-import { EditOutlined, DeleteOutlined, UserOutlined, UndoOutlined, SearchOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined, UserOutlined, UndoOutlined, SearchOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import instance from "../../../utils/axiosInstance";
+import { AuthContext } from "../../core/Auth";
 
 const UsersList = () => {
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState("");
+  const { currentUser } = useContext(AuthContext);
+  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "superadmin";
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["USERS", currentPage, pageSize, searchValue],
@@ -47,12 +50,27 @@ const UsersList = () => {
     },
   });
 
+  const permanentDeleteMutation = useMutation({
+    mutationFn: (id) => instance.delete(`/user/permanent/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["USERS"]);
+      toast.success("Người dùng đã được xóa vĩnh viễn thành công!");
+    },
+    onError: (error) => {
+      toast.error("Không thể xóa người dùng: " + error.message);
+    },
+  });
+
   const handleDelete = (id) => {
     deleteMutation.mutate(id);
   };
 
   const handleRestore = (id) => {
     restoreMutation.mutate(id);
+  };
+
+  const handlePermanentDelete = (id) => {
+    permanentDeleteMutation.mutate(id);
   };
 
   const handleTableChange = (pagination) => {
@@ -185,7 +203,7 @@ const UsersList = () => {
     {
       title: "Thao tác",
       key: "action",
-      width: 120,
+      width: isSuperAdmin ? 180 : 120,
       fixed: 'right',
       render: (_, record) => (
         <Space size="small">
@@ -220,6 +238,31 @@ const UsersList = () => {
               />
             </Popconfirm>
           )}
+          {/* Permanent delete button - only for super admin */}
+          {isSuperAdmin && (
+            <Popconfirm
+              title={
+                <div>
+                  <p><ExclamationCircleOutlined style={{ color: '#ff4d4f' }} /> CẢNH BÁO!</p>
+                  <p>Bạn có chắc chắn muốn xóa vĩnh viễn người dùng này?</p>
+                  <p style={{ color: '#ff4d4f', fontSize: '12px' }}>
+                    Hành động này không thể hoàn tác và sẽ xóa tất cả dữ liệu liên quan.
+                  </p>
+                </div>
+              }
+              onConfirm={() => handlePermanentDelete(record._id)}
+              okText="Xóa vĩnh viễn"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Button 
+                icon={<ExclamationCircleOutlined />} 
+                danger
+                size="small"
+                style={{ borderColor: '#ff4d4f' }}
+              />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -229,6 +272,23 @@ const UsersList = () => {
   
   return (
     <div>
+      <style>{`
+        .ant-pagination-item {
+          margin: 0 6px !important;
+        }
+        .ant-pagination-prev,
+        .ant-pagination-next {
+          margin: 0 10px !important;
+        }
+        .ant-pagination-jump-prev,
+        .ant-pagination-jump-next {
+          margin: 0 6px !important;
+        }
+        .ant-table-pagination {
+          margin-top: 20px !important;
+          padding-left: 20px !important;
+        }
+      `}</style>
       <h2 className="ant-space css-dev-only-do-not-override-1uq9j6g ant-space-horizontal ant-space-align-center ant-space-gap-row-small ant-space-gap-col-small font-semibold text-lg rounded-md bg-[#E9E9E9] w-full p-4 my-8">
         Danh sách người dùng
       </h2>

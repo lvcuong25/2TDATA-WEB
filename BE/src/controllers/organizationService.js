@@ -2,6 +2,7 @@ import OrganizationService from "../model/OrganizationService.js";
 import Organization from "../model/Organization.js";
 import Service from "../model/Service.js";
 import Site from "../model/Site.js";
+import { addUsersToIframeIfExists, removeUsersFromIframeIfExists } from "../utils/iframeUtils.js";
 
 // Lấy danh sách service đang chờ xác nhận cho tổ chức
 export const getPendingOrganizationServices = async (req, res, next) => {
@@ -378,6 +379,9 @@ export const updateOrganizationServiceLinks = async (req, res, next) => {
       });
     }
     
+    // Store old links for comparison (to handle removed users from iframe)
+    const oldLinks = [...(orgService.link || [])];
+    
     if (links && Array.isArray(links)) {
       const formattedLinks = links.map(link => {
         if (typeof link === 'string') {
@@ -423,13 +427,107 @@ export const updateOrganizationServiceLinks = async (req, res, next) => {
     }
     
     await orgService.save();
+    
+    // Auto-manage iframe viewers based on link sharing changes
+    const iframeResults = [];
+    if (links && Array.isArray(links)) {
+      for (const link of links) {
+        try {
+          // Find corresponding old link for comparison
+          const oldLink = oldLinks.find(ol => ol.url === link.url);
+          const oldVisibleFor = oldLink ? (oldLink.visibleFor || []).map(id => id.toString()) : [];
+          const newVisibleFor = (link.visibleFor || []).map(id => id.toString());
+          
+          // Find users to add (in new but not in old)
+          const usersToAdd = newVisibleFor.filter(userId => !oldVisibleFor.includes(userId));
+          
+          // Find users to remove (in old but not in new)
+          const usersToRemove = oldVisibleFor.filter(userId => !newVisibleFor.includes(userId));
+          
+          // Add new users to iframe viewers
+          if (usersToAdd.length > 0) {
+            console.log(`[IFRAME CONTROLLER] Adding ${usersToAdd.length} users to iframe for URL: ${link.url}`);
+            console.log(`[IFRAME CONTROLLER] User IDs to add:`, usersToAdd);
+            const addResult = await addUsersToIframeIfExists(link.url, usersToAdd);
+            console.log(`[IFRAME CONTROLLER] Add result:`, addResult);
+            
+            if (addResult.isIframe) {
+              iframeResults.push({
+                url: link.url,
+                action: 'add',
+                success: true,
+                message: addResult.message,
+                usersAffected: usersToAdd.length
+              });
+              console.log(`[IFRAME] ${addResult.message} for URL: ${link.url}`);
+            } else {
+              console.log(`[IFRAME CONTROLLER] Not an iframe or error:`, addResult.message);
+              iframeResults.push({
+                url: link.url,
+                action: 'add',
+                success: false,
+                message: addResult.message,
+                usersAffected: 0
+              });
+            }
+          }
+          
+          // Remove users from iframe viewers
+          if (usersToRemove.length > 0) {
+            const removeResult = await removeUsersFromIframeIfExists(link.url, usersToRemove);
+            if (removeResult.isIframe) {
+              iframeResults.push({
+                url: link.url,
+                action: 'remove',
+                success: true,
+                message: removeResult.message,
+                usersAffected: usersToRemove.length
+              });
+              console.log(`[IFRAME] ${removeResult.message} for URL: ${link.url}`);
+            }
+          }
+          
+        } catch (error) {
+          console.error(`[IFRAME] Error processing link ${link.url}:`, error);
+          iframeResults.push({
+            url: link.url,
+            action: 'error',
+            success: false,
+            message: `Error: ${error.message}`
+          });
+        }
+      }
+    }
+    
     const updatedOrgService = await OrganizationService.findById(orgService._id)
       .populate('organization', 'name email phone address logo')
       .populate('service', 'name slug image status description')
       .populate('approvedBy', 'name email avatar');
+      
+    let responseMessage = "Cập nhật link thành công";
+    if (iframeResults.length > 0) {
+      const addActions = iframeResults.filter(r => r.success && r.action === 'add');
+      const removeActions = iframeResults.filter(r => r.success && r.action === 'remove');
+      
+      const messages = [];
+      if (addActions.length > 0) {
+        const totalAdded = addActions.reduce((sum, action) => sum + action.usersAffected, 0);
+        messages.push(`Đã tự động thêm ${totalAdded} lượt xem cho iframe`);
+      }
+      if (removeActions.length > 0) {
+        const totalRemoved = removeActions.reduce((sum, action) => sum + action.usersAffected, 0);
+        messages.push(`Đã tự động gỡ ${totalRemoved} lượt xem cho iframe`);
+      }
+      
+      if (messages.length > 0) {
+        responseMessage += `. ${messages.join(', ')}.`;
+      }
+    }
+    
     return res.status(200).json({
       data: updatedOrgService,
-      message: "Cập nhật link thành công"
+      message: responseMessage,
+      iframeResults: iframeResults.length > 0 ? iframeResults : undefined
     });
   } catch (error) { next(error); }
 };

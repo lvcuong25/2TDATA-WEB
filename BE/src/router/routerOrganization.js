@@ -8,7 +8,8 @@ import {
   addMember,
   updateMemberRole,
   removeMember,
-  getOrganizationsByUserId
+  getOrganizationsByUserId,
+  getAvailableUsers
 } from "../controllers/organizationController.js";
 import {
   getPendingOrganizationServices,
@@ -46,6 +47,7 @@ router.post("/", createOrganization);
 router.put("/:id", updateOrganization);
 router.delete("/:id", deleteOrganization);
 router.get("/",  getOrganizations);
+router.get("/available-users", getAvailableUsers); // Lấy users chưa thuộc tổ chức nào
 router.get("/user/:userId", getOrganizationsByUserId);
 router.get("/:id", getOrganizationById);
 
