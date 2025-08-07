@@ -228,6 +228,77 @@ export const removeUserById = async (req, res, next) => {
     }
 };
 
+export const deleteUserById = async (req, res, next) => {
+    try {
+        // Check if user is super admin
+        if (req.user.role !== ROLES.SUPER_ADMIN) {
+            return res.status(403).json({ 
+                message: "Chỉ Super Admin mới có quyền xóa người dùng vĩnh viễn" 
+            });
+        }
+
+        // Get user data before deletion for audit logging
+        const userData = await User.findById(req.params.id);
+        if (!userData) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Prevent super admin from deleting themselves
+        if (userData._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ 
+                message: "Không thể xóa chính tài khoản của mình" 
+            });
+        }
+
+        // Prevent super admin from deleting other super admins
+        if (userData.role === ROLES.SUPER_ADMIN) {
+            return res.status(403).json({ 
+                message: "Không thể xóa Super Admin khác" 
+            });
+        }
+
+        // Delete all UserService documents associated with this user
+        await UserService.deleteMany({ user: req.params.id });
+
+        // Delete the user permanently
+        const data = await User.findByIdAndDelete(req.params.id);
+        
+        if (!data) {
+            return res.status(500).json({ message: "Xóa người dùng thất bại" });
+        }
+
+        // Log the deletion for audit purposes
+        logger.info('User permanently deleted', {
+            deletedUserId: req.params.id,
+            deletedUserEmail: userData.email,
+            deletedUserName: userData.name,
+            deletedUserRole: userData.role,
+            adminId: req.user._id,
+            adminEmail: req.user.email,
+            ip: req.ip,
+            timestamp: new Date().toISOString()
+        });
+        
+        return res.status(200).json({ 
+            message: "Xóa người dùng thành công",
+            deletedUser: {
+                id: userData._id,
+                email: userData.email,
+                name: userData.name,
+                role: userData.role
+            }
+        });
+    } catch (error) {
+        logger.error('User deletion failed', {
+            error: error.message,
+            adminId: req.user?._id,
+            targetUserId: req.params.id,
+            ip: req.ip
+        });
+        next(error);
+    }
+};
+
 export const restoreUserById = async (req, res, next) => {
     try {
         // Get user data before restoration for audit logging

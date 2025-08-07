@@ -1,7 +1,17 @@
-﻿import { ToastContainer } from "react-toastify"
+﻿import { ToastContainer, toast } from "react-toastify"
 import Router from "./router"
+import { useEffect } from "react"
 
 function App() {
+  useEffect(() => {
+    // Make toast available globally for axios interceptors
+    window.toast = toast;
+    
+    return () => {
+      // Cleanup
+      delete window.toast;
+    };
+  }, []);
 
   return (
     <>

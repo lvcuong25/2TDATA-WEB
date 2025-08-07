@@ -10,6 +10,7 @@ import {
     getUserByEmail, 
     getUserById, 
     removeUserById, 
+    deleteUserById,
     restoreUserById, 
     updateUser, 
     updateUserProfile, 
@@ -29,6 +30,7 @@ routerUser.get('/:id', checkPermission(), getUserById);
 routerUser.get('/email/:email', checkPermission(), getUserByEmail);
 routerUser.get('/:id/services', checkPermission(), getUserServices);
 routerUser.delete('/:id', checkPermission(), removeUserById);
+routerUser.delete('/permanent/:id', checkPermission(), deleteUserById);
 routerUser.delete('/restore/:id', checkPermission(), restoreUserById);
 
 // User information routes (no schema validation needed)

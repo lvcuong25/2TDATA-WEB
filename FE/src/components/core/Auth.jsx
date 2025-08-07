@@ -19,9 +19,24 @@ export const fetchUser = async (setCurrentUser) => {
       removeAuth();
       setCurrentUser(null);
     }
-  } catch {
-    removeAuth();
-    setCurrentUser(null);
+  } catch (error) {
+    console.log('Auth fetch error:', error);
+    
+    // Handle specific error cases
+    if (error?.error === 'USER_INACTIVE') {
+      console.log('User is inactive, clearing auth data...');
+      removeAuth();
+      setCurrentUser(null);
+      
+      // Show user-friendly message if toast is available
+      if (typeof window !== 'undefined' && window.toast) {
+        window.toast.error('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.');
+      }
+    } else {
+      // Handle other errors (token expired, invalid, etc.)
+      removeAuth();
+      setCurrentUser(null);
+    }
   }
 };
 
@@ -30,6 +45,17 @@ const AuthProvider = ({ children }) => {
   
   useEffect(() => {
     fetchUser(setCurrentUser);
+    
+    // Set up periodic user status check (every 5 minutes)
+    const statusCheckInterval = setInterval(() => {
+      if (localStorage.getItem('accessToken')) {
+        fetchUser(setCurrentUser);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => {
+      clearInterval(statusCheckInterval);
+    };
   }, []);
 
   const removeCurrentUser = () => {

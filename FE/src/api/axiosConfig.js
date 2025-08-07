@@ -55,13 +55,43 @@ axiosConfig.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle authentication errors
+    // Handle authentication errors (401)
     if (error.response?.status === 401) {
-      // Token expired or invalid
+      console.log('401 error detected, clearing auth data...');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
-      // Redirect to login page
-      window.location.href = '/login';
+      sessionStorage.removeItem('accessToken');
+      
+      // Don't redirect for iframe routes to avoid breaking iframe functionality
+      const isIframeRoute = error.config?.url?.includes('/iframe/');
+      if (!isIframeRoute && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+      }
+    }
+    
+    // Handle authorization errors (403) - specifically USER_INACTIVE
+    if (error.response?.status === 403) {
+      const errorData = error.response?.data;
+      
+      // Check if user is inactive
+      if (errorData?.error === 'USER_INACTIVE') {
+        console.log('User inactive detected, clearing auth data...');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('accessToken');
+        
+        // Show user-friendly message
+        if (typeof window !== 'undefined' && window.toast) {
+          window.toast.error('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.');
+        }
+        
+        // Redirect to login page
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+          const currentPath = window.location.pathname + window.location.search;
+          window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+        }
+      }
     }
     
     // Handle network errors
