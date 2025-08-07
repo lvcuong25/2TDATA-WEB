@@ -25,6 +25,8 @@ const UsersEdit = () => {
     const [assignableRoles, setAssignableRoles] = useState([]);
     const [availableSites, setAvailableSites] = useState([]);
     const [showSiteSelect, setShowSiteSelect] = useState(false);
+    const [pageSize, setPageSize] = useState(5);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const { control, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm();
     const selectedRole = watch('role');
@@ -323,30 +325,47 @@ const UsersEdit = () => {
                 </Link>
             </div>
             <Form onFinish={handleSubmit(onSubmit)} layout="vertical">
-                <div className="flex flex-col md:flex-row gap-6">
-                    <div className="md:w-1/3">
+                <div className="grid grid-cols-1 lg:grid-cols-10 gap-8">
+                    {/* Left Column - Avatar & Basic Info */}
+                    <div className="lg:col-span-4 space-y-6">
+                        {/* Avatar Section */}
                         <Card className="text-center">
-                            <div className="w-32 h-32 mx-auto mb-4">
+                            <div className="w-24 h-24 mx-auto mb-4">
                                 <img
                                     src={avatar || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
                                     alt="Avatar preview"
-                                    className="w-full h-full object-cover rounded-full"
+                                    className="w-full h-full object-cover rounded-full border-2 border-gray-200 shadow-md"
                                 />
                             </div>
-                            <div className="flex flex-col">
-                                <input
-                                    type="file"
-                                    id="file"
-                                    accept="image/jpg, image/jpeg, image/png"
-                                    onChange={handleImageChange}
-                                    className="py-3.5 px-7 text-base font-medium text-indigo-100 focus:outline-none bg-[#202142] rounded-lg border border-indigo-200 hover:bg-indigo-900 focus:z-10 focus:ring-4 focus:ring-indigo-200 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                />
-                                <p className="text-sm text-gray-500 mt-2">Kích thước tối đa: 5MB</p>
+                            <div className="space-y-4">
+                                <div className="relative">
+                                    <input
+                                        type="file"
+                                        id="file"
+                                        accept="image/jpg, image/jpeg, image/png"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                        style={{ display: 'none' }}
+                                    />
+                                    <label 
+                                        htmlFor="file"
+                                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-colors"
+                                    >
+                                        <span>📷</span>
+                                        <span className="ml-2">Thay đổi ảnh</span>
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray-500">Kích thước tối đa: 5MB</p>
+                                {uploadMutation.isPending && (
+                                    <div className="text-blue-600 text-sm">
+                                        <Spin size="small" /> Đang tải ảnh...
+                                    </div>
+                                )}
                             </div>
                         </Card>
-                    </div>
-                    <div className="md:w-2/3">
-                        <Card>
+
+                        {/* Account Information */}
+                        <Card title="Thông tin tài khoản" className="shadow-sm">
                             <Form.Item
                                 label={
                                     <Space>
@@ -380,6 +399,44 @@ const UsersEdit = () => {
                                 />
                             </Form.Item>
 
+                            <Form.Item
+                                label={
+                                    <Space>
+                                        <span>Mật khẩu</span>
+                                        <Tooltip title="Để trống nếu không muốn thay đổi mật khẩu">
+                                            <InfoCircleOutlined />
+                                        </Tooltip>
+                                    </Space>
+                                }
+                                validateStatus={errors.password ? "error" : ""}
+                                help={errors.password?.message}
+                            >
+                                <Controller
+                                    name="password"
+                                    control={control}
+                                    rules={{
+                                        minLength: { 
+                                            value: 6, 
+                                            message: 'Mật khẩu phải có ít nhất 6 ký tự' 
+                                        },
+                                        pattern: {
+                                            value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9!@#$%^&*()_+\-\[\]{};':"\\|,.<>/?]{6,}$/,
+                                            message: 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số'
+                                        }
+                                    }}
+                                    render={({ field }) => (
+                                        <Input.Password 
+                                            {...field} 
+                                            placeholder="Nhập mật khẩu mới"
+                                            visibilityToggle
+                                        />
+                                    )}
+                                />
+                            </Form.Item>
+                        </Card>
+
+                        {/* Personal Information */}
+                        <Card title="Thông tin cá nhân" className="shadow-sm">
                             <Form.Item
                                 label={
                                     <Space>
@@ -440,40 +497,6 @@ const UsersEdit = () => {
                                     )}
                                 />
                             </Form.Item>
-                             <Form.Item
-                                label={
-                                    <Space>
-                                        <span>Mật khẩu</span>
-                                        <Tooltip title="Để trống nếu không muốn thay đổi mật khẩu">
-                                            <InfoCircleOutlined />
-                                        </Tooltip>
-                                    </Space>
-                                }
-                                validateStatus={errors.password ? "error" : ""}
-                                help={errors.password?.message}
-                            >
-                                <Controller
-                                    name="password"
-                                    control={control}
-                                    rules={{
-                                        minLength: { 
-                                            value: 6, 
-                                            message: 'Mật khẩu phải có ít nhất 6 ký tự' 
-                                        },
-                                        pattern: {
-                                            value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9!@#$%^&*()_+\-\[\]{};':"\\|,.<>/?]{6,}$/,
-                                            message: 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số'
-                                        }
-                                    }}
-                                    render={({ field }) => (
-                                        <Input.Password 
-                                            {...field} 
-                                            placeholder="Nhập mật khẩu mới"
-                                            visibilityToggle
-                                        />
-                                    )}
-                                />
-                            </Form.Item>
 
                             <Form.Item
                                 label={
@@ -499,7 +522,10 @@ const UsersEdit = () => {
                                     )}
                                 />
                             </Form.Item>
+                        </Card>
 
+                        {/* Role & Site Information */}
+                        <Card title="Quyền hạn & Site" className="shadow-sm">
                             <Form.Item
                                 label="Vai trò"
                                 required
@@ -592,96 +618,106 @@ const UsersEdit = () => {
                                 />
                             </Form.Item>
                         </Card>
+                    </div>
 
+                    {/* Right Column - Services & Additional Info */}
+                    <div className="lg:col-span-6 space-y-6">
                         <Card className="mt-4">
-                            <Form.Item
-                                label="Dịch vụ"
-                                validateStatus={errors.service ? "error" : ""}
-                                help={errors.service?.message}
-                            >
-                                <Controller
-                                    name="service"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <>
-                                            <Select
-                                                mode="multiple"
-                                                placeholder="Chọn dịch vụ"
-                                                value={field.value?.map(s => s.id)}
-                                                onChange={(values) => {
-                                                    const newServices = values.map(id => ({
-                                                        id,
-                                                        status: field.value?.find(s => s.id === id)?.status || 'waiting'
-                                                    }));
-                                                    field.onChange(newServices);
-                                                }}
+                            <h3 className="text-lg font-semibold mb-4">Dịch vụ hiện tại:</h3>
+                            <Table
+                                columns={[
+                                    {
+                                        title: "Hình ảnh",
+                                        dataIndex: "image",
+                                        key: "image",
+                                        width: 80,
+                                        render: (_, record) => (
+                                            <img 
+                                                src={record?.service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
+                                                alt={record?.service?.name}
+                                                className="w-12 h-12 object-cover rounded"
+                                            />
+                                        ),
+                                    },
+                                    {
+                                        title: "ID",
+                                        dataIndex: ["service", "_id"],
+                                        key: "id",
+                                        width: 200,
+                                        render: (text) => (
+                                            <span className="text-xs font-mono">{text}</span>
+                                        ),
+                                    },
+                                    {
+                                        title: "Tên dịch vụ",
+                                        dataIndex: ["service", "name"],
+                                        key: "name",
+                                        width: 150,
+                                        render: (text) => (
+                                            <Tag color="blue">{text}</Tag>
+                                        ),
+                                    },
+                                    {
+                                        title: "Trạng thái dịch vụ",
+                                        dataIndex: ["service", "status"],
+                                        key: "serviceStatus",
+                                        width: 120,
+                                        render: (status) => (
+                                            <Tag color={status ? "green" : "red"}>
+                                                {status ? "Hoạt động" : "Không hoạt động"}
+                                            </Tag>
+                                        ),
+                                    },
+                                    {
+                                        title: "Xác nhận",
+                                        dataIndex: "status",
+                                        key: "confirmation",
+                                        width: 120,
+                                        render: (status) => (
+                                            <Tag color={status === "waiting" ? "orange" : "green"}>
+                                                {status === "waiting" ? "Chưa xác nhận" : "Đã xác nhận"}
+                                            </Tag>
+                                        ),
+                                    },
+                                    {
+                                        title: "Đường dẫn",
+                                        dataIndex: ["service", "slug"],
+                                        key: "slug",
+                                        width: 150,
+                                        render: (slug) => (
+                                            <a 
+                                                href={`/service/slug/${slug}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
                                             >
-                                                {servicesData?.data?.docs?.map((service, idx) => (
-                                                    <Option key={`${service._id}_${service.customSlug || service.createdAt || idx}`} value={service._id}>
-                                                        {service.name}
-                                                    </Option>
-                                                ))}
-                                            </Select>
-                                            <div className="mt-4 p-4 border rounded-lg bg-gray-50">
-                                                <h3 className="text-lg font-semibold mb-3">Thông tin dịch vụ đã chọn:</h3>
-                                                <div className="space-y-4">
-                                                    {field.value?.map((service, idx) => {
-                                                        const serviceInfo = servicesData?.data?.docs?.find(s => s?._id === (service?.id || service?.service?._id)) || service?.service;
-                                                        return serviceInfo ? (
-                                                            <div key={`${serviceInfo._id}_${serviceInfo.customSlug || serviceInfo.createdAt || idx}`} className="p-4 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow">
-                                                                <div className="flex gap-4">
-                                                                    <div className="w-24 h-24 flex-shrink-0">
-                                                                        <img 
-                                                                            src={serviceInfo?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
-                                                                            alt={serviceInfo?.name}
-                                                                            className="w-full h-full object-cover rounded-lg"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="flex-grow">
-                                                                        <div className="grid grid-cols-2 gap-3">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="font-medium text-gray-700">ID:</span>
-                                                                                <span className="text-gray-600 text-sm">{serviceInfo?._id}</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="font-medium text-gray-700">Tên:</span>
-                                                                                <Tag color="blue" className="text-sm">{serviceInfo?.name}</Tag>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="font-medium text-gray-700">Trạng thái:</span>
-                                                                                <Tag color={serviceInfo?.status ? "green" : "red"} className="text-sm">
-                                                                                    {serviceInfo?.status ? "Hoạt động" : "Không hoạt động"}
-                                                                                </Tag>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="font-medium text-gray-700">Xác nhận:</span>
-                                                                                <Tag color={service?.status === "waiting" ? "orange" : "green"} className="text-sm">
-                                                                                    {service?.status === "waiting" ? "Chưa xác nhận" : "Đã xác nhận"}
-                                                                                </Tag>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="font-medium text-gray-700">Đường dẫn:</span>
-                                                                                <a 
-                                                                                    href={`/service/slug/${serviceInfo?.slug}`}
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
-                                                                                >
-                                                                                    {serviceInfo?.slug}
-                                                                                </a>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ) : null;
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-                                />
-                            </Form.Item>
+                                                {slug}
+                                            </a>
+                                        ),
+                                    },
+                                ]}
+                                dataSource={userData?.service || []}
+                                rowKey={(record, index) => `${record?.service?._id}_${index}`}
+                                pagination={{
+                                    current: currentPage,
+                                    pageSize: pageSize,
+                                    showSizeChanger: true,
+                                    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
+                                    pageSizeOptions: [5, 10, 20],
+                                    onChange: (page, pageSize) => {
+                                        setCurrentPage(page);
+                                        setPageSize(pageSize);
+                                    },
+                                }}
+                                locale={{
+                                    emptyText: (
+                                        <div className="text-center py-8 text-gray-500">
+                                            <p>Người dùng này chưa có dịch vụ nào</p>
+                                        </div>
+                                    )
+                                }}
+                                size="small"
+                            />
                         </Card>
 
                         <Card className="mt-4">

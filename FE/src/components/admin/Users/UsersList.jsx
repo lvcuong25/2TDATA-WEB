@@ -229,6 +229,23 @@ const UsersList = () => {
   
   return (
     <div>
+      <style>{`
+        .ant-pagination-item {
+          margin: 0 6px !important;
+        }
+        .ant-pagination-prev,
+        .ant-pagination-next {
+          margin: 0 10px !important;
+        }
+        .ant-pagination-jump-prev,
+        .ant-pagination-jump-next {
+          margin: 0 6px !important;
+        }
+        .ant-table-pagination {
+          margin-top: 20px !important;
+          padding-left: 20px !important;
+        }
+      `}</style>
       <h2 className="ant-space css-dev-only-do-not-override-1uq9j6g ant-space-horizontal ant-space-align-center ant-space-gap-row-small ant-space-gap-col-small font-semibold text-lg rounded-md bg-[#E9E9E9] w-full p-4 my-8">
         Danh sách người dùng
       </h2>
