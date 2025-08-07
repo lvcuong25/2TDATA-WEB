@@ -543,8 +543,33 @@ const ServiceOrganization = () => {
             const newLinks = (shareModal.record?.link || []).map(l =>
               l.url === shareModal.link.url ? { ...l, visibleFor: selectedShareUsers } : l
             );
-            await instance.put(`/organization/services/${serviceId}/links`, { links: newLinks });
-            message.success('Cập nhật chia sẻ thành công!');
+            const response = await instance.put(`/organization/services/${serviceId}/links`, { links: newLinks });
+            
+            // Hiển thị thông báo thành công
+            message.success(response.data?.message || 'Cập nhật chia sẻ thành công!');
+            
+            // Hiển thị thông báo iframe nếu có
+            if (response.data?.iframeResults && response.data.iframeResults.length > 0) {
+              const iframeMessages = response.data.iframeResults
+                .filter(result => result.success)
+                .map(result => {
+                  if (result.action === 'add') {
+                    return `✅ Đã thêm ${result.usersAffected} người vào iframe: ${result.url}`;
+                  } else if (result.action === 'remove') {
+                    return `🗑️ Đã gỡ ${result.usersAffected} người khỏi iframe: ${result.url}`;
+                  }
+                  return result.message;
+                });
+              
+              if (iframeMessages.length > 0) {
+                iframeMessages.forEach((msg, index) => {
+                  setTimeout(() => {
+                    message.info(msg, 4);
+                  }, (index + 1) * 1000); // Hiển thị từng message với delay
+                });
+              }
+            }
+            
             setShareModal({ open: false, link: null, record: null });
             queryClient.invalidateQueries(['organization', currentUser?._id]);
           } catch {
