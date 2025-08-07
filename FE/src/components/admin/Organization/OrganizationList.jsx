@@ -27,7 +27,6 @@ const OrganizationList = () => {
   const [isMembersModalVisible, setIsMembersModalVisible] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [addMemberForm] = Form.useForm();
-  const [selectedSiteForMember, setSelectedSiteForMember] = useState(null);
 
   // Fetch organization data with pagination
   const { data, isLoading, error } = useQuery({
@@ -68,6 +67,16 @@ const OrganizationList = () => {
         return userSiteId === selectedSite;
       })
     : userData;
+
+  // Filter users by organization's site for member management
+  const getFilteredUsersForMember = (orgSiteId) => {
+    if (!orgSiteId) return userData;
+    
+    return userData?.filter(user => {
+      const userSiteId = user.site_id?._id || user.site_id;
+      return userSiteId === orgSiteId;
+    });
+  };
 
   // Fetch details of the selected organization for member management
   const { data: selectedOrgData, isLoading: isLoadingSelectedOrg, refetch: refetchSelectedOrg } = useQuery({
@@ -648,59 +657,41 @@ const OrganizationList = () => {
       >
           <Card title="Thêm thành viên mới" className="mb-3" size="small">
               <Form form={addMemberForm} onFinish={handleAddMemberSubmit} layout="inline">
-                  {/* Site Selection for Member */}
-                  <Form.Item name="selectedSiteForMember" label={
-                      <span>
+                  {/* Show organization's site info */}
+                  <div className="mb-3 p-2 bg-blue-50 rounded border">
+                      <div className="text-sm text-gray-600">
                           <GlobalOutlined className="mr-1" />
-                          Chọn site
-                      </span>
-                  }>
-                      <Select
-                          placeholder="Chọn site để lọc người dùng"
-                          allowClear
-                          showSearch
-                          value={selectedSiteForMember}
-                          onChange={value => {
-                            setSelectedSiteForMember(value);
-                            addMemberForm.setFieldsValue({ selectedSiteForMember: value, userId: undefined });
-                          }}
-                          filterOption={(input, option) =>
-                              (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                          }
-                      >
-                          {sitesData?.map(site => (
-                              <Select.Option key={site._id} value={site._id}>
-                                  {site.name}
-                                  {site.domains && site.domains.length > 0 && (
-                                      <span className="text-gray-500 text-sm ml-2">
-                                          ({site.domains[0]})
-                                      </span>
-                                  )}
-                              </Select.Option>
-                          ))}
-                      </Select>
-                  </Form.Item>
+                          <strong>Site của tổ chức:</strong> {selectedOrg?.site_id?.name || 'N/A'}
+                          {selectedOrg?.site_id?.domains?.[0] && (
+                              <span className="text-gray-500 ml-2">({selectedOrg.site_id.domains[0]})</span>
+                          )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                          Chỉ có thể thêm người dùng từ cùng site với tổ chức
+                      </div>
+                  </div>
                   
                   <Form.Item name="userId" rules={[{ required: true, message: 'Vui lòng chọn người dùng' }]}>
                       <Select
                           showSearch
-                          placeholder="Tìm và chọn người dùng để thêm"
+                          placeholder="Tìm và chọn người dùng từ cùng site"
                           loading={loadingUsers}
                           style={{ width: 300 }}
                           filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                       >
                           {(() => {
-                              const availableUsers = userData?.filter(user => 
+                              // Get organization's site ID
+                              const orgSiteId = selectedOrg?.site_id?._id || selectedOrg?.site_id;
+                              
+                              // Filter users by organization's site
+                              const usersFromOrgSite = getFilteredUsersForMember(orgSiteId);
+                              
+                              // Filter out users who are already members
+                              const availableUsers = usersFromOrgSite?.filter(user => 
                                   !selectedOrgData?.members.some(m => m.user._id === user._id)
                               );
-                              const filteredAvailableUsers = selectedSiteForMember 
-                                  ? availableUsers?.filter(user => {
-                                      const userSiteId = user.site_id?._id || user.site_id;
-                                      return userSiteId === selectedSiteForMember;
-                                    })
-                                  : availableUsers;
                               
-                              return filteredAvailableUsers?.map(user => (
+                              return availableUsers?.map(user => (
                                   <Select.Option key={user._id} value={user._id} label={`${user.name} (${user.email})`}>
                                       {user.name} ({user.email})
                                       {user.site_id?.name && (

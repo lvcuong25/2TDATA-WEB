@@ -372,4 +372,43 @@ export const getOrganizationsByUserId = async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+};
+
+// Lấy danh sách users chưa thuộc tổ chức nào (trong cùng site)
+export const getAvailableUsers = async (req, res) => {
+    try {
+        const { siteId } = req.query;
+        
+        // Lấy site_id từ query hoặc từ user hiện tại
+        let targetSiteId = siteId;
+        if (!targetSiteId) {
+            targetSiteId = req.user.site_id;
+        }
+        
+        if (!targetSiteId) {
+            return res.status(400).json({ error: "Không xác định được site_id" });
+        }
+
+        // Lấy tất cả user IDs đã thuộc tổ chức nào đó trong site này
+        const organizations = await Organization.find({ site_id: targetSiteId });
+        const usersInOrganizations = [];
+        
+        organizations.forEach(org => {
+            org.members.forEach(member => {
+                if (!usersInOrganizations.includes(member.user.toString())) {
+                    usersInOrganizations.push(member.user.toString());
+                }
+            });
+        });
+
+        // Lấy users từ site này nhưng chưa thuộc tổ chức nào
+        const availableUsers = await User.find({
+            site_id: targetSiteId,
+            _id: { $nin: usersInOrganizations }
+        }).select('_id name email avatar');
+
+        res.json(availableUsers);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 }; 

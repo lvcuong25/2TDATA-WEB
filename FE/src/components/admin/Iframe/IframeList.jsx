@@ -142,12 +142,31 @@ const IframeList = () => {
       ellipsis: true,
     },
     {
+      title: 'Site',
+      dataIndex: 'site_id',
+      key: 'site_id',
+      width: 120,
+      render: (siteId) => {
+        const site = sitesData?.find(s => s._id === siteId);
+        return site ? site.name : "N/A";
+      },
+      hidden: !isSuperAdmin,
+    },
+    {
       title: 'Tên miền',
       dataIndex: 'domain',
       key: 'domain',
       ellipsis: true,
-      render: (domain) =>
-        domain ? (
+      render: (domain, record) => {
+        // Get the site for this iframe
+        const site = sitesData?.find(s => s._id === record.site_id);
+        const siteDomain = site?.domains?.[0]; // Use first domain from site
+        
+        // Use site domain if available, otherwise fallback to current origin
+        const baseUrl = siteDomain ? `https://${siteDomain}` : window.location.origin;
+        const fullUrl = `${baseUrl}/${domain}`;
+        
+        return domain ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Link
               to={`/${domain}`}
@@ -161,21 +180,22 @@ const IframeList = () => {
                 maxWidth: "200px",
                 display: "inline-block"
               }}
-              title={`${window.location.origin}/${domain}`}
+              title={fullUrl}
             >
-              {`${window.location.origin}/${domain}`}
+              {fullUrl}
             </Link>
             <Button
               size="small"
               icon={<CopyOutlined />}
               onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/${domain}`);
+                navigator.clipboard.writeText(fullUrl);
                 toast.success('Đã copy domain!');
               }}
               title="Copy domain"
             />
           </div>
-        ) : 'Chưa đặt',
+        ) : 'Chưa đặt';
+      },
     },
     {
       title: 'URL',
@@ -213,17 +233,6 @@ const IframeList = () => {
           />
         </div>
       ),
-    },
-    {
-      title: 'Site',
-      dataIndex: 'site_id',
-      key: 'site_id',
-      width: 120,
-      render: (siteId) => {
-        const site = sitesData?.find(s => s._id === siteId);
-        return site ? site.name : "N/A";
-      },
-      hidden: !isSuperAdmin,
     },
     {
       title: 'Hành động',
