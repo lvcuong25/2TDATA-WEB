@@ -5,6 +5,7 @@ import { registerSchema as signUpValidator } from "../validations/auth.js";
 import jwt from "jsonwebtoken";
 import Service from "../model/Service.js";
 import UserSession from '../model/UserSession.js';
+import Site from '../model/Site.js';
 
 const hashPassword = (password) => hashSync(password, 10);
 const comparePassword = (password, hashPassword) => compareSync(password, hashPassword);
@@ -146,10 +147,50 @@ export const signIn = async (req, res, next) => {
         let redirectPath = '/';
         let redirectDomain = null;
         
-        // Super admin - luôn redirect về dashboard của 2tdata.com
+        // Super admin - redirect về dashboard của domain hiện tại hoặc domain chính
         if (userExist.role === 'super_admin') {
             redirectPath = '/admin';
-            redirectDomain = 'https://2tdata.com';
+            
+            // Ưu tiên domain từ request (nếu có)
+            const requestHost = req.get('host');
+            if (requestHost && !requestHost.includes('localhost')) {
+                redirectDomain = `https://${requestHost}`;
+            } 
+            // Fallback: tìm main site từ database
+            else {
+                try {
+                    // Tìm site chính (có thể là site đầu tiên hoặc site có tên "main")
+                    const mainSite = await Site.findOne({
+                        $or: [
+                            { name: /main|master|2tdata/i },
+                            { isMain: true }
+                        ],
+                        status: 'active'
+                    }).sort({ createdAt: 1 });
+                    
+                    if (mainSite && mainSite.domains && mainSite.domains.length > 0) {
+                        redirectDomain = `https://${mainSite.domains[0]}`;
+                    } else {
+                        // Fallback: sử dụng domain từ environment
+                        const envDomain = process.env.MAIN_DOMAIN || process.env.DEFAULT_DOMAIN;
+                        if (envDomain) {
+                            redirectDomain = `https://${envDomain}`;
+                        } else {
+                            // Fallback cuối cùng: sử dụng domain của site hiện tại nếu có
+                            if (req.site && req.site.domains && req.site.domains.length > 0) {
+                                redirectDomain = `https://${req.site.domains[0]}`;
+                            } else {
+                                // Fallback mặc định
+                                redirectDomain = 'https://2tdata.com';
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error getting main domain:', error);
+                    // Fallback mặc định nếu có lỗi
+                    redirectDomain = 'https://2tdata.com';
+                }
+            }
         } 
         // Site admin - redirect về dashboard của site họ quản lý
         else if (userExist.role === 'site_admin' || userExist.role === 'admin') {
