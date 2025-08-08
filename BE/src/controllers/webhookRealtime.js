@@ -72,16 +72,16 @@ export const checkAndAssignUserToServer = async (req, res, next) => {
         userId: userId,
         userInfo: {
           _id: user._id,
-          email: user.email,
-          name: user.name
+          email: user.email || '',
+          name: user.name || ''
         },
         serverInfo: {
           serverId: existingServer._id,
-          link: existingServer.link,
-          apiCode: existingServer.apiCode,
-          description: existingServer.description,
-          userLimits: existingServer.userLimits,
-          currentUserCount: existingServer.users.length
+          link: existingServer.link || '',
+          apiCode: existingServer.apiCode || '',
+          description: existingServer.description || '',
+          userLimits: existingServer.userLimits || { max: 0, current: 0 },
+          currentUserCount: existingServer.users ? existingServer.users.length : 0
         },
         message: 'User đã có server',
         action: 'existing'
@@ -110,16 +110,16 @@ export const checkAndAssignUserToServer = async (req, res, next) => {
         userId: userId,
         userInfo: {
           _id: user._id,
-          email: user.email,
-          name: user.name
+          email: user.email || '',
+          name: user.name || ''
         },
         serverInfo: {
           serverId: updatedServer._id,
-          link: updatedServer.link,
-          apiCode: updatedServer.apiCode,
-          description: updatedServer.description,
-          userLimits: updatedServer.userLimits,
-          currentUserCount: updatedServer.users.length
+          link: updatedServer.link || '',
+          apiCode: updatedServer.apiCode || '',
+          description: updatedServer.description || '',
+          userLimits: updatedServer.userLimits || { max: 0, current: 0 },
+          currentUserCount: updatedServer.users ? updatedServer.users.length : 0
         },
         message: 'User đã được gán vào server có sẵn',
         action: 'assigned_to_existing'
@@ -141,15 +141,19 @@ export const checkAndAssignUserToServer = async (req, res, next) => {
     }
     
     // Tất cả server đều đầy
-    const serverStatus = allServers.map(server => ({
-      serverId: server._id,
-      link: server.link,
-      apiCode: server.apiCode,
-      description: server.description,
-      userLimits: server.userLimits,
-      currentUserCount: server.users.length,
-      availableSlots: Math.max(0, server.userLimits.max - server.users.length)
-    }));
+    const serverStatus = allServers.map(server => {
+      const userLimits = server.userLimits || { max: 0, current: 0 };
+      const users = server.users || [];
+      return {
+        serverId: server._id,
+        link: server.link || '',
+        apiCode: server.apiCode || '',
+        description: server.description || '',
+        userLimits: userLimits,
+        currentUserCount: users.length,
+        availableSlots: Math.max(0, (userLimits.max || 0) - users.length)
+      };
+    });
     
     return res.status(400).json({
       success: false,
@@ -158,14 +162,15 @@ export const checkAndAssignUserToServer = async (req, res, next) => {
       message: 'Tất cả server đều đã đạt giới hạn tối đa. Không thể gán thêm user.',
       userInfo: {
         _id: user._id,
-        email: user.email,
-        name: user.name
+        email: user.email || '',
+        name: user.name || ''
       },
       availableServers: serverStatus,
       recommendation: 'Vui lòng tạo server mới hoặc đợi có slot trống'
     });
     
   } catch (error) {
+    console.error('Error in checkAndAssignUserToServer:', error);
     return res.status(500).json({
       success: false,
       hasServer: false,

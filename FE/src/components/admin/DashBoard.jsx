@@ -97,14 +97,18 @@ const DashBoard = () => {
         icon: <LaptopOutlined />,
         label: <Link to="/admin/organization">Quản lý tổ chức</Link>,
         onClick: () => handleLinkClick('/admin/organization')
-      },
-      {
+      }
+    );
+
+    // Only super_admin can see server management
+    if (currentUser?.role === 'super_admin' || currentUser?.role === 'superadmin') {
+      baseItems.push({
         key: '/admin/servers',
         icon: <CloudServerOutlined />,
         label: <Link to="/admin/servers">Quản lý server</Link>,
         onClick: () => handleLinkClick('/admin/servers')
-      }
-    );
+      });
+    }
 
     // Only super_admin can see site management
     if (currentUser?.role === 'super_admin' || currentUser?.role === 'superadmin') {
