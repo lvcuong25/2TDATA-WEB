@@ -46,7 +46,8 @@ app.use("/api", (req, res, next) => {
         '/api/auth/sign-up',
         '/api/auth/sign-in',
         '/api/auth/send-otp',
-        '/api/auth/reset-password'
+        '/api/auth/reset-password',
+        '/api/service/check-assign-user'
     ];
     
     if (skipRoutes.some(route => req.path.startsWith(route))) {

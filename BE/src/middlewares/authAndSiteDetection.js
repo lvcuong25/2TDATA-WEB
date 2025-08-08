@@ -30,7 +30,11 @@ export const authAndSiteDetectionMiddleware = async (req, res, next) => {
       } catch (error) {
         // Token không hợp lệ, tiếp tục như anonymous user
         console.log('Invalid token:', error.message);
+        req.user = null; // Đảm bảo req.user là null khi token không hợp lệ
       }
+    } else {
+      // Không có token, set user là null
+      req.user = null;
     }
     
     // Bước 2: Site Detection
