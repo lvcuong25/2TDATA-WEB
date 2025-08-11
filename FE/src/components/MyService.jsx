@@ -22,6 +22,11 @@ const MyService = () => {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     setAccessToken(token);
+    
+    // Xóa hash fragment nếu có
+    if (window.location.hash && window.location.hash === '#_=_') {
+      window.history.replaceState(null, null, window.location.pathname + window.location.search);
+    }
   }, []);
 
   const { data: userData, isLoading } = useQuery({
@@ -60,6 +65,25 @@ const MyService = () => {
     const obj = { userId, name, serviceId, accessToken, url };
     return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
   }
+  // Hàm lấy URL sạch không có hash fragment
+  function getCleanUrl() {
+    try {
+      // Sử dụng URL constructor để xử lý URL tốt hơn
+      const url = new URL(window.location.href);
+      const cleanUrl = url.origin + url.pathname + url.search;
+      console.log('Original URL:', window.location.href);
+      console.log('Clean URL:', cleanUrl);
+      return cleanUrl;
+    } catch (error) {
+      // Fallback nếu URL constructor không hoạt động
+      const currentUrl = window.location.href;
+      const cleanUrl = currentUrl.split('#')[0];
+      console.log('Fallback - Original URL:', currentUrl);
+      console.log('Fallback - Clean URL:', cleanUrl);
+      return cleanUrl;
+    }
+  }
+
   // Hàm thêm/thay thế state vào url
   function appendStateToUrl(url, stateValue) {
     try {
@@ -94,7 +118,7 @@ const MyService = () => {
           serviceId: service?._id || "",
           accessToken: accessToken
         };
-        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, window.location.href);
+        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, getCleanUrl());
         const urlWithState = appendStateToUrl(authorizedLink.url, state);
         window.location.href = urlWithState;
         } else {
@@ -275,7 +299,7 @@ const MyService = () => {
                     serviceId: record.service._id || "",
                     accessToken: accessToken
                   };
-                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, window.location.href);
+                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, getCleanUrl());
                   const urlWithState = appendStateToUrl(links[0].url, state);
                   window.location.href = urlWithState;
                 }
