@@ -56,8 +56,8 @@ const MyService = () => {
   });
 
   // Hàm sinh state base64
-  function generateState(userId, name, serviceId, accessToken) {
-    const obj = { userId, name, serviceId, accessToken };
+  function generateState(userId, name, serviceId, accessToken, url) {
+    const obj = { userId, name, serviceId, accessToken, url };
     return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
   }
   // Hàm thêm/thay thế state vào url
@@ -94,7 +94,7 @@ const MyService = () => {
           serviceId: service?._id || "",
           accessToken: accessToken
         };
-        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken);
+        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, authorizedLink.url);
         const urlWithState = appendStateToUrl(authorizedLink.url, state);
         window.location.href = urlWithState;
         } else {
