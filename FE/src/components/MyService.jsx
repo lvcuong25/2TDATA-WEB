@@ -94,7 +94,7 @@ const MyService = () => {
           serviceId: service?._id || "",
           accessToken: accessToken
         };
-        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, authorizedLink.url);
+        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, window.location.href);
         const urlWithState = appendStateToUrl(authorizedLink.url, state);
         window.location.href = urlWithState;
         } else {
@@ -275,7 +275,7 @@ const MyService = () => {
                     serviceId: record.service._id || "",
                     accessToken: accessToken
                   };
-                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken);
+                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, window.location.href);
                   const urlWithState = appendStateToUrl(links[0].url, state);
                   window.location.href = urlWithState;
                 }
