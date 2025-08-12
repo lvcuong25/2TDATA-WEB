@@ -9,10 +9,20 @@ import Site from '../model/Site.js';
 export const authAndSiteDetectionMiddleware = async (req, res, next) => {
   try {
     // Bước 1: Authentication (nếu có token)
+    let token = null;
+    
+    // Check Authorization header first
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      
+      token = authHeader.split(' ')[1];
+    }
+    
+    // If no token in header, check cookie
+    if (!token && req.cookies && req.cookies.accessToken) {
+      token = req.cookies.accessToken;
+    }
+    
+    if (token) {
       try {
         const payload = jwt.verify(token, process.env.JWT_SECRET || process.env.SECRET_KEY);
         req.user = await User.findById(payload._id).select('-password').populate('service').populate('site_id');

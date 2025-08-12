@@ -18,7 +18,8 @@ const instance = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
-  }
+  },
+  withCredentials: true // Enable cookies to be sent with requests
 });
 
 // Thêm interceptor để tự động gắn token

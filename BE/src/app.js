@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import router from './router/index.js';
 import { connectDB } from "./config/db.js";
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import logger from './utils/logger.js';
 import { authAndSiteDetectionMiddleware } from './middlewares/authAndSiteDetection.js';
 import { applySiteFilterMiddleware } from './middlewares/siteDetection.js';
@@ -33,6 +34,9 @@ app.use(cors({
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Cookie parser middleware
+app.use(cookieParser());
 
 // Serve static files for uploads
 app.use('/uploads', express.static('uploads'));

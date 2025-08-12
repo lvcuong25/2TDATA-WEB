@@ -61,8 +61,14 @@ const SignIn = () => {
       console.log('Redirect domain:', data.redirectDomain);
       console.log('User role:', data.data?.role);
       console.log('User service:', data.data?.service);
+      
+      // Store token in localStorage and sessionStorage for backward compatibility
       localStorage.setItem('accessToken', data.accessToken);
       sessionStorage.setItem('accessToken', data.accessToken);
+      
+      // Note: The accessToken is now also automatically set as an HTTP-only cookie by the backend
+      // This provides better security as the cookie cannot be accessed by JavaScript
+      
       toast.success('Đăng nhập thành công!');
       
       // Xử lý redirect với logic ưu tiên:

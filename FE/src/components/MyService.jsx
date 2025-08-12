@@ -22,12 +22,14 @@ const MyService = () => {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     setAccessToken(token);
+    console.log('Access token loaded:', token ? 'Present' : 'Missing');
+    console.log('Current user:', currentUser);
     
     // Xóa hash fragment nếu có
     if (window.location.hash && window.location.hash === '#_=_') {
       window.history.replaceState(null, null, window.location.pathname + window.location.search);
     }
-  }, []);
+  }, [currentUser]);
 
   const { data: userData, isLoading } = useQuery({
     queryKey: ["myServices", currentUser?._id, currentPage, pageSize],
@@ -97,35 +99,63 @@ const MyService = () => {
 
   const handleServiceClick = async (service) => {
     try {
-      if (!accessToken || !currentUser?._id) {
-        console.error('Missing access token or user ID');
+      if (!currentUser?._id) {
+        console.error('Missing user ID');
+        alert('Vui lòng đăng nhập lại.');
         return;
       }
-      // Make the webhook request
-      const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
-        userId: currentUser?._id,
-        accessToken: accessToken
-      });
-      if (response?.status !== 200) {
-        throw new Error('Webhook request failed');
+
+      // Try to get access token from multiple sources
+      let token = accessToken;
+      if (!token) {
+        token = localStorage.getItem('accessToken');
       }
+      if (!token) {
+        token = sessionStorage.getItem('accessToken');
+      }
+      
+      if (!token) {
+        console.error('Missing access token');
+        alert('Vui lòng đăng nhập lại để lấy token.');
+        return;
+      }
+
       // Find the first authorized link
       const authorizedLink = service?.service?.authorizedLinks?.[0];
-      if (authorizedLink) {
-        const stateObj = {
-          userId: currentUser?._id || "",
-          name: currentUser?.name || "",
-          serviceId: service?._id || "",
-          accessToken: accessToken
-        };
-        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, getCleanUrl());
-        const urlWithState = appendStateToUrl(authorizedLink.url, state);
-        window.location.href = urlWithState;
-        } else {
-          console.error('No authorized link found for service');
-        }
+      if (!authorizedLink) {
+        console.error('No authorized link found for service');
+        return;
+      }
+
+      // Make the webhook request (optional - can be skipped if causing issues)
+      try {
+        const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
+          userId: currentUser?._id,
+          accessToken: token
+        });
+        console.log('Webhook response:', response?.status);
+      } catch (webhookError) {
+        console.warn('Webhook request failed, continuing with redirect:', webhookError);
+        // Continue with redirect even if webhook fails
+      }
+
+      // Proceed with redirect
+      const stateObj = {
+        userId: currentUser?._id || "",
+        name: currentUser?.name || "",
+        serviceId: service?._id || "",
+        accessToken: token
+      };
+              const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, token, getCleanUrl());
+      const urlWithState = appendStateToUrl(authorizedLink.url, state);
+      
+      console.log('Redirecting to:', urlWithState);
+      window.location.href = urlWithState;
+      
     } catch (error) {
-      console.error('Error making webhook request:', error);
+      console.error('Error in handleServiceClick:', error);
+      // Show user-friendly error message
+      alert('Có lỗi xảy ra khi kết nối dịch vụ. Vui lòng thử lại.');
     }
   };
 
@@ -293,15 +323,7 @@ const MyService = () => {
               className="bg-blue-500 hover:bg-blue-600"
               onClick={() => {
                 if (hasLink) {
-                  const stateObj = {
-                    userId: currentUser?._id || "",
-                    name: currentUser?.name || "",
-                    serviceId: record.service._id || "",
-                    accessToken: accessToken
-                  };
-                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken, getCleanUrl());
-                  const urlWithState = appendStateToUrl(links[0].url, state);
-                  window.location.href = urlWithState;
+                  handleServiceClick(record);
                 }
               }}
               disabled={!hasLink}
@@ -316,7 +338,9 @@ const MyService = () => {
 
   // Find if there is an authorized link for conditional rendering
   const findAuthorizedLink = (userService) => {
-    return userService?.service?.authorizedLinks?.[0];
+    const link = userService?.service?.authorizedLinks?.[0];
+    console.log('Authorized link for service:', userService?.service?.name, link);
+    return link;
   };
 
   // Pagination handler
@@ -343,6 +367,11 @@ const MyService = () => {
       </div>
     );
   }
+
+  // Debug information
+  console.log('User services data:', userData);
+  console.log('Current user:', currentUser);
+  console.log('Access token:', accessToken);
 
   if (!userData || !userData?.data || !userData?.data?.services) {
     return (
@@ -428,11 +457,20 @@ const MyService = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleServiceClick(userService);
+                          if (authorizedLink) {
+                            handleServiceClick(userService);
+                          } else {
+                            alert('Dịch vụ này chưa có link kết nối. Vui lòng liên hệ quản trị viên.');
+                          }
                         }}
-                        className="bg-blue-500 text-white rounded-full px-8 py-2 font-semibold flex items-center gap-2 hover:bg-blue-600 transition"
+                        className={`rounded-full px-8 py-2 font-semibold flex items-center gap-2 transition ${
+                          authorizedLink 
+                            ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                            : 'bg-gray-400 text-white cursor-not-allowed'
+                        }`}
+                        disabled={!authorizedLink}
                       >
-                        Kết nối<span>→</span>
+                        {authorizedLink ? 'Kết nối' : 'Chưa có link'} <span>→</span>
                       </button>
                     </div>
                   );
