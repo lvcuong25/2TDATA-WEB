@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import instance from '../utils/axiosInstance';
+import instance from '../utils/axiosInstance-cookie-only';
 
 const Logout = () => {
   const navigate = useNavigate();
@@ -16,15 +16,11 @@ const Logout = () => {
         // Continue with client-side cleanup even if API fails
       }
 
-      // Clear all authentication data from client
-      localStorage.removeItem('accessToken');
+      // ✅ Cookie-only authentication: Backend đã clear cookie accessToken
+      // ❌ Không cần xóa token từ localStorage vì không còn lưu ở đó
+      // 🧹 Chỉ clear user data không nhạy cảm
       localStorage.removeItem('user');
-      sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('user');
-      
-      // Clear any other auth-related data
-      localStorage.removeItem('authToken');
-      sessionStorage.removeItem('authToken');
       
       // Clear any cached user data
       if (window.userData) {
@@ -36,15 +32,15 @@ const Logout = () => {
         window.queryClient.clear();
       }
       
-      // Clear any other potential auth data
+      // Clear any other potential auth data (except tokens since we don't store them anymore)
       Object.keys(localStorage).forEach(key => {
-        if (key.includes('auth') || key.includes('token') || key.includes('user')) {
+        if (key.includes('auth') || key.includes('user')) {
           localStorage.removeItem(key);
         }
       });
       
       Object.keys(sessionStorage).forEach(key => {
-        if (key.includes('auth') || key.includes('token') || key.includes('user')) {
+        if (key.includes('auth') || key.includes('user')) {
           sessionStorage.removeItem(key);
         }
       });

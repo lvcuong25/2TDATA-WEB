@@ -4,30 +4,33 @@ import User from "../model/User.js";
 
 dotenv.config();
 
-const { SECRET_KEY } = process.env;
+const { SECRET_KEY, JWT_SECRET } = process.env;
 
 export const getUser = async (req, res, next) => {
     try {
+        let token = null;
+        
+        // Check Authorization header first
         const authorization = req.headers?.authorization;
+        if (authorization && authorization.startsWith('Bearer ')) {
+            token = authorization.split(" ")[1];
+        }
         
-        // Không có authorization header - set user là null và tiếp tục
-        if (!authorization) {
+        // If no token in header, check cookie
+        if (!token && req.cookies && req.cookies.accessToken) {
+            token = req.cookies.accessToken;
+        }
+        
+        // Không có token - set user là null và tiếp tục
+        if (!token) {
             req.user = null;
             return next();
         }
 
-        // Kiểm tra format của authorization header
-        if (!authorization.startsWith('Bearer ')) {
-            req.user = null;
-            return next();
-        }
-
-        const token = authorization.split(" ")[1];
-        
         // Verify token
         let decoded;
         try {
-            decoded = jwt.verify(token, SECRET_KEY);
+            decoded = jwt.verify(token, JWT_SECRET || SECRET_KEY);
         } catch (error) {
             // Token không hợp lệ hoặc hết hạn
             if (error.name === 'JsonWebTokenError') {

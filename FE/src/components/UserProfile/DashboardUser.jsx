@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../core/Auth';
 import { useQuery } from '@tanstack/react-query';
-import instance from '../../utils/axiosInstance';
+import instance from '../../utils/axiosInstance-cookie-only';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -26,13 +26,15 @@ const DashboardUser = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const { currentUser, removeCurrentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+  const removeCurrentUser = authContext?.removeCurrentUser;
 
   // Kiểm tra user đã có tổ chức chưa
   const { data: orgData } = useQuery({
     queryKey: ['organization', currentUser?._id],
     queryFn: async () => {
-      if (!currentUser?._id || currentUser.role === 'admin') return null;
+      if (!currentUser?._id || authContext?.isAdmin) return null;
       try {
         const res = await instance.get(`organization/user/${currentUser._id}`);
         return res;
@@ -43,16 +45,57 @@ const DashboardUser = () => {
     enabled: !!currentUser?._id,
     retry: false,
   });
-  const hasOrganization = !!orgData || currentUser?.role === 'admin';
+  const hasOrganization = !!orgData || authContext?.isAdmin;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
+      // Call backend logout API to clear cookie
+      try {
+        await instance.post('/auth/logout');
+        console.log('Backend logout successful');
+      } catch (apiError) {
+        console.warn('Backend logout failed, continuing with client-side cleanup:', apiError);
+        // Continue with client-side cleanup even if API fails
+      }
+
+      // Clear user data from context and storage
       removeCurrentUser();
+      
+      // Clear localStorage and sessionStorage
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
+      
+      // Clear any cached user data
+      if (window.userData) {
+        delete window.userData;
+      }
+      
+      // Clear React Query cache if available
+      if (window.queryClient) {
+        window.queryClient.clear();
+      }
+      
+      // Clear any other potential auth data
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('auth') || key.includes('user')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.includes('auth') || key.includes('user')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
       toast.success('Đăng xuất thành công!');
-      navigate('/');
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Có lỗi xảy ra khi đăng xuất!');
+      
+      // Force redirect even if there's an error
+      window.location.href = '/';
     }
   };
 
@@ -85,7 +128,7 @@ const DashboardUser = () => {
   ];
 
   // Add admin menu if user is admin, super_admin, or site_admin
-  if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') {
+  if (authContext?.isAdmin) {
     menuItems.splice(4, 0, {
       key: '/admin',
       icon: <SettingOutlined />,
@@ -146,8 +189,8 @@ const DashboardUser = () => {
                   {currentUser?.name || 'User'}
                 </Title>
                 <Text className="text-xs text-gray-500">
-                  {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') ? 
-                    (currentUser?.role === 'super_admin' ? 'Quản trị tối cao' : 
+                  {authContext?.isAdmin ? 
+                    (authContext?.isSuperAdmin ? 'Quản trị tối cao' : 
                      currentUser?.role === 'site_admin' ? 'Quản trị site' : 'Quản trị viên') : 'Người dùng'}
                 </Text>
               </div>

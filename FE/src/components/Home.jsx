@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Header from "./Header";
 import FooterWrapper from "./FooterWrapper";
 import { useMutation } from "@tanstack/react-query";
-import instance from "../utils/axiosInstance";
+import instance from "../utils/axiosInstance-cookie-only";
 import { toast } from "react-toastify";
 import { useSite } from "../context/SiteContext";
 

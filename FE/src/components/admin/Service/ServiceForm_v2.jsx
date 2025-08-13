@@ -14,27 +14,8 @@ const ServiceForm = () => {
     const navigate = useNavigate();
     const [image, setImage] = useState('https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg');
     
-    // Add authentication context
+    // Simplified authentication context usage - no inline checks
     const authContext = useContext(AuthContext) || {};
-    const currentUser = authContext?.currentUser || null;
-    const authLoading = authContext?.isLoading || false;
-    const isAdmin = authContext?.isAdmin || false;
-
-    // Show loading if authentication is still loading
-    if (authLoading) {
-        return <Spin size="large" />;
-    }
-
-    // Redirect if user is not authenticated or not admin
-    if (!currentUser) {
-        navigate("/signin");
-        return null;
-    }
-
-    if (!isAdmin) {
-        navigate("/");
-        return null;
-    }
 
     const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
@@ -94,22 +75,27 @@ const ServiceForm = () => {
     });
 
     const onSubmit = (data) => {
-        // Lọc bỏ các link trống và format lại dữ liệu
-        const filteredLinks = data.authorizedLinks
-            .filter(link => link.url.trim() !== '')
-            .map(link => ({
-                url: link.url.trim(),
-                title: link.title.trim(),
-                description: link.description?.trim() || ''
-            }));
+        try {
+            // Lọc bỏ các link trống và format lại dữ liệu
+            const filteredLinks = data.authorizedLinks
+                .filter(link => link.url.trim() !== '')
+                .map(link => ({
+                    url: link.url.trim(),
+                    title: link.title.trim(),
+                    description: link.description?.trim() || ''
+                }));
 
-        const formData = {
-            ...data,
-            image,
-            authorizedLinks: filteredLinks
-        };
+            const formData = {
+                ...data,
+                image,
+                authorizedLinks: filteredLinks
+            };
 
-        mutation.mutate(formData);
+            mutation.mutate(formData);
+        } catch (error) {
+            console.error("Error in form submission:", error);
+            toast.error("Có lỗi xảy ra khi gửi form");
+        }
     };
 
     const handleImageChange = async ({ target }) => {
@@ -248,26 +234,9 @@ const ServiceForm = () => {
                                                 />
                                             )}
                                         />
-                                        {/*   <Button 
-                                            type="text" 
-                                            danger 
-                                            icon={<MinusCircleOutlined />} 
-                                            onClick={() => remove(index)}
-                                            className="self-end"
-                                        >
-                                            Xóa link
-                                        </Button>*/ }
                                     </Space>
                                 </div>
                             ))}
-                          {/*     <Button 
-                                type="dashed" 
-                                onClick={() => append({ url: '', title: '', description: '' })} 
-                                block 
-                                icon={<PlusOutlined />}
-                            >
-                                Thêm link
-                            </Button>*/ }
                         </Card>
 
                         <Form.Item>

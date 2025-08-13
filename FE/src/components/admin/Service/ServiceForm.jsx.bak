@@ -15,10 +15,10 @@ const ServiceForm = () => {
     const [image, setImage] = useState('https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg');
     
     // Add authentication context
-    const authContext = useContext(AuthContext) || {};
-    const currentUser = authContext?.currentUser || null;
-    const authLoading = authContext?.isLoading || false;
-    const isAdmin = authContext?.isAdmin || false;
+    const authContext = useContext(AuthContext);
+    const currentUser = authContext?.currentUser;
+    const authLoading = authContext?.isLoading;
+    const isAdmin = authContext?.isAdmin;
 
     // Show loading if authentication is still loading
     if (authLoading) {

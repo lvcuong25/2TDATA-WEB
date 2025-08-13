@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Space, Table, Button, Popconfirm, Tag, Input } from "antd";
 import { toast } from "react-toastify";
 import { EditOutlined, DeleteOutlined, UserOutlined, UndoOutlined, SearchOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 import { AuthContext } from "../../core/Auth";
 
 const UsersList = () => {
@@ -12,8 +12,9 @@ const UsersList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState("");
-  const { currentUser } = useContext(AuthContext);
-  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "superadmin";
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+  const isSuperAdmin = authContext?.isSuperAdmin;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["USERS", currentPage, pageSize, searchValue],

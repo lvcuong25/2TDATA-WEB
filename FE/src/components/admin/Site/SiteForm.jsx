@@ -5,7 +5,7 @@ import {
 } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined, PlusOutlined, DeleteOutlined, UploadOutlined, EyeOutlined } from '@ant-design/icons';
-import axiosInstance from '../../../axios/axiosInstance';
+import axiosInstance from '../../../utils/axiosInstance-cookie-only';
 import DynamicFooter from '../../DynamicFooter';
 import PartnerLogosManager from './PartnerLogosManager';
 import { defaultFooterConfig } from '../../../config/footerConfig';

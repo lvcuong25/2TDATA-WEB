@@ -4,14 +4,14 @@ import FooterWrapper from "./FooterWrapper";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
 import { useQuery } from "@tanstack/react-query";
-import instance from "../utils/axiosInstance";
+import instance from "../utils/axiosInstance-cookie-only";
 import { Tag, Table, Space, Button, Tooltip, Switch, Pagination } from "antd";
 import { AppstoreOutlined, TableOutlined, LoadingOutlined } from "@ant-design/icons";
 
 const MyService = () => {
   const navigate = useNavigate();
-  const { currentUser } = useContext(AuthContext);
-  const [accessToken, setAccessToken] = useState(null);
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
   const [isCardView, setIsCardView] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
@@ -20,9 +20,6 @@ const MyService = () => {
   const [updatingServiceId, setUpdatingServiceId] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    setAccessToken(token);
-    console.log('Access token loaded:', token ? 'Present' : 'Missing');
     console.log('Current user:', currentUser);
     
     // Xóa hash fragment nếu có
@@ -63,8 +60,8 @@ const MyService = () => {
   });
 
   // Hàm sinh state base64
-  function generateState(userId, name, serviceId, accessToken, url) {
-    const obj = { userId, name, serviceId, accessToken, url };
+  function generateState(userId, name, serviceId, url) {
+    const obj = { userId, name, serviceId, url };
     return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
   }
   // Hàm lấy URL sạch không có hash fragment
@@ -105,21 +102,6 @@ const MyService = () => {
         return;
       }
 
-      // Try to get access token from multiple sources
-      let token = accessToken;
-      if (!token) {
-        token = localStorage.getItem('accessToken');
-      }
-      if (!token) {
-        token = sessionStorage.getItem('accessToken');
-      }
-      
-      if (!token) {
-        console.error('Missing access token');
-        alert('Vui lòng đăng nhập lại để lấy token.');
-        return;
-      }
-
       // Find the first authorized link
       const authorizedLink = service?.service?.authorizedLinks?.[0];
       if (!authorizedLink) {
@@ -130,8 +112,7 @@ const MyService = () => {
       // Make the webhook request (optional - can be skipped if causing issues)
       try {
         const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
-          userId: currentUser?._id,
-          accessToken: token
+          userId: currentUser?._id
         });
         console.log('Webhook response:', response?.status);
       } catch (webhookError) {
@@ -143,10 +124,9 @@ const MyService = () => {
       const stateObj = {
         userId: currentUser?._id || "",
         name: currentUser?.name || "",
-        serviceId: service?._id || "",
-        accessToken: token
+        serviceId: service?._id || ""
       };
-              const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, token, getCleanUrl());
+      const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, getCleanUrl());
       const urlWithState = appendStateToUrl(authorizedLink.url, state);
       
       console.log('Redirecting to:', urlWithState);
@@ -204,8 +184,9 @@ const MyService = () => {
         <div className="flex items-center gap-2">
           <img
             src={
-              service.image ||
-              "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
+              service.image && service.image.trim() !== ""
+                ? service.image
+                : "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
             }
             alt={service.name}
             className="w-10 h-10 object-cover rounded"
@@ -292,7 +273,9 @@ const MyService = () => {
       render: (service) => (
         <div className="flex items-center gap-2">
           <img
-            src={service.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
+            src={service.image && service.image.trim() !== ""
+              ? service.image
+              : "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
             alt={service.name}
             className="w-10 h-10 object-cover rounded"
           />
@@ -371,7 +354,6 @@ const MyService = () => {
   // Debug information
   console.log('User services data:', userData);
   console.log('Current user:', currentUser);
-  console.log('Access token:', accessToken);
 
   if (!userData || !userData?.data || !userData?.data?.services) {
     return (
@@ -441,8 +423,9 @@ const MyService = () => {
                       <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
                         <img
                           src={
-                            userService?.service?.image ||
-                            "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
+                            userService?.service?.image && userService.service.image.trim() !== ""
+                              ? userService.service.image
+                              : "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
                           }
                           alt={userService?.service?.name}
                           className="w-full h-full object-cover"

@@ -20,13 +20,10 @@ const setAuth = (auth) => {
 
 const removeAuth = () => {
     try {
-        // Clear localStorage
-        localStorage.clear();
-        
-        // Clear sessionStorage (including accessToken)
-        sessionStorage.removeItem('accessToken');
+        // ✅ Cookie-only authentication: Chỉ clear user data
+        // ❌ Không clear token vì không còn lưu trong localStorage/sessionStorage
+        localStorage.removeItem('user');
         sessionStorage.removeItem('user');
-        sessionStorage.clear();
     } catch { /* empty */ }
 };
 

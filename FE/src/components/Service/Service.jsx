@@ -4,16 +4,18 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Modal, Form, Input, Button, Spin, Checkbox, Table, Tag, Switch, Pagination, Alert, Typography } from 'antd';
 import { useContext, useState, useEffect } from 'react';
 import { AuthContext } from "../core/Auth";
-import instance from "../../utils/axiosInstance";
+import instance from "../../utils/axiosInstance-cookie-only";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
 import { AppstoreOutlined, TableOutlined } from "@ant-design/icons";
+import { getSafeImageUrl } from "../../utils/imageUtils";
 
 const { Text, Link } = Typography;
 
 const Service = () => {
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +39,12 @@ const Service = () => {
       const { data } = await instance.get(`/user/${currentUser._id}`);
       return data.data;
     },
-    enabled: !!currentUser,
+    enabled: !!currentUser?._id, // Chỉ gọi khi có currentUser._id
+    retry: false, // Không retry khi fail
+    onError: (error) => {
+      console.log('User info fetch error:', error);
+      // Không show error toast vì có thể user chưa đăng nhập
+    }
   });
 
   useEffect(() => {
@@ -54,9 +61,9 @@ const Service = () => {
     mutationFn: async (values) => {
       const { data } = await instance.put(`/user/${currentUser._id}`, {
         ...values,
-        email: currentUser.email,
-        role: currentUser.role,
-        active: currentUser.active
+        email: currentUser?.email,
+        role: currentUser?.role,
+        active: currentUser?.active
       });
       return data;
     },
@@ -134,10 +141,7 @@ const Service = () => {
       render: (_, record) => (
         <div className="flex items-center gap-2">
           <img
-            src={
-              record?.image ||
-              "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
-            }
+            src={getSafeImageUrl(record?.image)}
             alt={record?.name}
             className="w-10 h-10 object-cover rounded"
           />
@@ -226,7 +230,7 @@ const Service = () => {
                       >
                         <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
                           <img 
-                            src={service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
+                            src={getSafeImageUrl(service?.image)} 
                             alt={service?.name}
                             className="w-full h-full object-cover"
                           />

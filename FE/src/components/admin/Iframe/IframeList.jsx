@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { Link } from "react-router-dom";
-import instance from '../../../utils/axiosInstance';
+import instance from '../../../utils/axiosInstance-cookie-only';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
@@ -16,8 +16,9 @@ const IframeList = () => {
   const queryClient = useQueryClient();
   
   // Get current user context
-  const { currentUser } = useContext(AuthContext);
-  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "superadmin";
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
+  const isSuperAdmin = authContext?.isSuperAdmin || false;
 
   // Fetch iframe data with pagination
   const { data, isLoading, error } = useQuery({
@@ -26,6 +27,7 @@ const IframeList = () => {
       const { data } = await instance.get(`/iframe?page=${currentPage}&limit=${pageSize}`);
       return data;
     },
+    enabled: !!currentUser, // Only fetch if user is authenticated
   });
 
   // Fetch user data for viewers select
@@ -35,6 +37,7 @@ const IframeList = () => {
       const { data } = await instance.get(`/user?limit=1000`);
       return data.docs || data.data?.docs || [];
     },
+    enabled: !!currentUser, // Only fetch if user is authenticated
   });
 
   // Fetch sites for super admin

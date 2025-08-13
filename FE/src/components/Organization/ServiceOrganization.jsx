@@ -3,12 +3,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Tag, Input, Tooltip, Pagination, Space, Modal, Checkbox, Card, Spin, message, Row, Col, Avatar, Badge, Divider } from 'antd';
 import { SearchOutlined, PlusOutlined, CheckCircleOutlined, AppstoreOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
-import instance from '../../utils/axiosInstance';
+import instance from '../../utils/axiosInstance-cookie-only';
 import { AuthContext } from '../core/Auth';
 
 const ServiceOrganization = () => {
   // ===== Lấy thông tin user hiện tại =====
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -48,7 +49,9 @@ const ServiceOrganization = () => {
       render: (service) => (
         <div className="flex items-center gap-2">
           <img
-            src={service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+            src={service?.image && service.image.trim() !== ""
+              ? service.image
+              : 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
             alt={service?.name || 'Service image'}
             className="w-10 h-10 object-cover rounded"
           />
@@ -248,7 +251,9 @@ const ServiceOrganization = () => {
             render: (service) => (
               <div className="flex items-center gap-2">
                 <img
-                  src={service?.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
+                  src={service?.image && service.image.trim() !== ""
+              ? service.image
+              : "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
                   alt={service?.name}
                   className="w-10 h-10 object-cover rounded"
                 />
@@ -468,7 +473,9 @@ const ServiceOrganization = () => {
                       {/* Service Image */}
                       <div className="relative mb-4">
                         <img
-                          src={service.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+                          src={service.image && service.image.trim() !== ""
+              ? service.image
+              : 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
                           alt={service.name}
                           className="w-full h-32 object-cover rounded-lg border"
                         />

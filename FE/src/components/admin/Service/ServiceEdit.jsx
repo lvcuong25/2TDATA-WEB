@@ -1,13 +1,15 @@
-﻿import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
 import { Button, Input, Form, Spin, Switch, Typography, Space, Tooltip } from 'antd';
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 import { uploadFileCloudinary } from "../libs/uploadImageCloud";
 import dayjs from 'dayjs';
 import { PlusOutlined, MinusCircleOutlined, EyeOutlined } from '@ant-design/icons';
+import { getSafeImageUrl } from "../../../utils/imageUtils";
+import { AuthContext } from "../../core/Auth";
 
 const { Text } = Typography;
 
@@ -16,6 +18,31 @@ const ServiceEdit = () => {
     const { id } = useParams();
     const [image, setImage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Add authentication context
+    const authContext = useContext(AuthContext) || {};
+    const currentUser = authContext?.currentUser || null;
+    const authLoading = authContext?.isLoading || false;
+    const isAdmin = authContext?.isAdmin || false;
+
+
+
+    // Show loading if authentication is still loading
+    if (authLoading) {
+        return <Spin size="large" />;
+    }
+
+    // Redirect if user is not authenticated
+    if (!currentUser) {
+        navigate("/signin");
+        return null;
+    }
+
+    // Check if user has admin role safely
+    if (!isAdmin) {
+        navigate("/");
+        return null;
+    }
 
     const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
@@ -65,17 +92,19 @@ const ServiceEdit = () => {
 
     useEffect(() => {
         if (serviceData) {
-            // Debug log
-            setValue('name', serviceData.name);
-            setValue('slug', serviceData.slug);
-            setValue('description', serviceData.description);
-            setValue('status', serviceData.status);
-            setValue('image_public_id', serviceData.image_public_id);
-            // Đảm bảo link là một mảng
-            const links = Array.isArray(serviceData.authorizedLinks) ? serviceData.authorizedLinks : [];
-            // Debug log
-            setValue('authorizedLinks', links);
-            setImage(serviceData.image);
+            try {
+                setValue('name', serviceData.name || '');
+                setValue('slug', serviceData.slug || '');
+                setValue('description', serviceData.description || '');
+                setValue('status', serviceData.status !== undefined ? serviceData.status : true);
+                setValue('image_public_id', serviceData.image_public_id || '');
+                // Đảm bảo link là một mảng
+                const links = Array.isArray(serviceData.authorizedLinks) ? serviceData.authorizedLinks : [];
+                setValue('authorizedLinks', links);
+                setImage(serviceData.image || '');
+            } catch (error) {
+                console.error('ServiceEdit: Error setting form values:', error);
+            }
         }
     }, [serviceData, setValue]);
 
@@ -108,12 +137,19 @@ const ServiceEdit = () => {
     });
 
     const onSubmit = (data) => {
-        setIsLoading(true);
-        // Lọc bỏ các link trống
-        const filteredLinks = data.authorizedLinks.filter(link => link.url.trim() !== '');
-        mutation.mutate({ ...data, image, authorizedLinks: filteredLinks }, {
-            onSettled: () => setIsLoading(false)
-        });
+        try {
+            setIsLoading(true);
+            // Lọc bỏ các link trống
+            const filteredLinks = data.authorizedLinks.filter(link => link.url.trim() !== '');
+            const submitData = { ...data, image, authorizedLinks: filteredLinks };
+            mutation.mutate(submitData, {
+                onSettled: () => setIsLoading(false)
+            });
+        } catch (error) {
+            console.error('ServiceEdit: Error in form submission:', error);
+            setIsLoading(false);
+            toast.error('Có lỗi xảy ra khi gửi form');
+        }
     };
 
     const handleImageChange = async ({ target }) => {
@@ -141,7 +177,7 @@ const ServiceEdit = () => {
                     <div className="md:w-1/4">
                         <Form.Item label="Ảnh Dịch vụ">
                             <div className="w-48 h-48 mx-auto">
-                                <img src={image} alt="Service preview" className="w-full h-full object-cover rounded-lg mb-4" />
+                                <img src={getSafeImageUrl(image)} alt="Service preview" className="w-full h-full object-cover rounded-lg mb-4" />
                             </div>
                             <div className="flex flex-col">
                                 <button type="button"

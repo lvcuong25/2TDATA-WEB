@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { Upload, Image, Edit, Save, X, RefreshCw, Search } from 'lucide-react';
-import axiosInstance from '../../axios/axiosInstance';
+import axiosInstance from '../../utils/axiosInstance-cookie-only';
 
 /**
  * Super Admin Logo Manager

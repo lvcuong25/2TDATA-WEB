@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Form, Input, Button, Alert } from 'antd';
-import axiosInstance from '../../axios/axiosInstance';
+import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
 import { AppstoreOutlined, MailOutlined, PhoneOutlined, HomeOutlined, IdcardOutlined, NumberOutlined, PictureOutlined } from '@ant-design/icons';
 

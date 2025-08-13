@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Space, Table, Button, Popconfirm, Tag, Input } from "antd";
 import { toast } from "react-toastify";
 import { EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 
 const ServiceList = () => {
   const queryClient = useQueryClient();
@@ -66,7 +66,9 @@ const ServiceList = () => {
       key: "image",
       render: (image, record) => (
         <img
-          src={image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+                      src={image && image.trim() !== ""
+              ? image
+              : 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
           alt={record.name}
           className="w-10 h-10 object-cover rounded"
         />

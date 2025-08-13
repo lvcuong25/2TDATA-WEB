@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../core/Auth';
 import RegisterOrganizationModal from './RegisterOrganizationModal';
-import axiosInstance from '../../axios/axiosInstance';
+import instance from '../../utils/axiosInstance-cookie-only';
 
 const UserDropdown = ({ onLogoutSuccess }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const { currentUser, removeCurrentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+  const removeCurrentUser = authContext?.removeCurrentUser;
   // Show organization modal if needed later
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [hasOrganization, setHasOrganization] = useState(false);
@@ -29,10 +31,10 @@ const UserDropdown = ({ onLogoutSuccess }) => {
 
   useEffect(() => {
     const fetchOrg = async () => {
-      if (!currentUser || currentUser.role === 'admin') return;
+      if (!currentUser || authContext?.isAdmin) return;
       setLoadingOrg(true);
       try {
-        const response = await axiosInstance.get(`/organization/user/${currentUser._id}`);
+        const response = await instance.get(`/organization/user/${currentUser._id}`);
         setHasOrganization(!!response.data);
       } catch {
         setHasOrganization(false);
@@ -43,22 +45,62 @@ const UserDropdown = ({ onLogoutSuccess }) => {
     fetchOrg();
   }, [currentUser]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
+      // Call backend logout API to clear cookie
+      try {
+        await instance.post('/auth/logout');
+        console.log('Backend logout successful');
+      } catch (apiError) {
+        console.warn('Backend logout failed, continuing with client-side cleanup:', apiError);
+        // Continue with client-side cleanup even if API fails
+      }
+
+      // Clear user data from context and storage
       removeCurrentUser();
+      
+      // Clear localStorage and sessionStorage
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
+      
+      // Clear any cached user data
+      if (window.userData) {
+        delete window.userData;
+      }
+      
+      // Clear React Query cache if available
+      if (window.queryClient) {
+        window.queryClient.clear();
+      }
+      
+      // Clear any other potential auth data
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('auth') || key.includes('user')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.includes('auth') || key.includes('user')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
       toast.success('Đăng xuất thành công!');
 
       if (onLogoutSuccess) {
         onLogoutSuccess();
       }
 
-      // Force a redirect to the homepage. This is more reliable than navigate()
-      // in this specific scenario due to component unmounting.
+      // Force a redirect to the homepage
       window.location.href = '/';
 
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Có lỗi xảy ra khi đăng xuất!');
+      
+      // Force redirect even if there's an error
+      window.location.href = '/';
     }
   };
 
@@ -66,7 +108,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
     setIsOpen(!isOpen);
   };
 
-  const canRegisterOrg = currentUser?.role === 'admin' || !hasOrganization;
+  const canRegisterOrg = authContext?.isAdmin || !hasOrganization;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -99,9 +141,9 @@ const UserDropdown = ({ onLogoutSuccess }) => {
             </p>
             {currentUser?.role && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 mt-1">
-                {(currentUser.role === 'admin' || currentUser.role === 'super_admin' || currentUser.role === 'site_admin') ? 
-                  (currentUser.role === 'super_admin' ? 'Quản trị tối cao' : 
-                   currentUser.role === 'site_admin' ? 'Quản trị site' : 'Quản trị viên') : 'Người dùng'}
+                                {authContext?.isAdmin ?
+                (authContext?.isSuperAdmin ? 'Quản trị tối cao' :
+                currentUser?.role === 'site_admin' ? 'Quản trị site' : 'Quản trị viên') : 'Người dùng'}
               </span>
             )}
           </div>
@@ -146,7 +188,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
               </div>
             </Link>
             
-            {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') && (
+            {(authContext?.isAdmin) && (
               <Link
                 to="/admin"
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -198,7 +240,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
           setShowOrgModal(false);
         }}
         hasOrganization={hasOrganization}
-        isAdmin={currentUser?.role === 'admin' || currentUser?.role === 'super_admin'}
+        isAdmin={authContext?.isAdmin}
       />
      
     </div>

@@ -23,7 +23,8 @@ const { Header, Sider, Content } = Layout;
 
 const DashBoard = () => {
   const location = useLocation();
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
   const [collapsed, setCollapsed] = useState(false);
   const [activeLink, setActiveLink] = useState(location.pathname);
 
@@ -46,7 +47,7 @@ const DashBoard = () => {
     ];
 
     // Only super_admin can see service management
-    if (currentUser?.role === 'super_admin' || currentUser?.role === 'superadmin') {
+    if (authContext?.isSuperAdmin) {
       baseItems.push({
         key: '/admin/services',
         icon: <ShoppingOutlined />,
@@ -101,7 +102,7 @@ const DashBoard = () => {
     );
 
     // Only super_admin can see server management
-    if (currentUser?.role === 'super_admin' || currentUser?.role === 'superadmin') {
+    if (authContext?.isSuperAdmin) {
       baseItems.push({
         key: '/admin/servers',
         icon: <CloudServerOutlined />,
@@ -111,7 +112,7 @@ const DashBoard = () => {
     }
 
     // Only super_admin can see site management
-    if (currentUser?.role === 'super_admin' || currentUser?.role === 'superadmin') {
+    if (authContext?.isSuperAdmin) {
       baseItems.push({
         key: '/admin/sites',
         icon: <GlobalOutlined />,

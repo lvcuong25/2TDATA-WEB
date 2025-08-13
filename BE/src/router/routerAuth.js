@@ -7,7 +7,7 @@ import {
     changePassword,
     logout,
 } from "../controllers/auth.js";
-import { getUser } from "../middlewares/getUser.js";
+import { authAndSiteDetectionMiddleware } from "../middlewares/authAndSiteDetection.js";
 import { checkRequestBody } from "../middlewares/checkRequestBody.js";
 import { registerSchema, resetPasswordSchema } from "../validations/auth.js";
 
@@ -19,7 +19,7 @@ routerAuth.post("/sign-up", checkRequestBody(registerSchema), signUp);
 routerAuth.post("/sign-in", signIn);
 
 // Protected routes - cần authentication
-routerAuth.use(getUser);
+routerAuth.use(authAndSiteDetectionMiddleware);
 routerAuth.get("/", getMe);
 routerAuth.post("/change-password", changePassword);
 routerAuth.post("/logout", logout);
