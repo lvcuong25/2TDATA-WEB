@@ -20,6 +20,7 @@ const Logout = () => {
       // ❌ Không cần xóa token từ localStorage vì không còn lưu ở đó
       // 🧹 Chỉ clear user data không nhạy cảm
       localStorage.removeItem('user');
+      localStorage.removeItem('auth_timestamp');
       sessionStorage.removeItem('user');
       
       // Clear any cached user data
@@ -45,6 +46,10 @@ const Logout = () => {
         }
       });
       
+      // Dispatch events để thông báo cho các tab khác
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('authUpdate', { detail: null }));
+      
       // Show success message
       toast.success('Đăng xuất thành công!');
 
@@ -62,7 +67,7 @@ const Logout = () => {
   return (
     <button
       onClick={handleLogout}
-      className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
+      className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
     >
       Đăng xuất
     </button>

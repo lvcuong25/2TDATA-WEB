@@ -53,19 +53,26 @@ instance.interceptors.response.use(
       
       // Clear user data from localStorage when 401 occurs
       localStorage.removeItem('user');
+      localStorage.removeItem('auth_timestamp');
       sessionStorage.removeItem('user');
       
-          // Don't redirect for iframe routes to avoid breaking iframe functionality
-    const isIframeRoute = error.config?.url?.includes('/iframe/');
-    const isAuthRoute = error.config?.url?.includes('/auth/') || error.config?.url?.includes('/auth');
-    
-    if (!isIframeRoute && !isAuthRoute && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+      // Don't redirect for iframe routes to avoid breaking iframe functionality
+      const isIframeRoute = error.config?.url?.includes('/iframe/');
+      const isAuthRoute = error.config?.url?.includes('/auth/') || error.config?.url?.includes('/auth');
+      const isAlreadyOnAuthPage = window.location.pathname.includes('/login') || window.location.pathname.includes('/signin');
+      
+      // Tránh redirect loop bằng cách kiểm tra kỹ hơn
+      if (!isIframeRoute && !isAuthRoute && !isAlreadyOnAuthPage) {
         const currentPath = window.location.pathname + window.location.search;
         console.log('Redirecting to signin with path:', currentPath);
-        window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
-    } else {
+        
+        // Thêm delay nhỏ để tránh redirect quá nhanh
+        setTimeout(() => {
+          window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+        }, 100);
+      } else {
         console.log('Not redirecting - iframe route or auth route or already on signin page');
-    }
+      }
     }
     
     // Handle authorization errors (403) - specifically USER_INACTIVE
@@ -75,6 +82,9 @@ instance.interceptors.response.use(
       // Check if user is inactive
       if (errorData?.error === 'USER_INACTIVE') {
         console.log('User inactive detected...');
+        localStorage.removeItem('user');
+        localStorage.removeItem('auth_timestamp');
+        sessionStorage.removeItem('user');
         
         // Show user-friendly message
         if (typeof window !== 'undefined' && window.toast) {
@@ -82,9 +92,12 @@ instance.interceptors.response.use(
         }
         
         // Redirect to login page
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+        const isAlreadyOnAuthPage = window.location.pathname.includes('/login') || window.location.pathname.includes('/signin');
+        if (!isAlreadyOnAuthPage) {
           const currentPath = window.location.pathname + window.location.search;
-          window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+          setTimeout(() => {
+            window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
+          }, 100);
         }
       }
     }

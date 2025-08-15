@@ -29,6 +29,7 @@ const DashboardUser = () => {
   const authContext = useContext(AuthContext);
   const currentUser = authContext?.currentUser;
   const removeCurrentUser = authContext?.removeCurrentUser;
+  const notifyAuthChange = authContext?.notifyAuthChange;
 
   // Kiểm tra user đã có tổ chức chưa
   const { data: orgData } = useQuery({
@@ -63,6 +64,7 @@ const DashboardUser = () => {
       
       // Clear localStorage and sessionStorage
       localStorage.removeItem('user');
+      localStorage.removeItem('auth_timestamp');
       sessionStorage.removeItem('user');
       
       // Clear any cached user data
@@ -87,6 +89,15 @@ const DashboardUser = () => {
           sessionStorage.removeItem(key);
         }
       });
+
+      // Thông báo cho các tab khác sử dụng notifyAuthChange
+      if (notifyAuthChange) {
+        notifyAuthChange(null);
+      } else {
+        // Fallback: dispatch events để thông báo cho các tab khác
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('authUpdate', { detail: null }));
+      }
 
       toast.success('Đăng xuất thành công!');
       window.location.href = '/';

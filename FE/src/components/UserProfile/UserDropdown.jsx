@@ -11,6 +11,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
   const authContext = useContext(AuthContext);
   const currentUser = authContext?.currentUser;
   const removeCurrentUser = authContext?.removeCurrentUser;
+  const notifyAuthChange = authContext?.notifyAuthChange;
   // Show organization modal if needed later
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [hasOrganization, setHasOrganization] = useState(false);
@@ -61,6 +62,7 @@ const UserDropdown = ({ onLogoutSuccess }) => {
       
       // Clear localStorage and sessionStorage
       localStorage.removeItem('user');
+      localStorage.removeItem('auth_timestamp');
       sessionStorage.removeItem('user');
       
       // Clear any cached user data
@@ -85,6 +87,15 @@ const UserDropdown = ({ onLogoutSuccess }) => {
           sessionStorage.removeItem(key);
         }
       });
+
+      // Thông báo cho các tab khác sử dụng notifyAuthChange
+      if (notifyAuthChange) {
+        notifyAuthChange(null);
+      } else {
+        // Fallback: dispatch events để thông báo cho các tab khác
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('authUpdate', { detail: null }));
+      }
 
       toast.success('Đăng xuất thành công!');
 

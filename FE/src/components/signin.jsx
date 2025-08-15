@@ -98,9 +98,10 @@ const signinSchema = Joi.object({
       // ❌ Không lưu token vào localStorage/sessionStorage để tăng bảo mật
       // 🔒 Cookie HttpOnly ngăn chặn XSS attacks và không thể truy cập bởi JavaScript
       
-      // Lưu user data vào localStorage để Auth component có thể đọc
+      // Lưu user data vào localStorage với timestamp
       try {
         localStorage.setItem('user', JSON.stringify(data.data));
+        localStorage.setItem('auth_timestamp', Date.now().toString());
         console.log('User data saved to localStorage:', data.data);
       } catch (error) {
         console.error('Error saving user data to localStorage:', error);
@@ -127,56 +128,41 @@ const signinSchema = Joi.object({
           redirectPath = urlRedirect; // Fallback to original
         }
       } else if (data.redirectPath) {
-        // Nếu không có URL param, dùng redirect từ backend
         redirectPath = data.redirectPath;
-        console.log('Using backend redirect path:', redirectPath);
-      } else if (data.data?.role === 'super_admin' || data.data?.role === 'site_admin' || data.data?.role === 'admin') {
-        // Admin redirect về admin page
+      } else if (data.data?.role === 'super_admin') {
         redirectPath = '/admin';
-        console.log('Using admin default redirect:', redirectPath);
+      } else if (data.data?.role === 'admin' || data.data?.role === 'site_admin') {
+        redirectPath = '/admin';
       } else {
-        // User thường redirect về my-service
         redirectPath = '/service/my-service';
-        console.log('Using user default redirect:', redirectPath);
       }
       
-      // Đảm bảo redirectPath bắt đầu bằng /
-      if (!redirectPath.startsWith('/')) {
-        redirectPath = '/' + redirectPath;
-      }
+      console.log('Final redirect path:', redirectPath);
       
-      console.log('Redirecting to:', redirectPath);
-      
-      // Tăng delay để đảm bảo Auth context được cập nhật hoàn toàn
+      // Thêm delay nhỏ để đảm bảo auth context được cập nhật
       setTimeout(() => {
-        try {
-          // Kiểm tra lại user data trước khi redirect
-          const storedUser = localStorage.getItem('user');
-          console.log('Before redirect - stored user:', storedUser ? 'exists' : 'not found');
-          
-          if (storedUser) {
-            // Sử dụng window.location.href để force redirect
-            console.log('Executing redirect to:', redirectPath);
-            window.location.href = redirectPath;
-          } else {
-            console.log('User data not found, waiting longer...');
-            // Nếu user data chưa có, đợi thêm
-            setTimeout(() => {
-              console.log('Executing redirect to:', redirectPath);
-              window.location.href = redirectPath;
-            }, 1000);
-          }
-        } catch (error) {
-          console.error('Error during redirect:', error);
-          // Fallback redirect
-          window.location.href = '/admin';
-        }
-      }, 1000); // Tăng delay từ 500ms lên 1000ms
+        window.location.href = redirectPath;
+      }, 200);
     },
     onError: (error) => {
-      const message = error.response?.data?.message || 'Email hoặc mật khẩu không đúng!';
-      toast.error(message);
-    },
+      console.error('Login error:', error);
+      
+      // Xử lý các loại lỗi cụ thể
+      if (error.response?.status === 403) {
+        const errorData = error.response?.data;
+        if (errorData?.error === 'USER_INACTIVE') {
+          toast.error('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.');
+        } else if (errorData?.error === 'SITE_ACCESS_DENIED') {
+          toast.error('Bạn không có quyền truy cập vào site này.');
+        } else {
+          toast.error(errorData?.message || 'Có lỗi xảy ra khi đăng nhập!');
+        }
+      } else if (error.response?.status === 400) {
+        toast.error(error.response?.data?.message || 'Thông tin đăng nhập không đúng!');
+      } else {
+        toast.error('Có lỗi xảy ra khi đăng nhập!');
+      }
+    }
   });
 
   const onSubmit = (data) => {
