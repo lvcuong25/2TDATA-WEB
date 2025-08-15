@@ -51,7 +51,8 @@ instance.interceptors.response.use(
       
       // Don't redirect for iframe routes to avoid breaking iframe functionality
       const isIframeRoute = error.config?.url?.includes('/iframe/');
-      if (!isIframeRoute && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+      const isHomePage = window.location.pathname === '/' || window.location.pathname === '';
+      if (!isIframeRoute && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin') && !isHomePage) {
         const currentPath = window.location.pathname + window.location.search;
         window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
       }
@@ -72,7 +73,8 @@ instance.interceptors.response.use(
         }
         
         // Redirect to login page
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+        const isHomePage = window.location.pathname === '/' || window.location.pathname === '';
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin') && !isHomePage) {
           const currentPath = window.location.pathname + window.location.search;
           window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
         }

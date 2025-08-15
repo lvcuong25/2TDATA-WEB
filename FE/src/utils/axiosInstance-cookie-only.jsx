@@ -62,7 +62,8 @@ instance.interceptors.response.use(
       const isAlreadyOnAuthPage = window.location.pathname.includes('/login') || window.location.pathname.includes('/signin');
       
       // Tránh redirect loop bằng cách kiểm tra kỹ hơn
-      if (!isIframeRoute && !isAuthRoute && !isAlreadyOnAuthPage) {
+      const isHomePage = window.location.pathname === '/' || window.location.pathname === '';
+      if (!isIframeRoute && !isAuthRoute && !isAlreadyOnAuthPage && !isHomePage) {
         const currentPath = window.location.pathname + window.location.search;
         console.log('Redirecting to signin with path:', currentPath);
         
@@ -71,7 +72,7 @@ instance.interceptors.response.use(
           window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
         }, 100);
       } else {
-        console.log('Not redirecting - iframe route or auth route or already on signin page');
+        console.log('Not redirecting - iframe route or auth route or already on signin page or home page');
       }
     }
     
@@ -93,7 +94,8 @@ instance.interceptors.response.use(
         
         // Redirect to login page
         const isAlreadyOnAuthPage = window.location.pathname.includes('/login') || window.location.pathname.includes('/signin');
-        if (!isAlreadyOnAuthPage) {
+        const isHomePage = window.location.pathname === '/' || window.location.pathname === '';
+        if (!isAlreadyOnAuthPage && !isHomePage) {
           const currentPath = window.location.pathname + window.location.search;
           setTimeout(() => {
             window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;

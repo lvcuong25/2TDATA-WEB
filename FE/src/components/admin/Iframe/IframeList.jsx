@@ -291,7 +291,7 @@ const IframeList = () => {
             onClick={() => handleEdit(record)}
             size="small"
           >
-            Sửa
+          
           </Button>
           <Popconfirm
             title="Bạn có chắc chắn muốn xóa iframe này?"
@@ -305,7 +305,7 @@ const IframeList = () => {
               icon={<DeleteOutlined />}
               size="small"
             >
-              Xóa
+            
             </Button>
           </Popconfirm>
         </Space>
