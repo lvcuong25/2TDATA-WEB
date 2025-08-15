@@ -2,7 +2,7 @@
 import Header from "../Header";
 import FooterWrapper from "../FooterWrapper";
 import { useQuery } from "@tanstack/react-query";
-import instance from "../../utils/axiosInstance";
+import instance from "../../utils/axiosInstance-cookie-only";
 import { useParams } from "react-router-dom";
 import image9 from "../../image/image9.png";
 import MyService from "../MyService";

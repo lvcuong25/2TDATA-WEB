@@ -1,4 +1,4 @@
-﻿import { useContext } from "react";
+import { useContext } from "react";
 import { Navigate, useLocation } from "react-router";
 import { AuthContext } from "../components/core/Auth";
 
@@ -7,12 +7,12 @@ const ConditionalRoute = ({ condition, redirectTo, children }) => {
 };
 
 const LoginRoute = ({ children }) => {
-  const { currentUser } = useContext(AuthContext);
-  const hasToken = localStorage.getItem('accessToken');
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
   
   return (
     <ConditionalRoute
-      condition={!!currentUser && hasToken}
+      condition={!!(currentUser && currentUser._id)}
       redirectTo="/?openform=true"
       children={children}
     />
@@ -20,7 +20,8 @@ const LoginRoute = ({ children }) => {
 };
 
 const NoneLoginRoute = ({ children }) => {
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
   return (
     <ConditionalRoute
       condition={!currentUser}
@@ -31,47 +32,153 @@ const NoneLoginRoute = ({ children }) => {
 };
 
 const AdminRoute = ({ children }) => {
-  const { currentUser } = useContext(AuthContext);
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "super_admin" || currentUser?.role === "superadmin" || currentUser?.role === "site_admin";
-  const hasToken = localStorage.getItem('accessToken');
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
+  const isLoading = authContext?.isLoading || false;
+  const isAdmin = authContext?.isAdmin || false;
+  
+  // Nếu đang loading, hiển thị loading hoặc đợi
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Add comprehensive safety check for currentUser
+  if (!currentUser || !currentUser._id || !currentUser.role) {
+    return <Navigate to="/signin" />;
+  }
   
   return (
     <ConditionalRoute
-      condition={!!currentUser && isAdmin && hasToken}
-      redirectTo="/"
+      condition={!!(currentUser && currentUser._id && isAdmin)}
+      redirectTo="/signin"
+      children={children}
+    />
+  );
+};
+
+const IframeAdminRoute = ({ children }) => {
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
+  const isLoading = authContext?.isLoading || false;
+  const location = useLocation();
+  
+  // Nếu đang loading, hiển thị loading hoặc đợi
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Add comprehensive safety check for currentUser
+  if (!currentUser || !currentUser._id || !currentUser.role) {
+    console.log('IframeAdminRoute: Invalid user data, redirecting to signin');
+    return <Navigate to={`/signin?redirect=${encodeURIComponent(location.pathname)}`} />;
+  }
+  
+  // Chỉ cho phép site_admin và super_admin truy cập
+  const allowedRoles = ["site_admin", "super_admin"];
+  const hasValidRole = currentUser.role && allowedRoles.includes(currentUser.role);
+  
+  console.log('IframeAdminRoute Debug:', {
+    pathname: location.pathname,
+    currentUser: currentUser ? { _id: currentUser._id, role: currentUser.role } : null,
+    isLoading,
+    hasValidRole,
+    allowedRoles
+  });
+  
+  return (
+    <ConditionalRoute
+      condition={!!(currentUser && currentUser._id && hasValidRole)}
+      redirectTo={`/signin?redirect=${encodeURIComponent(location.pathname)}`}
       children={children}
     />
   );
 };
 
 const PrivateRoute = ({ children }) => {
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
+  const isLoading = authContext?.isLoading || false;
   const location = useLocation();
   
-  // Check if user has token but no currentUser (might be deactivated)
-  const hasToken = localStorage.getItem('accessToken');
+  // Nếu đang loading, hiển thị loading hoặc đợi
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <ConditionalRoute
-      condition={!!currentUser && hasToken}
-      redirectTo={`${location.pathname}`}
+      condition={!!(currentUser && currentUser._id)}
+      redirectTo={`/signin?redirect=${encodeURIComponent(location.pathname)}`}
       children={children}
     />
   );
 };
 
 const SuperAdminRoute = ({ children }) => {
-  const { currentUser } = useContext(AuthContext);
-  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "superadmin";
-  const hasToken = localStorage.getItem('accessToken');
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
+  const isLoading = authContext?.isLoading || false;
+  const isSuperAdmin = authContext?.isSuperAdmin || false;
+  const location = useLocation();
+  
+  console.log('SuperAdminRoute Debug:', {
+    pathname: location.pathname,
+    currentUser: currentUser ? { _id: currentUser._id, role: currentUser.role } : null,
+    isLoading,
+    isSuperAdmin,
+    hasValidUser: !!(currentUser && currentUser._id && currentUser.role)
+  });
+  
+  // Nếu đang loading, hiển thị loading hoặc đợi
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Add comprehensive safety check for currentUser
+  if (!currentUser || !currentUser._id || !currentUser.role) {
+    console.log('SuperAdminRoute: Invalid user data, redirecting to signin');
+    return <Navigate to={`/signin?redirect=${encodeURIComponent(location.pathname)}`} />;
+  }
+  
+  // Additional safety check for super admin role
+  const validSuperAdminRoles = ["super_admin"];
+  const hasValidRole = currentUser.role && validSuperAdminRoles.includes(currentUser.role);
   
   return (
     <ConditionalRoute
-      condition={!!currentUser && isSuperAdmin && hasToken}
-      redirectTo="/admin"
+      condition={!!(currentUser && currentUser._id && hasValidRole)}
+      redirectTo={`/signin?redirect=${encodeURIComponent(location.pathname)}`}
       children={children}
     />
   );
 };
 
-export { LoginRoute, NoneLoginRoute, AdminRoute, PrivateRoute, SuperAdminRoute };
+export { LoginRoute, NoneLoginRoute, AdminRoute, IframeAdminRoute, PrivateRoute, SuperAdminRoute };

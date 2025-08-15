@@ -2,13 +2,14 @@ import React, { useContext } from 'react';
 import { Form, Input, Button, Card, Divider } from 'antd';
 import { LockOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
-import instance from '../../utils/axiosInstance';
+import instance from '../../utils/axiosInstance-cookie-only';
 import { AuthContext } from '../core/Auth';
 import { toast } from 'react-toastify';
 
 const ChangePassword = () => {
   const [form] = Form.useForm();
-  const { removeCurrentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const removeCurrentUser = authContext?.removeCurrentUser;
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (values) => {

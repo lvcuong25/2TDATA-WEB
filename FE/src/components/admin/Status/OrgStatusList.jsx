@@ -3,7 +3,7 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { Space, Table, Button, Popconfirm, Tag, Modal, Input, Form, Descriptions, Avatar, Select } from "antd";
 import { toast } from "react-toastify";
 import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 import LinkFieldArray from '../shared/LinkFieldArray';
 import { useNavigate } from "react-router-dom";
 
@@ -209,7 +209,9 @@ const OrgStatusList = () => {
         return (
           <div className="flex items-center gap-2">
             <img
-              src={service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+              src={service?.image && service.image.trim() !== ""
+              ? service.image
+              : 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
               alt={service?.name || 'Service image'}
               className="w-10 h-10 object-cover rounded"
             />

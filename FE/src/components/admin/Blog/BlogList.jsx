@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Space, Table, Button, Popconfirm, Input } from "antd";
 import { toast } from "react-toastify";
 import { EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 
 const BlogList = () => {
   const queryClient = useQueryClient();

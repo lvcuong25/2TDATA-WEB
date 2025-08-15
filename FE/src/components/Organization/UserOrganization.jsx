@@ -4,13 +4,14 @@ import { Card, Avatar, Table, Button, Form, Select, Tag, Popconfirm, Typography,
 import { DeleteOutlined, EditOutlined, MailOutlined, PhoneOutlined, HomeOutlined, IdcardOutlined, PictureOutlined, NumberOutlined } from '@ant-design/icons';
 import { AuthContext } from '../core/Auth';
 import { useSite } from '../../context/SiteContext';
-import instance from '../../utils/axiosInstance';
+import instance from '../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
 
 const { Title, Text } = Typography;
 
 const UserOrganization = () => {
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
   const { currentSite } = useSite();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();

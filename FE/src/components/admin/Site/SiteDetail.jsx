@@ -2,7 +2,7 @@
 import { Card, Descriptions, Button, Tag, Space, Typography, Row, Col, Avatar, Spin, Modal, Statistic } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, UserOutlined, GlobalOutlined, SettingOutlined } from '@ant-design/icons';
-import axiosInstance from '../../../axios/axiosInstance';
+import axiosInstance from '../../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -190,7 +190,7 @@ const SiteDetail = () => {
                   <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
                     <Avatar size="small" icon={<UserOutlined />} style={{ marginRight: 8 }} />
                     <Text>{admin.user_id?.name || admin.user_id?.email || admin.user_id}</Text>
-                    <Tag color="blue" style={{ marginLeft: 8 }}>{admin.role}</Tag>
+                    <Tag color="blue" style={{ marginLeft: 8 }}>{admin?.role}</Tag>
                   </div>
                 ))}
               </div>

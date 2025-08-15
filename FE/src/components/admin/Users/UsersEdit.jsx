@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
 import { Button, Input, Form, Spin, Select, Switch, Tag, Space, Card, Tooltip, Modal, Table, Popconfirm } from 'antd';
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,7 +15,8 @@ const UsersEdit = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const queryClient = useQueryClient();
-    const { currentUser } = useContext(AuthContext);
+    const authContext = useContext(AuthContext);
+    const currentUser = authContext?.currentUser;
     const [avatar, setAvatar] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
@@ -66,7 +67,7 @@ const UsersEdit = () => {
                 email: userData.email,
                 name: userData.name,
                 phone: userData.phone,
-                role: userData.role,
+                role: userData?.role,
                 site_id: userData.site_id?._id,
                 active: userData.active,
                 service: userData.service?.map(s => ({
@@ -78,7 +79,7 @@ const UsersEdit = () => {
             if (userData.avatar) setAvatar(userData.avatar);
             
             // Show site select if user has a site and is not super_admin
-            if (userData.role !== 'super_admin' && userData.site_id) {
+            if (userData?.role !== 'super_admin' && userData.site_id) {
                 setShowSiteSelect(true);
             }
         }
@@ -332,7 +333,9 @@ const UsersEdit = () => {
                         <Card className="text-center">
                             <div className="w-24 h-24 mx-auto mb-4">
                                 <img
-                                    src={avatar || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+                                    src={avatar && avatar.trim() !== ""
+              ? avatar
+              : 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
                                     alt="Avatar preview"
                                     className="w-full h-full object-cover rounded-full border-2 border-gray-200 shadow-md"
                                 />
@@ -633,7 +636,9 @@ const UsersEdit = () => {
                                         width: 80,
                                         render: (_, record) => (
                                             <img 
-                                                src={record?.service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
+                                                src={record?.service?.image && record.service.image.trim() !== ""
+              ? record.service.image
+              : 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'} 
                                                 alt={record?.service?.name}
                                                 className="w-12 h-12 object-cover rounded"
                                             />

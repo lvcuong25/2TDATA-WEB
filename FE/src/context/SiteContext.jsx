@@ -1,5 +1,5 @@
 ﻿import React, { createContext, useContext, useState, useEffect } from 'react';
-import axiosInstance from '../axios/axiosInstance';
+import axiosInstance from '../utils/axiosInstance-cookie-only';
 
 const SiteContext = createContext();
 

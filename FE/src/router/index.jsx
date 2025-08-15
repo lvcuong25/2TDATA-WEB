@@ -6,7 +6,7 @@ import SignIn from "../components/signin.jsx";
 import ResetPassword from "../components/ResetPassword.jsx";
 import ServiceBySlug from "./ServiceBySlug.jsx";
 import LayoutAdmin from "../components/Layout/Admin.jsx";
-import { AdminRoute, PrivateRoute, SuperAdminRoute } from "./PrivateRoute.jsx";
+import { LoginRoute, NoneLoginRoute, AdminRoute, IframeAdminRoute, PrivateRoute, SuperAdminRoute } from "./PrivateRoute";
 import BlogList from "../components/admin/Blog/BlogList.jsx";
 import BlogForm from "../components/admin/Blog/BlogForm.jsx";
 import BlogEdit from "../components/admin/Blog/BlogEdit.jsx";
@@ -47,6 +47,7 @@ import OrgStatusList from "../components/admin/Status/OrgStatusList.jsx";
 import UserOrganization from "../components/Organization/UserOrganization.jsx";
 import ServiceOrganization from "../components/Organization/ServiceOrganization.jsx";
 import ServerList from '../components/admin/Server/ServerList.jsx';
+import TestAuth from "../components/TestAuth.jsx";
 
 const Router = () => {
   return (
@@ -55,6 +56,7 @@ const Router = () => {
         <Route>
           <Route index element={<Home />} />
           <Route path="/login" element={<SignIn />} />
+          <Route path="/signin" element={<SignIn />} />
           <Route path="/logup" element={<SignUp />} />
           <Route path="/rest-password" element={<ResetPassword />} />
           <Route path="/service" element={<Service />} />
@@ -98,7 +100,8 @@ const Router = () => {
             path="/policy/dieu-khoan-su-dung-dich-vu"
             element={<TermsOfService />}
           />
-          <Route path="/:domain" element={<Ifame />} />
+          <Route path="/iframe/:domain" element={<Ifame />} />
+          <Route path="/test-auth" element={<TestAuth />} />
         </Route>
 
         <Route
@@ -146,7 +149,11 @@ const Router = () => {
             <Route index element={<UserInfoList />} />
           </Route>
           <Route path="iframe">
-            <Route index element={<IframeList />} />
+            <Route index element={
+              <IframeAdminRoute>
+                <IframeList />
+              </IframeAdminRoute>
+            } />
           </Route>
           <Route path="sites">
             <Route index element={

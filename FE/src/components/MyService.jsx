@@ -4,14 +4,14 @@ import FooterWrapper from "./FooterWrapper";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
 import { useQuery } from "@tanstack/react-query";
-import instance from "../utils/axiosInstance";
+import instance from "../utils/axiosInstance-cookie-only";
 import { Tag, Table, Space, Button, Tooltip, Switch, Pagination } from "antd";
 import { AppstoreOutlined, TableOutlined, LoadingOutlined } from "@ant-design/icons";
 
 const MyService = () => {
   const navigate = useNavigate();
-  const { currentUser } = useContext(AuthContext);
-  const [accessToken, setAccessToken] = useState(null);
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
   const [isCardView, setIsCardView] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
@@ -20,9 +20,13 @@ const MyService = () => {
   const [updatingServiceId, setUpdatingServiceId] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    setAccessToken(token);
-  }, []);
+    console.log('Current user:', currentUser);
+    
+    // Xóa hash fragment nếu có
+    if (window.location.hash && window.location.hash === '#_=_') {
+      window.history.replaceState(null, null, window.location.pathname + window.location.search);
+    }
+  }, [currentUser]);
 
   const { data: userData, isLoading } = useQuery({
     queryKey: ["myServices", currentUser?._id, currentPage, pageSize],
@@ -56,10 +60,29 @@ const MyService = () => {
   });
 
   // Hàm sinh state base64
-  function generateState(userId, name, serviceId, accessToken) {
-    const obj = { userId, name, serviceId, accessToken };
+  function generateState(userId, name, serviceId, url) {
+    const obj = { userId, name, serviceId, url };
     return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
   }
+  // Hàm lấy URL sạch không có hash fragment
+  function getCleanUrl() {
+    try {
+      // Sử dụng URL constructor để xử lý URL tốt hơn
+      const url = new URL(window.location.href);
+      const cleanUrl = url.origin + url.pathname + url.search;
+      console.log('Original URL:', window.location.href);
+      console.log('Clean URL:', cleanUrl);
+      return cleanUrl;
+    } catch (error) {
+      // Fallback nếu URL constructor không hoạt động
+      const currentUrl = window.location.href;
+      const cleanUrl = currentUrl.split('#')[0];
+      console.log('Fallback - Original URL:', currentUrl);
+      console.log('Fallback - Clean URL:', cleanUrl);
+      return cleanUrl;
+    }
+  }
+
   // Hàm thêm/thay thế state vào url
   function appendStateToUrl(url, stateValue) {
     try {
@@ -73,35 +96,46 @@ const MyService = () => {
 
   const handleServiceClick = async (service) => {
     try {
-      if (!accessToken || !currentUser?._id) {
-        console.error('Missing access token or user ID');
+      if (!currentUser?._id) {
+        console.error('Missing user ID');
+        alert('Vui lòng đăng nhập lại.');
         return;
       }
-      // Make the webhook request
-      const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
-        userId: currentUser?._id,
-        accessToken: accessToken
-      });
-      if (response?.status !== 200) {
-        throw new Error('Webhook request failed');
-      }
+
       // Find the first authorized link
       const authorizedLink = service?.service?.authorizedLinks?.[0];
-      if (authorizedLink) {
-        const stateObj = {
-          userId: currentUser?._id || "",
-          name: currentUser?.name || "",
-          serviceId: service?._id || "",
-          accessToken: accessToken
-        };
-        const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken);
-        const urlWithState = appendStateToUrl(authorizedLink.url, state);
-        window.location.href = urlWithState;
-        } else {
-          console.error('No authorized link found for service');
-        }
+      if (!authorizedLink) {
+        console.error('No authorized link found for service');
+        return;
+      }
+
+      // Make the webhook request (optional - can be skipped if causing issues)
+      try {
+        const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
+          userId: currentUser?._id
+        });
+        console.log('Webhook response:', response?.status);
+      } catch (webhookError) {
+        console.warn('Webhook request failed, continuing with redirect:', webhookError);
+        // Continue with redirect even if webhook fails
+      }
+
+      // Proceed with redirect
+      const stateObj = {
+        userId: currentUser?._id || "",
+        name: currentUser?.name || "",
+        serviceId: service?._id || ""
+      };
+      const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, getCleanUrl());
+      const urlWithState = appendStateToUrl(authorizedLink.url, state);
+      
+      console.log('Redirecting to:', urlWithState);
+      window.location.href = urlWithState;
+      
     } catch (error) {
-      console.error('Error making webhook request:', error);
+      console.error('Error in handleServiceClick:', error);
+      // Show user-friendly error message
+      alert('Có lỗi xảy ra khi kết nối dịch vụ. Vui lòng thử lại.');
     }
   };
 
@@ -150,8 +184,9 @@ const MyService = () => {
         <div className="flex items-center gap-2">
           <img
             src={
-              service.image ||
-              "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
+              service.image && service.image.trim() !== ""
+                ? service.image
+                : "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
             }
             alt={service.name}
             className="w-10 h-10 object-cover rounded"
@@ -238,7 +273,9 @@ const MyService = () => {
       render: (service) => (
         <div className="flex items-center gap-2">
           <img
-            src={service.image || "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
+            src={service.image && service.image.trim() !== ""
+              ? service.image
+              : "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"}
             alt={service.name}
             className="w-10 h-10 object-cover rounded"
           />
@@ -269,15 +306,7 @@ const MyService = () => {
               className="bg-blue-500 hover:bg-blue-600"
               onClick={() => {
                 if (hasLink) {
-                  const stateObj = {
-                    userId: currentUser?._id || "",
-                    name: currentUser?.name || "",
-                    serviceId: record.service._id || "",
-                    accessToken: accessToken
-                  };
-                  const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, accessToken);
-                  const urlWithState = appendStateToUrl(links[0].url, state);
-                  window.location.href = urlWithState;
+                  handleServiceClick(record);
                 }
               }}
               disabled={!hasLink}
@@ -292,7 +321,9 @@ const MyService = () => {
 
   // Find if there is an authorized link for conditional rendering
   const findAuthorizedLink = (userService) => {
-    return userService?.service?.authorizedLinks?.[0];
+    const link = userService?.service?.authorizedLinks?.[0];
+    console.log('Authorized link for service:', userService?.service?.name, link);
+    return link;
   };
 
   // Pagination handler
@@ -319,6 +350,10 @@ const MyService = () => {
       </div>
     );
   }
+
+  // Debug information
+  console.log('User services data:', userData);
+  console.log('Current user:', currentUser);
 
   if (!userData || !userData?.data || !userData?.data?.services) {
     return (
@@ -388,8 +423,9 @@ const MyService = () => {
                       <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
                         <img
                           src={
-                            userService?.service?.image ||
-                            "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
+                            userService?.service?.image && userService.service.image.trim() !== ""
+                              ? userService.service.image
+                              : "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
                           }
                           alt={userService?.service?.name}
                           className="w-full h-full object-cover"
@@ -404,11 +440,20 @@ const MyService = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleServiceClick(userService);
+                          if (authorizedLink) {
+                            handleServiceClick(userService);
+                          } else {
+                            alert('Dịch vụ này chưa có link kết nối. Vui lòng liên hệ quản trị viên.');
+                          }
                         }}
-                        className="bg-blue-500 text-white rounded-full px-8 py-2 font-semibold flex items-center gap-2 hover:bg-blue-600 transition"
+                        className={`rounded-full px-8 py-2 font-semibold flex items-center gap-2 transition ${
+                          authorizedLink 
+                            ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                            : 'bg-gray-400 text-white cursor-not-allowed'
+                        }`}
+                        disabled={!authorizedLink}
                       >
-                        Kết nối<span>→</span>
+                        {authorizedLink ? 'Kết nối' : 'Chưa có link'} <span>→</span>
                       </button>
                     </div>
                   );

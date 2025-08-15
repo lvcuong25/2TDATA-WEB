@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { Space, Table, Button, Popconfirm, message, Input, Modal } from "antd";
 import { DeleteOutlined, SearchOutlined } from "@ant-design/icons";
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 
 const UserInfoList = () => {
   const queryClient = useQueryClient();

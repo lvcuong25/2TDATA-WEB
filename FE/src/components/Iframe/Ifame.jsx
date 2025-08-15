@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import Header from '../Header';
-import instance from '../../axios/axiosInstance';
+import instance from '../../utils/axiosInstance-cookie-only';
 import { AuthContext } from '../core/Auth';
 
 const Ifame = () => {
@@ -9,7 +9,8 @@ const Ifame = () => {
   const [iframeData, setIframeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
 
   useEffect(() => {
     const fetchIframe = async () => {

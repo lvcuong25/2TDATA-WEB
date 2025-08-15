@@ -41,7 +41,9 @@ router.get("/", (req, res) => {
       users: "/api/user",
       services: "/api/service",
       blogs: "/api/blogs",
-      sites: "/api/sites"
+      sites: "/api/sites",
+      server: "/api/server",
+
     }
   });
 });

@@ -58,7 +58,7 @@ const SiteAdminList = () => {
     form.setFieldsValue({
       user_id: admin.user_id,
       email: admin.email,
-      role: admin.role,
+      role: admin?.role,
       permissions: admin.permissions || [],
       is_active: admin.is_active
     });
