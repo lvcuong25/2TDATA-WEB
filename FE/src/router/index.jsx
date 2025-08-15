@@ -6,7 +6,7 @@ import SignIn from "../components/signin.jsx";
 import ResetPassword from "../components/ResetPassword.jsx";
 import ServiceBySlug from "./ServiceBySlug.jsx";
 import LayoutAdmin from "../components/Layout/Admin.jsx";
-import { AdminRoute, PrivateRoute, SuperAdminRoute } from "./PrivateRoute.jsx";
+import { LoginRoute, NoneLoginRoute, AdminRoute, IframeAdminRoute, PrivateRoute, SuperAdminRoute } from "./PrivateRoute";
 import BlogList from "../components/admin/Blog/BlogList.jsx";
 import BlogForm from "../components/admin/Blog/BlogForm.jsx";
 import BlogEdit from "../components/admin/Blog/BlogEdit.jsx";
@@ -150,9 +150,9 @@ const Router = () => {
           </Route>
           <Route path="iframe">
             <Route index element={
-              <SuperAdminRoute>
+              <IframeAdminRoute>
                 <IframeList />
-              </SuperAdminRoute>
+              </IframeAdminRoute>
             } />
           </Route>
           <Route path="sites">

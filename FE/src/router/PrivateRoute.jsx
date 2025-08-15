@@ -63,6 +63,51 @@ const AdminRoute = ({ children }) => {
   );
 };
 
+const IframeAdminRoute = ({ children }) => {
+  const authContext = useContext(AuthContext) || {};
+  const currentUser = authContext?.currentUser || null;
+  const isLoading = authContext?.isLoading || false;
+  const location = useLocation();
+  
+  // Nếu đang loading, hiển thị loading hoặc đợi
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Add comprehensive safety check for currentUser
+  if (!currentUser || !currentUser._id || !currentUser.role) {
+    console.log('IframeAdminRoute: Invalid user data, redirecting to signin');
+    return <Navigate to={`/signin?redirect=${encodeURIComponent(location.pathname)}`} />;
+  }
+  
+  // Chỉ cho phép site_admin và super_admin truy cập
+  const allowedRoles = ["site_admin", "super_admin"];
+  const hasValidRole = currentUser.role && allowedRoles.includes(currentUser.role);
+  
+  console.log('IframeAdminRoute Debug:', {
+    pathname: location.pathname,
+    currentUser: currentUser ? { _id: currentUser._id, role: currentUser.role } : null,
+    isLoading,
+    hasValidRole,
+    allowedRoles
+  });
+  
+  return (
+    <ConditionalRoute
+      condition={!!(currentUser && currentUser._id && hasValidRole)}
+      redirectTo={`/signin?redirect=${encodeURIComponent(location.pathname)}`}
+      children={children}
+    />
+  );
+};
+
 const PrivateRoute = ({ children }) => {
   const authContext = useContext(AuthContext) || {};
   const currentUser = authContext?.currentUser || null;
@@ -136,4 +181,4 @@ const SuperAdminRoute = ({ children }) => {
   );
 };
 
-export { LoginRoute, NoneLoginRoute, AdminRoute, PrivateRoute, SuperAdminRoute };
+export { LoginRoute, NoneLoginRoute, AdminRoute, IframeAdminRoute, PrivateRoute, SuperAdminRoute };

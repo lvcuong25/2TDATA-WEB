@@ -2,8 +2,8 @@ import React, { useState, useContext } from 'react';
 import { Link } from "react-router-dom";
 import instance from '../../../utils/axiosInstance-cookie-only';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select, Alert } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, LockOutlined } from '@ant-design/icons';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../../core/Auth';
 
@@ -19,6 +19,10 @@ const IframeList = () => {
   const authContext = useContext(AuthContext) || {};
   const currentUser = authContext?.currentUser || null;
   const isSuperAdmin = authContext?.isSuperAdmin || false;
+  const isSiteAdmin = currentUser?.role === 'site_admin';
+
+  // Kiểm tra quyền truy cập
+  const hasAccess = isSuperAdmin || isSiteAdmin;
 
   // Fetch iframe data with pagination
   const { data, isLoading, error } = useQuery({
@@ -27,7 +31,7 @@ const IframeList = () => {
       const { data } = await instance.get(`/iframe?page=${currentPage}&limit=${pageSize}`);
       return data;
     },
-    enabled: !!currentUser, // Only fetch if user is authenticated
+    enabled: !!currentUser && hasAccess, // Only fetch if user is authenticated and has access
   });
 
   // Fetch user data for viewers select
@@ -37,7 +41,7 @@ const IframeList = () => {
       const { data } = await instance.get(`/user?limit=1000`);
       return data.docs || data.data?.docs || [];
     },
-    enabled: !!currentUser, // Only fetch if user is authenticated
+    enabled: !!currentUser && hasAccess, // Only fetch if user is authenticated and has access
   });
 
   // Fetch sites for super admin
@@ -60,8 +64,10 @@ const IframeList = () => {
       form.resetFields();
     },
     onError: (error) => {
-      // Kiểm tra lỗi trùng domain
-      if (
+      // Kiểm tra lỗi access denied
+      if (error?.response?.status === 403) {
+        toast.error('Bạn không có quyền tạo iframe. Chỉ site admin và super admin mới có quyền này.');
+      } else if (
         error?.response?.data?.message?.includes('duplicate key') ||
         error?.response?.data?.message?.includes('E11000') ||
         error?.response?.data?.message?.includes('domain')
@@ -84,8 +90,10 @@ const IframeList = () => {
       setEditingIframe(null);
     },
     onError: (error) => {
-      // Kiểm tra lỗi trùng domain
-      if (
+      // Kiểm tra lỗi access denied
+      if (error?.response?.status === 403) {
+        toast.error('Bạn không có quyền sửa iframe. Chỉ site admin và super admin mới có quyền này.');
+      } else if (
         error?.response?.data?.message?.includes('duplicate key') ||
         error?.response?.data?.message?.includes('E11000') ||
         error?.response?.data?.message?.includes('domain')
@@ -105,7 +113,11 @@ const IframeList = () => {
       toast.success('Xóa iframe thành công!');
     },
     onError: (error) => {
-      toast.error('Có lỗi xảy ra khi xóa: ' + (error.response?.data?.message || error.message));
+      if (error?.response?.status === 403) {
+        toast.error('Bạn không có quyền xóa iframe. Chỉ site admin và super admin mới có quyền này.');
+      } else {
+        toast.error('Có lỗi xảy ra khi xóa: ' + (error.response?.data?.message || error.message));
+      }
     },
   });
 
@@ -136,6 +148,54 @@ const IframeList = () => {
       createMutation.mutate(values);
     }
   };
+
+  // Hiển thị thông báo không có quyền truy cập
+  if (!hasAccess) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <Alert
+          message="Không có quyền truy cập"
+          description="Chỉ site admin và super admin mới có quyền truy cập quản lý iframe. Vui lòng liên hệ quản trị viên nếu bạn cần quyền truy cập."
+          type="warning"
+          showIcon
+          icon={<LockOutlined />}
+          style={{ marginBottom: '16px' }}
+        />
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <LockOutlined style={{ fontSize: '48px', color: '#faad14', marginBottom: '16px' }} />
+          <h3>Quyền truy cập bị từ chối</h3>
+          <p>Bạn không có quyền truy cập vào trang quản lý iframe.</p>
+          <Button type="primary" onClick={() => window.history.back()}>
+            Quay lại
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Hiển thị lỗi access denied từ API
+  if (error?.response?.status === 403) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <Alert
+          message="Không có quyền truy cập"
+          description={error.response?.data?.message || "Chỉ site admin và super admin mới có quyền truy cập quản lý iframe."}
+          type="warning"
+          showIcon
+          icon={<LockOutlined />}
+          style={{ marginBottom: '16px' }}
+        />
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <LockOutlined style={{ fontSize: '48px', color: '#faad14', marginBottom: '16px' }} />
+          <h3>Quyền truy cập bị từ chối</h3>
+          <p>Bạn không có quyền truy cập vào trang quản lý iframe.</p>
+          <Button type="primary" onClick={() => window.history.back()}>
+            Quay lại
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const columns = [
     {
@@ -205,92 +265,69 @@ const IframeList = () => {
       dataIndex: 'url',
       key: 'url',
       ellipsis: true,
-      render: (url) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <a 
-            href={url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ 
-              color: "#2563eb", 
-              textDecoration: "underline", 
-              cursor: "pointer",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              maxWidth: "250px",
-              display: "inline-block"
-            }}
-            title={url}
-          >
-            {url}
-          </a>
-          <Button
-            size="small"
-            icon={<CopyOutlined />}
-            onClick={() => {
-              navigator.clipboard.writeText(url);
-              toast.success('Đã copy URL!');
-            }}
-            title="Copy URL"
-          />
-        </div>
-      ),
+      render: (url) => url || 'Chưa đặt',
     },
     {
-      title: 'Hành động',
+      title: 'Người xem',
+      dataIndex: 'viewers',
+      key: 'viewers',
+      render: (viewers) => {
+        if (!viewers || viewers.length === 0) {
+          return 'Không có';
+        }
+        return viewers.map(viewer => 
+          typeof viewer === 'string' ? viewer : viewer.name || viewer.email
+        ).join(', ');
+      },
+    },
+    {
+      title: 'Thao tác',
       key: 'action',
-      width: 120,
-      align: 'center',
       render: (_, record) => (
         <Space size="middle">
           <Button
+            type="primary"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             size="small"
-          />
+          >
+            Sửa
+          </Button>
           <Popconfirm
-            title="Bạn có chắc chắn muốn xóa?"
+            title="Bạn có chắc chắn muốn xóa iframe này?"
             onConfirm={() => handleDelete(record._id)}
             okText="Có"
             cancelText="Không"
           >
             <Button
-              icon={<DeleteOutlined />}
+              type="primary"
               danger
+              icon={<DeleteOutlined />}
               size="small"
-            />
+            >
+              Xóa
+            </Button>
           </Popconfirm>
         </Space>
       ),
     },
-  ].filter(col => !col.hidden);
-
-  const handlePageChange = (page, pageSize) => {
-    setCurrentPage(page);
-    setPageSize(pageSize);
-  };
-
-  if (error) {
-    toast.error('Có lỗi xảy ra khi tải dữ liệu');
-  }
+  ];
 
   return (
-    <div style={{ padding: "16px" }}>
-      <div style={{ marginBottom: "16px" }}>
+    <div>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>Quản lý Iframe</h2>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleAdd}
-          size="large"
         >
           Thêm Iframe
         </Button>
       </div>
 
       <Table
-        scroll={{ x: 1000 }}
-        columns={columns}
+        columns={columns.filter(col => !col.hidden)}
         dataSource={data?.docs || []}
         loading={isLoading}
         rowKey="_id"
@@ -298,26 +335,28 @@ const IframeList = () => {
       />
 
       {data && (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}>
+        <div style={{ marginTop: 16, textAlign: 'right' }}>
           <Pagination
             current={currentPage}
-            pageSize={pageSize}
             total={data.totalDocs}
-            onChange={handlePageChange}
+            pageSize={pageSize}
             showSizeChanger
-            showTotal={(total) => `Tổng ${total} iframe`}
+            showQuickJumper
+            showTotal={(total, range) =>
+              `${range[0]}-${range[1]} của ${total} iframe`
+            }
+            onChange={(page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            }}
           />
         </div>
       )}
 
       <Modal
-        title={editingIframe ? 'Sửa Iframe' : 'Thêm Iframe'}
+        title={editingIframe ? "Sửa Iframe" : "Thêm Iframe"}
         open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          setEditingIframe(null);
-          form.resetFields();
-        }}
+        onCancel={() => setIsModalVisible(false)}
         footer={null}
         width={600}
       >
@@ -331,68 +370,36 @@ const IframeList = () => {
             label="Tiêu đề"
             rules={[{ required: true, message: 'Vui lòng nhập tiêu đề!' }]}
           >
-            <Input placeholder="Nhập tiêu đề iframe" />
+            <Input />
           </Form.Item>
 
           <Form.Item
             name="domain"
             label="Tên miền"
-            rules={[
-              { pattern: /^[a-zA-Z0-9-]+$/, message: 'Tên miền chỉ chứa chữ cái, số và dấu gạch ngang!' }
-            ]}
+            rules={[{ required: true, message: 'Vui lòng nhập tên miền!' }]}
           >
-            <Input placeholder="example-domain" />
+            <Input placeholder="example" />
           </Form.Item>
 
           <Form.Item
             name="url"
             label="URL"
-            rules={[
-              { required: true, message: 'Vui lòng nhập URL!' },
-              { type: 'url', message: 'Vui lòng nhập URL hợp lệ!' }
-            ]}
+            rules={[{ required: true, message: 'Vui lòng nhập URL!' }]}
           >
             <Input placeholder="https://example.com" />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="Mô tả"
-          >
-            <Input.TextArea rows={4} placeholder="Nhập mô tả cho iframe" />
-          </Form.Item>
-
-          <Form.Item
-            name="viewers"
-            label="Người xem"
-          >
-            <Select
-              mode="multiple"
-              placeholder="Chọn người xem"
-              loading={loadingUsers}
-              filterOption={(input, option) =>
-                option.children.toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {userData?.map((user) => (
-                <Select.Option key={user._id} value={user._id}>
-                  {user.email}
-                </Select.Option>
-              ))}
-            </Select>
           </Form.Item>
 
           {isSuperAdmin && (
             <Form.Item
               name="site_id"
               label="Site"
-              tooltip="Chỉ super admin mới có thể chọn site"
             >
               <Select
-                placeholder="Chọn site (mặc định là site hiện tại)"
+                placeholder="Chọn site"
                 allowClear
+                loading={!sitesData}
               >
-                {sitesData?.map((site) => (
+                {sitesData?.map(site => (
                   <Select.Option key={site._id} value={site._id}>
                     {site.name}
                   </Select.Option>
@@ -401,21 +408,31 @@ const IframeList = () => {
             </Form.Item>
           )}
 
+          <Form.Item
+            name="viewers"
+            label="Người xem"
+          >
+            <Select
+              mode="multiple"
+              placeholder="Chọn người xem"
+              allowClear
+              loading={loadingUsers}
+            >
+              {userData?.map(user => (
+                <Select.Option key={user._id} value={user._id}>
+                  {user.name} ({user.email})
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
           <Form.Item>
-            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
-              <Button onClick={() => {
-                setIsModalVisible(false);
-                setEditingIframe(null);
-                form.resetFields();
-              }}>
-                Hủy
-              </Button>
-              <Button 
-                type="primary" 
-                htmlType="submit"
-                loading={createMutation.isLoading || updateMutation.isLoading}
-              >
+            <Space>
+              <Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending}>
                 {editingIframe ? 'Cập nhật' : 'Thêm'}
+              </Button>
+              <Button onClick={() => setIsModalVisible(false)}>
+                Hủy
               </Button>
             </Space>
           </Form.Item>

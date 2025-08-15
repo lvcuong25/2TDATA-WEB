@@ -88,18 +88,22 @@ const DashBoard = () => {
         onClick: () => handleLinkClick('/admin/user-info')
       },
       {
-        key: '/admin/iframe',
-        icon: <LinkOutlined />,
-        label: <Link to="/admin/iframe">Quản lý iframe</Link>,
-        onClick: () => handleLinkClick('/admin/iframe')
-      },
-      {
         key: '/admin/organization',
         icon: <LaptopOutlined />,
         label: <Link to="/admin/organization">Quản lý tổ chức</Link>,
         onClick: () => handleLinkClick('/admin/organization')
       }
     );
+
+    // Only site_admin and super_admin can see iframe management
+    if (authContext?.isSuperAdmin || currentUser?.role === 'site_admin') {
+      baseItems.push({
+        key: '/admin/iframe',
+        icon: <LinkOutlined />,
+        label: <Link to="/admin/iframe">Quản lý iframe</Link>,
+        onClick: () => handleLinkClick('/admin/iframe')
+      });
+    }
 
     // Only super_admin can see server management
     if (authContext?.isSuperAdmin) {

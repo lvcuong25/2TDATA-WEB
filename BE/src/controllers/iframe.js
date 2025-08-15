@@ -12,6 +12,15 @@ export const getAllIframes = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
+    // Chỉ cho phép site_admin và super_admin truy cập
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      console.log('[IFRAME] Access denied for role:', req.user.role);
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền truy cập quản lý iframe",
+        error: "ACCESS_DENIED"
+      });
+    }
+
     // Pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -22,7 +31,7 @@ export const getAllIframes = async (req, res) => {
     
     // Super admin có thể xem tất cả
     if (req.user.role !== 'super_admin') {
-      // Admin và user chỉ xem iframe của site mình
+      // Site admin chỉ xem iframe của site mình
       if (req.user.site_id) {
         query.site_id = req.user.site_id._id || req.user.site_id;
       }
@@ -69,17 +78,24 @@ export const getIframeById = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
+    // Chỉ cho phép site_admin và super_admin truy cập
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền truy cập quản lý iframe",
+        error: "ACCESS_DENIED"
+      });
+    }
+
     const iframe = await Iframe.findById(req.params.id).populate("viewers", "name email");
     if (!iframe) return res.status(404).json({ message: "Iframe not found" });
 
     // Kiểm tra quyền xem
-    if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
-      // User thường chỉ xem được nếu là viewer
-      const isViewer = iframe.viewers.some(viewer => 
-        viewer._id.toString() === req.user._id.toString()
-      );
-      if (!isViewer) {
-        console.log('[IFRAME] Access denied. Viewer list:', iframe.viewers.map(v => v._id.toString()), 'User:', req.user._id.toString());
+    if (req.user.role !== 'super_admin') {
+      // Site admin chỉ xem được iframe của site mình
+      const userSiteId = req.user.site_id?._id?.toString() || req.user.site_id?.toString();
+      const iframeSiteId = iframe.site_id?.toString();
+      
+      if (userSiteId !== iframeSiteId) {
         return res.status(403).json({ message: "Access denied" });
       }
     }
@@ -239,9 +255,12 @@ export const createIframe = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
-    // Chỉ admin và super_admin mới được tạo iframe
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.role !== 'site_admin') {
-      return res.status(403).json({ message: "Admin access required" });
+    // Chỉ site_admin và super_admin mới được tạo iframe
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền tạo iframe",
+        error: "ACCESS_DENIED"
+      });
     }
 
     // Tự động gán site_id từ user đang đăng nhập
@@ -269,6 +288,14 @@ export const updateIframe = async (req, res) => {
     // Kiểm tra authentication
     if (!req.user) {
       return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Chỉ site_admin và super_admin mới được sửa iframe
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền sửa iframe",
+        error: "ACCESS_DENIED"
+      });
     }
 
     // Kiểm tra quyền: chỉ cho phép update iframe của site mình
@@ -303,9 +330,12 @@ export const deleteIframe = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
-    // Chỉ admin và super_admin mới được xóa
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.role !== 'site_admin') {
-      return res.status(403).json({ message: "Admin access required" });
+    // Chỉ site_admin và super_admin mới được xóa iframe
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền xóa iframe",
+        error: "ACCESS_DENIED"
+      });
     }
 
     const query = { _id: req.params.id };
