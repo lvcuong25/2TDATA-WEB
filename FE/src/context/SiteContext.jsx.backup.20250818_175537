@@ -249,29 +249,3 @@ export const SiteProvider = ({ children }) => {
     </SiteContext.Provider>
   );
 };
-
-// Site change detection hook
-export const useSiteChangeDetection = () => {
-  const { currentSite } = useSite();
-  const [siteChanged, setSiteChanged] = useState(false);
-
-  useEffect(() => {
-    // Lưu site hiện tại vào localStorage khi load
-    if (currentSite?._id) {
-      const lastSiteId = localStorage.getItem('last_site_id');
-      
-      if (lastSiteId && lastSiteId !== currentSite._id) {
-        console.log('🔄 Site change detected:', {
-          from: lastSiteId,
-          to: currentSite._id,
-          siteName: currentSite.name
-        });
-        setSiteChanged(true);
-      }
-      
-      localStorage.setItem('last_site_id', currentSite._id);
-    }
-  }, [currentSite]);
-
-  return { siteChanged, resetSiteChange: () => setSiteChanged(false) };
-};
