@@ -100,7 +100,7 @@ const Router = () => {
             path="/policy/dieu-khoan-su-dung-dich-vu"
             element={<TermsOfService />}
           />
-          <Route path="/iframe/:domain" element={<Ifame />} />
+          <Route path="/:domain" element={<Ifame />} />
           <Route path="/test-auth" element={<TestAuth />} />
         </Route>
 
