@@ -7,6 +7,11 @@ import { useQuery } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance-cookie-only";
 import { Tag, Table, Space, Button, Tooltip, Switch, Pagination } from "antd";
 import { AppstoreOutlined, TableOutlined, LoadingOutlined } from "@ant-design/icons";
+import { 
+  createStateObject, 
+  encodeState, 
+  appendStateToUrl as appendStateToUrlHelper 
+} from "../utils/serviceStateHelper";
 
 const MyService = () => {
   const navigate = useNavigate();
@@ -59,11 +64,6 @@ const MyService = () => {
     enabled: !!currentUser?._id,
   });
 
-  // Hàm sinh state base64
-  function generateState(userId, name, serviceId, url) {
-    const obj = { userId, name, serviceId, url };
-    return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
-  }
   // Hàm lấy URL sạch không có hash fragment
   function getCleanUrl() {
     try {
@@ -80,17 +80,6 @@ const MyService = () => {
       console.log('Fallback - Original URL:', currentUrl);
       console.log('Fallback - Clean URL:', cleanUrl);
       return cleanUrl;
-    }
-  }
-
-  // Hàm thêm/thay thế state vào url
-  function appendStateToUrl(url, stateValue) {
-    try {
-      const urlObj = new URL(url, window.location.origin);
-      urlObj.searchParams.set('state', stateValue);
-      return urlObj.toString();
-    } catch {
-      return url;
     }
   }
 
@@ -120,16 +109,13 @@ const MyService = () => {
         // Continue with redirect even if webhook fails
       }
 
-      // Proceed with redirect
-      const stateObj = {
-        userId: currentUser?._id || "",
-        name: currentUser?.name || "",
-        serviceId: service?._id || ""
-      };
-      const state = generateState(stateObj.userId, stateObj.name, stateObj.serviceId, getCleanUrl());
-      const urlWithState = appendStateToUrl(authorizedLink.url, state);
+      // Proceed with redirect - Sử dụng helper functions để truyền thông tin dịch vụ chi tiết
+      const stateObj = createStateObject(currentUser, service, getCleanUrl());
+      const encodedState = encodeState(stateObj);
+      const urlWithState = appendStateToUrlHelper(authorizedLink.url, encodedState);
       
       console.log('Redirecting to:', urlWithState);
+      console.log('State object being passed:', stateObj);
       window.location.href = urlWithState;
       
     } catch (error) {
