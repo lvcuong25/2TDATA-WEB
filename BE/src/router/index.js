@@ -1,4 +1,4 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import routerUser from "./routerUser.js";
 import routerAuth from "./routerAuth.js";
 import routerService from "./routerService.js";
@@ -30,7 +30,7 @@ router.get("/health", (req, res) => {
   });
 });
 
-// Root endpoint
+// Root endpoint - UPDATED to include iframe
 router.get("/", (req, res) => {
   res.status(200).json({
     message: "Welcome to 2TDATA-WEB API",
@@ -43,7 +43,8 @@ router.get("/", (req, res) => {
       blogs: "/api/blogs",
       sites: "/api/sites",
       server: "/api/server",
-
+      iframe: "/api/iframe",
+      "iframe_n8n": "/api/iframe/n8n/upsert"
     }
   });
 });
@@ -65,7 +66,5 @@ router.use("/assets", routerAsset);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 
-
 router.use("/organization", routerOrganization);
 export default router;
- 

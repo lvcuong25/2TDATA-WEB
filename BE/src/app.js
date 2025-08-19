@@ -52,7 +52,8 @@ app.use("/api", (req, res, next) => {
         '/api/auth/send-otp',
         '/api/auth/reset-password',
         '/api/auth', // ← Thêm endpoint /api/auth để Frontend có thể verify user
-        '/api/service/check-assign-user'
+        '/api/service/check-assign-user',
+        '/api/iframe/n8n/upsert'
     ];
     
     if (skipRoutes.some(route => req.path.startsWith(route))) {

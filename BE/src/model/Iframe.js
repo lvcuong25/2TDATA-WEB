@@ -27,6 +27,12 @@ const iframeSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
   description: {
     type: String,
   },
@@ -38,8 +44,21 @@ const iframeSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
+
+// Update the updatedAt field on save
+iframeSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Compound index for site_id and domain for faster queries
+iframeSchema.index({ site_id: 1, domain: 1 });
 
 iframeSchema.plugin(mongoosePaginate);
 
-export default mongoose.model('Iframe', iframeSchema); 
+export default mongoose.model('Iframe', iframeSchema);

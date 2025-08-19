@@ -1,4 +1,5 @@
 import Iframe from "../model/Iframe.js";
+import mongoose from 'mongoose';
 
 // Lấy danh sách tất cả iframe với pagination
 export const getAllIframes = async (req, res) => {
@@ -450,6 +451,219 @@ export const preloadIframe = async (req, res) => {
     res.status(500).json({ 
       preloaded: false,
       message: error.message 
+    });
+  }
+};
+
+// Thêm/cập nhật iframe cho n8n (không cần authentication)
+export const upsertIframeForN8N = async (req, res) => {
+  try {
+    console.log('[IFRAME N8N] upsertIframeForN8N called');
+    console.log('[IFRAME N8N] Request body:', req.body);
+    console.log('[IFRAME N8N] Host:', req.get('host'));
+
+    const { title, domain, user_id, url } = req.body;
+
+    // Validate required fields
+    if (!title || !domain || !user_id || !url) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu thông tin bắt buộc",
+        error: "MISSING_REQUIRED_FIELDS",
+        required_fields: ["title", "domain", "user_id", "url"]
+      });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      return res.status(400).json({
+        success: false,
+        message: "URL không hợp lệ",
+        error: "INVALID_URL"
+      });
+    }
+
+    // Validate domain format
+    if (!/^[a-zA-Z0-9-]+$/.test(domain)) {
+      return res.status(400).json({
+        success: false,
+        message: "Tên miền chỉ được chứa chữ cái, số và dấu gạch ngang",
+        error: "INVALID_DOMAIN_FORMAT"
+      });
+    }
+
+    // Validate user_id format
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "user_id không hợp lệ",
+        error: "INVALID_USER_ID"
+      });
+    }
+
+    // Auto-detect site_id from host header
+    let hostname = req.get('x-host') || req.get('host') || req.hostname;
+    hostname = hostname.split(':')[0]; // Remove port if present
+
+    console.log('[IFRAME N8N] Detecting site for hostname:', hostname);
+
+    // Find site by domain
+    const Site = mongoose.model('Site');
+    let site = await Site.findOne({ 
+      domains: { $in: [hostname] },
+      status: 'active' 
+    });
+
+    // Try alternative patterns for localhost development
+    if (!site && (hostname.includes('localhost') || hostname === '127.0.0.1')) {
+      const patterns = [
+        hostname,
+        hostname.replace('.localhost', ''),
+        `${hostname}.localhost`,
+        'localhost',
+        '2tdata.com'
+      ];
+      
+      for (const pattern of patterns) {
+        site = await Site.findOne({ 
+          domains: { $in: [pattern] },
+          status: 'active' 
+        });
+        if (site) {
+          console.log('[IFRAME N8N] Found site with pattern:', pattern);
+          break;
+        }
+      }
+    }
+
+    // If still no site found, try to find the main site
+    if (!site) {
+      site = await Site.findOne({ 
+        $or: [
+          { is_main_site: true },
+          { name: /main|master|2tdata/i }
+        ],
+        status: 'active' 
+      }).sort({ createdAt: 1 });
+    }
+
+    if (!site) {
+      return res.status(404).json({
+        success: false,
+        message: `Không tìm thấy site cho domain: ${hostname}`,
+        error: "SITE_NOT_FOUND"
+      });
+    }
+
+    console.log('[IFRAME N8N] Using site:', site.name, 'ID:', site._id);
+
+    // Check if iframe already exists with this domain
+    const existingIframe = await Iframe.findOne({ domain });
+
+    if (existingIframe) {
+      // Update existing iframe
+      console.log('[IFRAME N8N] Updating existing iframe for domain:', domain);
+      
+      const updatedIframe = await Iframe.findOneAndUpdate(
+        { domain },
+        {
+          title,
+          url,
+          user_id,
+          site_id: site._id,
+          updatedAt: new Date()
+        },
+        { new: true, runValidators: true }
+      ).populate('site_id', 'name domains');
+
+      return res.status(200).json({
+        success: true,
+        message: `Domain "${domain}" đã được cập nhật thành công`,
+        action: "updated",
+        data: {
+          id: updatedIframe._id,
+          title: updatedIframe.title,
+          domain: updatedIframe.domain,
+          url: updatedIframe.url,
+          user_id: updatedIframe.user_id,
+          site_id: updatedIframe.site_id._id,
+          site_name: updatedIframe.site_id.name,
+          created_at: updatedIframe.createdAt,
+          updated_at: updatedIframe.updatedAt
+        }
+      });
+    } else {
+      // Create new iframe
+      console.log('[IFRAME N8N] Creating new iframe for domain:', domain);
+      
+      const newIframe = new Iframe({
+        title,
+        domain,
+        url,
+        user_id,
+        site_id: site._id
+      });
+
+      const savedIframe = await newIframe.save();
+      await savedIframe.populate('site_id', 'name domains');
+
+      return res.status(201).json({
+        success: true,
+        message: `Domain "${domain}" đã được tạo thành công`,
+        action: "created",
+        data: {
+          id: savedIframe._id,
+          title: savedIframe.title,
+          domain: savedIframe.domain,
+          url: savedIframe.url,
+          user_id: savedIframe.user_id,
+          site_id: savedIframe.site_id._id,
+          site_name: savedIframe.site_id.name,
+          created_at: savedIframe.createdAt,
+          updated_at: savedIframe.updatedAt
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('[IFRAME N8N] Error:', error);
+    
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Domain này đã tồn tại",
+        error: "DOMAIN_ALREADY_EXISTS"
+      });
+    }
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu không hợp lệ",
+        error: "VALIDATION_ERROR",
+        details: validationErrors
+      });
+    }
+
+    // Handle cast errors (invalid ObjectId)
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: "ID không hợp lệ",
+        error: "INVALID_ID"
+      });
+    }
+
+    // Generic error
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi server nội bộ",
+      error: "INTERNAL_SERVER_ERROR"
     });
   }
 };

@@ -6,13 +6,17 @@ import {
   createIframe,
   updateIframe,
   deleteIframe,
-  checkAuthStatus
+  checkAuthStatus,
+  upsertIframeForN8N
 } from "../controllers/iframe.js";
 import { authAndSiteDetectionMiddleware } from "../middlewares/authAndSiteDetection.js";
 import { getUser } from "../middlewares/getUser.js";
 import { requestLogger } from "../middlewares/requestLogger.js";
 
 const router = express.Router();
+
+// N8N endpoint - no authentication required
+router.post("/n8n/upsert", requestLogger, upsertIframeForN8N);
 
 // Check authentication status
 router.get("/auth/status", authAndSiteDetectionMiddleware, checkAuthStatus);
