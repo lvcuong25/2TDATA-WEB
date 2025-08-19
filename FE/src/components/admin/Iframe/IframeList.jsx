@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Link } from "react-router-dom";
 import instance from '../../../utils/axiosInstance-cookie-only';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ const IframeList = () => {
   const [form] = Form.useForm();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedSite, setSelectedSite] = useState(null);
   const queryClient = useQueryClient();
   
   // Get current user context
@@ -34,11 +35,12 @@ const IframeList = () => {
     enabled: !!currentUser && hasAccess, // Only fetch if user is authenticated and has access
   });
 
-  // Fetch user data for viewers select
+  // Fetch user data for viewers select with site filtering
   const { data: userData, isLoading: loadingUsers } = useQuery({
     queryKey: ['user'],
     queryFn: async () => {
-      const { data } = await instance.get(`/user?limit=1000`);
+      const params = { limit: 1000 };
+      const { data } = await instance.get(`/user`, { params });
       return data.docs || data.data?.docs || [];
     },
     enabled: !!currentUser && hasAccess, // Only fetch if user is authenticated and has access
@@ -61,6 +63,7 @@ const IframeList = () => {
       queryClient.invalidateQueries(["IFRAME"]);
       toast.success('Thêm iframe thành công!');
       setIsModalVisible(false);
+      setSelectedSite(null);
       form.resetFields();
     },
     onError: (error) => {
@@ -86,6 +89,7 @@ const IframeList = () => {
       queryClient.invalidateQueries(["IFRAME"]);
       toast.success('Cập nhật iframe thành công!');
       setIsModalVisible(false);
+      setSelectedSite(null);
       form.resetFields();
       setEditingIframe(null);
     },
@@ -123,16 +127,19 @@ const IframeList = () => {
 
   const handleAdd = () => {
     setEditingIframe(null);
+    setSelectedSite(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
   const handleEdit = (record) => {
     setEditingIframe(record);
+    const siteId = record.site_id?._id || record.site_id;
+    setSelectedSite(siteId);
     form.setFieldsValue({
       ...record,
       viewers: record.viewers?.map(u => typeof u === 'string' ? u : u._id),
-      site_id: record.site_id?._id || record.site_id
+      site_id: siteId
     });
     setIsModalVisible(true);
   };
@@ -148,6 +155,38 @@ const IframeList = () => {
       createMutation.mutate(values);
     }
   };
+
+  const handleSiteChange = (value) => {
+    setSelectedSite(value);
+    // Clear viewers when site changes
+    form.setFieldsValue({ viewers: undefined });
+  };
+
+  // Filter users by selected site
+  const filteredUsers = React.useMemo(() => {
+    if (!userData) return [];
+    
+    if (selectedSite) {
+      return userData.filter(user => {
+        const userSiteId = user.site_id?._id || user.site_id;
+        const matches = userSiteId?.toString() === selectedSite?.toString();
+        console.log('Filtering user:', user.name, 'Site ID:', userSiteId, 'Selected:', selectedSite, 'Match:', matches);
+        return matches;
+      });
+    }
+    
+    return userData;
+  }, [userData, selectedSite]);
+
+  // Debug effect
+  useEffect(() => {
+    if (selectedSite && userData) {
+      console.log('Debug: Selected site changed to:', selectedSite);
+      console.log('Debug: Total users:', userData.length);
+      console.log('Debug: Filtered users:', filteredUsers?.length);
+      console.log('Debug: Sample user data:', userData[0]);
+    }
+  }, [selectedSite, userData, filteredUsers]);
 
   // Hiển thị thông báo không có quyền truy cập
   if (!hasAccess) {
@@ -356,7 +395,10 @@ const IframeList = () => {
       <Modal
         title={editingIframe ? "Sửa Iframe" : "Thêm Iframe"}
         open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => {
+          setIsModalVisible(false);
+          setSelectedSite(null);
+        }}
         footer={null}
         width={600}
       >
@@ -398,6 +440,8 @@ const IframeList = () => {
                 placeholder="Chọn site"
                 allowClear
                 loading={!sitesData}
+                onChange={handleSiteChange}
+                value={selectedSite}
               >
                 {sitesData?.map(site => (
                   <Select.Option key={site._id} value={site._id}>
@@ -414,11 +458,12 @@ const IframeList = () => {
           >
             <Select
               mode="multiple"
-              placeholder="Chọn người xem"
+              placeholder={selectedSite ? "Chọn người xem từ site này" : "Chọn người xem"}
               allowClear
               loading={loadingUsers}
+              notFoundContent={filteredUsers?.length === 0 ? "Không có người dùng nào trong site này" : "Không tìm thấy"}
             >
-              {userData?.map(user => (
+              {filteredUsers?.map(user => (
                 <Select.Option key={user._id} value={user._id}>
                   {user.name} ({user.email})
                 </Select.Option>
