@@ -456,6 +456,7 @@ export const preloadIframe = async (req, res) => {
 };
 
 // Thêm/cập nhật iframe cho n8n (không cần authentication)
+// Thêm/cập nhật iframe cho n8n (không cần authentication) - ENHANCED VERSION
 export const upsertIframeForN8N = async (req, res) => {
   try {
     console.log('[IFRAME N8N] upsertIframeForN8N called');
@@ -559,6 +560,20 @@ export const upsertIframeForN8N = async (req, res) => {
 
     console.log('[IFRAME N8N] Using site:', site.name, 'ID:', site._id);
 
+    // VALIDATE USER EXISTS AND GET USER INFO
+    const User = mongoose.model('User');
+    const user = await User.findById(user_id).select('_id email name site_id');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy user với user_id đã cung cấp",
+        error: "USER_NOT_FOUND"
+      });
+    }
+
+    console.log('[IFRAME N8N] Found user:', user.email);
+
     // Check if iframe already exists with this domain
     const existingIframe = await Iframe.findOne({ domain });
 
@@ -566,6 +581,19 @@ export const upsertIframeForN8N = async (req, res) => {
       // Update existing iframe
       console.log('[IFRAME N8N] Updating existing iframe for domain:', domain);
       
+      // Ensure user_id is in viewers array (add if not present)
+      let currentViewers = existingIframe.viewers || [];
+      const userIdString = user_id.toString();
+      
+      // Convert existing viewers to strings for comparison
+      const existingViewerIds = currentViewers.map(v => v.toString());
+      
+      // Add user_id to viewers if not already present
+      if (!existingViewerIds.includes(userIdString)) {
+        currentViewers.push(user_id);
+        console.log('[IFRAME N8N] Added user_id to viewers array');
+      }
+
       const updatedIframe = await Iframe.findOneAndUpdate(
         { domain },
         {
@@ -573,10 +601,15 @@ export const upsertIframeForN8N = async (req, res) => {
           url,
           user_id,
           site_id: site._id,
+          viewers: currentViewers,
           updatedAt: new Date()
         },
         { new: true, runValidators: true }
-      ).populate('site_id', 'name domains');
+      ).populate([
+        { path: 'user_id', select: 'email name' },
+        { path: 'site_id', select: 'name domains' },
+        { path: 'viewers', select: 'email name' }
+      ]);
 
       return res.status(200).json({
         success: true,
@@ -587,7 +620,9 @@ export const upsertIframeForN8N = async (req, res) => {
           title: updatedIframe.title,
           domain: updatedIframe.domain,
           url: updatedIframe.url,
-          user_id: updatedIframe.user_id,
+          user_email: updatedIframe.user_id.email,
+          viewers: updatedIframe.viewers,
+          viewers_count: updatedIframe.viewers.length,
           site_id: updatedIframe.site_id._id,
           site_name: updatedIframe.site_id.name,
           created_at: updatedIframe.createdAt,
@@ -598,31 +633,43 @@ export const upsertIframeForN8N = async (req, res) => {
       // Create new iframe
       console.log('[IFRAME N8N] Creating new iframe for domain:', domain);
       
+      // Create new iframe with user_id automatically added to viewers
       const newIframe = new Iframe({
         title,
         domain,
         url,
         user_id,
-        site_id: site._id
+        site_id: site._id,
+        viewers: [user_id] // Automatically add user_id to viewers
       });
 
       const savedIframe = await newIframe.save();
-      await savedIframe.populate('site_id', 'name domains');
+      
+      // Populate the saved iframe with user and site information
+      const populatedIframe = await Iframe.findById(savedIframe._id).populate([
+        { path: 'user_id', select: 'email name' },
+        { path: 'site_id', select: 'name domains' },
+        { path: 'viewers', select: 'email name' }
+      ]);
+
+      console.log('[IFRAME N8N] Created iframe with user_id in viewers');
 
       return res.status(201).json({
         success: true,
         message: `Domain "${domain}" đã được tạo thành công`,
         action: "created",
         data: {
-          id: savedIframe._id,
-          title: savedIframe.title,
-          domain: savedIframe.domain,
-          url: savedIframe.url,
-          user_id: savedIframe.user_id,
-          site_id: savedIframe.site_id._id,
-          site_name: savedIframe.site_id.name,
-          created_at: savedIframe.createdAt,
-          updated_at: savedIframe.updatedAt
+          id: populatedIframe._id,
+          title: populatedIframe.title,
+          domain: populatedIframe.domain,
+          url: populatedIframe.url,
+          user_email: populatedIframe.user_id.email,
+          viewers: populatedIframe.viewers,
+          viewers_count: populatedIframe.viewers.length,
+          site_id: populatedIframe.site_id._id,
+          site_name: populatedIframe.site_id.name,
+          created_at: populatedIframe.createdAt,
+          updated_at: populatedIframe.updatedAt
         }
       });
     }
