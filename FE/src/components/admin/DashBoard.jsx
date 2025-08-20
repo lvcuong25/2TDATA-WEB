@@ -23,7 +23,8 @@ const { Header, Sider, Content } = Layout;
 
 const DashBoard = () => {
   const location = useLocation();
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
   const [collapsed, setCollapsed] = useState(false);
   const [activeLink, setActiveLink] = useState(location.pathname);
 
@@ -46,7 +47,7 @@ const DashBoard = () => {
     ];
 
     // Only super_admin can see service management
-    if (currentUser?.role === 'super_admin' || currentUser?.role === 'superadmin') {
+    if (authContext?.isSuperAdmin) {
       baseItems.push({
         key: '/admin/services',
         icon: <ShoppingOutlined />,
@@ -87,27 +88,35 @@ const DashBoard = () => {
         onClick: () => handleLinkClick('/admin/user-info')
       },
       {
-        key: '/admin/iframe',
-        icon: <LinkOutlined />,
-        label: <Link to="/admin/iframe">Quản lý iframe</Link>,
-        onClick: () => handleLinkClick('/admin/iframe')
-      },
-      {
         key: '/admin/organization',
         icon: <LaptopOutlined />,
         label: <Link to="/admin/organization">Quản lý tổ chức</Link>,
         onClick: () => handleLinkClick('/admin/organization')
-      },
-      {
+      }
+    );
+
+    // Only site_admin and super_admin can see iframe management
+    if (authContext?.isSuperAdmin || currentUser?.role === 'site_admin') {
+      baseItems.push({
+        key: '/admin/iframe',
+        icon: <LinkOutlined />,
+        label: <Link to="/admin/iframe">Quản lý iframe</Link>,
+        onClick: () => handleLinkClick('/admin/iframe')
+      });
+    }
+
+    // Only super_admin can see server management
+    if (authContext?.isSuperAdmin) {
+      baseItems.push({
         key: '/admin/servers',
         icon: <CloudServerOutlined />,
         label: <Link to="/admin/servers">Quản lý server</Link>,
         onClick: () => handleLinkClick('/admin/servers')
-      }
-    );
+      });
+    }
 
     // Only super_admin can see site management
-    if (currentUser?.role === 'super_admin' || currentUser?.role === 'superadmin') {
+    if (authContext?.isSuperAdmin) {
       baseItems.push({
         key: '/admin/sites',
         icon: <GlobalOutlined />,

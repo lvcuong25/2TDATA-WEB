@@ -1,5 +1,5 @@
 ﻿import React, { useState, useContext } from 'react';
-import instance from '../../../utils/axiosInstance';
+import instance from '../../../utils/axiosInstance-cookie-only';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Table, Button, Modal, Form, Input, Space, Popconfirm, Pagination, Select, Switch, Tag, Row, Col, Card } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, TeamOutlined, AppstoreOutlined, MailOutlined, PhoneOutlined, HomeOutlined, IdcardOutlined, NumberOutlined, PictureOutlined, GlobalOutlined } from '@ant-design/icons';
@@ -384,7 +384,7 @@ const OrganizationList = () => {
         title: 'Thao tác',
         key: 'action',
         render: (_, record) => {
-            if (record.role === 'owner') return null;
+            if (record?.role === 'owner') return null;
             return (
                 <Popconfirm
                     title="Xóa thành viên này?"

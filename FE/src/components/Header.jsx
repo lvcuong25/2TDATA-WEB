@@ -8,7 +8,9 @@ import Dropdown from './PrivacPolicy/Dropdown';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { currentUser, isLogin } = useContext(AuthContext);
+    const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+  const isLogin = authContext?.isLogin;
     const { currentSite } = useSite();
 
     const location = useLocation();
@@ -123,7 +125,7 @@ const Header = () => {
                     Dịch vụ
                   </Link>
                 </li>
-                {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') && (
+                {(authContext?.isAdmin) && (
                   <li>
                     <Link
                       to="/admin"

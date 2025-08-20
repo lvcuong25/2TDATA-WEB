@@ -2,7 +2,7 @@ import { useParams, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ServiceFacebook from "../components/Service/ServiceFacebook";
 import ServiceTiktok from "../components/Service/ServiceTiktok";
-import instance from "../utils/axiosInstance";
+import instance from "../utils/axiosInstance-cookie-only";
 import { toast } from "react-toastify";
 import { useContext } from "react";
 import { AuthContext } from "../components/core/Auth";
@@ -13,7 +13,8 @@ const ServiceBySlug = () => {
   const { slug } = useParams();
   const [loading, setLoading] = useState(true);
   const [service, setService] = useState(null);
-  const { currentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -26,7 +27,7 @@ const ServiceBySlug = () => {
         const { data } = await instance.get(`/service/slug/${slug}`);
         
         // Check if user has access to this service
-        const hasService = currentUser.role === 'admin' || currentUser.service?.some(s => s.slug === slug);
+        const hasService = authContext?.isAdmin || currentUser?.service?.some(s => s.slug === slug);
         
         if (hasService) {
           setService(data);

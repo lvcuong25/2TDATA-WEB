@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import Joi from 'joi';
-import instance from '../utils/axiosInstance';
+import instance from '../utils/axiosInstance-cookie-only';
 import { useNavigate } from 'react-router-dom';
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 

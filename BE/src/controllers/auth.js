@@ -142,6 +142,20 @@ export const signIn = async (req, res, next) => {
             accessToken,
             365 * 24 * 60 * 60 // 365 days in seconds
         );
+
+        // Set secure HTTP-only cookie with access token
+        const isProduction = process.env.NODE_ENV === 'production';
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction, // Only use secure in production
+            sameSite: isProduction ? 'strict' : 'lax',
+            maxAge: 365 * 24 * 60 * 60 * 1000, // 365 days in milliseconds
+            path: '/',
+            domain: isProduction ? undefined : undefined // Let browser set domain automatically
+        };
+
+        // Set the access token as a secure cookie
+        res.cookie('accessToken', accessToken, cookieOptions);
         
         // Tạo logic redirect thông minh dựa trên role và site
         let redirectPath = '/';
@@ -242,6 +256,16 @@ export const logout = async (req, res, next) => {
         if (token) {
             await UserSession.invalidateSession(userId, token);
         }
+
+        // Clear the access token cookie
+        const isProduction = process.env.NODE_ENV === 'production';
+        res.clearCookie('accessToken', {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'strict' : 'lax',
+            path: '/',
+            domain: isProduction ? undefined : undefined
+        });
         
         return res.status(200).json({
             message: "Đăng xuất thành công"

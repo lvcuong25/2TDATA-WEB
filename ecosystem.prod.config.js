@@ -10,7 +10,7 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 3005,
+        PORT: 3004,
         DATABASE_URL: 'mongodb://localhost:27017/2TDATA-P',
         DB_URI: 'mongodb://localhost:27017/2TDATA-P',
         SECRET_KEY: 'your-super-secret-jwt-key-change-this-in-production',
