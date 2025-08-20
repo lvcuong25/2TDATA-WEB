@@ -31,11 +31,11 @@ const DashboardUser = () => {
   const removeCurrentUser = authContext?.removeCurrentUser;
   const notifyAuthChange = authContext?.notifyAuthChange;
 
-  // Kiểm tra user đã có tổ chức chưa
+  // Kiểm tra user đã có tổ chức chưa - ẩn menu nếu chưa có tổ chức (kể cả super admin)
   const { data: orgData } = useQuery({
     queryKey: ['organization', currentUser?._id],
     queryFn: async () => {
-      if (!currentUser?._id || authContext?.isAdmin) return null;
+      if (!currentUser?._id) return null;
       try {
         const res = await instance.get(`organization/user/${currentUser._id}`);
         return res;
@@ -46,7 +46,8 @@ const DashboardUser = () => {
     enabled: !!currentUser?._id,
     retry: false,
   });
-  const hasOrganization = !!orgData || authContext?.isAdmin;
+  // Chỉ hiển thị menu "Tổ chức" khi user thực sự có tổ chức (không phân biệt role)
+  const hasOrganization = !!orgData;
 
   const handleLogout = async () => {
     try {
@@ -147,7 +148,7 @@ const DashboardUser = () => {
     });
   }
 
-  // Add organization menu if user has organization
+  // Add organization menu ONLY if user has organization (không phân biệt role, kể cả super admin)
   if (hasOrganization) {
     // Find index of 'Đổi mật khẩu'
     const changePasswordIdx = menuItems.findIndex(item => item.key === '/profile/change-password');
