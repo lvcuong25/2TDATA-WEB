@@ -48,6 +48,10 @@ import UserOrganization from "../components/Organization/UserOrganization.jsx";
 import ServiceOrganization from "../components/Organization/ServiceOrganization.jsx";
 import ServerList from '../components/admin/Server/ServerList.jsx';
 import TestAuth from "../components/TestAuth.jsx";
+// Database management imports
+import DatabaseList from "../pages/DatabaseManagement/DatabaseList.jsx";
+import TableList from "../pages/DatabaseManagement/TableList.jsx";
+import TableDetail from "../pages/DatabaseManagement/TableDetail.jsx";
 
 const Router = () => {
   return (
@@ -102,6 +106,22 @@ const Router = () => {
           />
           <Route path="/:domain" element={<Ifame />} />
           <Route path="/test-auth" element={<TestAuth />} />
+          {/* Database Management Routes */}
+          <Route path="/database" element={
+            <PrivateRoute>
+              <DatabaseList />
+            </PrivateRoute>
+          } />
+          <Route path="/database/:databaseId/tables" element={
+            <PrivateRoute>
+              <TableList />
+            </PrivateRoute>
+          } />
+          <Route path="/database/:databaseId/table/:tableId" element={
+            <PrivateRoute>
+              <TableDetail />
+            </PrivateRoute>
+          } />
         </Route>
 
         <Route

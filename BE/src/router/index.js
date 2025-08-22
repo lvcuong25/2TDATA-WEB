@@ -15,6 +15,7 @@ import routerAsset from "./routerAsset.js";
 import adminRouter from "./adminRouter.js";
 
 import routerOrganization from "./routerOrganization.js";
+import routerDatabase from "./routerDatabase.js";
 
 const router = Router();
 
@@ -44,7 +45,8 @@ router.get("/", (req, res) => {
       sites: "/api/sites",
       server: "/api/server",
       iframe: "/api/iframe",
-      "iframe_n8n": "/api/iframe/n8n/upsert"
+      "iframe_n8n": "/api/iframe/n8n/upsert",
+      database: "/api/database"
     }
   });
 });
@@ -67,4 +69,5 @@ router.use("/assets", routerAsset);
 router.use("/admin", adminRouter);
 
 router.use("/organization", routerOrganization);
+router.use("/database", routerDatabase);
 export default router;
