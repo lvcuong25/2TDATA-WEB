@@ -249,6 +249,8 @@ export const getIframeByDomainPublic = async (req, res) => {
 
 
 // Thêm mới iframe
+// Thêm mới iframe
+// Thêm mới iframe
 export const createIframe = async (req, res) => {
   try {
     // Kiểm tra authentication
@@ -264,9 +266,17 @@ export const createIframe = async (req, res) => {
       });
     }
 
+    // AUTO-FIX: Nếu không có user_id trong request body, sử dụng user hiện tại
+    const user_id = req.body.user_id || req.user._id;
+    
+    console.log('[IFRAME CREATE] Using user_id:', user_id);
+    console.log('[IFRAME CREATE] Request user:', req.user.email);
+    console.log('[IFRAME CREATE] Viewers from request:', req.body.viewers);
+
     // Tự động gán site_id từ user đang đăng nhập
     const iframeData = {
       ...req.body,
+      user_id: user_id, // Ensure user_id is always present
       site_id: req.user.site_id?._id || req.user.site_id
     };
     
@@ -275,13 +285,77 @@ export const createIframe = async (req, res) => {
       iframeData.site_id = req.body.site_id;
     }
     
+    // LOGIC VIEWERS - CHỈ TỰ ĐỘNG THÊM KHI KHÔNG CÓ VIEWERS
+    if (!req.body.viewers || !Array.isArray(req.body.viewers) || req.body.viewers.length === 0) {
+      // Nếu không có viewers được chỉ định, tự động thêm user hiện tại
+      console.log('[IFRAME CREATE] No viewers specified, auto-adding creator');
+      iframeData.viewers = [user_id];
+    } else {
+      // Nếu đã có viewers được chỉ định, giữ nguyên danh sách
+      console.log('[IFRAME CREATE] Viewers already specified, keeping original list');
+      iframeData.viewers = req.body.viewers;
+    }
+    
+    console.log('[IFRAME CREATE] Final iframe data:', {
+      title: iframeData.title,
+      domain: iframeData.domain,
+      user_id: iframeData.user_id,
+      site_id: iframeData.site_id,
+      viewers_count: iframeData.viewers.length,
+      viewers: iframeData.viewers
+    });
+    
     const newIframe = new Iframe(iframeData);
     const savedIframe = await newIframe.save();
-    res.status(201).json(savedIframe);
+    
+    // Populate the response
+    const populatedIframe = await Iframe.findById(savedIframe._id)
+      .populate("viewers", "name email")
+      .populate("user_id", "name email")
+      .populate("site_id", "name");
+    
+    res.status(201).json({
+      success: true,
+      message: "Iframe created successfully",
+      data: populatedIframe
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('[IFRAME CREATE] Error:', error);
+    
+    // Handle validation errors more specifically
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message,
+        value: err.value
+      }));
+      
+      return res.status(400).json({ 
+        success: false,
+        message: "Validation failed",
+        error: "VALIDATION_ERROR",
+        details: validationErrors
+      });
+    }
+    
+    // Handle duplicate domain error
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Domain already exists", 
+        error: "DUPLICATE_DOMAIN"
+      });
+    }
+    
+    res.status(400).json({ 
+      success: false,
+      message: error.message,
+      error: "CREATE_IFRAME_ERROR"
+    });
   }
 };
+;
+;
 
 // Sửa iframe
 export const updateIframe = async (req, res) => {
