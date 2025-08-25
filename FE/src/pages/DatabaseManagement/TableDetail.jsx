@@ -57,107 +57,7 @@ const TableDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Add column resizing functionality
-  React.useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .ant-table-thead > tr > th {
-        position: relative;
-        min-width: 30px !important;
-        max-width: none !important;
-      }
-      .ant-table-tbody > tr > td {
-        min-width: 30px !important;
-        max-width: none !important;
-      }
-      .column-resize-handle {
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: transparent;
-        cursor: col-resize;
-        z-index: 1;
-      }
-      .column-resize-handle:hover {
-        background: #1890ff;
-      }
-      .column-resize-handle.resizing {
-        background: #1890ff;
-      }
-    `;
-    document.head.appendChild(style);
 
-    // Add resize functionality
-    const addResizeHandlers = () => {
-      const headers = document.querySelectorAll('.ant-table-thead > tr > th');
-      
-      headers.forEach((header, index) => {
-        if (index > 1) { // Skip checkbox and index columns
-          const resizeHandle = document.createElement('div');
-          resizeHandle.className = 'column-resize-handle';
-          header.appendChild(resizeHandle);
-
-          let isResizing = false;
-          let startX = 0;
-          let startWidth = 0;
-
-          resizeHandle.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            startX = e.clientX;
-            startWidth = header.offsetWidth;
-            resizeHandle.classList.add('resizing');
-            e.preventDefault();
-          });
-
-          document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            const diff = e.clientX - startX;
-            const newWidth = Math.max(30, startWidth + diff);
-            
-            // Force update header width
-            header.style.setProperty('width', newWidth + 'px', 'important');
-            header.style.setProperty('min-width', newWidth + 'px', 'important');
-            header.style.setProperty('max-width', newWidth + 'px', 'important');
-            
-            // Update all cells in this column
-            const table = header.closest('.ant-table');
-            const rows = table.querySelectorAll('.ant-table-tbody > tr');
-            rows.forEach(row => {
-              const cell = row.children[index];
-              if (cell) {
-                cell.style.setProperty('width', newWidth + 'px', 'important');
-                cell.style.setProperty('min-width', newWidth + 'px', 'important');
-                cell.style.setProperty('max-width', newWidth + 'px', 'important');
-              }
-            });
-            
-            // Force table layout update
-            const tableElement = table.querySelector('table');
-            if (tableElement) {
-              tableElement.style.tableLayout = 'fixed';
-            }
-          });
-
-          document.addEventListener('mouseup', () => {
-            if (isResizing) {
-              isResizing = false;
-              resizeHandle.classList.remove('resizing');
-            }
-          });
-        }
-      });
-    };
-
-    // Wait for table to render then add handlers
-    const timer = setTimeout(addResizeHandlers, 100);
-
-    return () => {
-      clearTimeout(timer);
-      document.head.removeChild(style);
-    };
-  }, []); // Run once on mount
 
   const [newColumn, setNewColumn] = useState({ name: '', dataType: 'text' });
   const [showAddColumn, setShowAddColumn] = useState(false);
@@ -167,6 +67,7 @@ const TableDetail = () => {
   const [cellValue, setCellValue] = useState('');
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [visibleCheckboxes, setVisibleCheckboxes] = useState(new Set());
 
   // Fetch table structure
   const { data: tableStructureResponse, isLoading, error } = useQuery({
@@ -201,6 +102,192 @@ const TableDetail = () => {
     tableId,
     databaseId
   });
+
+  // Add column resizing functionality
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .ant-table-thead > tr > th {
+        position: relative !important;
+        min-width: 15px !important;
+        max-width: none !important;
+        user-select: none;
+        overflow: visible !important;
+      }
+      .ant-table-tbody > tr > td {
+        min-width: 15px !important;
+        max-width: none !important;
+        user-select: none;
+        overflow: visible !important;
+      }
+      .column-resize-handle {
+        position: absolute !important;
+        right: -2px !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: 4px !important;
+        height: 100% !important;
+        background: transparent;
+        cursor: col-resize !important;
+        z-index: 1000 !important;
+        transition: background-color 0.2s;
+        border: none !important;
+        outline: none !important;
+      }
+      .column-resize-handle:hover {
+        background: #1890ff !important;
+      }
+      .column-resize-handle.resizing {
+        background: #1890ff !important;
+      }
+      .ant-table-thead > tr > th:hover .column-resize-handle {
+        background: #d9d9d9 !important;
+      }
+      .resize-indicator {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 2px !important;
+        height: 100vh !important;
+        background: #1890ff !important;
+        pointer-events: none !important;
+        z-index: 9999 !important;
+        display: none !important;
+      }
+      .resize-indicator.active {
+        display: block !important;
+      }
+      .ant-table {
+        table-layout: auto !important;
+      }
+      .ant-table table {
+        table-layout: auto !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Create resize indicator
+    const resizeIndicator = document.createElement('div');
+    resizeIndicator.className = 'resize-indicator';
+    document.body.appendChild(resizeIndicator);
+
+    // Add resize functionality
+    const addResizeHandlers = () => {
+      console.log('Adding resize handlers...');
+      const headers = document.querySelectorAll('.ant-table-thead > tr > th');
+      console.log('Found headers:', headers.length);
+      
+      headers.forEach((header, index) => {
+        console.log(`Processing header ${index}:`, header);
+        
+                  // Skip the combined checkbox/index column, but allow resizing for data columns
+          if (index >= 1) { // Skip combined checkbox/index column (0)
+          console.log(`Adding resize handle to header ${index}`);
+          
+          // Remove existing resize handle if any
+          const existingHandle = header.querySelector('.column-resize-handle');
+          if (existingHandle) {
+            existingHandle.remove();
+          }
+          
+          const resizeHandle = document.createElement('div');
+          resizeHandle.className = 'column-resize-handle';
+          resizeHandle.style.cssText = `
+            position: absolute !important;
+            right: -2px !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            width: 4px !important;
+            height: 100% !important;
+            background: transparent;
+            cursor: col-resize !important;
+            z-index: 1000 !important;
+          `;
+          header.appendChild(resizeHandle);
+
+          let isResizing = false;
+          let startX = 0;
+          let startWidth = 0;
+          let originalWidth = header.offsetWidth;
+
+          const handleMouseDown = (e) => {
+            console.log('Mouse down on resize handle');
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = header.offsetWidth;
+            originalWidth = startWidth;
+            resizeHandle.classList.add('resizing');
+            resizeIndicator.classList.add('active');
+            resizeIndicator.style.left = e.clientX + 'px';
+            e.preventDefault();
+            e.stopPropagation();
+          };
+
+          const handleMouseMove = (e) => {
+            if (!isResizing) return;
+            
+            const diff = e.clientX - startX;
+            const newWidth = Math.max(15, originalWidth + diff); // Minimum 15px
+            
+            console.log('Resizing to:', newWidth, 'px');
+            
+            // Update resize indicator
+            resizeIndicator.style.left = e.clientX + 'px';
+            
+            // Force update header width
+            header.style.width = newWidth + 'px';
+            header.style.minWidth = newWidth + 'px';
+            header.style.maxWidth = newWidth + 'px';
+            
+            // Update all cells in this column
+            const table = header.closest('.ant-table');
+            const rows = table.querySelectorAll('.ant-table-tbody > tr');
+            rows.forEach(row => {
+              const cell = row.children[index];
+              if (cell) {
+                cell.style.width = newWidth + 'px';
+                cell.style.minWidth = newWidth + 'px';
+                cell.style.maxWidth = newWidth + 'px';
+              }
+            });
+            
+            // Force table layout update
+            const tableElement = table.querySelector('table');
+            if (tableElement) {
+              tableElement.style.tableLayout = 'auto';
+            }
+          };
+
+          const handleMouseUp = () => {
+            if (isResizing) {
+              console.log('Mouse up - stopping resize');
+              isResizing = false;
+              resizeHandle.classList.remove('resizing');
+              resizeIndicator.classList.remove('active');
+            }
+          };
+
+          resizeHandle.addEventListener('mousedown', handleMouseDown);
+          document.addEventListener('mousemove', handleMouseMove);
+          document.addEventListener('mouseup', handleMouseUp);
+        }
+      });
+    };
+
+    // Wait for table to render then add handlers
+    const timer = setTimeout(() => {
+      console.log('Timeout triggered, calling addResizeHandlers');
+      addResizeHandlers();
+    }, 1000); // Increased timeout further
+
+    return () => {
+      clearTimeout(timer);
+      document.head.removeChild(style);
+      if (resizeIndicator && resizeIndicator.parentNode) {
+        document.body.removeChild(resizeIndicator);
+      }
+    };
+  }, [columns, records]); // Added dependencies to re-run when data changes
 
   // Add column mutation
   const addColumnMutation = useMutation({
@@ -372,7 +459,14 @@ const TableDetail = () => {
       emptyData[column.name] = '';
     });
     
-    addRecordMutation.mutate({ data: emptyData });
+    // Add timestamp to ensure new records appear at the bottom
+    const recordData = {
+      data: emptyData,
+      createdAt: new Date().toISOString(),
+      order: records.length + 1
+    };
+    
+    addRecordMutation.mutate(recordData);
   };
 
   // Checkbox handlers
@@ -392,6 +486,12 @@ const TableDetail = () => {
     } else {
       setSelectedRowKeys(prev => prev.filter(key => key !== recordId));
       setSelectAll(false);
+      // Hide checkbox when unchecked
+      setVisibleCheckboxes(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(recordId);
+        return newSet;
+      });
     }
   };
 
@@ -491,109 +591,47 @@ const TableDetail = () => {
   // Prepare table columns for Ant Design Table
   const tableColumns = useMemo(() => {
     const cols = [
+      // Combined checkbox and row number column
       {
         title: (
-          <Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'selectAll',
-                  label: 'Select All',
-                  icon: <CheckCircleOutlined />,
-                  onClick: () => handleSelectAll(true),
-                },
-                {
-                  key: 'deselectAll',
-                  label: 'Deselect All',
-                  icon: <CloseCircleOutlined />,
-                  onClick: () => handleSelectAll(false),
-                },
-                ...(selectedRowKeys.length > 0 ? [
-                  {
-                    type: 'divider',
-                  },
-                  {
-                    key: 'deleteSelected',
-                    label: `Delete Selected (${selectedRowKeys.length})`,
-                    icon: <DeleteOutlined />,
-                    danger: true,
-                    disabled: deleteMultipleRecordsMutation.isPending,
-                    onClick: () => {
-                      Modal.confirm({
-                        title: `Delete ${selectedRowKeys.length} selected records?`,
-                        content: 'This action cannot be undone. Selected records will be permanently deleted.',
-                        okText: 'Yes, Delete Selected',
-                        okType: 'danger',
-                        cancelText: 'Cancel',
-                        confirmLoading: deleteMultipleRecordsMutation.isPending,
-                        onOk: handleDeleteSelected,
-                      });
-                    },
-                  },
-                ] : []),
-                {
-                  type: 'divider',
-                },
-                {
-                  key: 'deleteAll',
-                  label: 'Delete All Records',
-                  icon: <DeleteOutlined />,
-                  danger: true,
-                  disabled: deleteAllRecordsMutation.isPending || records.length === 0,
-                  onClick: () => {
-                    Modal.confirm({
-                      title: `Delete all ${records.length} records?`,
-                      content: 'This action cannot be undone. All records will be permanently deleted.',
-                      okText: 'Yes, Delete All',
-                      okType: 'danger',
-                      cancelText: 'Cancel',
-                      confirmLoading: deleteAllRecordsMutation.isPending,
-                      onOk: handleDeleteAllRecords,
-                    });
-                  },
-                },
-              ],
-            }}
-            trigger={['contextMenu']}
-            placement="bottomLeft"
-          >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1px' }}>
             <Checkbox
               checked={selectAll}
-              onChange={(e) => {
-                e.stopPropagation();
-                handleSelectAll(e.target.checked);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                cursor: 'pointer'
-              }}
+              onChange={(e) => handleSelectAll(e.target.checked)}
+              indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < records.length}
             />
-          </Dropdown>
+            <span style={{ fontSize: '10px', color: '#666', fontWeight: 'bold' }}>#</span>
+          </div>
         ),
         dataIndex: 'selection',
         key: 'selection',
-        width: 35,
+        width: 18,
+        minWidth: 15,
         fixed: 'left',
         align: 'center',
-        render: (_, record) => (
-          <Checkbox
-            checked={selectedRowKeys.includes(record._id)}
-            onChange={(e) => {
-              e.stopPropagation();
-              handleSelectRow(record._id, e.target.checked);
-            }}
-            onClick={(e) => e.stopPropagation()}
-          />
-        ),
-      },
-      {
-        title: '#',
-        dataIndex: 'index',
-        key: 'index',
-        width: 30,
-        fixed: 'left',
-        align: 'center',
-        render: (_, __, index) => index + 1,
+        render: (_, record, index) => {
+          const isSelected = selectedRowKeys.includes(record._id);
+          
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1px' }}>
+              <Checkbox
+                checked={isSelected}
+                onChange={(e) => handleSelectRow(record._id, e.target.checked)}
+              />
+              <span 
+                style={{ 
+                  fontSize: '10px', 
+                  color: '#666', 
+                  fontWeight: 'bold',
+                  opacity: isSelected ? 0.3 : 1,
+                  transition: 'opacity 0.2s ease'
+                }}
+              >
+                {index + 1}
+              </span>
+            </div>
+          );
+        },
       }
     ];
 
@@ -641,7 +679,7 @@ const TableDetail = () => {
         dataIndex: ['data', column.name],
         key: column._id,
         width: 150,
-        minWidth: 30,
+        minWidth: 15,
         render: (value, record) => {
           const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
           
@@ -658,7 +696,7 @@ const TableDetail = () => {
                   width: '100%',
                   height: '100%',
                   border: 'none',
-                  padding: '0',
+                  padding: '4px 8px',
                   margin: '0',
                   borderRadius: '0',
                   backgroundColor: 'transparent',
@@ -667,38 +705,46 @@ const TableDetail = () => {
                   top: '0',
                   left: '0',
                   right: '0',
-                  bottom: '0'
+                  bottom: '0',
+                  fontSize: 'inherit',
+                  lineHeight: 'inherit',
+                  boxSizing: 'border-box',
+                  resize: 'none',
+                  overflow: 'hidden'
                 }}
               />
             );
           }
           
           return (
-            <div
-              onClick={() => handleCellClick(record._id, column.name, value)}
-              style={{ 
-                cursor: 'pointer', 
-                padding: '4px 8px', 
-                borderRadius: '4px',
-                position: 'relative',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-            >
-              {value || '-'}
-            </div>
+            <Tooltip title={value || ''} placement="topLeft">
+              <div
+                onClick={() => handleCellClick(record._id, column.name, value)}
+                style={{ 
+                  cursor: 'pointer', 
+                  padding: '4px 8px', 
+                  borderRadius: '4px',
+                  position: 'relative',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+              >
+                {value || ''}
+              </div>
+            </Tooltip>
           );
         }
       });
     });
 
-    // Add actions column
+
+    // Add column for the "+" button to add new columns
     cols.push({
       title: (
         <Tooltip title="Add Column">
@@ -707,15 +753,15 @@ const TableDetail = () => {
             icon={<PlusOutlined />}
             size="small"
             onClick={() => setShowAddColumn(true)}
+            style={{ minWidth: 'auto', padding: '4px 8px' }}
           />
         </Tooltip>
       ),
-      key: 'actions',
-      width: 60,
+      key: 'addColumn',
+      width: 50,
+      minWidth: 15,
       align: 'center',
-      render: (_, record) => (
-        <div style={{ width: '100%', height: '100%' }} />
-      )
+      render: () => null
     });
 
     return cols;
@@ -723,12 +769,62 @@ const TableDetail = () => {
 
   // Prepare table data
   const tableData = useMemo(() => {
-    return records.map((record, index) => ({
+    // Sort records to ensure new records appear at the bottom
+    const sortedRecords = [...records].sort((a, b) => {
+      // If records have createdAt, sort by that
+      if (a.createdAt && b.createdAt) {
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      }
+      // If records have order field, sort by that
+      if (a.order !== undefined && b.order !== undefined) {
+        return a.order - b.order;
+      }
+      // Default: keep original order (new records will be added at the end)
+      return 0;
+    });
+    
+    return sortedRecords.map((record, index) => ({
       key: record._id,
       ...record,
       index
     }));
   }, [records]);
+
+  // Additional useEffect to ensure resize handlers are added after table renders
+  React.useEffect(() => {
+    if (tableData.length > 0 && tableColumns.length > 0) {
+      console.log('Table data changed, re-adding resize handlers');
+      const timer = setTimeout(() => {
+        const headers = document.querySelectorAll('.ant-table-thead > tr > th');
+        console.log('Re-adding handlers to', headers.length, 'headers');
+        
+        headers.forEach((header, index) => {
+          if (index >= 1) {
+            const existingHandle = header.querySelector('.column-resize-handle');
+            if (!existingHandle) {
+              console.log(`Adding missing resize handle to header ${index}`);
+              const resizeHandle = document.createElement('div');
+              resizeHandle.className = 'column-resize-handle';
+              resizeHandle.style.cssText = `
+                position: absolute !important;
+                right: -2px !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                width: 4px !important;
+                height: 100% !important;
+                background: transparent;
+                cursor: col-resize !important;
+                z-index: 1000 !important;
+              `;
+              header.appendChild(resizeHandle);
+            }
+          }
+        });
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [tableData, tableColumns]);
 
   if (isLoading) {
     return (
@@ -821,20 +917,18 @@ const TableDetail = () => {
             columns={tableColumns}
             dataSource={tableData}
             pagination={false}
-            scroll={{ x: 'max-content', y: 'calc(100vh - 64px)' }}
+            scroll={{ y: 'calc(100vh - 64px)' }}
             size="middle"
             bordered
             rowKey="_id"
             loading={isLoading}
             style={{ 
               height: '100%',
-              '--resize-handle-width': '4px',
-              '--resize-handle-color': '#d9d9d9'
+              tableLayout: 'auto'
             }}
             onRow={(record) => ({
               style: { cursor: 'default' }
             })}
-
           />
         </Content>
 
