@@ -68,7 +68,11 @@ const TableDetail = () => {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, recordId: null });
 
   // Column resizing state
-  const [columnWidths, setColumnWidths] = useState({});
+  const [columnWidths, setColumnWidths] = useState(() => {
+    // Load saved column widths from localStorage
+    const saved = localStorage.getItem(`table_${tableId}_column_widths`);
+    return saved ? JSON.parse(saved) : {};
+  });
   const [isResizing, setIsResizing] = useState(false);
   const [resizingColumn, setResizingColumn] = useState(null);
   const [startX, setStartX] = useState(0);
@@ -94,12 +98,15 @@ const TableDetail = () => {
 
     const handleMouseMove = (moveEvent) => {
       const deltaX = moveEvent.clientX - startClientX;
-      const newWidth = Math.max(100, currentWidth + deltaX);
+      const newWidth = Math.max(50, currentWidth + deltaX);
       
-      setColumnWidths(prev => ({
-        ...prev,
+      const newWidths = {
+        ...columnWidths,
         [columnId]: newWidth
-      }));
+      };
+      
+      setColumnWidths(newWidths);
+      saveColumnWidths(newWidths);
     };
 
     const handleMouseUp = () => {
@@ -119,6 +126,27 @@ const TableDetail = () => {
   // Get column width
   const getColumnWidth = (columnId) => {
     return columnWidths[columnId] || 150;
+  };
+
+  // Check if column is compact (only show type letter)
+  const isColumnCompact = (columnId) => {
+    return getColumnWidth(columnId) < 80;
+  };
+
+  // Get type letter for compact display
+  const getTypeLetter = (dataType) => {
+    switch (dataType) {
+      case 'text': return 'T';
+      case 'number': return 'N';
+      case 'date': return 'D';
+      case 'boolean': return 'B';
+      default: return 'T';
+    }
+  };
+
+  // Save column widths to localStorage
+  const saveColumnWidths = (newWidths) => {
+    localStorage.setItem(`table_${tableId}_column_widths`, JSON.stringify(newWidths));
   };
 
   // Fetch table structure
@@ -470,6 +498,16 @@ const TableDetail = () => {
     }
   };
 
+  const getDataTypeColor = (dataType) => {
+    switch (dataType) {
+      case 'text': return '#1890ff';
+      case 'number': return '#52c41a';
+      case 'date': return '#fa8c16';
+      case 'boolean': return '#722ed1';
+      default: return '#1890ff';
+    }
+  };
+
   const getDataTypeTag = (dataType) => {
     const colorMap = {
       text: 'blue',
@@ -632,20 +670,28 @@ const TableDetail = () => {
               {columns.map(column => (
                 <div key={column._id} style={{
                   width: `${getColumnWidth(column._id)}px`,
-                  minWidth: '100px',
-                  padding: '8px',
+                  minWidth: '50px',
+                  padding: isColumnCompact(column._id) ? '4px' : '8px',
                   borderRight: '1px solid #d9d9d9',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  justifyContent: isColumnCompact(column._id) ? 'center' : 'space-between',
                   backgroundColor: '#f5f5f5',
                   position: 'relative'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
-                    {getDataTypeIcon(column.dataType)}
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {column.name}
-                    </span>
+                    {isColumnCompact(column._id) ? (
+                      <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>
+                        {getTypeLetter(column.dataType)}
+                      </span>
+                    ) : (
+                      <>
+                        {getDataTypeIcon(column.dataType)}
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {column.name}
+                        </span>
+                      </>
+                    )}
                   </div>
                   <Dropdown
                     menu={{
@@ -670,7 +716,15 @@ const TableDetail = () => {
                     }}
                     trigger={['click']}
                   >
-                    <Button type="text" size="small" icon={<MoreOutlined />} style={{ padding: '2px' }} />
+                    <Button 
+                      type="text" 
+                      size="small" 
+                      icon={<MoreOutlined />} 
+                      style={{ 
+                        padding: isColumnCompact(column._id) ? '2px' : '2px',
+                        fontSize: isColumnCompact(column._id) ? '10px' : '12px'
+                      }} 
+                    />
                   </Dropdown>
                   
                   {/* Resize handle */}
@@ -764,39 +818,151 @@ const TableDetail = () => {
                     return (
                       <div key={column._id} style={{
                         width: `${getColumnWidth(column._id)}px`,
-                        minWidth: '100px',
+                        minWidth: '50px',
                         padding: '0',
                         borderRight: '1px solid #d9d9d9',
                         position: 'relative',
                         minHeight: '40px'
                       }}>
                         {isEditing ? (
-                          <Input
-                            value={cellValue}
-                            onChange={(e) => setCellValue(e.target.value)}
-                            onPressEnter={handleCellSave}
-                            onBlur={handleCellSave}
-                            autoFocus
-                            size="small"
-                            style={{ 
-                              width: '100%',
-                              height: '100%',
-                              border: 'none',
-                              padding: '0',
-                              margin: '0',
-                              borderRadius: '0',
-                              backgroundColor: 'transparent',
-                              boxShadow: 'none',
-                              fontSize: 'inherit',
-                              position: 'absolute',
-                              top: '0',
-                              left: '0',
-                              right: '0',
-                              bottom: '0',
-                              boxSizing: 'border-box',
-                              outline: 'none'
-                            }}
-                          />
+                          (() => {
+                            const dataType = column.dataType;
+                            
+                            if (dataType === 'date') {
+                              // Format date for display and input
+                              const formatDateForInput = (dateString) => {
+                                if (!dateString) return '';
+                                try {
+                                  const date = new Date(dateString);
+                                  return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+                                } catch {
+                                  return dateString;
+                                }
+                              };
+
+                              return (
+                                <Input
+                                  type="date"
+                                  value={formatDateForInput(cellValue)}
+                                  onChange={(e) => setCellValue(e.target.value)}
+                                  onPressEnter={handleCellSave}
+                                  onBlur={handleCellSave}
+                                  autoFocus
+                                  size="small"
+                                  style={{ 
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    padding: '0',
+                                    margin: '0',
+                                    borderRadius: '0',
+                                    backgroundColor: 'transparent',
+                                    boxShadow: 'none',
+                                    fontSize: 'inherit',
+                                    position: 'absolute',
+                                    top: '0',
+                                    left: '0',
+                                    right: '0',
+                                    bottom: '0',
+                                    boxSizing: 'border-box',
+                                    outline: 'none'
+                                  }}
+                                />
+                              );
+                            } else if (dataType === 'number') {
+                              return (
+                                <Input
+                                  type="number"
+                                  value={cellValue}
+                                  onChange={(e) => setCellValue(e.target.value)}
+                                  onPressEnter={handleCellSave}
+                                  onBlur={handleCellSave}
+                                  autoFocus
+                                  size="small"
+                                  style={{ 
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    padding: '0',
+                                    margin: '0',
+                                    borderRadius: '0',
+                                    backgroundColor: 'transparent',
+                                    boxShadow: 'none',
+                                    fontSize: 'inherit',
+                                    position: 'absolute',
+                                    top: '0',
+                                    left: '0',
+                                    right: '0',
+                                    bottom: '0',
+                                    boxSizing: 'border-box',
+                                    outline: 'none'
+                                  }}
+                                />
+                              );
+                            } else if (dataType === 'boolean') {
+                              return (
+                                <Select
+                                  value={cellValue}
+                                  onChange={(value) => {
+                                    setCellValue(value);
+                                    handleCellSave();
+                                  }}
+                                  autoFocus
+                                  size="small"
+                                  style={{ 
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    padding: '0',
+                                    margin: '0',
+                                    borderRadius: '0',
+                                    backgroundColor: 'transparent',
+                                    boxShadow: 'none',
+                                    fontSize: 'inherit',
+                                    position: 'absolute',
+                                    top: '0',
+                                    left: '0',
+                                    right: '0',
+                                    bottom: '0',
+                                    boxSizing: 'border-box',
+                                    outline: 'none'
+                                  }}
+                                >
+                                  <Option value="true">True</Option>
+                                  <Option value="false">False</Option>
+                                </Select>
+                              );
+                            } else {
+                              return (
+                                <Input
+                                  value={cellValue}
+                                  onChange={(e) => setCellValue(e.target.value)}
+                                  onPressEnter={handleCellSave}
+                                  onBlur={handleCellSave}
+                                  autoFocus
+                                  size="small"
+                                  style={{ 
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    padding: '0',
+                                    margin: '0',
+                                    borderRadius: '0',
+                                    backgroundColor: 'transparent',
+                                    boxShadow: 'none',
+                                    fontSize: 'inherit',
+                                    position: 'absolute',
+                                    top: '0',
+                                    left: '0',
+                                    right: '0',
+                                    bottom: '0',
+                                    boxSizing: 'border-box',
+                                    outline: 'none'
+                                  }}
+                                />
+                              );
+                            }
+                          })()
                         ) : (
                           <div
                             style={{ 
@@ -815,7 +981,17 @@ const TableDetail = () => {
                             onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
                             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                           >
-                            {value || ''}
+                            {column.dataType === 'date' && value ? 
+                              (() => {
+                                try {
+                                  const date = new Date(value);
+                                  return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+                                } catch {
+                                  return value;
+                                }
+                              })() 
+                              : (value || '')
+                            }
                           </div>
                         )}
                       </div>
