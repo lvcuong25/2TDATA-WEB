@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -56,8 +56,6 @@ const TableDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-
-
   const [newColumn, setNewColumn] = useState({ name: '', dataType: 'text' });
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [showEditColumn, setShowEditColumn] = useState(false);
@@ -67,11 +65,61 @@ const TableDetail = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [visibleCheckboxes, setVisibleCheckboxes] = useState(new Set());
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, recordId: null });
+
+  // Column resizing state
+  const [columnWidths, setColumnWidths] = useState({});
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizingColumn, setResizingColumn] = useState(null);
+  const [startX, setStartX] = useState(0);
+  const [startWidth, setStartWidth] = useState(0);
 
   // Debug: Log when editingCell changes
   React.useEffect(() => {
     console.log('editingCell changed:', editingCell);
   }, [editingCell]);
+
+  // Column resizing handlers
+  const handleResizeStart = (e, columnId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const currentWidth = columnWidths[columnId] || 150;
+    const startClientX = e.clientX;
+    
+    setIsResizing(true);
+    setResizingColumn(columnId);
+    setStartX(startClientX);
+    setStartWidth(currentWidth);
+
+    const handleMouseMove = (moveEvent) => {
+      const deltaX = moveEvent.clientX - startClientX;
+      const newWidth = Math.max(100, currentWidth + deltaX);
+      
+      setColumnWidths(prev => ({
+        ...prev,
+        [columnId]: newWidth
+      }));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setResizingColumn(null);
+      setStartX(0);
+      setStartWidth(0);
+      
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Get column width
+  const getColumnWidth = (columnId) => {
+    return columnWidths[columnId] || 150;
+  };
 
   // Fetch table structure
   const { data: tableStructureResponse, isLoading, error } = useQuery({
@@ -390,6 +438,28 @@ const TableDetail = () => {
     setCellValue('');
   };
 
+  // Context menu handlers
+  const handleContextMenu = (e, recordId) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      recordId
+    });
+  };
+
+  const handleContextMenuClose = () => {
+    setContextMenu({ visible: false, x: 0, y: 0, recordId: null });
+  };
+
+  const handleContextMenuDelete = () => {
+    if (contextMenu.recordId) {
+      handleDeleteRecord(contextMenu.recordId);
+    }
+    handleContextMenuClose();
+  };
+
   const getDataTypeIcon = (dataType) => {
     switch (dataType) {
       case 'text': return <FieldBinaryOutlined style={{ color: '#1890ff' }} />;
@@ -522,13 +592,15 @@ const TableDetail = () => {
           flex: 1, 
           padding: '0', 
           background: '#fff',
-          overflow: 'auto'
+          overflow: 'auto',
+          cursor: isResizing ? 'col-resize' : 'default'
         }}>
           <div style={{
             display: 'inline-block',
             border: '1px solid #d9d9d9',
             overflow: 'hidden',
-            backgroundColor: '#fff'
+            backgroundColor: '#fff',
+            userSelect: isResizing ? 'none' : 'auto'
           }}>
             {/* Table Header */}
             <div style={{
@@ -559,16 +631,17 @@ const TableDetail = () => {
               {/* Data Columns */}
               {columns.map(column => (
                 <div key={column._id} style={{
-                  width: '150px',
-                  minWidth: '150px',
+                  width: `${getColumnWidth(column._id)}px`,
+                  minWidth: '100px',
                   padding: '8px',
                   borderRight: '1px solid #d9d9d9',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  backgroundColor: '#f5f5f5'
+                  backgroundColor: '#f5f5f5',
+                  position: 'relative'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
                     {getDataTypeIcon(column.dataType)}
                     <span style={{ fontSize: '12px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {column.name}
@@ -599,6 +672,31 @@ const TableDetail = () => {
                   >
                     <Button type="text" size="small" icon={<MoreOutlined />} style={{ padding: '2px' }} />
                   </Dropdown>
+                  
+                  {/* Resize handle */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      right: '-3px',
+                      top: 0,
+                      bottom: 0,
+                      width: '6px',
+                      cursor: 'col-resize',
+                      backgroundColor: isResizing && resizingColumn === column._id ? '#1890ff' : 'transparent',
+                      zIndex: 1
+                    }}
+                    onMouseDown={(e) => handleResizeStart(e, column._id)}
+                    onMouseEnter={(e) => {
+                      if (!isResizing) {
+                        e.target.style.backgroundColor = '#d9d9d9';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isResizing || resizingColumn !== column._id) {
+                        e.target.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  />
                 </div>
               ))}
 
@@ -630,7 +728,9 @@ const TableDetail = () => {
                 <div key={record._id} style={{
                   display: 'flex',
                   borderBottom: '1px solid #f0f0f0'
-                }}>
+                }}
+                onContextMenu={(e) => handleContextMenu(e, record._id)}
+                >
                   {/* Checkbox and Index */}
                   <div style={{
                     width: '60px',
@@ -663,61 +763,61 @@ const TableDetail = () => {
                     
                     return (
                       <div key={column._id} style={{
-                        width: '150px',
-                        minWidth: '150px',
+                        width: `${getColumnWidth(column._id)}px`,
+                        minWidth: '100px',
                         padding: '0',
                         borderRight: '1px solid #d9d9d9',
                         position: 'relative',
                         minHeight: '40px'
                       }}>
-                                                                          {isEditing ? (
-                           <Input
-                             value={cellValue}
-                             onChange={(e) => setCellValue(e.target.value)}
-                             onPressEnter={handleCellSave}
-                             onBlur={handleCellSave}
-                             autoFocus
-                             size="small"
-            style={{ 
-                               width: '100%',
-              height: '100%',
-                               border: 'none',
-                               padding: '0',
-                               margin: '0',
-                               borderRadius: '0',
-                               backgroundColor: 'transparent',
-                               boxShadow: 'none',
-                               fontSize: 'inherit',
-                               position: 'absolute',
-                               top: '0',
-                               left: '0',
-                               right: '0',
-                               bottom: '0',
-                               boxSizing: 'border-box',
-                               outline: 'none'
-                             }}
-                           />
-                         ) : (
-                           <div
-                             style={{ 
-                               cursor: 'pointer', 
-                               padding: '8px', 
-                               overflow: 'hidden',
-                               textOverflow: 'ellipsis',
-                               whiteSpace: 'nowrap',
-                               fontSize: '12px',
-                               height: '100%',
-                               display: 'flex',
-                               alignItems: 'center',
-                               boxSizing: 'border-box'
-                             }}
-                             onClick={() => handleCellClick(record._id, column.name, value)}
-                             onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                             onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                           >
-                             {value || ''}
-                           </div>
-                         )}
+                        {isEditing ? (
+                          <Input
+                            value={cellValue}
+                            onChange={(e) => setCellValue(e.target.value)}
+                            onPressEnter={handleCellSave}
+                            onBlur={handleCellSave}
+                            autoFocus
+                            size="small"
+                            style={{ 
+                              width: '100%',
+                              height: '100%',
+                              border: 'none',
+                              padding: '0',
+                              margin: '0',
+                              borderRadius: '0',
+                              backgroundColor: 'transparent',
+                              boxShadow: 'none',
+                              fontSize: 'inherit',
+                              position: 'absolute',
+                              top: '0',
+                              left: '0',
+                              right: '0',
+                              bottom: '0',
+                              boxSizing: 'border-box',
+                              outline: 'none'
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{ 
+                              cursor: 'pointer', 
+                              padding: '8px', 
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              fontSize: '12px',
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              boxSizing: 'border-box'
+                            }}
+                            onClick={() => handleCellClick(record._id, column.name, value)}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                          >
+                            {value || ''}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -875,6 +975,56 @@ const TableDetail = () => {
           </form>
         )}
       </Modal>
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: contextMenu.y,
+            left: contextMenu.x,
+            zIndex: 1000,
+            backgroundColor: '#fff',
+            border: '1px solid #d9d9d9',
+            borderRadius: '6px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            padding: '4px 0',
+            minWidth: '120px'
+          }}
+          onClick={handleContextMenuClose}
+        >
+          <Menu
+            mode="vertical"
+            style={{ border: 'none', boxShadow: 'none' }}
+            onClick={handleContextMenuClose}
+          >
+            <Menu.Item
+              key="delete"
+              icon={<DeleteOutlined />}
+              danger
+              onClick={handleContextMenuDelete}
+              style={{ color: '#ff4d4f' }}
+            >
+              Delete Row
+            </Menu.Item>
+          </Menu>
+        </div>
+      )}
+
+      {/* Click outside to close context menu */}
+      {contextMenu.visible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999
+          }}
+          onClick={handleContextMenuClose}
+        />
+      )}
     </Layout>
   );
 };
