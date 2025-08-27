@@ -382,10 +382,6 @@ const DatabaseLayout = () => {
           {/* Databases Section */}
           {!collapsed && (
             <div className="px-4 py-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-700">Databases</span>
-                <DownOutlined className="text-gray-500" />
-              </div>
               
               {filteredDatabases.length === 0 ? (
                 <div className="text-center py-4">
