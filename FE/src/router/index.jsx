@@ -49,6 +49,7 @@ import ServiceOrganization from "../components/Organization/ServiceOrganization.
 import ServerList from '../components/admin/Server/ServerList.jsx';
 import TestAuth from "../components/TestAuth.jsx";
 // Database management imports
+import DatabaseLayout from "../pages/DatabaseManagement/DatabaseLayout.jsx";
 import DatabaseList from "../pages/DatabaseManagement/DatabaseList.jsx";
 import TableList from "../pages/DatabaseManagement/TableList.jsx";
 import TableDetail from "../pages/DatabaseManagement/TableDetail.jsx";
@@ -109,19 +110,13 @@ const Router = () => {
           {/* Database Management Routes */}
           <Route path="/database" element={
             <PrivateRoute>
-              <DatabaseList />
+              <DatabaseLayout />
             </PrivateRoute>
-          } />
-          <Route path="/database/:databaseId/tables" element={
-            <PrivateRoute>
-              <TableList />
-            </PrivateRoute>
-          } />
-          <Route path="/database/:databaseId/table/:tableId" element={
-            <PrivateRoute>
-              <TableDetail />
-            </PrivateRoute>
-          } />
+          }>
+            <Route index element={<DatabaseList />} />
+            <Route path=":databaseId/tables" element={<TableList />} />
+            <Route path=":databaseId/table/:tableId" element={<TableDetail />} />
+          </Route>
         </Route>
 
         <Route
