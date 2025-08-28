@@ -34,6 +34,13 @@ import {
   getTableStructure
 } from "../controllers/recordController.js";
 
+import {
+  getGroupPreference,
+  saveGroupPreference,
+  deleteGroupPreference,
+  getAllGroupPreferences
+} from "../controllers/groupPreferenceController.js";
+
 const router = Router();
 
 // Database routes
@@ -72,5 +79,11 @@ router.delete("/records/:recordId", deleteRecord);
 
 // Table structure route
 router.get("/tables/:tableId/structure", getTableStructure);
+
+// Group preference routes
+router.get("/tables/:tableId/group-preference", getGroupPreference);
+router.post("/tables/:tableId/group-preference", saveGroupPreference);
+router.delete("/tables/:tableId/group-preference", deleteGroupPreference);
+router.get("/group-preferences", getAllGroupPreferences);
 
 export default router;

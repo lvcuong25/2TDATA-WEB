@@ -46,7 +46,8 @@ import {
   HomeOutlined,
   UnorderedListOutlined,
   AppstoreOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  RightOutlined
 } from '@ant-design/icons';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 
@@ -75,6 +76,51 @@ const TableDetail = () => {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [sortDropdownPosition, setSortDropdownPosition] = useState({ x: 0, y: 0 });
   const [sortFieldSearch, setSortFieldSearch] = useState('');
+
+  // Grouping state
+  const [groupRules, setGroupRules] = useState([]);
+  const [currentGroupField, setCurrentGroupField] = useState('');
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [groupDropdownPosition, setGroupDropdownPosition] = useState({ x: 0, y: 0 });
+  const [groupFieldSearch, setGroupFieldSearch] = useState('');
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+
+  // Fetch group preferences from backend
+  const { data: groupPreferenceResponse } = useQuery({
+    queryKey: ['groupPreference', tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/database/tables/${tableId}/group-preference`);
+      return response.data;
+    },
+    enabled: !!tableId,
+  });
+
+  // Save group preference mutation
+  const saveGroupPreferenceMutation = useMutation({
+    mutationFn: async ({ groupRules, expandedGroups }) => {
+      const response = await axiosInstance.post(`/database/tables/${tableId}/group-preference`, {
+        groupRules,
+        expandedGroups: Array.from(expandedGroups)
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      console.log('Group preference saved successfully');
+    },
+    onError: (error) => {
+      console.error('Error saving group preference:', error);
+    },
+  });
+
+  // Load group preferences from backend when data is available
+  React.useEffect(() => {
+    if (groupPreferenceResponse?.data) {
+      const preference = groupPreferenceResponse.data;
+      setGroupRules(preference.groupRules || []);
+      setExpandedGroups(new Set(preference.expandedGroups || []));
+      console.log('Group preferences loaded from backend:', preference);
+    }
+  }, [groupPreferenceResponse]);
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState(() => {
@@ -117,6 +163,32 @@ const TableDetail = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showSortDropdown]);
+
+  // Handle clicking outside group dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showGroupDropdown) {
+        const dropdown = document.querySelector('[data-group-dropdown]');
+        const button = document.querySelector('[data-group-button]');
+        const antSelectDropdown = document.querySelector('.ant-select-dropdown');
+        
+        // Check if click is inside group dropdown, group button, or ant-select dropdown
+        const isInsideGroupDropdown = dropdown && dropdown.contains(event.target);
+        const isInsideGroupButton = button && button.contains(event.target);
+        const isInsideAntSelectDropdown = antSelectDropdown && antSelectDropdown.contains(event.target);
+        
+        if (!isInsideGroupDropdown && !isInsideGroupButton && !isInsideAntSelectDropdown) {
+          setShowGroupDropdown(false);
+          setGroupFieldSearch('');
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showGroupDropdown]);
 
   // Column resizing handlers
   const handleResizeStart = (e, columnId) => {
@@ -407,6 +479,32 @@ const TableDetail = () => {
     addRecordMutation.mutate(recordData);
   };
 
+  const handleAddRowToGroup = (groupValues, groupRules) => {
+    if (!columns || columns.length === 0) {
+      // toast.error('No columns available. Please add a column first.');
+      return;
+    }
+    
+    const emptyData = {};
+    columns.forEach(column => {
+      emptyData[column.name] = '';
+    });
+
+    // Pre-fill the group fields with the group values
+    groupRules.forEach((rule, index) => {
+      emptyData[rule.field] = groupValues[index] || '';
+    });
+    
+    // Add timestamp to ensure new records appear at the bottom
+    const recordData = {
+      data: emptyData,
+      createdAt: new Date().toISOString(),
+      order: records.length + 1
+    };
+    
+    addRecordMutation.mutate(recordData);
+  };
+
   // Checkbox handlers
   const handleSelectAll = (checked) => {
     setSelectAll(checked);
@@ -590,6 +688,117 @@ const TableDetail = () => {
     setSortRules(newRules);
   };
 
+  // Grouping handlers
+  const handleGroupButtonClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setGroupDropdownPosition({
+      x: rect.left,
+      y: rect.bottom + 5
+    });
+    setShowGroupDropdown(!showGroupDropdown);
+    if (!showGroupDropdown) {
+      setGroupFieldSearch('');
+    }
+  };
+
+  const handleGroupFieldSelect = (fieldName) => {
+    // Auto-add the group rule when field is selected
+    const newRule = {
+      field: fieldName
+    };
+    const newGroupRules = [...groupRules, newRule];
+    setGroupRules(newGroupRules);
+    setCurrentGroupField('');
+    setGroupFieldSearch('');
+    
+    // Save to backend
+    saveGroupPreferenceMutation.mutate({
+      groupRules: newGroupRules,
+      expandedGroups
+    });
+  };
+
+  const removeGroupRule = (index) => {
+    const newRules = groupRules.filter((_, i) => i !== index);
+    setGroupRules(newRules);
+    // Clear expanded groups when removing group rules
+    setExpandedGroups(new Set());
+  };
+
+  const clearAllGroups = () => {
+    setGroupRules([]);
+    setCurrentGroupField('');
+    setExpandedGroups(new Set());
+  };
+
+  const updateGroupRule = (index, field) => {
+    const newRules = [...groupRules];
+    newRules[index] = { field };
+    setGroupRules(newRules);
+  };
+
+  const toggleGroupExpansion = (groupKey) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(groupKey)) {
+      newExpanded.delete(groupKey);
+    } else {
+      newExpanded.add(groupKey);
+    }
+    setExpandedGroups(newExpanded);
+  };
+
+  const expandAllGroups = () => {
+    const allGroupKeys = groupedData.groups.map(group => group.key);
+    setExpandedGroups(new Set(allGroupKeys));
+  };
+
+  const collapseAllGroups = () => {
+    setExpandedGroups(new Set());
+  };
+
+  // Group data by rules
+  const groupedData = useMemo(() => {
+    if (groupRules.length === 0) {
+      return { groups: [], ungroupedRecords: records };
+    }
+
+    const groups = {};
+    const ungroupedRecords = [];
+
+    records.forEach(record => {
+      let groupKey = '';
+      let groupValues = [];
+
+      // Build group key based on group rules
+      groupRules.forEach(rule => {
+        const value = record.data?.[rule.field] || '';
+        groupValues.push(value);
+        groupKey += `${rule.field}:${value}|`;
+      });
+
+      if (groupKey) {
+        if (!groups[groupKey]) {
+          groups[groupKey] = {
+            key: groupKey,
+            values: groupValues,
+            rules: groupRules,
+            records: [],
+            count: 0
+          };
+        }
+        groups[groupKey].records.push(record);
+        groups[groupKey].count++;
+      } else {
+        ungroupedRecords.push(record);
+      }
+    });
+
+    // Convert to array (no sorting - will be handled by main sort functionality)
+    const groupArray = Object.values(groups);
+
+    return { groups: groupArray, ungroupedRecords };
+  }, [records, groupRules]);
+
   const getDataTypeIcon = (dataType) => {
     switch (dataType) {
       case 'text': return <FieldBinaryOutlined style={{ color: '#1890ff' }} />;
@@ -716,15 +925,286 @@ const TableDetail = () => {
               >
                 Filter
               </Button>
-              <Button 
-                type="text" 
-                icon={<AppstoreOutlined />}
-                size="small"
-                style={{ color: '#666' }}
-              >
-                Group
-              </Button>
-                            <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative' }}>
+                <Button 
+                  type="text" 
+                  icon={<AppstoreOutlined />}
+                  size="small"
+                  onClick={handleGroupButtonClick}
+                  data-group-button
+                  style={{ 
+                    color: groupRules.length > 0 ? '#52c41a' : '#666',
+                    backgroundColor: groupRules.length > 0 ? '#f6ffed' : 'transparent',
+                    border: groupRules.length > 0 ? '1px solid #52c41a' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  Group
+                  {groupRules.length > 0 && (
+                    <span style={{
+                      backgroundColor: '#52c41a',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '16px',
+                      height: '16px',
+                      fontSize: '10px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {groupRules.length}
+                    </span>
+                  )}
+                </Button>
+                
+                {/* Group Dropdown */}
+                {showGroupDropdown && (
+                  <div 
+                    data-group-dropdown
+                    style={{
+                      position: 'fixed',
+                      top: groupDropdownPosition.y,
+                      left: groupDropdownPosition.x,
+                      zIndex: 1000,
+                      backgroundColor: 'white',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '6px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      minWidth: '300px',
+                      maxWidth: '400px'
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid #f0f0f0',
+                      backgroundColor: '#fafafa'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <AppstoreOutlined style={{ color: '#666' }} />
+                        <span style={{ fontWeight: '500', fontSize: '14px' }}>Group</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Tooltip title="Expand All Groups">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<DownOutlined />}
+                            style={{ color: '#666' }}
+                            onClick={expandAllGroups}
+                          />
+                        </Tooltip>
+                        <Tooltip title="Collapse All Groups">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<RightOutlined />}
+                            style={{ color: '#666' }}
+                            onClick={collapseAllGroups}
+                          />
+                        </Tooltip>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<MoreOutlined />}
+                          style={{ color: '#666' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Show group rules and add option when rules exist */}
+                    {groupRules.length > 0 ? (
+                      <>
+                        {/* Existing Group Rules */}
+                        {groupRules.map((rule, index) => (
+                          <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px 16px',
+                            borderBottom: '1px solid #f0f0f0',
+                            backgroundColor: '#f6ffed'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                              <span style={{ 
+                                fontSize: '14px', 
+                                fontWeight: 'bold', 
+                                color: '#666',
+                                backgroundColor: '#e6f7ff',
+                                borderRadius: '3px',
+                                padding: '2px 6px',
+                                minWidth: '16px',
+                                textAlign: 'center'
+                              }}>
+                                {getTypeLetter(columns.find(col => col.name === rule.field)?.dataType || 'text')}
+                              </span>
+                              <span style={{ fontSize: '13px', fontWeight: '500' }}>{rule.field}</span>
+                            </div>
+
+                            <Button
+                              type="text"
+                              icon={<DeleteOutlined />}
+                              size="small"
+                              onClick={() => removeGroupRule(index)}
+                              style={{ color: '#ff4d4f' }}
+                            />
+                          </div>
+                        ))}
+
+                        {/* Add Group Option */}
+                        <div style={{ padding: '12px 16px' }}>
+                          <Button
+                            type="dashed"
+                            icon={<PlusOutlined />}
+                            onClick={() => {
+                              setCurrentGroupField('show_field_selection');
+                              setGroupFieldSearch('');
+                            }}
+                            style={{ width: '100%' }}
+                            size="small"
+                          >
+                            + Add Group Option
+                          </Button>
+                        </div>
+
+                        {/* Field Selection when adding new group option */}
+                        {currentGroupField === 'show_field_selection' && (
+                          <>
+                            {/* Search Input */}
+                            <div style={{
+                              padding: '12px 16px',
+                              borderBottom: '1px solid #f0f0f0'
+                            }}>
+                              <Input
+                                placeholder="Select Field to Group"
+                                prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                                value={groupFieldSearch}
+                                onChange={(e) => setGroupFieldSearch(e.target.value)}
+                                size="small"
+                                style={{ 
+                                  border: '1px solid #52c41a',
+                                  borderRadius: '4px'
+                                }}
+                              />
+                            </div>
+                            
+                            {/* Field List */}
+                            <div style={{ 
+                              maxHeight: '200px',
+                              overflow: 'auto'
+                            }}>
+                              {columns
+                                .filter(column => 
+                                  column.name.toLowerCase().includes(groupFieldSearch.toLowerCase())
+                                )
+                                .map(column => (
+                                  <div
+                                    key={column._id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      padding: '8px 12px',
+                                      cursor: 'pointer',
+                                      borderBottom: '1px solid #f0f0f0',
+                                      transition: 'background-color 0.2s'
+                                    }}
+                                    onClick={() => handleGroupFieldSelect(column.name)}
+                                    onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
+                                    onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
+                                  >
+                                    <span style={{ 
+                                      fontSize: '14px', 
+                                      fontWeight: 'bold', 
+                                      color: '#666',
+                                      backgroundColor: '#e6f7ff',
+                                      borderRadius: '3px',
+                                      padding: '2px 6px',
+                                      minWidth: '16px',
+                                      textAlign: 'center'
+                                    }}>
+                                      {getTypeLetter(column.dataType)}
+                                    </span>
+                                    <span style={{ fontSize: '13px' }}>{column.name}</span>
+                                  </div>
+                                ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Initial State - Show search and field list when no group rules exist */}
+                        {/* Search Input */}
+                        <div style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid #f0f0f0'
+                        }}>
+                          <Input
+                            placeholder="Select Field to Group"
+                            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                            value={groupFieldSearch}
+                            onChange={(e) => setGroupFieldSearch(e.target.value)}
+                            size="small"
+                            style={{ 
+                              border: '1px solid #52c41a',
+                              borderRadius: '4px'
+                            }}
+                          />
+                        </div>
+                        
+                        {/* Field List */}
+                        <div style={{ 
+                          maxHeight: '200px',
+                          overflow: 'auto'
+                        }}>
+                          {columns
+                            .filter(column => 
+                              column.name.toLowerCase().includes(groupFieldSearch.toLowerCase())
+                            )
+                            .map(column => (
+                              <div
+                                key={column._id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '8px 12px',
+                                  cursor: 'pointer',
+                                  borderBottom: '1px solid #f0f0f0',
+                                  transition: 'background-color 0.2s'
+                                }}
+                                onClick={() => handleGroupFieldSelect(column.name)}
+                                onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
+                                onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
+                              >
+                                <span style={{ 
+                                  fontSize: '14px', 
+                                  fontWeight: 'bold', 
+                                  color: '#666',
+                                  backgroundColor: '#e6f7ff',
+                                  borderRadius: '3px',
+                                  padding: '2px 6px',
+                                  minWidth: '16px',
+                                  textAlign: 'center'
+                                }}>
+                                  {getTypeLetter(column.dataType)}
+                                </span>
+                                <span style={{ fontSize: '13px' }}>{column.name}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div style={{ position: 'relative' }}>
                 <Button 
                   type="text" 
                   icon={<BarChartOutlined />}
@@ -1071,9 +1551,11 @@ const TableDetail = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: isColumnCompact(column._id) ? 'center' : 'space-between',
-                  backgroundColor: sortRules.some(rule => rule.field === column.name) ? '#fff2e8' : '#f5f5f5',
+                  backgroundColor: sortRules.some(rule => rule.field === column.name) ? '#fff2e8' : 
+                                 groupRules.some(rule => rule.field === column.name) ? '#f6ffed' : '#f5f5f5',
                   position: 'relative',
-                  borderTop: sortRules.some(rule => rule.field === column.name) ? '2px solid #fa8c16' : 'none'
+                  borderTop: sortRules.some(rule => rule.field === column.name) ? '2px solid #fa8c16' : 
+                             groupRules.some(rule => rule.field === column.name) ? '2px solid #52c41a' : 'none'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
                     {isColumnCompact(column._id) ? (
@@ -1094,6 +1576,16 @@ const TableDetail = () => {
                             marginLeft: '4px'
                           }}>
                             {sortRules.find(rule => rule.field === column.name)?.order === 'asc' ? '↑' : '↓'}
+                          </span>
+                        )}
+                        {groupRules.some(rule => rule.field === column.name) && (
+                          <span style={{ 
+                            fontSize: '10px', 
+                            color: '#52c41a',
+                            fontWeight: 'bold',
+                            marginLeft: '4px'
+                          }}>
+                            G
                           </span>
                         )}
                       </>
@@ -1190,7 +1682,366 @@ const TableDetail = () => {
 
             {/* Table Body */}
             <div style={{ maxHeight: 'calc(100vh - 200px)', overflow: 'visible' }}>
-              {tableData.map((record, index) => (
+              {/* Grouped Records */}
+              {groupedData.groups.map((group, groupIndex) => {
+                const isExpanded = expandedGroups.has(group.key);
+                const groupTitle = group.rules.map((rule, ruleIndex) => {
+                  const column = columns.find(col => col.name === rule.field);
+                  const value = group.values[ruleIndex] || '';
+                  return `${rule.field}: ${value}`;
+                }).join(' | ');
+
+                return (
+                  <div key={group.key} style={{
+                    borderBottom: '1px solid #f0f0f0',
+                    backgroundColor: '#fafafa'
+                  }}>
+                    {/* Group Header */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      borderBottom: isExpanded ? '1px solid #d9d9d9' : 'none',
+                      backgroundColor: '#f6ffed',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onClick={() => toggleGroupExpansion(group.key)}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f9ff'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f6ffed'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                        {isExpanded ? <DownOutlined /> : <RightOutlined />}
+                        <span style={{ 
+                          fontSize: '12px', 
+                          fontWeight: 'bold', 
+                          color: '#52c41a',
+                          textTransform: 'uppercase'
+                        }}>
+                          {group.rules[0].field}
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#666' }}>
+                          {group.values[0] || '(empty)'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Tooltip title={`Add record to ${group.rules[0].field}: ${group.values[0] || '(empty)'}`}>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<PlusOutlined />}
+                            style={{ 
+                              color: '#52c41a',
+                              fontSize: '12px',
+                              padding: '2px 4px',
+                              minWidth: 'auto'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddRowToGroup(group.values, group.rules);
+                            }}
+                          />
+                        </Tooltip>
+                        <span style={{ 
+                          fontSize: '11px', 
+                          color: '#666',
+                          backgroundColor: '#e6f7ff',
+                          padding: '2px 6px',
+                          borderRadius: '10px'
+                        }}>
+                          Count {group.count}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Group Records */}
+                    {isExpanded && group.records.map((record, index) => (
+                      <div key={record._id} style={{
+                        display: 'flex',
+                        borderBottom: '1px solid #f0f0f0',
+                        backgroundColor: 'white'
+                      }}
+                      onContextMenu={(e) => handleContextMenu(e, record._id)}
+                      >
+                        {/* Checkbox and Index */}
+                        <div style={{
+                          width: '60px',
+                          minWidth: '60px',
+                          padding: '8px',
+                          borderRight: '1px solid #d9d9d9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          backgroundColor: '#fafafa'
+                        }}>
+                          <Checkbox
+                            checked={selectedRowKeys.includes(record._id)}
+                            onChange={(e) => handleSelectRow(record._id, e.target.checked)}
+                          />
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#666', 
+                            fontWeight: 'bold',
+                            opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
+                          }}>
+                            {index + 1}
+                          </span>
+                        </div>
+
+                        {/* Data Cells */}
+                        {columns.map(column => {
+                          const value = record.data?.[column.name] || '';
+                          const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
+                          
+                          return (
+                            <div key={column._id} style={{
+                              width: `${getColumnWidth(column._id)}px`,
+                              minWidth: '50px',
+                              padding: '0',
+                              borderRight: '1px solid #d9d9d9',
+                              position: 'relative',
+                              minHeight: '40px'
+                            }}>
+                              {isEditing ? (
+                                (() => {
+                                  const dataType = column.dataType;
+                                  
+                                  if (dataType === 'date') {
+                                    // Format date for display and input
+                                    const formatDateForInput = (dateString) => {
+                                      if (!dateString) return '';
+                                      try {
+                                        const date = new Date(dateString);
+                                        return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+                                      } catch {
+                                        return dateString;
+                                      }
+                                    };
+
+                                    return (
+                                      <Input
+                                        type="date"
+                                        value={formatDateForInput(cellValue)}
+                                        onChange={(e) => setCellValue(e.target.value)}
+                                        onPressEnter={handleCellSave}
+                                        onBlur={handleCellSave}
+                                        autoFocus
+                                        size="small"
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          border: 'none',
+                                          padding: '0',
+                                          margin: '0',
+                                          borderRadius: '0',
+                                          backgroundColor: 'transparent',
+                                          boxShadow: 'none',
+                                          fontSize: 'inherit',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box',
+                                          outline: 'none'
+                                        }}
+                                      />
+                                    );
+                                  } else if (dataType === 'number') {
+                                    return (
+                                      <Input
+                                        type="number"
+                                        value={cellValue}
+                                        onChange={(e) => setCellValue(e.target.value)}
+                                        onPressEnter={handleCellSave}
+                                        onBlur={handleCellSave}
+                                        autoFocus
+                                        size="small"
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          border: 'none',
+                                          padding: '0',
+                                          margin: '0',
+                                          borderRadius: '0',
+                                          backgroundColor: 'transparent',
+                                          boxShadow: 'none',
+                                          fontSize: 'inherit',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box',
+                                          outline: 'none'
+                                        }}
+                                      />
+                                    );
+                                  } else if (dataType === 'boolean') {
+                                    return (
+                                      <Select
+                                        value={cellValue}
+                                        onChange={(value) => {
+                                          setCellValue(value);
+                                          handleCellSave();
+                                        }}
+                                        autoFocus
+                                        size="small"
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          border: 'none',
+                                          padding: '0',
+                                          margin: '0',
+                                          borderRadius: '0',
+                                          backgroundColor: 'transparent',
+                                          boxShadow: 'none',
+                                          fontSize: 'inherit',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box',
+                                          outline: 'none'
+                                        }}
+                                      >
+                                        <Option value="true">True</Option>
+                                        <Option value="false">False</Option>
+                                      </Select>
+                                    );
+                                  } else {
+                                    return (
+                                      <Input
+                                        value={cellValue}
+                                        onChange={(e) => setCellValue(e.target.value)}
+                                        onPressEnter={handleCellSave}
+                                        onBlur={handleCellSave}
+                                        autoFocus
+                                        size="small"
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          border: 'none',
+                                          padding: '0',
+                                          margin: '0',
+                                          borderRadius: '0',
+                                          backgroundColor: 'transparent',
+                                          boxShadow: 'none',
+                                          fontSize: 'inherit',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box',
+                                          outline: 'none'
+                                        }}
+                                      />
+                                    );
+                                  }
+                                })()
+                              ) : (
+                                <div
+                                  style={{ 
+                                    cursor: 'pointer', 
+                                    padding: '8px', 
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    fontSize: '12px',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    boxSizing: 'border-box'
+                                  }}
+                                  onClick={() => handleCellClick(record._id, column.name, value)}
+                                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                >
+                                  {column.dataType === 'date' && value ? 
+                                    (() => {
+                                      try {
+                                        const date = new Date(value);
+                                        return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+                                      } catch {
+                                        return value;
+                                      }
+                                    })() 
+                                    : (value || '')
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Empty cell for alignment */}
+                        <div style={{
+                          width: '50px',
+                          minWidth: '50px',
+                          padding: '8px'
+                        }} />
+                      </div>
+                    ))}
+
+                    {/* Add New Record to Group */}
+                    {isExpanded && (
+                      <div style={{
+                        display: 'flex',
+                        borderBottom: '1px solid #d9d9d9',
+                        backgroundColor: '#fafafa',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onClick={() => handleAddRowToGroup(group.values, group.rules)}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
+                      >
+                        {/* Checkbox and Index Column */}
+                        <div style={{
+                          width: '60px',
+                          minWidth: '60px',
+                          padding: '8px',
+                          borderRight: '1px solid #d9d9d9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <PlusOutlined 
+                            style={{ 
+                              color: '#52c41a', 
+                              fontSize: '16px',
+                              fontWeight: 'bold'
+                            }} 
+                          />
+                        </div>
+
+                        {/* Data Columns */}
+                        {columns.map(column => (
+                          <div key={column._id} style={{
+                            width: `${getColumnWidth(column._id)}px`,
+                            minWidth: '50px',
+                            padding: '8px',
+                            borderRight: '1px solid #d9d9d9'
+                          }} />
+                        ))}
+
+                        {/* Empty cell for alignment */}
+                        <div style={{
+                          width: '50px',
+                          minWidth: '50px',
+                          padding: '8px'
+                        }} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Ungrouped Records */}
+              {groupedData.ungroupedRecords.map((record, index) => (
                 <div key={record._id} style={{
                   display: 'flex',
                   borderBottom: '1px solid #f0f0f0'
