@@ -92,7 +92,7 @@ export const createRecord = async (req, res) => {
 export const getRecords = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { page = 1, limit = 50, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    const { page = 1, limit = 50, sortRules } = req.query;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -108,8 +108,36 @@ export const getRecords = async (req, res) => {
     }
 
     const skip = (page - 1) * limit;
-    const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    
+    // Parse sort rules from query string
+    let parsedSortRules = [];
+    if (sortRules) {
+      try {
+        parsedSortRules = JSON.parse(sortRules);
+      } catch (error) {
+        console.error('Error parsing sort rules:', error);
+        parsedSortRules = [];
+      }
+    }
+
+    // Build sort options
+    let sortOptions = {};
+    if (parsedSortRules.length > 0) {
+      // Apply multiple sort rules
+      for (const rule of parsedSortRules) {
+        if (rule.field && rule.order) {
+          // For data fields, we need to sort by the nested field
+          if (rule.field !== 'createdAt' && rule.field !== 'updatedAt' && rule.field !== '_id') {
+            sortOptions[`data.${rule.field}`] = rule.order === 'desc' ? -1 : 1;
+          } else {
+            sortOptions[rule.field] = rule.order === 'desc' ? -1 : 1;
+          }
+        }
+      }
+    } else {
+      // Default sorting by creation time
+      sortOptions = { createdAt: -1 };
+    }
 
     const records = await Record.find({ tableId })
       .sort(sortOptions)
@@ -126,7 +154,8 @@ export const getRecords = async (req, res) => {
         limit: parseInt(limit),
         total: totalRecords,
         pages: Math.ceil(totalRecords / limit)
-      }
+      },
+      sortRules: parsedSortRules
     });
   } catch (error) {
     console.error('Error fetching records:', error);

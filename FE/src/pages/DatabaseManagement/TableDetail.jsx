@@ -69,10 +69,12 @@ const TableDetail = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [visibleCheckboxes, setVisibleCheckboxes] = useState(new Set());
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, recordId: null });
-  const [showSortModal, setShowSortModal] = useState(false);
   const [sortRules, setSortRules] = useState([]);
   const [currentSortField, setCurrentSortField] = useState('');
   const [currentSortOrder, setCurrentSortOrder] = useState('asc');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [sortDropdownPosition, setSortDropdownPosition] = useState({ x: 0, y: 0 });
+  const [sortFieldSearch, setSortFieldSearch] = useState('');
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState(() => {
@@ -89,6 +91,25 @@ const TableDetail = () => {
   React.useEffect(() => {
     console.log('editingCell changed:', editingCell);
   }, [editingCell]);
+
+  // Handle clicking outside sort dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSortDropdown) {
+        const dropdown = document.querySelector('[data-sort-dropdown]');
+        const button = document.querySelector('[data-sort-button]');
+        if (dropdown && !dropdown.contains(event.target) && button && !button.contains(event.target)) {
+          setShowSortDropdown(false);
+          setSortFieldSearch('');
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSortDropdown]);
 
   // Column resizing handlers
   const handleResizeStart = (e, columnId) => {
@@ -168,9 +189,14 @@ const TableDetail = () => {
 
   // Fetch table records
   const { data: recordsResponse } = useQuery({
-    queryKey: ['tableRecords', tableId],
+    queryKey: ['tableRecords', tableId, sortRules],
     queryFn: async () => {
-      const response = await axiosInstance.get(`/database/tables/${tableId}/records`);
+      const sortRulesParam = sortRules.length > 0 ? JSON.stringify(sortRules) : undefined;
+      const response = await axiosInstance.get(`/database/tables/${tableId}/records`, {
+        params: {
+          sortRules: sortRulesParam
+        }
+      });
       return response.data;
     },
     enabled: !!tableId,
@@ -510,6 +536,7 @@ const TableDetail = () => {
       setSortRules([...sortRules, newRule]);
       setCurrentSortField('');
       setCurrentSortOrder('asc');
+      setSortFieldSearch('');
     }
   };
 
@@ -522,6 +549,36 @@ const TableDetail = () => {
     setSortRules([]);
     setCurrentSortField('');
     setCurrentSortOrder('asc');
+  };
+
+  const handleSortButtonClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setSortDropdownPosition({
+      x: rect.left,
+      y: rect.bottom + 5
+    });
+    setShowSortDropdown(!showSortDropdown);
+    if (!showSortDropdown) {
+      setSortFieldSearch('');
+    }
+  };
+
+  const handleSortFieldSelect = (fieldName) => {
+    // Auto-add the sort rule when field is selected
+    const newRule = {
+      field: fieldName,
+      order: 'asc'
+    };
+    setSortRules([...sortRules, newRule]);
+    setCurrentSortField('');
+    setCurrentSortOrder('asc');
+    setSortFieldSearch('');
+  };
+
+  const updateSortRule = (index, field, order) => {
+    const newRules = [...sortRules];
+    newRules[index] = { field, order };
+    setSortRules(newRules);
   };
 
   const getDataTypeIcon = (dataType) => {
@@ -558,51 +615,12 @@ const TableDetail = () => {
 
   // Prepare table data
   const tableData = useMemo(() => {
-    let sortedRecords = [...records];
-    
-    // Apply sorting if sortRules exist
-    if (sortRules.length > 0) {
-      sortedRecords.sort((a, b) => {
-        for (const rule of sortRules) {
-          const aValue = a.data?.[rule.field] || '';
-          const bValue = b.data?.[rule.field] || '';
-          
-          // Handle different data types
-          if (typeof aValue === 'number' && typeof bValue === 'number') {
-            const comparison = rule.order === 'asc' ? aValue - bValue : bValue - aValue;
-            if (comparison !== 0) return comparison;
-          } else {
-            // String comparison
-            const aStr = String(aValue).toLowerCase();
-            const bStr = String(bValue).toLowerCase();
-            
-            const comparison = rule.order === 'asc' 
-              ? aStr.localeCompare(bStr) 
-              : bStr.localeCompare(aStr);
-            if (comparison !== 0) return comparison;
-          }
-        }
-        return 0;
-      });
-    } else {
-      // Default sorting by creation time
-      sortedRecords.sort((a, b) => {
-        if (a.createdAt && b.createdAt) {
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        }
-        if (a.order !== undefined && b.order !== undefined) {
-          return a.order - b.order;
-        }
-        return 0;
-      });
-    }
-    
-    return sortedRecords.map((record, index) => ({
+    return records.map((record, index) => ({
       key: record._id,
       ...record,
       index
     }));
-  }, [records, sortRules]);
+  }, [records]);
 
 
 
@@ -697,35 +715,282 @@ const TableDetail = () => {
               >
                 Group
               </Button>
-                            <Button 
-                type="text" 
-                icon={<BarChartOutlined />}
-                size="small"
-                onClick={() => setShowSortModal(true)}
-                style={{ 
-                  color: sortRules.length > 0 ? '#fa8c16' : '#666',
-                  backgroundColor: sortRules.length > 0 ? '#fff2e8' : 'transparent',
-                  border: sortRules.length > 0 ? '1px solid #fa8c16' : 'none'
-                }}
-              >
-                Sort
-                {sortRules.length > 0 && (
-                  <span style={{
-                    backgroundColor: '#fa8c16',
-                    color: 'white',
-                    borderRadius: '50%',
-                    width: '16px',
-                    height: '16px',
-                    fontSize: '10px',
-                    display: 'inline-flex',
+                            <div style={{ position: 'relative' }}>
+                <Button 
+                  type="text" 
+                  icon={<BarChartOutlined />}
+                  size="small"
+                  onClick={handleSortButtonClick}
+                  data-sort-button
+                  style={{ 
+                    color: sortRules.length > 0 ? '#fa8c16' : '#666',
+                    backgroundColor: sortRules.length > 0 ? '#fff2e8' : 'transparent',
+                    border: sortRules.length > 0 ? '1px solid #fa8c16' : 'none',
+                    display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    marginLeft: '4px'
-                  }}>
-                    {sortRules.length}
-                  </span>
+                    gap: '4px'
+                  }}
+                >
+                  Sort
+                  {sortRules.length > 0 && (
+                    <span style={{
+                      backgroundColor: '#fa8c16',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '16px',
+                      height: '16px',
+                      fontSize: '10px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {sortRules.length}
+                    </span>
+                  )}
+                </Button>
+                
+                {/* Sort Dropdown */}
+                {showSortDropdown && (
+                  <div 
+                    data-sort-dropdown
+                    style={{
+                      position: 'fixed',
+                      top: sortDropdownPosition.y,
+                      left: sortDropdownPosition.x,
+                      zIndex: 1000,
+                      backgroundColor: 'white',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '6px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      minWidth: '300px',
+                      maxWidth: '400px'
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid #f0f0f0',
+                      backgroundColor: '#fafafa'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <BarChartOutlined style={{ color: '#666' }} />
+                        <span style={{ fontWeight: '500', fontSize: '14px' }}>Sort</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<SortAscendingOutlined />}
+                          style={{ color: '#666' }}
+                        />
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<MoreOutlined />}
+                          style={{ color: '#666' }}
+                        />
+                      </div>
+                    </div>
+
+                                                            {/* Show sort rules and add option when rules exist */}
+                    {sortRules.length > 0 ? (
+                      <>
+                        {/* Existing Sort Rules */}
+                        {sortRules.map((rule, index) => (
+                          <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px 16px',
+                            borderBottom: '1px solid #f0f0f0',
+                            backgroundColor: '#fafafa'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                              <span style={{ 
+                                fontSize: '14px', 
+                                fontWeight: 'bold', 
+                                color: '#666',
+                                backgroundColor: '#e6f7ff',
+                                borderRadius: '3px',
+                                padding: '2px 6px',
+                                minWidth: '16px',
+                                textAlign: 'center'
+                              }}>
+                                {getTypeLetter(columns.find(col => col.name === rule.field)?.dataType || 'text')}
+                              </span>
+                              <span style={{ fontSize: '13px', fontWeight: '500' }}>{rule.field}</span>
+                            </div>
+                            <Select
+                              value={rule.order}
+                              onChange={(value) => updateSortRule(index, rule.field, value)}
+                              size="small"
+                              style={{ width: '100px' }}
+                            >
+                              <Option value="asc">A → Z</Option>
+                              <Option value="desc">Z → A</Option>
+                            </Select>
+                            <Button
+                              type="text"
+                              icon={<DeleteOutlined />}
+                              size="small"
+                              onClick={() => removeSortRule(index)}
+                              style={{ color: '#ff4d4f' }}
+                            />
+                          </div>
+                        ))}
+
+                        {/* Add Sort Option */}
+                        <div style={{ padding: '12px 16px' }}>
+                          <Button
+                            type="dashed"
+                            icon={<PlusOutlined />}
+                            onClick={() => {
+                              setCurrentSortField('show_field_selection');
+                              setCurrentSortOrder('asc');
+                              setSortFieldSearch('');
+                            }}
+                            style={{ width: '100%' }}
+                            size="small"
+                          >
+                            + Add Sort Option
+                          </Button>
+                        </div>
+
+                        {/* Field Selection when adding new sort option */}
+                        {currentSortField === 'show_field_selection' && (
+                          <>
+                            {/* Search Input */}
+                            <div style={{
+                              padding: '12px 16px',
+                              borderBottom: '1px solid #f0f0f0'
+                            }}>
+                              <Input
+                                placeholder="Select Field to Sort"
+                                prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                                value={sortFieldSearch}
+                                onChange={(e) => setSortFieldSearch(e.target.value)}
+                                size="small"
+                                style={{ 
+                                  border: '1px solid #1890ff',
+                                  borderRadius: '4px'
+                                }}
+                              />
+                            </div>
+                            
+                            {/* Field List */}
+                            <div style={{ 
+                              maxHeight: '200px',
+                              overflow: 'auto'
+                            }}>
+                              {columns
+                                .filter(column => 
+                                  column.name.toLowerCase().includes(sortFieldSearch.toLowerCase())
+                                )
+                                .map(column => (
+                                  <div
+                                    key={column._id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      padding: '8px 12px',
+                                      cursor: 'pointer',
+                                      borderBottom: '1px solid #f0f0f0',
+                                      transition: 'background-color 0.2s'
+                                    }}
+                                    onClick={() => handleSortFieldSelect(column.name)}
+                                    onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
+                                    onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
+                                  >
+                                    <span style={{ 
+                                      fontSize: '14px', 
+                                      fontWeight: 'bold', 
+                                      color: '#666',
+                                      backgroundColor: '#e6f7ff',
+                                      borderRadius: '3px',
+                                      padding: '2px 6px',
+                                      minWidth: '16px',
+                                      textAlign: 'center'
+                                    }}>
+                                      {getTypeLetter(column.dataType)}
+                                    </span>
+                                    <span style={{ fontSize: '13px' }}>{column.name}</span>
+                                  </div>
+                                ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Initial State - Show search and field list when no sort rules exist */}
+                        {/* Search Input */}
+                        <div style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid #f0f0f0'
+                        }}>
+                          <Input
+                            placeholder="Select Field to Sort"
+                            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                            value={sortFieldSearch}
+                            onChange={(e) => setSortFieldSearch(e.target.value)}
+                            size="small"
+                            style={{ 
+                              border: '1px solid #1890ff',
+                              borderRadius: '4px'
+                            }}
+                          />
+                        </div>
+                        
+                        {/* Field List */}
+                        <div style={{ 
+                          maxHeight: '200px',
+                          overflow: 'auto'
+                        }}>
+                          {columns
+                            .filter(column => 
+                              column.name.toLowerCase().includes(sortFieldSearch.toLowerCase())
+                            )
+                            .map(column => (
+                              <div
+                                key={column._id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '8px 12px',
+                                  cursor: 'pointer',
+                                  borderBottom: '1px solid #f0f0f0',
+                                  transition: 'background-color 0.2s'
+                                }}
+                                onClick={() => handleSortFieldSelect(column.name)}
+                                onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
+                                onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
+                              >
+                                <span style={{ 
+                                  fontSize: '14px', 
+                                  fontWeight: 'bold', 
+                                  color: '#666',
+                                  backgroundColor: '#e6f7ff',
+                                  borderRadius: '3px',
+                                  padding: '2px 6px',
+                                  minWidth: '16px',
+                                  textAlign: 'center'
+                                }}>
+                                  {getTypeLetter(column.dataType)}
+                                </span>
+                                <span style={{ fontSize: '13px' }}>{column.name}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
-              </Button>
+              </div>
               <Button 
                 type="text" 
                 icon={<MoreOutlined />}
@@ -1357,176 +1622,7 @@ const TableDetail = () => {
         />
       )}
 
-      {/* Sort Modal */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BarChartOutlined />
-            <span>Sort</span>
-            {sortRules.length > 0 && (
-              <span style={{
-                backgroundColor: '#fa8c16',
-                color: 'white',
-                borderRadius: '12px',
-                padding: '2px 8px',
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}>
-                {sortRules.length}
-              </span>
-            )}
-          </div>
-        }
-        open={showSortModal}
-        onCancel={() => setShowSortModal(false)}
-        footer={null}
-        width={500}
-        centered
-      >
-        <div style={{ padding: '16px 0' }}>
-          {/* Current Sort Rules */}
-          {sortRules.map((rule, index) => (
-            <div key={index} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px',
-              backgroundColor: '#fafafa',
-              borderRadius: '6px',
-              marginBottom: '12px',
-              border: '1px solid #f0f0f0'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                {getDataTypeIcon(columns.find(col => col.name === rule.field)?.dataType || 'text')}
-                <span style={{ fontWeight: '500' }}>{rule.field}</span>
-              </div>
-              <Select
-                value={rule.order}
-                onChange={(value) => {
-                  const newRules = [...sortRules];
-                  newRules[index].order = value;
-                  setSortRules(newRules);
-                }}
-                style={{ width: '120px' }}
-                size="small"
-              >
-                <Option value="asc">A → Z</Option>
-                <Option value="desc">Z → A</Option>
-              </Select>
-              <Button
-                type="text"
-                icon={<DeleteOutlined />}
-                size="small"
-                onClick={() => removeSortRule(index)}
-                style={{ color: '#ff4d4f' }}
-              />
-            </div>
-          ))}
 
-          {/* Current Selection */}
-          {currentSortField && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px',
-              backgroundColor: '#fff2e8',
-              borderRadius: '6px',
-              marginBottom: '16px',
-              border: '1px solid #fa8c16'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                {getDataTypeIcon(columns.find(col => col.name === currentSortField)?.dataType || 'text')}
-                <span style={{ fontWeight: '500', color: '#fa8c16' }}>{currentSortField}</span>
-              </div>
-              <Select
-                value={currentSortOrder}
-                onChange={(value) => setCurrentSortOrder(value)}
-                style={{ width: '120px' }}
-                size="small"
-              >
-                <Option value="asc">A → Z</Option>
-                <Option value="desc">Z → A</Option>
-              </Select>
-              <Button
-                type="primary"
-                size="small"
-                onClick={addSortRule}
-              >
-                Add
-              </Button>
-            </div>
-          )}
-
-          {/* Add Sort Option */}
-          <div style={{ marginBottom: '16px' }}>
-            <Button
-              type="dashed"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                // Clear current selection to allow adding new one
-                setCurrentSortField('');
-                setCurrentSortOrder('asc');
-              }}
-              style={{ width: '100%' }}
-            >
-              + Add Sort Option
-            </Button>
-          </div>
-
-          {/* Available Fields */}
-          <div>
-            <div style={{ 
-              fontSize: '14px', 
-              fontWeight: '500', 
-              marginBottom: '12px',
-              color: '#666'
-            }}>
-              Available Fields
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {columns.map(column => (
-                                 <div
-                   key={column._id}
-                   style={{
-                     display: 'flex',
-                     alignItems: 'center',
-                     gap: '12px',
-                     padding: '8px 12px',
-                     borderRadius: '6px',
-                     cursor: 'pointer',
-                     backgroundColor: currentSortField === column.name ? '#fff2e8' : 'transparent',
-                     border: currentSortField === column.name ? '1px solid #fa8c16' : '1px solid transparent',
-                     transition: 'all 0.2s'
-                   }}
-                   onClick={() => {
-                     setCurrentSortField(column.name);
-                     setCurrentSortOrder('asc');
-                   }}
-                 >
-                   {getDataTypeIcon(column.dataType)}
-                   <span style={{ 
-                     flex: 1,
-                     color: currentSortField === column.name ? '#fa8c16' : 'inherit',
-                     fontWeight: currentSortField === column.name ? '500' : 'normal'
-                   }}>
-                     {column.name}
-                   </span>
-                   {currentSortField === column.name && (
-                     <span style={{ 
-                       fontSize: '12px', 
-                       color: '#fa8c16',
-                       fontWeight: 'bold'
-                     }}>
-                       {currentSortOrder === 'asc' ? 'A → Z' : 'Z → A'}
-                     </span>
-                   )}
-                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };
