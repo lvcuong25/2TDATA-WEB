@@ -98,7 +98,14 @@ const TableDetail = () => {
       if (showSortDropdown) {
         const dropdown = document.querySelector('[data-sort-dropdown]');
         const button = document.querySelector('[data-sort-button]');
-        if (dropdown && !dropdown.contains(event.target) && button && !button.contains(event.target)) {
+        const antSelectDropdown = document.querySelector('.ant-select-dropdown');
+        
+        // Check if click is inside sort dropdown, sort button, or ant-select dropdown
+        const isInsideSortDropdown = dropdown && dropdown.contains(event.target);
+        const isInsideSortButton = button && button.contains(event.target);
+        const isInsideAntSelectDropdown = antSelectDropdown && antSelectDropdown.contains(event.target);
+        
+        if (!isInsideSortDropdown && !isInsideSortButton && !isInsideAntSelectDropdown) {
           setShowSortDropdown(false);
           setSortFieldSearch('');
         }
@@ -194,7 +201,9 @@ const TableDetail = () => {
       const sortRulesParam = sortRules.length > 0 ? JSON.stringify(sortRules) : undefined;
       const response = await axiosInstance.get(`/database/tables/${tableId}/records`, {
         params: {
-          sortRules: sortRulesParam
+          sortRules: sortRulesParam,
+          // Force ascending order when no sort rules are applied
+          forceAscending: sortRules.length === 0 ? 'true' : undefined
         }
       });
       return response.data;

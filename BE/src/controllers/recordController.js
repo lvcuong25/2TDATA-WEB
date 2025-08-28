@@ -92,7 +92,7 @@ export const createRecord = async (req, res) => {
 export const getRecords = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { page = 1, limit = 50, sortRules } = req.query;
+    const { page = 1, limit = 50, sortRules, forceAscending } = req.query;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -135,8 +135,12 @@ export const getRecords = async (req, res) => {
         }
       }
     } else {
-      // Default sorting by creation time
-      sortOptions = { createdAt: -1 };
+      // Default sorting by creation time (oldest first, newest last)
+      if (forceAscending === 'true') {
+        sortOptions = { createdAt: 1 }; // Ascending: oldest first, newest last
+      } else {
+        sortOptions = { createdAt: -1 }; // Descending: newest first, oldest last
+      }
     }
 
     const records = await Record.find({ tableId })
