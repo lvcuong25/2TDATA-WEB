@@ -41,6 +41,13 @@ import {
   getAllGroupPreferences
 } from "../controllers/groupPreferenceController.js";
 
+import {
+  getFilterPreference,
+  saveFilterPreference,
+  deleteFilterPreference,
+  getAllFilterPreferences
+} from "../controllers/filterController.js";
+
 const router = Router();
 
 // Database routes
@@ -85,5 +92,11 @@ router.get("/tables/:tableId/group-preference", getGroupPreference);
 router.post("/tables/:tableId/group-preference", saveGroupPreference);
 router.delete("/tables/:tableId/group-preference", deleteGroupPreference);
 router.get("/group-preferences", getAllGroupPreferences);
+
+// Filter preference routes
+router.get("/tables/:tableId/filter-preference", getFilterPreference);
+router.post("/tables/:tableId/filter-preference", saveFilterPreference);
+router.delete("/tables/:tableId/filter-preference", deleteFilterPreference);
+router.get("/filter-preferences", getAllFilterPreferences);
 
 export default router;

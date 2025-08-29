@@ -2,6 +2,7 @@ import Record from '../model/Record.js';
 import Table from '../model/Table.js';
 import Column from '../model/Column.js';
 import Database from '../model/Database.js';
+import FilterPreference from '../model/FilterPreference.js';
 
 // Record Controllers
 export const createRecord = async (req, res) => {
@@ -89,10 +90,12 @@ export const createRecord = async (req, res) => {
   }
 };
 
+
+
 export const getRecords = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { page = 1, limit = 50, sortRules, forceAscending } = req.query;
+    const { page = 1, limit = 50, sortRules, forceAscending, filterRules } = req.query;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -120,6 +123,30 @@ export const getRecords = async (req, res) => {
       }
     }
 
+    // Parse filter rules from query string
+    let parsedFilterRules = [];
+    if (filterRules) {
+      try {
+        parsedFilterRules = JSON.parse(filterRules);
+      } catch (error) {
+        console.error('Error parsing filter rules:', error);
+        parsedFilterRules = [];
+      }
+    }
+
+    // If no filter rules in query, get from saved preferences
+    if (parsedFilterRules.length === 0) {
+      const filterPreference = await FilterPreference.findOne({
+        tableId,
+        userId,
+        siteId
+      });
+      
+      if (filterPreference && filterPreference.isActive && filterPreference.filterRules.length > 0) {
+        parsedFilterRules = filterPreference.filterRules;
+      }
+    }
+
     // Build sort options
     let sortOptions = {};
     if (parsedSortRules.length > 0) {
@@ -143,12 +170,77 @@ export const getRecords = async (req, res) => {
       }
     }
 
-    const records = await Record.find({ tableId })
+    // Build filter query
+    let filterQuery = { tableId };
+    
+    if (parsedFilterRules.length > 0) {
+      const filterConditions = [];
+      
+      for (const rule of parsedFilterRules) {
+        const fieldPath = `data.${rule.field}`;
+        let condition = {};
+        
+        switch (rule.operator) {
+          case 'equals':
+            condition[fieldPath] = rule.value;
+            break;
+          case 'not_equals':
+            condition[fieldPath] = { $ne: rule.value };
+            break;
+          case 'contains':
+            condition[fieldPath] = { $regex: rule.value, $options: 'i' };
+            break;
+          case 'not_contains':
+            condition[fieldPath] = { $not: { $regex: rule.value, $options: 'i' } };
+            break;
+          case 'starts_with':
+            condition[fieldPath] = { $regex: `^${rule.value}`, $options: 'i' };
+            break;
+          case 'ends_with':
+            condition[fieldPath] = { $regex: `${rule.value}$`, $options: 'i' };
+            break;
+          case 'greater_than':
+            condition[fieldPath] = { $gt: rule.value };
+            break;
+          case 'less_than':
+            condition[fieldPath] = { $lt: rule.value };
+            break;
+          case 'greater_than_or_equal':
+            condition[fieldPath] = { $gte: rule.value };
+            break;
+          case 'less_than_or_equal':
+            condition[fieldPath] = { $lte: rule.value };
+            break;
+          case 'is_empty':
+            condition[fieldPath] = { $in: ['', null, undefined] };
+            break;
+          case 'is_not_empty':
+            condition[fieldPath] = { $nin: ['', null, undefined] };
+            break;
+          case 'is_null':
+            condition[fieldPath] = null;
+            break;
+          case 'is_not_null':
+            condition[fieldPath] = { $ne: null };
+            break;
+          default:
+            continue;
+        }
+        
+        filterConditions.push(condition);
+      }
+      
+      if (filterConditions.length > 0) {
+        filterQuery.$and = filterConditions;
+      }
+    }
+
+    const records = await Record.find(filterQuery)
       .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit));
 
-    const totalRecords = await Record.countDocuments({ tableId });
+    const totalRecords = await Record.countDocuments(filterQuery);
 
     res.status(200).json({
       success: true,
@@ -159,7 +251,8 @@ export const getRecords = async (req, res) => {
         total: totalRecords,
         pages: Math.ceil(totalRecords / limit)
       },
-      sortRules: parsedSortRules
+      sortRules: parsedSortRules,
+      filterRules: parsedFilterRules
     });
   } catch (error) {
     console.error('Error fetching records:', error);

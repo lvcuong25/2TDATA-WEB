@@ -85,6 +85,12 @@ const TableDetail = () => {
   const [groupFieldSearch, setGroupFieldSearch] = useState('');
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
+  // Filtering state
+  const [filterRules, setFilterRules] = useState([]);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [filterDropdownPosition, setFilterDropdownPosition] = useState({ x: 0, y: 0 });
+  const [isFilterActive, setIsFilterActive] = useState(false);
+
   // Fetch group preferences from backend
   const { data: groupPreferenceResponse } = useQuery({
     queryKey: ['groupPreference', tableId],
@@ -190,6 +196,28 @@ const TableDetail = () => {
     };
   }, [showGroupDropdown]);
 
+  // Handle clicking outside filter dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showFilterDropdown) {
+        const dropdown = document.querySelector('[data-filter-dropdown]');
+        const button = document.querySelector('[data-filter-button]');
+        
+        const isInsideFilterDropdown = dropdown && dropdown.contains(event.target);
+        const isInsideFilterButton = button && button.contains(event.target);
+        
+        if (!isInsideFilterDropdown && !isInsideFilterButton) {
+          setShowFilterDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilterDropdown]);
+
   // Column resizing handlers
   const handleResizeStart = (e, columnId) => {
     e.preventDefault();
@@ -268,12 +296,14 @@ const TableDetail = () => {
 
   // Fetch table records
   const { data: recordsResponse } = useQuery({
-    queryKey: ['tableRecords', tableId, sortRules],
+    queryKey: ['tableRecords', tableId, sortRules, filterRules, isFilterActive],
     queryFn: async () => {
       const sortRulesParam = sortRules.length > 0 ? JSON.stringify(sortRules) : undefined;
+      const filterRulesParam = isFilterActive && filterRules.length > 0 ? JSON.stringify(filterRules) : undefined;
       const response = await axiosInstance.get(`/database/tables/${tableId}/records`, {
         params: {
           sortRules: sortRulesParam,
+          filterRules: filterRulesParam,
           // Force ascending order when no sort rules are applied
           forceAscending: sortRules.length === 0 ? 'true' : undefined
         }
@@ -286,13 +316,62 @@ const TableDetail = () => {
   const tableStructure = tableStructureResponse?.data;
   const table = tableStructure?.table;
   const columns = tableStructure?.columns || [];
-  const records = recordsResponse?.data || [];
+  const allRecords = recordsResponse?.data || [];
+
+  // Apply filters to records
+  const records = useMemo(() => {
+    if (!isFilterActive || filterRules.length === 0) {
+      return allRecords;
+    }
+
+    return allRecords.filter(record => {
+      return filterRules.every(rule => {
+        const value = record.data?.[rule.field];
+        
+        switch (rule.operator) {
+          case 'equals':
+            return value === rule.value;
+          case 'not_equals':
+            return value !== rule.value;
+          case 'contains':
+            return String(value || '').toLowerCase().includes(String(rule.value || '').toLowerCase());
+          case 'not_contains':
+            return !String(value || '').toLowerCase().includes(String(rule.value || '').toLowerCase());
+          case 'starts_with':
+            return String(value || '').toLowerCase().startsWith(String(rule.value || '').toLowerCase());
+          case 'ends_with':
+            return String(value || '').toLowerCase().endsWith(String(rule.value || '').toLowerCase());
+          case 'greater_than':
+            return Number(value) > Number(rule.value);
+          case 'less_than':
+            return Number(value) < Number(rule.value);
+          case 'greater_than_or_equal':
+            return Number(value) >= Number(rule.value);
+          case 'less_than_or_equal':
+            return Number(value) <= Number(rule.value);
+          case 'is_empty':
+            return !value || value === '' || value === null || value === undefined;
+          case 'is_not_empty':
+            return value && value !== '' && value !== null && value !== undefined;
+          case 'is_null':
+            return value === null || value === undefined;
+          case 'is_not_null':
+            return value !== null && value !== undefined;
+          default:
+            return true;
+        }
+      });
+    });
+  }, [allRecords, filterRules, isFilterActive]);
 
   console.log('TableDetail Debug:', {
     tableStructure,
     table,
     columns,
-    records,
+    allRecords: allRecords.length,
+    filteredRecords: records.length,
+    filterRules,
+    isFilterActive,
     tableId,
     databaseId
   });
@@ -756,6 +835,96 @@ const TableDetail = () => {
     setExpandedGroups(new Set());
   };
 
+  // Filter handlers
+  const handleFilterButtonClick = (e) => {
+    console.log('🔍 Filter button clicked!');
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFilterDropdownPosition({
+      x: rect.left,
+      y: rect.bottom + 5
+    });
+    setShowFilterDropdown(!showFilterDropdown);
+  };
+
+  const toggleFilterActive = () => {
+    const newIsActive = !isFilterActive;
+    setIsFilterActive(newIsActive);
+    console.log('Filter active toggled:', newIsActive);
+    console.log('Current filter rules:', filterRules);
+    console.log('Records before filter:', allRecords.length);
+    console.log('Records after filter:', records.length);
+  };
+
+  const addFilterRule = () => {
+    if (columns.length > 0) {
+      const newRule = {
+        field: columns[0].name,
+        operator: 'equals',
+        value: ''
+      };
+      setFilterRules([...filterRules, newRule]);
+      setIsFilterActive(true); // Auto activate when adding rule
+    }
+  };
+
+  const removeFilterRule = (index) => {
+    const newRules = filterRules.filter((_, i) => i !== index);
+    setFilterRules(newRules);
+  };
+
+  const updateFilterRule = (index, field, operator, value) => {
+    const newRules = [...filterRules];
+    newRules[index] = { field, operator, value };
+    setFilterRules(newRules);
+    
+    // Auto save to backend if we had the mutation
+    console.log('Filter rule updated:', { index, field, operator, value });
+    console.log('Available columns:', columns.map(col => ({ name: col.name, type: col.dataType })));
+    
+    // Auto-activate filter when rule is updated
+    if (!isFilterActive) {
+      setIsFilterActive(true);
+    }
+  };
+
+  const getOperatorOptions = (dataType) => {
+    const textOperators = [
+      { value: 'equals', label: 'is equal' },
+      { value: 'not_equals', label: 'is not equal' },
+      { value: 'contains', label: 'is like' },
+      { value: 'not_contains', label: 'is not like' },
+      { value: 'is_empty', label: 'is blank' },
+      { value: 'is_not_empty', label: 'is not blank' }
+    ];
+
+    const numberOperators = [
+      { value: 'equals', label: '=' },
+      { value: 'not_equals', label: '!=' },
+      { value: 'greater_than', label: '>' },
+      { value: 'less_than', label: '<' },
+      { value: 'greater_than_or_equal', label: '>=' },
+      { value: 'less_than_or_equal', label: '<=' },
+      { value: 'is_empty', label: 'is blank' },
+      { value: 'is_not_empty', label: 'is not blank' }
+    ];
+
+    const dateOperators = [
+      { value: 'equals', label: 'is equal' },
+      { value: 'not_equals', label: 'is not equal' },
+      { value: 'greater_than', label: 'is after' },
+      { value: 'less_than', label: 'is before' },
+      { value: 'is_empty', label: 'is blank' },
+      { value: 'is_not_empty', label: 'is not blank' }
+    ];
+
+    switch (dataType) {
+      case 'text': return textOperators;
+      case 'number': return numberOperators;
+      case 'date': return dateOperators;
+      default: return textOperators;
+    }
+  };
+
   // Group data by rules
   const groupedData = useMemo(() => {
     if (groupRules.length === 0) {
@@ -877,7 +1046,10 @@ const TableDetail = () => {
                 <Title level={3} style={{ margin: 0 }}>
                   <TableOutlined /> {table?.name}
                 </Title>
-                <Text type="secondary">{table?.description}</Text>
+                <Text type="secondary">
+                  {table?.description}
+
+                </Text>
               </div>
               <Space>
                 {selectedRowKeys.length > 0 && (
@@ -917,14 +1089,202 @@ const TableDetail = () => {
               >
                 Fields
               </Button>
-              <Button 
-                type="text" 
-                icon={<FilterOutlined />}
-                size="small"
-                style={{ color: '#666' }}
-              >
-                Filter
-              </Button>
+              <div style={{ position: 'relative' }}>
+                <Button 
+                  type="text" 
+                  icon={<FilterOutlined />}
+                  size="small"
+                  onClick={handleFilterButtonClick}
+                  data-filter-button
+                  style={{ 
+                    color: filterRules.length > 0 ? '#52c41a' : '#666',
+                    backgroundColor: filterRules.length > 0 ? '#f6ffed' : 'transparent',
+                    border: filterRules.length > 0 ? '1px solid #52c41a' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: filterRules.length > 0 ? '500' : 'normal'
+                  }}
+                >
+                  Filter {filterRules.length > 0 && filterRules.length}
+                </Button>
+                
+                {/* Filter Dropdown */}
+                {showFilterDropdown && (
+                  <div 
+                    data-filter-dropdown
+                    style={{
+                      position: 'fixed',
+                      top: filterDropdownPosition.y,
+                      left: filterDropdownPosition.x,
+                      zIndex: 9999,
+                      backgroundColor: 'white',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '6px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      minWidth: '400px',
+                      padding: '20px'
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '20px',
+                      paddingBottom: '12px',
+                      borderBottom: '1px solid #f0f0f0'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FilterOutlined style={{ color: '#666' }} />
+                        <span style={{ fontWeight: '500', fontSize: '16px' }}>Filter</span>
+                      </div>
+                      <Checkbox
+                        checked={isFilterActive}
+                        onChange={toggleFilterActive}
+                        size="small"
+                      >
+                        Active
+                      </Checkbox>
+                    </div>
+                    
+                    {/* Filter Rules */}
+                    {filterRules.length > 0 ? (
+                      <div>
+                        {filterRules.map((rule, index) => {
+                          const column = columns.find(col => col.name === rule.field);
+                          const operatorOptions = getOperatorOptions(column?.dataType || 'text');
+                          
+                          return (
+                            <div key={index} style={{
+                              marginBottom: '16px'
+                            }}>
+                              {/* Filter Rule Row */}
+                              <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '12px',
+                                padding: '12px',
+                                backgroundColor: '#fafafa',
+                                borderRadius: '6px',
+                                border: '1px solid #e8e8e8'
+                              }}>
+                                {/* Where Label */}
+                                <span style={{ 
+                                  fontSize: '14px', 
+                                  fontWeight: '500', 
+                                  color: '#666',
+                                  minWidth: '50px'
+                                }}>
+                                  Where
+                                </span>
+                                
+                                {/* Field Select */}
+                                <Select
+                                  value={rule.field}
+                                  onChange={(value) => updateFilterRule(index, value, rule.operator, rule.value)}
+                                  size="small"
+                                  style={{ 
+                                    width: '140px',
+                                    backgroundColor: 'white'
+                                  }}
+                                  suffixIcon={<DownOutlined style={{ fontSize: '12px' }} />}
+                                  dropdownStyle={{ zIndex: 9999 }}
+                                  getPopupContainer={(triggerNode) => triggerNode.parentNode}
+                                  placeholder="Select field"
+                                  showSearch={false}
+                                >
+                                  {columns.map(col => (
+                                    <Option key={col._id} value={col.name}>
+                                      {getTypeLetter(col.dataType)} {col.name}
+                                    </Option>
+                                  ))}
+                                </Select>
+                                
+                                {/* Operator Select */}
+                                <Select
+                                  value={rule.operator}
+                                  onChange={(value) => updateFilterRule(index, rule.field, value, rule.value)}
+                                  size="small"
+                                  style={{ 
+                                    width: '120px',
+                                    backgroundColor: 'white'
+                                  }}
+                                  suffixIcon={<DownOutlined style={{ fontSize: '12px' }} />}
+                                  dropdownStyle={{ zIndex: 9999 }}
+                                  getPopupContainer={(triggerNode) => triggerNode.parentNode}
+                                  placeholder="Select operator"
+                                  showSearch={false}
+                                >
+                                  {operatorOptions.map(option => (
+                                    <Option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </Option>
+                                  ))}
+                                </Select>
+                                
+                                {/* Value Input */}
+                                {!['is_empty', 'is_not_empty'].includes(rule.operator) && (
+                                  <Input
+                                    value={rule.value}
+                                    onChange={(e) => updateFilterRule(index, rule.field, rule.operator, e.target.value)}
+                                    size="small"
+                                    style={{ 
+                                      flex: 1,
+                                      backgroundColor: 'white'
+                                    }}
+                                    placeholder="Enter a value"
+                                  />
+                                )}
+                                
+                                {/* Delete Button */}
+                                <Button
+                                  type="text"
+                                  icon={<DeleteOutlined />}
+                                  size="small"
+                                  onClick={() => removeFilterRule(index)}
+                                  style={{ 
+                                    color: '#666',
+                                    padding: '4px 8px'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ 
+                        textAlign: 'center', 
+                        color: '#999', 
+                        fontSize: '14px', 
+                        marginBottom: '16px',
+                        padding: '20px',
+                        backgroundColor: '#fafafa',
+                        borderRadius: '6px'
+                      }}>
+                        No filter rules added yet
+                      </div>
+                    )}
+                    
+                    {/* Add Filter Button */}
+                    <Button
+                      type="dashed"
+                      icon={<PlusOutlined />}
+                      onClick={addFilterRule}
+                      style={{ 
+                        width: '100%',
+                        height: '36px',
+                        borderStyle: 'dashed',
+                        borderColor: '#d9d9d9'
+                      }}
+                      size="small"
+                    >
+                      + Add filter
+                    </Button>
+                  </div>
+                )}
+              </div>
               <div style={{ position: 'relative' }}>
                 <Button 
                   type="text" 
