@@ -91,6 +91,17 @@ const TableDetail = () => {
   const [filterDropdownPosition, setFilterDropdownPosition] = useState({ x: 0, y: 0 });
   const [isFilterActive, setIsFilterActive] = useState(false);
 
+  // Fields management state
+  const [showFieldsDropdown, setShowFieldsDropdown] = useState(false);
+  const [fieldsDropdownPosition, setFieldsDropdownPosition] = useState({ x: 0, y: 0 });
+  const [fieldSearch, setFieldSearch] = useState('');
+  const [fieldVisibility, setFieldVisibility] = useState(() => {
+    // Load saved field visibility from localStorage
+    const saved = localStorage.getItem(`table_${tableId}_field_visibility`);
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [showSystemFields, setShowSystemFields] = useState(false);
+
   // Fetch group preferences from backend
   const { data: groupPreferenceResponse } = useQuery({
     queryKey: ['groupPreference', tableId],
@@ -118,6 +129,33 @@ const TableDetail = () => {
     },
   });
 
+  // Fetch field preferences from backend
+  const { data: fieldPreferenceResponse } = useQuery({
+    queryKey: ['fieldPreference', tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/database/tables/${tableId}/field-preference`);
+      return response.data;
+    },
+    enabled: !!tableId,
+  });
+
+  // Save field preference mutation
+  const saveFieldPreferenceMutation = useMutation({
+    mutationFn: async ({ fieldVisibility, showSystemFields }) => {
+      const response = await axiosInstance.post(`/database/tables/${tableId}/field-preference`, {
+        fieldVisibility,
+        showSystemFields
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      console.log('Field preference saved successfully');
+    },
+    onError: (error) => {
+      console.error('Error saving field preference:', error);
+    },
+  });
+
   // Load group preferences from backend when data is available
   React.useEffect(() => {
     if (groupPreferenceResponse?.data) {
@@ -127,6 +165,16 @@ const TableDetail = () => {
       console.log('Group preferences loaded from backend:', preference);
     }
   }, [groupPreferenceResponse]);
+
+  // Load field preferences from backend when data is available
+  React.useEffect(() => {
+    if (fieldPreferenceResponse?.data) {
+      const preference = fieldPreferenceResponse.data;
+      setFieldVisibility(preference.fieldVisibility || {});
+      setShowSystemFields(preference.showSystemFields || false);
+      console.log('Field preferences loaded from backend:', preference);
+    }
+  }, [fieldPreferenceResponse]);
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState(() => {
@@ -218,6 +266,29 @@ const TableDetail = () => {
     };
   }, [showFilterDropdown]);
 
+  // Handle clicking outside fields dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showFieldsDropdown) {
+        const dropdown = document.querySelector('[data-fields-dropdown]');
+        const button = document.querySelector('[data-fields-button]');
+        
+        const isInsideFieldsDropdown = dropdown && dropdown.contains(event.target);
+        const isInsideFieldsButton = button && button.contains(event.target);
+        
+        if (!isInsideFieldsDropdown && !isInsideFieldsButton) {
+          setShowFieldsDropdown(false);
+          setFieldSearch('');
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFieldsDropdown]);
+
   // Column resizing handlers
   const handleResizeStart = (e, columnId) => {
     e.preventDefault();
@@ -268,6 +339,22 @@ const TableDetail = () => {
     return getColumnWidth(columnId) < 80;
   };
 
+  // Format datetime to YYYY-MM-DD HH:MM format
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
+    } catch {
+      return dateString;
+    }
+  };
+
   // Get type letter for compact display
   const getTypeLetter = (dataType) => {
     switch (dataType) {
@@ -275,6 +362,8 @@ const TableDetail = () => {
       case 'number': return 'N';
       case 'date': return 'D';
       case 'boolean': return 'B';
+      case 'time': return '⏰';
+      case 'datetime': return '📅';
       default: return 'T';
     }
   };
@@ -538,13 +627,13 @@ const TableDetail = () => {
   };
 
   const handleAddRow = () => {
-    if (!columns || columns.length === 0) {
+    if (!visibleColumns || visibleColumns.length === 0) {
       // toast.error('No columns available. Please add a column first.');
       return;
     }
     
     const emptyData = {};
-    columns.forEach(column => {
+    visibleColumns.forEach(column => {
       emptyData[column.name] = '';
     });
     
@@ -559,13 +648,13 @@ const TableDetail = () => {
   };
 
   const handleAddRowToGroup = (groupValues, groupRules) => {
-    if (!columns || columns.length === 0) {
+    if (!visibleColumns || visibleColumns.length === 0) {
       // toast.error('No columns available. Please add a column first.');
       return;
     }
     
     const emptyData = {};
-    columns.forEach(column => {
+    visibleColumns.forEach(column => {
       emptyData[column.name] = '';
     });
 
@@ -846,6 +935,111 @@ const TableDetail = () => {
     setShowFilterDropdown(!showFilterDropdown);
   };
 
+  // Fields handlers
+  const handleFieldsButtonClick = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFieldsDropdownPosition({
+      x: rect.left,
+      y: rect.bottom + 5
+    });
+    setShowFieldsDropdown(!showFieldsDropdown);
+    if (!showFieldsDropdown) {
+      setFieldSearch('');
+    }
+  };
+
+  // Save field visibility to localStorage and backend
+  const saveFieldVisibility = (newVisibility) => {
+    localStorage.setItem(`table_${tableId}_field_visibility`, JSON.stringify(newVisibility));
+    setFieldVisibility(newVisibility);
+    
+    // Save to backend
+    saveFieldPreferenceMutation.mutate({
+      fieldVisibility: newVisibility,
+      showSystemFields
+    });
+  };
+
+  // Toggle field visibility
+  const toggleFieldVisibility = (columnId) => {
+    const newVisibility = {
+      ...fieldVisibility,
+      [columnId]: !fieldVisibility[columnId]
+    };
+    saveFieldVisibility(newVisibility);
+  };
+
+  // Toggle system fields visibility
+  const toggleSystemFields = () => {
+    const newShowSystemFields = !showSystemFields;
+    setShowSystemFields(newShowSystemFields);
+    
+    // If showing system fields for the first time, set their default visibility to true
+    if (newShowSystemFields) {
+      const systemFieldIds = ['system_id', 'system_createdAt', 'system_updatedAt'];
+      const newFieldVisibility = { ...fieldVisibility };
+      
+      systemFieldIds.forEach(fieldId => {
+        if (newFieldVisibility[fieldId] === undefined) {
+          newFieldVisibility[fieldId] = true; // Default visible
+        }
+      });
+      
+      setFieldVisibility(newFieldVisibility);
+      
+      // Save to backend
+      saveFieldPreferenceMutation.mutate({
+        fieldVisibility: newFieldVisibility,
+        showSystemFields: newShowSystemFields
+      });
+    } else {
+      // Save to backend
+      saveFieldPreferenceMutation.mutate({
+        fieldVisibility,
+        showSystemFields: newShowSystemFields
+      });
+    }
+  };
+
+  // Get visible columns based on visibility settings
+  const visibleColumns = useMemo(() => {
+    const allColumnsWithSystem = showSystemFields ? [
+      ...columns,
+      { _id: 'system_id', name: 'Id', dataType: 'text', isSystem: true },
+      { _id: 'system_createdAt', name: 'CreatedAt', dataType: 'datetime', isSystem: true },
+      { _id: 'system_updatedAt', name: 'UpdatedAt', dataType: 'datetime', isSystem: true }
+    ] : columns;
+
+    return allColumnsWithSystem.filter(column => {
+      // For system fields, show if showSystemFields is true and not explicitly hidden
+      if (column.isSystem) {
+        if (!showSystemFields) return false;
+        if (fieldVisibility[column._id] === false) return false;
+        return true; // Show system fields by default when showSystemFields is true
+      }
+      
+      // For regular fields, use normal visibility logic
+      if (fieldVisibility[column._id] === undefined) {
+        return true;
+      }
+      return fieldVisibility[column._id];
+    });
+  }, [columns, fieldVisibility, showSystemFields]);
+
+  // Get all columns including system fields
+  const allColumnsWithSystem = useMemo(() => {
+    const systemFields = [
+      { _id: 'system_id', name: 'Id', dataType: 'text', isSystem: true },
+      { _id: 'system_createdAt', name: 'CreatedAt', dataType: 'datetime', isSystem: true },
+      { _id: 'system_updatedAt', name: 'UpdatedAt', dataType: 'datetime', isSystem: true }
+    ];
+
+    if (showSystemFields) {
+      return [...columns, ...systemFields];
+    }
+    return columns;
+  }, [columns, showSystemFields]);
+
   const toggleFilterActive = () => {
     const newIsActive = !isFilterActive;
     setIsFilterActive(newIsActive);
@@ -1081,14 +1275,207 @@ const TableDetail = () => {
             width: '100%'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <Button 
-                type="text" 
-                icon={<UnorderedListOutlined />}
-                size="small"
-                style={{ color: '#666' }}
-              >
-                Fields
-              </Button>
+              <div style={{ position: 'relative' }}>
+                <Button 
+                  type="text" 
+                  icon={<UnorderedListOutlined />}
+                  size="small"
+                  onClick={handleFieldsButtonClick}
+                  data-fields-button
+                  style={{ 
+                    color: Object.keys(fieldVisibility).length > 0 ? '#1890ff' : '#666',
+                    backgroundColor: Object.keys(fieldVisibility).length > 0 ? '#e6f7ff' : 'transparent',
+                    border: Object.keys(fieldVisibility).length > 0 ? '1px solid #1890ff' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  Fields
+                </Button>
+                
+                {/* Fields Dropdown */}
+                {showFieldsDropdown && (
+                  <div 
+                    data-fields-dropdown
+                    style={{
+                      position: 'fixed',
+                      top: fieldsDropdownPosition.y,
+                      left: fieldsDropdownPosition.x,
+                      zIndex: 9999,
+                      backgroundColor: 'white',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '6px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      minWidth: '300px',
+                      maxWidth: '400px'
+                    }}
+                  >
+                    {/* Header */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderBottom: '1px solid #f0f0f0',
+                      backgroundColor: '#fafafa'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <UnorderedListOutlined style={{ color: '#666' }} />
+                        <span style={{ fontWeight: '500', fontSize: '14px' }}>Fields</span>
+                      </div>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div style={{
+                      padding: '12px 16px',
+                      borderBottom: '1px solid #f0f0f0'
+                    }}>
+                      <Input
+                        placeholder="Search fields"
+                        prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                        value={fieldSearch}
+                        onChange={(e) => setFieldSearch(e.target.value)}
+                        size="small"
+                        style={{ 
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '4px'
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Field List */}
+                    <div style={{ 
+                      maxHeight: '300px',
+                      overflow: 'auto'
+                    }}>
+                      {allColumnsWithSystem
+                        .filter(column => 
+                          column.name.toLowerCase().includes(fieldSearch.toLowerCase())
+                        )
+                        .map(column => (
+                          <div
+                            key={column._id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '12px 16px',
+                              borderBottom: '1px solid #f0f0f0',
+                              backgroundColor: fieldVisibility[column._id] === false ? '#f5f5f5' : (column.isSystem ? '#f6ffed' : 'white'),
+                              opacity: fieldVisibility[column._id] === false ? 0.6 : 1,
+                              transition: 'all 0.2s ease',
+                              cursor: 'pointer',
+                              borderLeft: column.isSystem ? '3px solid #52c41a' : 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                              // Chỉ hiện hover khi field đã bị bỏ tick (false)
+                              if (fieldVisibility[column._id] === false) {
+                                e.target.style.backgroundColor = '#e6f7ff';
+                                e.target.style.opacity = '1';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              // Chỉ reset hover khi field đã bị bỏ tick (false)
+                              if (fieldVisibility[column._id] === false) {
+                                e.target.style.backgroundColor = '#f5f5f5';
+                                e.target.style.opacity = '0.6';
+                              } else {
+                                e.target.style.backgroundColor = column.isSystem ? '#f6ffed' : 'white';
+                                e.target.style.opacity = '1';
+                              }
+                            }}
+                            onClick={() => toggleFieldVisibility(column._id)}
+                          >
+                            {/* Drag Handle */}
+                            <div style={{ 
+                              cursor: 'grab',
+                              color: '#bfbfbf',
+                              fontSize: '12px'
+                            }}>
+                              ⋮⋮
+                            </div>
+                            
+                            {/* Field Icon */}
+                            <div style={{ 
+                              fontSize: '14px', 
+                              fontWeight: 'bold', 
+                              color: '#666',
+                              backgroundColor: column.isSystem ? '#f0f0f0' : '#e6f7ff',
+                              borderRadius: '3px',
+                              padding: '2px 6px',
+                              minWidth: '16px',
+                              textAlign: 'center'
+                            }}>
+                              {getTypeLetter(column.dataType)}
+                            </div>
+                            
+                            {/* Field Name */}
+                            <span style={{ 
+                              fontSize: '13px', 
+                              flex: 1,
+                              fontWeight: fieldVisibility[column._id] === false ? '400' : (column.isSystem ? '400' : '500'),
+                              color: fieldVisibility[column._id] === false ? '#999' : (column.isSystem ? '#52c41a' : '#333'),
+                              fontStyle: column.isSystem ? 'italic' : 'normal',
+                              textDecoration: fieldVisibility[column._id] === false ? 'line-through' : 'none'
+                            }}>
+                              {column.name}
+                            </span>
+                            
+                            {/* Visibility Toggle */}
+                            <Checkbox
+                              checked={column.isSystem ? 
+                                (showSystemFields && fieldVisibility[column._id] !== false) : 
+                                (fieldVisibility[column._id] !== false)
+                              }
+                              onChange={() => toggleFieldVisibility(column._id)}
+                              style={{ 
+                                color: fieldVisibility[column._id] === false ? '#ff4d4f' : (column.isSystem ? '#52c41a' : '#1890ff')
+                              }}
+                            />
+                          </div>
+                        ))}
+                    </div>
+                    
+                    {/* Bottom Action Bar */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderTop: '1px solid #f0f0f0',
+                      backgroundColor: '#fafafa'
+                    }}>
+                      <Button
+                        type="text"
+                        icon={<UserOutlined />}
+                        size="small"
+                        onClick={toggleSystemFields}
+                        style={{ 
+                          color: showSystemFields ? '#52c41a' : '#666',
+                          fontSize: '12px',
+                          backgroundColor: showSystemFields ? '#f6ffed' : 'transparent',
+                          border: showSystemFields ? '1px solid #52c41a' : 'none'
+                        }}
+                      >
+                        System fields
+                      </Button>
+                      <Button
+                        type="text"
+                        icon={<PlusOutlined />}
+                        size="small"
+                        onClick={() => setShowAddColumn(true)}
+                        style={{ 
+                          color: '#1890ff',
+                          fontSize: '12px'
+                        }}
+                      >
+                        + New Field
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div style={{ position: 'relative' }}>
                 <Button 
                   type="text" 
@@ -1902,7 +2289,7 @@ const TableDetail = () => {
               </div>
 
               {/* Data Columns */}
-              {columns.map(column => (
+              {visibleColumns.map(column => (
                 <div key={column._id} style={{
                   width: `${getColumnWidth(column._id)}px`,
                   minWidth: '50px',
@@ -1911,21 +2298,36 @@ const TableDetail = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: isColumnCompact(column._id) ? 'center' : 'space-between',
-                  backgroundColor: sortRules.some(rule => rule.field === column.name) ? '#fff2e8' : 
+                  backgroundColor: column.isSystem ? '#f6ffed' : 
+                                 sortRules.some(rule => rule.field === column.name) ? '#fff2e8' : 
                                  groupRules.some(rule => rule.field === column.name) ? '#f6ffed' : '#f5f5f5',
                   position: 'relative',
-                  borderTop: sortRules.some(rule => rule.field === column.name) ? '2px solid #fa8c16' : 
+                  borderTop: column.isSystem ? '2px solid #52c41a' :
+                             sortRules.some(rule => rule.field === column.name) ? '2px solid #fa8c16' : 
                              groupRules.some(rule => rule.field === column.name) ? '2px solid #52c41a' : 'none'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
                     {isColumnCompact(column._id) ? (
-                      <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>
+                      <span style={{ 
+                        fontSize: '14px', 
+                        fontWeight: 'bold', 
+                        color: column.isSystem ? '#52c41a' : '#666',
+                        fontStyle: column.isSystem ? 'italic' : 'normal'
+                      }}>
                         {getTypeLetter(column.dataType)}
                       </span>
                     ) : (
                       <>
                         {getDataTypeIcon(column.dataType)}
-                        <span style={{ fontSize: '12px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ 
+                          fontSize: '12px', 
+                          fontWeight: column.isSystem ? '400' : 'bold', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis', 
+                          whiteSpace: 'nowrap',
+                          color: column.isSystem ? '#52c41a' : '#333',
+                          fontStyle: column.isSystem ? 'italic' : 'normal'
+                        }}>
                           {column.name}
                         </span>
                         {sortRules.some(rule => rule.field === column.name) && (
@@ -1946,6 +2348,16 @@ const TableDetail = () => {
                             marginLeft: '4px'
                           }}>
                             G
+                          </span>
+                        )}
+                        {column.isSystem && (
+                          <span style={{ 
+                            fontSize: '10px', 
+                            color: '#52c41a',
+                            fontWeight: 'bold',
+                            marginLeft: '4px'
+                          }}>
+                            S
                           </span>
                         )}
                       </>
@@ -2150,8 +2562,26 @@ const TableDetail = () => {
                         </div>
 
                         {/* Data Cells */}
-                        {columns.map(column => {
-                          const value = record.data?.[column.name] || '';
+                        {visibleColumns.map(column => {
+                          let value = '';
+                          if (column.isSystem) {
+                            // Handle system fields
+                            switch (column.name) {
+                              case 'Id':
+                                value = record._id || '';
+                                break;
+                              case 'CreatedAt':
+                                value = record.createdAt ? formatDateTime(record.createdAt) : '';
+                                break;
+                              case 'UpdatedAt':
+                                value = record.updatedAt ? formatDateTime(record.updatedAt) : '';
+                                break;
+                              default:
+                                value = '';
+                            }
+                          } else {
+                            value = record.data?.[column.name] || '';
+                          }
                           const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
                           
                           return (
@@ -2305,7 +2735,7 @@ const TableDetail = () => {
                               ) : (
                                 <div
                                   style={{ 
-                                    cursor: 'pointer', 
+                                    cursor: column.isSystem ? 'default' : 'pointer', 
                                     padding: '8px', 
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
@@ -2314,13 +2744,18 @@ const TableDetail = () => {
                                     height: '100%',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    backgroundColor: column.isSystem ? '#fafafa' : 'transparent',
+                                    color: column.isSystem ? '#666' : '#333',
+                                    fontStyle: column.isSystem ? 'italic' : 'normal'
                                   }}
-                                  onClick={() => handleCellClick(record._id, column.name, value)}
-                                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                  onClick={column.isSystem ? undefined : () => handleCellClick(record._id, column.name, value)}
+                                  onMouseEnter={column.isSystem ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                  onMouseLeave={column.isSystem ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                                 >
-                                  {column.dataType === 'date' && value ? 
+                                  {column.dataType === 'datetime' && value ? 
+                                    value // Already formatted by formatDateTime
+                                    : column.dataType === 'date' && value ? 
                                     (() => {
                                       try {
                                         const date = new Date(value);
@@ -2379,7 +2814,7 @@ const TableDetail = () => {
                         </div>
 
                         {/* Data Columns */}
-                        {columns.map(column => (
+                        {visibleColumns.map(column => (
                           <div key={column._id} style={{
                             width: `${getColumnWidth(column._id)}px`,
                             minWidth: '50px',
@@ -2434,8 +2869,26 @@ const TableDetail = () => {
                   </div>
 
                   {/* Data Cells */}
-                  {columns.map(column => {
-                    const value = record.data?.[column.name] || '';
+                  {visibleColumns.map(column => {
+                    let value = '';
+                    if (column.isSystem) {
+                      // Handle system fields
+                      switch (column.name) {
+                        case 'Id':
+                          value = record._id || '';
+                          break;
+                        case 'CreatedAt':
+                          value = record.createdAt ? formatDateTime(record.createdAt) : '';
+                          break;
+                        case 'UpdatedAt':
+                          value = record.updatedAt ? formatDateTime(record.updatedAt) : '';
+                          break;
+                        default:
+                          value = '';
+                      }
+                    } else {
+                      value = record.data?.[column.name] || '';
+                    }
                     const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
                     
                     return (
@@ -2589,7 +3042,7 @@ const TableDetail = () => {
                         ) : (
                           <div
                             style={{ 
-                              cursor: 'pointer', 
+                              cursor: column.isSystem ? 'default' : 'pointer', 
                               padding: '8px', 
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -2598,13 +3051,18 @@ const TableDetail = () => {
                               height: '100%',
                               display: 'flex',
                               alignItems: 'center',
-                              boxSizing: 'border-box'
+                              boxSizing: 'border-box',
+                              backgroundColor: column.isSystem ? '#fafafa' : 'transparent',
+                              color: column.isSystem ? '#666' : '#333',
+                              fontStyle: column.isSystem ? 'italic' : 'normal'
                             }}
-                            onClick={() => handleCellClick(record._id, column.name, value)}
-                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                            onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                            onClick={column.isSystem ? undefined : () => handleCellClick(record._id, column.name, value)}
+                            onMouseEnter={column.isSystem ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                            onMouseLeave={column.isSystem ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                           >
-                            {column.dataType === 'date' && value ? 
+                            {column.dataType === 'datetime' && value ? 
+                              value // Already formatted by formatDateTime
+                              : column.dataType === 'date' && value ? 
                               (() => {
                                 try {
                                   const date = new Date(value);
@@ -2662,7 +3120,7 @@ const TableDetail = () => {
                 </div>
 
                 {/* Data Columns */}
-                {columns.map(column => (
+                {visibleColumns.map(column => (
                   <div key={column._id} style={{
                     width: `${getColumnWidth(column._id)}px`,
                     minWidth: '50px',

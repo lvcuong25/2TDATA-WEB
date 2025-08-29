@@ -48,6 +48,12 @@ import {
   getAllFilterPreferences
 } from "../controllers/filterController.js";
 
+import {
+  getFieldPreference,
+  saveFieldPreference,
+  deleteFieldPreference
+} from "../controllers/fieldPreferenceController.js";
+
 const router = Router();
 
 // Database routes
@@ -98,5 +104,10 @@ router.get("/tables/:tableId/filter-preference", getFilterPreference);
 router.post("/tables/:tableId/filter-preference", saveFilterPreference);
 router.delete("/tables/:tableId/filter-preference", deleteFilterPreference);
 router.get("/filter-preferences", getAllFilterPreferences);
+
+// Field preference routes
+router.get("/tables/:tableId/field-preference", getFieldPreference);
+router.post("/tables/:tableId/field-preference", saveFieldPreference);
+router.delete("/tables/:tableId/field-preference", deleteFieldPreference);
 
 export default router;
