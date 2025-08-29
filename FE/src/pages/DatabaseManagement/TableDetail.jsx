@@ -842,7 +842,7 @@ const TableDetail = () => {
     // Auto-add the sort rule when field is selected
     const newRule = {
       field: fieldName,
-      order: 'asc'
+      order: currentSortOrder
     };
     setSortRules([...sortRules, newRule]);
     setCurrentSortField('');
@@ -1341,6 +1341,8 @@ const TableDetail = () => {
                           border: '1px solid #d9d9d9',
                           borderRadius: '4px'
                         }}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                       />
                     </div>
                     
@@ -1580,6 +1582,8 @@ const TableDetail = () => {
                                   getPopupContainer={(triggerNode) => triggerNode.parentNode}
                                   placeholder="Select field"
                                   showSearch={false}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                 >
                                   {columns.map(col => (
                                     <Option key={col._id} value={col.name}>
@@ -1602,6 +1606,8 @@ const TableDetail = () => {
                                   getPopupContainer={(triggerNode) => triggerNode.parentNode}
                                   placeholder="Select operator"
                                   showSearch={false}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                 >
                                   {operatorOptions.map(option => (
                                     <Option key={option.value} value={option.value}>
@@ -1621,6 +1627,8 @@ const TableDetail = () => {
                                       backgroundColor: 'white'
                                     }}
                                     placeholder="Enter a value"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
                                   />
                                 )}
                                 
@@ -1837,6 +1845,8 @@ const TableDetail = () => {
                                   border: '1px solid #52c41a',
                                   borderRadius: '4px'
                                 }}
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
                               />
                             </div>
                             
@@ -1847,7 +1857,8 @@ const TableDetail = () => {
                             }}>
                               {columns
                                 .filter(column => 
-                                  column.name.toLowerCase().includes(groupFieldSearch.toLowerCase())
+                                  column.name.toLowerCase().includes(groupFieldSearch.toLowerCase()) &&
+                                  !groupRules.some(rule => rule.field === column.name)
                                 )
                                 .map(column => (
                                   <div
@@ -1902,6 +1913,8 @@ const TableDetail = () => {
                               border: '1px solid #52c41a',
                               borderRadius: '4px'
                             }}
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
                           />
                         </div>
                         
@@ -1912,7 +1925,8 @@ const TableDetail = () => {
                         }}>
                           {columns
                             .filter(column => 
-                              column.name.toLowerCase().includes(groupFieldSearch.toLowerCase())
+                              column.name.toLowerCase().includes(groupFieldSearch.toLowerCase()) &&
+                              !groupRules.some(rule => rule.field === column.name)
                             )
                             .map(column => (
                               <div
@@ -2064,6 +2078,8 @@ const TableDetail = () => {
                               onChange={(value) => updateSortRule(index, rule.field, value)}
                               size="small"
                               style={{ width: '100px' }}
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
                             >
                               <Option value="asc">A → Z</Option>
                               <Option value="desc">Z → A</Option>
@@ -2113,6 +2129,8 @@ const TableDetail = () => {
                                   border: '1px solid #1890ff',
                                   borderRadius: '4px'
                                 }}
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
                               />
                             </div>
                             
@@ -2123,7 +2141,8 @@ const TableDetail = () => {
                             }}>
                               {columns
                                 .filter(column => 
-                                  column.name.toLowerCase().includes(sortFieldSearch.toLowerCase())
+                                  column.name.toLowerCase().includes(sortFieldSearch.toLowerCase()) &&
+                                  !sortRules.some(rule => rule.field === column.name)
                                 )
                                 .map(column => (
                                   <div
@@ -2178,6 +2197,8 @@ const TableDetail = () => {
                               border: '1px solid #1890ff',
                               borderRadius: '4px'
                             }}
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
                           />
                         </div>
                         
@@ -2188,7 +2209,8 @@ const TableDetail = () => {
                         }}>
                           {columns
                             .filter(column => 
-                              column.name.toLowerCase().includes(sortFieldSearch.toLowerCase())
+                              column.name.toLowerCase().includes(sortFieldSearch.toLowerCase()) &&
+                              !sortRules.some(rule => rule.field === column.name)
                             )
                             .map(column => (
                               <div
