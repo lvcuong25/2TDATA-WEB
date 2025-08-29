@@ -74,6 +74,16 @@ const columnSchema = new mongoose.Schema({
     },
     default: undefined
   },
+  dateConfig: {
+    type: {
+      format: {
+        type: String,
+        enum: ['YYYY-MM-DD', 'YYYY/MM/DD', 'DD-MM-YYYY', 'MM-DD-YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'DD MM YYYY'],
+        default: 'YYYY-MM-DD'
+      }
+    },
+    default: undefined
+  },
   order: {
     type: Number,
     default: 0

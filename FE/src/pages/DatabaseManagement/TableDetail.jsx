@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormatter.js';
 import SingleSelectConfig from './SingleSelectConfig';
+import DateConfig from './DateConfig';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -77,6 +79,9 @@ const TableDetail = () => {
     singleSelectConfig: {
       options: [],
       defaultValue: ''
+    },
+    dateConfig: {
+      format: 'DD/MM/YYYY'
     }
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
@@ -510,6 +515,9 @@ const TableDetail = () => {
           singleSelectConfig: {
             options: [],
             defaultValue: ''
+          },
+          dateConfig: {
+            format: 'DD/MM/YYYY'
           }
         });
         queryClient.invalidateQueries(['tableStructure', tableId]);
@@ -671,6 +679,11 @@ const TableDetail = () => {
       columnData.singleSelectConfig = newColumn.singleSelectConfig;
     }
     
+    // Add date configuration if data type is date
+    if (newColumn.dataType === 'date') {
+      columnData.dateConfig = newColumn.dateConfig;
+    }
+    
     console.log('Frontend sending column data:', columnData);
     addColumnMutation.mutate(columnData);
   };
@@ -691,6 +704,9 @@ const TableDetail = () => {
         // Use default value from single select configuration
         const config = column.singleSelectConfig || { defaultValue: '' };
         emptyData[column.name] = config.defaultValue;
+      } else if (column.dataType === 'date') {
+        // For date type, leave empty for now (user will select date)
+        emptyData[column.name] = '';
       } else {
       emptyData[column.name] = '';
       }
@@ -722,6 +738,9 @@ const TableDetail = () => {
         // Use default value from single select configuration
         const config = column.singleSelectConfig || { defaultValue: '' };
         emptyData[column.name] = config.defaultValue;
+      } else if (column.dataType === 'date') {
+        // For date type, leave empty for now (user will select date)
+        emptyData[column.name] = '';
       } else {
       emptyData[column.name] = '';
       }
@@ -801,6 +820,9 @@ const TableDetail = () => {
       singleSelectConfig: column.singleSelectConfig || {
         options: [],
         defaultValue: ''
+      },
+      dateConfig: column.dateConfig || {
+        format: 'DD/MM/YYYY'
       }
     });
     setShowEditColumn(true);
@@ -827,6 +849,11 @@ const TableDetail = () => {
     // Add single select configuration if data type is single_select
     if (editingColumn.dataType === 'single_select') {
       columnData.singleSelectConfig = editingColumn.singleSelectConfig;
+    }
+    
+    // Add date configuration if data type is date
+    if (editingColumn.dataType === 'date') {
+      columnData.dateConfig = editingColumn.dateConfig;
     }
     
     updateColumnMutation.mutate({
@@ -2716,15 +2743,7 @@ const TableDetail = () => {
                                   
                                   if (dataType === 'date') {
                                     // Format date for display and input
-                                    const formatDateForInput = (dateString) => {
-                                      if (!dateString) return '';
-                                      try {
-                                        const date = new Date(dateString);
-                                        return date.toISOString().split('T')[0]; // YYYY-MM-DD format
-                                      } catch {
-                                        return dateString;
-                                      }
-                                    };
+                                    // Use utility function for date input formatting
 
                                     return (
                                       <Input
@@ -3022,7 +3041,7 @@ const TableDetail = () => {
                                     (() => {
                                       try {
                                         const date = new Date(value);
-                                        return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+                                        return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
                                       } catch {
                                         return value;
                                       }
@@ -3276,15 +3295,7 @@ const TableDetail = () => {
                             
                             if (dataType === 'date') {
                               // Format date for display and input
-                              const formatDateForInput = (dateString) => {
-                                if (!dateString) return '';
-                                try {
-                                  const date = new Date(dateString);
-                                  return date.toISOString().split('T')[0]; // YYYY-MM-DD format
-                                } catch {
-                                  return dateString;
-                                }
-                              };
+                              // Use utility function for date input formatting
 
                               return (
                                 <Input
@@ -3561,7 +3572,7 @@ const TableDetail = () => {
                               (() => {
                                 try {
                                   const date = new Date(value);
-                                  return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+                                  return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
                                 } catch {
                                   return value;
                                 }
@@ -3955,6 +3966,17 @@ const TableDetail = () => {
               />
             )}
 
+            {/* Date Configuration */}
+            {newColumn.dataType === 'date' && (
+              <DateConfig
+                config={newColumn.dateConfig}
+                onChange={(config) => setNewColumn({
+                  ...newColumn,
+                  dateConfig: config
+                })}
+              />
+            )}
+
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -4199,6 +4221,17 @@ const TableDetail = () => {
                   onChange={(config) => setEditingColumn({
                     ...editingColumn,
                     singleSelectConfig: config
+                  })}
+                />
+              )}
+
+              {/* Date Configuration */}
+              {editingColumn.dataType === 'date' && (
+                <DateConfig
+                  config={editingColumn.dateConfig}
+                  onChange={(config) => setEditingColumn({
+                    ...editingColumn,
+                    dateConfig: config
                   })}
                 />
               )}
