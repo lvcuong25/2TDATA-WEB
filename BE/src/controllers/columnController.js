@@ -5,9 +5,19 @@ import Database from '../model/Database.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
+
+    console.log('Creating column with data:', {
+      tableId,
+      name,
+      dataType,
+      isRequired,
+      isUnique,
+      defaultValue,
+      checkboxConfig
+    });
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Column name is required' });
@@ -45,7 +55,8 @@ export const createColumn = async (req, res) => {
     const lastColumn = await Column.findOne({ tableId }).sort({ order: -1 });
     const nextOrder = lastColumn ? lastColumn.order + 1 : 0;
 
-    const column = new Column({
+    // Prepare column data
+    const columnData = {
       name: name.trim(),
       dataType,
       isRequired: isRequired || false,
@@ -56,9 +67,25 @@ export const createColumn = async (req, res) => {
       databaseId: table.databaseId,
       userId,
       siteId
-    });
+    };
 
+    // Only add checkboxConfig if dataType is checkbox and checkboxConfig is provided
+    if (dataType === 'checkbox' && checkboxConfig) {
+      // Ensure checkboxConfig has all required fields with defaults
+      columnData.checkboxConfig = {
+        icon: checkboxConfig.icon || 'check-circle',
+        color: checkboxConfig.color || '#52c41a',
+        defaultValue: checkboxConfig.defaultValue !== undefined ? checkboxConfig.defaultValue : false
+      };
+    }
+
+    console.log('Column data to save:', columnData);
+
+    const column = new Column(columnData);
+
+    console.log('About to save column...');
     await column.save();
+    console.log('Column saved successfully:', column);
 
     res.status(201).json({
       success: true,
@@ -67,7 +94,15 @@ export const createColumn = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating column:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
   }
 };
 
@@ -130,7 +165,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -176,6 +211,14 @@ export const updateColumn = async (req, res) => {
 
     if (order !== undefined) {
       column.order = order;
+    }
+
+    // Only update checkboxConfig if dataType is checkbox and checkboxConfig is provided
+    if (dataType === 'checkbox' && checkboxConfig !== undefined) {
+      column.checkboxConfig = checkboxConfig;
+    } else if (dataType !== 'checkbox') {
+      // Remove checkboxConfig if dataType is not checkbox
+      column.checkboxConfig = undefined;
     }
 
     await column.save();

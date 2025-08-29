@@ -21,7 +21,8 @@ import {
   Alert,
   Checkbox,
   Layout,
-  Menu
+  Menu,
+  Radio
 } from 'antd';
 import {
   PlusOutlined,
@@ -47,7 +48,11 @@ import {
   UnorderedListOutlined,
   AppstoreOutlined,
   BarChartOutlined,
-  RightOutlined
+  RightOutlined,
+  CheckSquareOutlined,
+  BorderOutlined,
+  PlusCircleOutlined,
+  MinusCircleOutlined
 } from '@ant-design/icons';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 
@@ -60,7 +65,15 @@ const TableDetail = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [newColumn, setNewColumn] = useState({ name: '', dataType: 'text' });
+  const [newColumn, setNewColumn] = useState({ 
+    name: '', 
+    dataType: 'text',
+    checkboxConfig: {
+      icon: 'check-circle',
+      color: '#52c41a',
+      defaultValue: false
+    }
+  });
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [showEditColumn, setShowEditColumn] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
@@ -359,9 +372,9 @@ const TableDetail = () => {
   const getTypeLetter = (dataType) => {
     switch (dataType) {
       case 'text': return 'T';
-      case 'number': return 'N';
-      case 'date': return 'D';
-      case 'boolean': return 'B';
+              case 'number': return 'N';
+        case 'date': return 'D';
+        case 'checkbox': return '☑';
       case 'time': return '⏰';
       case 'datetime': return '📅';
       default: return 'T';
@@ -480,7 +493,15 @@ const TableDetail = () => {
           onSuccess: () => {
         // toast.success('Column added successfully');
         setShowAddColumn(false);
-        setNewColumn({ name: '', dataType: 'text' });
+        setNewColumn({ 
+          name: '', 
+          dataType: 'text',
+          checkboxConfig: {
+            icon: 'check-circle',
+            color: '#52c41a',
+            defaultValue: false
+          }
+        });
         queryClient.invalidateQueries(['tableStructure', tableId]);
       },
       onError: (error) => {
@@ -623,7 +644,20 @@ const TableDetail = () => {
       // toast.error('Column name is required');
       return;
     }
-    addColumnMutation.mutate(newColumn);
+    
+    // Prepare column data based on data type
+    const columnData = {
+      name: newColumn.name,
+      dataType: newColumn.dataType
+    };
+    
+    // Add checkbox configuration if data type is checkbox
+    if (newColumn.dataType === 'checkbox') {
+      columnData.checkboxConfig = newColumn.checkboxConfig;
+    }
+    
+    console.log('Frontend sending column data:', columnData);
+    addColumnMutation.mutate(columnData);
   };
 
   const handleAddRow = () => {
@@ -634,7 +668,13 @@ const TableDetail = () => {
     
     const emptyData = {};
     visibleColumns.forEach(column => {
+      if (column.dataType === 'checkbox') {
+        // Use default value from checkbox configuration
+        const config = column.checkboxConfig || { defaultValue: false };
+        emptyData[column.name] = config.defaultValue;
+      } else {
       emptyData[column.name] = '';
+      }
     });
     
     // Add timestamp to ensure new records appear at the bottom
@@ -655,7 +695,13 @@ const TableDetail = () => {
     
     const emptyData = {};
     visibleColumns.forEach(column => {
+      if (column.dataType === 'checkbox') {
+        // Use default value from checkbox configuration
+        const config = column.checkboxConfig || { defaultValue: false };
+        emptyData[column.name] = config.defaultValue;
+      } else {
       emptyData[column.name] = '';
+      }
     });
 
     // Pre-fill the group fields with the group values
@@ -723,7 +769,12 @@ const TableDetail = () => {
     setEditingColumn({
       _id: column._id,
       name: column.name,
-      dataType: column.dataType
+      dataType: column.dataType,
+      checkboxConfig: column.checkboxConfig || {
+        icon: 'check-circle',
+        color: '#52c41a',
+        defaultValue: false
+      }
     });
     setShowEditColumn(true);
   };
@@ -734,12 +785,21 @@ const TableDetail = () => {
       // toast.error('Column name is required');
       return;
     }
-    updateColumnMutation.mutate({
-      columnId: editingColumn._id,
-      columnData: {
+    
+    // Prepare column data based on data type
+    const columnData = {
         name: editingColumn.name,
         dataType: editingColumn.dataType
+    };
+    
+    // Add checkbox configuration if data type is checkbox
+    if (editingColumn.dataType === 'checkbox') {
+      columnData.checkboxConfig = editingColumn.checkboxConfig;
       }
+    
+    updateColumnMutation.mutate({
+      columnId: editingColumn._id,
+      columnData
     });
   };
 
@@ -1165,9 +1225,9 @@ const TableDetail = () => {
   const getDataTypeIcon = (dataType) => {
     switch (dataType) {
       case 'text': return <FieldBinaryOutlined style={{ color: '#1890ff' }} />;
-      case 'number': return <NumberOutlined style={{ color: '#52c41a' }} />;
-      case 'date': return <CalendarOutlined style={{ color: '#fa8c16' }} />;
-      case 'boolean': return <CheckCircleOutlined style={{ color: '#722ed1' }} />;
+              case 'number': return <NumberOutlined style={{ color: '#52c41a' }} />;
+        case 'date': return <CalendarOutlined style={{ color: '#fa8c16' }} />;
+        case 'checkbox': return <CheckSquareOutlined style={{ color: '#52c41a' }} />;
       default: return <FieldBinaryOutlined style={{ color: '#1890ff' }} />;
     }
   };
@@ -1175,9 +1235,9 @@ const TableDetail = () => {
   const getDataTypeColor = (dataType) => {
     switch (dataType) {
       case 'text': return '#1890ff';
-      case 'number': return '#52c41a';
-      case 'date': return '#fa8c16';
-      case 'boolean': return '#722ed1';
+              case 'number': return '#52c41a';
+        case 'date': return '#fa8c16';
+        case 'checkbox': return '#52c41a';
       default: return '#1890ff';
     }
   };
@@ -1187,7 +1247,7 @@ const TableDetail = () => {
       text: 'blue',
       number: 'green',
       date: 'orange',
-      boolean: 'purple'
+      checkbox: 'green'
     };
     return <Tag color={colorMap[dataType] || 'blue'}>{dataType.toUpperCase()}</Tag>;
   };
@@ -2690,7 +2750,7 @@ const TableDetail = () => {
                                         }}
                                       />
                                     );
-                                  } else if (dataType === 'boolean') {
+                                  } else if (dataType === 'checkbox') {
                                     return (
                                       <Select
                                         value={cellValue}
@@ -2757,7 +2817,7 @@ const TableDetail = () => {
                               ) : (
                                 <div
                                   style={{ 
-                                    cursor: column.isSystem ? 'default' : 'pointer', 
+                                    cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer', 
                                     padding: '8px', 
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
@@ -2771,9 +2831,9 @@ const TableDetail = () => {
                                     color: column.isSystem ? '#666' : '#333',
                                     fontStyle: column.isSystem ? 'italic' : 'normal'
                                   }}
-                                  onClick={column.isSystem ? undefined : () => handleCellClick(record._id, column.name, value)}
-                                  onMouseEnter={column.isSystem ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                                  onMouseLeave={column.isSystem ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                                  onClick={column.isSystem || column.dataType === 'checkbox' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                                  onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                  onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                                 >
                                   {column.dataType === 'datetime' && value ? 
                                     value // Already formatted by formatDateTime
@@ -2785,6 +2845,50 @@ const TableDetail = () => {
                                       } catch {
                                         return value;
                                       }
+                                    })() 
+                                    : column.dataType === 'checkbox' ? 
+                                    (() => {
+                                      const isChecked = value === 'true' || value === true;
+                                      const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
+                                      
+                                      return (
+                                        <div style={{ 
+                                          display: 'flex', 
+                                          justifyContent: 'center', 
+                                          alignItems: 'center',
+                                          height: '100%',
+                                          width: '100%'
+                                        }}>
+                                          <div
+                                            onClick={() => {
+                                              const newValue = !isChecked;
+                                              const updatedData = { ...record.data };
+                                              updatedData[column.name] = newValue;
+                                              
+                                              updateRecordMutation.mutate({
+                                                recordId: record._id,
+                                                data: updatedData
+                                              });
+                                            }}
+                                            style={{
+                                              cursor: 'pointer',
+                                              fontSize: '16px',
+                                              color: isChecked ? config.color : '#666',
+                                              transition: 'all 0.2s ease'
+                                            }}
+                                          >
+                                            {isChecked ? (
+                                              config.icon === 'check-circle' ? 
+                                                <CheckCircleOutlined style={{ color: config.color, fontSize: '16px' }} /> :
+                                                <CheckSquareOutlined style={{ color: config.color, fontSize: '16px' }} />
+                                            ) : (
+                                              config.icon === 'check-circle' ? 
+                                                <BorderOutlined style={{ color: '#666', fontSize: '16px' }} /> :
+                                                <BorderOutlined style={{ color: '#666', fontSize: '16px' }} />
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
                                     })() 
                                     : (value || '')
                                   }
@@ -2997,7 +3101,7 @@ const TableDetail = () => {
                                   }}
                                 />
                               );
-                            } else if (dataType === 'boolean') {
+                            } else if (dataType === 'checkbox') {
                               return (
                                 <Select
                                   value={cellValue}
@@ -3064,7 +3168,7 @@ const TableDetail = () => {
                         ) : (
                           <div
                             style={{ 
-                              cursor: column.isSystem ? 'default' : 'pointer', 
+                              cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer', 
                               padding: '8px', 
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -3078,9 +3182,9 @@ const TableDetail = () => {
                               color: column.isSystem ? '#666' : '#333',
                               fontStyle: column.isSystem ? 'italic' : 'normal'
                             }}
-                            onClick={column.isSystem ? undefined : () => handleCellClick(record._id, column.name, value)}
-                            onMouseEnter={column.isSystem ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                            onMouseLeave={column.isSystem ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                            onClick={column.isSystem || column.dataType === 'checkbox' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                                                          onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                           >
                             {column.dataType === 'datetime' && value ? 
                               value // Already formatted by formatDateTime
@@ -3092,6 +3196,50 @@ const TableDetail = () => {
                                 } catch {
                                   return value;
                                 }
+                              })() 
+                              : column.dataType === 'checkbox' ? 
+                              (() => {
+                                const isChecked = value === 'true' || value === true;
+                                const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
+                                
+                                return (
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    height: '100%',
+                                    width: '100%'
+                                  }}>
+                                    <div
+                                      onClick={() => {
+                                        const newValue = !isChecked;
+                                        const updatedData = { ...record.data };
+                                        updatedData[column.name] = newValue;
+                                        
+                                        updateRecordMutation.mutate({
+                                          recordId: record._id,
+                                          data: updatedData
+                                        });
+                                      }}
+                                      style={{
+                                        cursor: 'pointer',
+                                        fontSize: '16px',
+                                        color: isChecked ? config.color : '#666',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                    >
+                                      {isChecked ? (
+                                        config.icon === 'check-circle' ? 
+                                          <CheckCircleOutlined style={{ color: config.color, fontSize: '16px' }} /> :
+                                          <CheckSquareOutlined style={{ color: config.color, fontSize: '16px' }} />
+                                      ) : (
+                                        config.icon === 'check-circle' ? 
+                                          <BorderOutlined style={{ color: '#666', fontSize: '16px' }} /> :
+                                          <BorderOutlined style={{ color: '#666', fontSize: '16px' }} />
+                                      )}
+                                    </div>
+                                  </div>
+                                );
                               })() 
                               : (value || '')
                             }
@@ -3170,31 +3318,209 @@ const TableDetail = () => {
         open={showAddColumn}
         onCancel={() => setShowAddColumn(false)}
         footer={null}
+        width={600}
       >
         <form onSubmit={handleAddColumn}>
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             <div>
-              <Text strong>Column Name</Text>
+              <Text strong>Field Name</Text>
               <Input
                 value={newColumn.name}
                 onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
-                placeholder="Enter column name"
-                required
+                placeholder="Field name (Optional)"
               />
             </div>
             <div>
-              <Text strong>Data Type</Text>
+              <Text strong>Field Type</Text>
               <Select
                 value={newColumn.dataType}
                 onChange={(value) => setNewColumn({ ...newColumn, dataType: value })}
                 style={{ width: '100%' }}
               >
-                <Option value="text">Text</Option>
-                <Option value="number">Number</Option>
-                <Option value="date">Date</Option>
-                <Option value="boolean">Boolean</Option>
+                <Option value="text">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FieldBinaryOutlined style={{ color: '#1890ff' }} />
+                    <span>Text</span>
+                  </div>
+                </Option>
+                <Option value="number">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <NumberOutlined style={{ color: '#52c41a' }} />
+                    <span>Number</span>
+                  </div>
+                </Option>
+                <Option value="date">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CalendarOutlined style={{ color: '#fa8c16' }} />
+                    <span>Date</span>
+                  </div>
+                </Option>
+
+                <Option value="checkbox">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckSquareOutlined style={{ color: '#52c41a' }} />
+                    <span>Checkbox</span>
+                  </div>
+                </Option>
               </Select>
             </div>
+
+            {/* Checkbox Configuration */}
+            {newColumn.dataType === 'checkbox' && (
+              <div style={{ 
+                backgroundColor: '#fafafa', 
+                padding: '16px', 
+                borderRadius: '8px',
+                border: '1px solid #f0f0f0'
+              }}>
+                <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                  <div>
+                    <Text strong>Icon</Text>
+                    <Select
+                      value={newColumn.checkboxConfig.icon}
+                      onChange={(value) => setNewColumn({
+                        ...newColumn,
+                        checkboxConfig: { ...newColumn.checkboxConfig, icon: value }
+                      })}
+                      style={{ width: '100%', marginTop: '8px' }}
+                    >
+                      <Option value="check-circle">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                          <span>Check Circle</span>
+                        </div>
+                      </Option>
+                      <Option value="border">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <BorderOutlined style={{ color: '#666' }} />
+                          <span>Border</span>
+                        </div>
+                      </Option>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Text strong>Colour</Text>
+                    <Select
+                      value={newColumn.checkboxConfig.color}
+                      onChange={(value) => setNewColumn({
+                        ...newColumn,
+                        checkboxConfig: { ...newColumn.checkboxConfig, color: value }
+                      })}
+                      style={{ width: '100%', marginTop: '8px' }}
+                    >
+                      <Option value="#52c41a">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '16px', 
+                            backgroundColor: '#52c41a', 
+                            borderRadius: '50%',
+                            border: '2px solid #fff',
+                            boxShadow: '0 0 0 1px #d9d9d9'
+                          }} />
+                          <span>Green</span>
+                        </div>
+                      </Option>
+                      <Option value="#1890ff">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '16px', 
+                            backgroundColor: '#1890ff', 
+                            borderRadius: '50%',
+                            border: '2px solid #fff',
+                            boxShadow: '0 0 0 1px #d9d9d9'
+                          }} />
+                          <span>Blue</span>
+                        </div>
+                      </Option>
+                      <Option value="#fa8c16">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '16px', 
+                            backgroundColor: '#fa8c16', 
+                            borderRadius: '50%',
+                            border: '2px solid #fff',
+                            boxShadow: '0 0 0 1px #d9d9d9'
+                          }} />
+                          <span>Orange</span>
+                        </div>
+                      </Option>
+                      <Option value="#f5222d">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '16px', 
+                            backgroundColor: '#f5222d', 
+                            borderRadius: '50%',
+                            border: '2px solid #fff',
+                            boxShadow: '0 0 0 1px #d9d9d9'
+                          }} />
+                          <span>Red</span>
+                        </div>
+                      </Option>
+                      <Option value="#722ed1">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '16px', 
+                            backgroundColor: '#722ed1', 
+                            borderRadius: '50%',
+                            border: '2px solid #fff',
+                            boxShadow: '0 0 0 1px #d9d9d9'
+                          }} />
+                          <span>Purple</span>
+                        </div>
+                      </Option>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Text strong>Default value</Text>
+                    <div style={{ marginTop: '8px' }}>
+                      <Radio.Group
+                        value={newColumn.checkboxConfig.defaultValue}
+                        onChange={(e) => setNewColumn({
+                          ...newColumn,
+                          checkboxConfig: { ...newColumn.checkboxConfig, defaultValue: e.target.value }
+                        })}
+                      >
+                        <Radio value={false}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <BorderOutlined style={{ color: '#666' }} />
+                            <span>Unchecked</span>
+                          </div>
+                        </Radio>
+                        <Radio value={true}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CheckCircleOutlined style={{ color: newColumn.checkboxConfig.color }} />
+                            <span>Checked</span>
+                          </div>
+                        </Radio>
+                      </Radio.Group>
+                    </div>
+                  </div>
+                </Space>
+              </div>
+            )}
+
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              paddingTop: '16px',
+              borderTop: '1px solid #f0f0f0'
+            }}>
+              <Button type="link" size="small" style={{ padding: 0 }}>
+                + Add description
+              </Button>
+              <Button type="link" size="small" style={{ padding: 0 }}>
+                Show more <PlusOutlined />
+              </Button>
+            </div>
+
             <Row justify="end">
               <Space>
                 <Button onClick={() => setShowAddColumn(false)}>
@@ -3205,7 +3531,7 @@ const TableDetail = () => {
                   htmlType="submit"
                   loading={addColumnMutation.isPending}
                 >
-                  Add Column
+                  Save Field
                 </Button>
               </Space>
             </Row>
@@ -3222,32 +3548,210 @@ const TableDetail = () => {
           setEditingColumn(null);
         }}
         footer={null}
+        width={600}
       >
         {editingColumn && (
           <form onSubmit={handleEditColumnSubmit}>
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               <div>
-                <Text strong>Column Name</Text>
+                <Text strong>Field Name</Text>
                 <Input
                   value={editingColumn.name}
                   onChange={(e) => setEditingColumn({ ...editingColumn, name: e.target.value })}
-                  placeholder="Enter column name"
-                  required
+                  placeholder="Field name (Optional)"
                 />
               </div>
               <div>
-                <Text strong>Data Type</Text>
+                <Text strong>Field Type</Text>
                 <Select
                   value={editingColumn.dataType}
                   onChange={(value) => setEditingColumn({ ...editingColumn, dataType: value })}
                   style={{ width: '100%' }}
                 >
-                  <Option value="text">Text</Option>
-                  <Option value="number">Number</Option>
-                  <Option value="date">Date</Option>
-                  <Option value="boolean">Boolean</Option>
+                  <Option value="text">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FieldBinaryOutlined style={{ color: '#1890ff' }} />
+                      <span>Text</span>
+                    </div>
+                  </Option>
+                  <Option value="number">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <NumberOutlined style={{ color: '#52c41a' }} />
+                      <span>Number</span>
+                    </div>
+                  </Option>
+                  <Option value="date">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CalendarOutlined style={{ color: '#fa8c16' }} />
+                      <span>Date</span>
+                    </div>
+                  </Option>
+
+                  <Option value="checkbox">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckSquareOutlined style={{ color: '#52c41a' }} />
+                      <span>Checkbox</span>
+                    </div>
+                  </Option>
                 </Select>
               </div>
+
+              {/* Checkbox Configuration */}
+              {editingColumn.dataType === 'checkbox' && (
+                <div style={{ 
+                  backgroundColor: '#fafafa', 
+                  padding: '16px', 
+                  borderRadius: '8px',
+                  border: '1px solid #f0f0f0'
+                }}>
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    <div>
+                      <Text strong>Icon</Text>
+                      <Select
+                        value={editingColumn.checkboxConfig.icon}
+                        onChange={(value) => setEditingColumn({
+                          ...editingColumn,
+                          checkboxConfig: { ...editingColumn.checkboxConfig, icon: value }
+                        })}
+                        style={{ width: '100%', marginTop: '8px' }}
+                      >
+                        <Option value="check-circle">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                            <span>Check Circle</span>
+                          </div>
+                        </Option>
+                        <Option value="border">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <BorderOutlined style={{ color: '#666' }} />
+                            <span>Border</span>
+                          </div>
+                        </Option>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Text strong>Colour</Text>
+                      <Select
+                        value={editingColumn.checkboxConfig.color}
+                        onChange={(value) => setEditingColumn({
+                          ...editingColumn,
+                          checkboxConfig: { ...editingColumn.checkboxConfig, color: value }
+                        })}
+                        style={{ width: '100%', marginTop: '8px' }}
+                      >
+                        <Option value="#52c41a">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ 
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#52c41a', 
+                              borderRadius: '50%',
+                              border: '2px solid #fff',
+                              boxShadow: '0 0 0 1px #d9d9d9'
+                            }} />
+                            <span>Green</span>
+                          </div>
+                        </Option>
+                        <Option value="#1890ff">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ 
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#1890ff', 
+                              borderRadius: '50%',
+                              border: '2px solid #fff',
+                              boxShadow: '0 0 0 1px #d9d9d9'
+                            }} />
+                            <span>Blue</span>
+                          </div>
+                        </Option>
+                        <Option value="#fa8c16">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ 
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#fa8c16', 
+                              borderRadius: '50%',
+                              border: '2px solid #fff',
+                              boxShadow: '0 0 0 1px #d9d9d9'
+                            }} />
+                            <span>Orange</span>
+                          </div>
+                        </Option>
+                        <Option value="#f5222d">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ 
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#f5222d', 
+                              borderRadius: '50%',
+                              border: '2px solid #fff',
+                              boxShadow: '0 0 0 1px #d9d9d9'
+                            }} />
+                            <span>Red</span>
+                          </div>
+                        </Option>
+                        <Option value="#722ed1">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ 
+                              width: '16px', 
+                              height: '16px', 
+                              backgroundColor: '#722ed1', 
+                              borderRadius: '50%',
+                              border: '2px solid #fff',
+                              boxShadow: '0 0 0 1px #d9d9d9'
+                            }} />
+                            <span>Purple</span>
+                          </div>
+                        </Option>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Text strong>Default value</Text>
+                      <div style={{ marginTop: '8px' }}>
+                        <Radio.Group
+                          value={editingColumn.checkboxConfig.defaultValue}
+                          onChange={(e) => setEditingColumn({
+                            ...editingColumn,
+                            checkboxConfig: { ...editingColumn.checkboxConfig, defaultValue: e.target.value }
+                          })}
+                        >
+                          <Radio value={false}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <BorderOutlined style={{ color: '#666' }} />
+                              <span>Unchecked</span>
+                            </div>
+                          </Radio>
+                          <Radio value={true}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <CheckCircleOutlined style={{ color: editingColumn.checkboxConfig.color }} />
+                              <span>Checked</span>
+                            </div>
+                          </Radio>
+                        </Radio.Group>
+                      </div>
+                    </div>
+                  </Space>
+                </div>
+              )}
+
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                paddingTop: '16px',
+                borderTop: '1px solid #f0f0f0'
+              }}>
+                <Button type="link" size="small" style={{ padding: 0 }}>
+                  + Add description
+                </Button>
+                <Button type="link" size="small" style={{ padding: 0 }}>
+                  Show more <PlusOutlined />
+                </Button>
+              </div>
+
               <Row justify="end">
                 <Space>
                   <Button 
@@ -3263,7 +3767,7 @@ const TableDetail = () => {
                     htmlType="submit"
                     loading={updateColumnMutation.isPending}
                   >
-                    Update Column
+                    Save Field
                   </Button>
                 </Space>
               </Row>

@@ -29,7 +29,7 @@ const columnSchema = new mongoose.Schema({
   dataType: {
     type: String,
     required: true,
-    enum: ['string', 'number', 'boolean', 'date', 'text', 'email', 'url', 'json']
+    enum: ['string', 'number', 'date', 'text', 'email', 'url', 'json', 'checkbox']
   },
   isRequired: {
     type: Boolean,
@@ -42,6 +42,24 @@ const columnSchema = new mongoose.Schema({
   defaultValue: {
     type: mongoose.Schema.Types.Mixed,
     default: null
+  },
+  checkboxConfig: {
+    type: {
+      icon: {
+        type: String,
+        enum: ['check-circle', 'border'],
+        default: 'check-circle'
+      },
+      color: {
+        type: String,
+        default: '#52c41a'
+      },
+      defaultValue: {
+        type: Boolean,
+        default: false
+      }
+    },
+    default: undefined
   },
   order: {
     type: Number,
