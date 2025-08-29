@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
+import SingleSelectConfig from './SingleSelectConfig';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -72,6 +73,10 @@ const TableDetail = () => {
       icon: 'check-circle',
       color: '#52c41a',
       defaultValue: false
+    },
+    singleSelectConfig: {
+      options: [],
+      defaultValue: ''
     }
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
@@ -375,6 +380,7 @@ const TableDetail = () => {
               case 'number': return 'N';
         case 'date': return 'D';
         case 'checkbox': return '☑';
+        case 'single_select': return '▼';
       case 'time': return '⏰';
       case 'datetime': return '📅';
       default: return 'T';
@@ -500,6 +506,10 @@ const TableDetail = () => {
             icon: 'check-circle',
             color: '#52c41a',
             defaultValue: false
+          },
+          singleSelectConfig: {
+            options: [],
+            defaultValue: ''
           }
         });
         queryClient.invalidateQueries(['tableStructure', tableId]);
@@ -656,6 +666,11 @@ const TableDetail = () => {
       columnData.checkboxConfig = newColumn.checkboxConfig;
     }
     
+    // Add single select configuration if data type is single_select
+    if (newColumn.dataType === 'single_select') {
+      columnData.singleSelectConfig = newColumn.singleSelectConfig;
+    }
+    
     console.log('Frontend sending column data:', columnData);
     addColumnMutation.mutate(columnData);
   };
@@ -671,6 +686,10 @@ const TableDetail = () => {
       if (column.dataType === 'checkbox') {
         // Use default value from checkbox configuration
         const config = column.checkboxConfig || { defaultValue: false };
+        emptyData[column.name] = config.defaultValue;
+      } else if (column.dataType === 'single_select') {
+        // Use default value from single select configuration
+        const config = column.singleSelectConfig || { defaultValue: '' };
         emptyData[column.name] = config.defaultValue;
       } else {
       emptyData[column.name] = '';
@@ -698,6 +717,10 @@ const TableDetail = () => {
       if (column.dataType === 'checkbox') {
         // Use default value from checkbox configuration
         const config = column.checkboxConfig || { defaultValue: false };
+        emptyData[column.name] = config.defaultValue;
+      } else if (column.dataType === 'single_select') {
+        // Use default value from single select configuration
+        const config = column.singleSelectConfig || { defaultValue: '' };
         emptyData[column.name] = config.defaultValue;
       } else {
       emptyData[column.name] = '';
@@ -774,6 +797,10 @@ const TableDetail = () => {
         icon: 'check-circle',
         color: '#52c41a',
         defaultValue: false
+      },
+      singleSelectConfig: column.singleSelectConfig || {
+        options: [],
+        defaultValue: ''
       }
     });
     setShowEditColumn(true);
@@ -795,7 +822,12 @@ const TableDetail = () => {
     // Add checkbox configuration if data type is checkbox
     if (editingColumn.dataType === 'checkbox') {
       columnData.checkboxConfig = editingColumn.checkboxConfig;
-      }
+    }
+    
+    // Add single select configuration if data type is single_select
+    if (editingColumn.dataType === 'single_select') {
+      columnData.singleSelectConfig = editingColumn.singleSelectConfig;
+    }
     
     updateColumnMutation.mutate({
       columnId: editingColumn._id,
@@ -1228,6 +1260,7 @@ const TableDetail = () => {
               case 'number': return <NumberOutlined style={{ color: '#52c41a' }} />;
         case 'date': return <CalendarOutlined style={{ color: '#fa8c16' }} />;
         case 'checkbox': return <CheckSquareOutlined style={{ color: '#52c41a' }} />;
+        case 'single_select': return <DownOutlined style={{ color: '#1890ff' }} />;
       default: return <FieldBinaryOutlined style={{ color: '#1890ff' }} />;
     }
   };
@@ -1238,6 +1271,7 @@ const TableDetail = () => {
               case 'number': return '#52c41a';
         case 'date': return '#fa8c16';
         case 'checkbox': return '#52c41a';
+        case 'single_select': return '#1890ff';
       default: return '#1890ff';
     }
   };
@@ -1247,7 +1281,8 @@ const TableDetail = () => {
       text: 'blue',
       number: 'green',
       date: 'orange',
-      checkbox: 'green'
+      checkbox: 'green',
+      single_select: 'blue'
     };
     return <Tag color={colorMap[dataType] || 'blue'}>{dataType.toUpperCase()}</Tag>;
   };
@@ -2783,6 +2818,152 @@ const TableDetail = () => {
                                         <Option value="false">False</Option>
                                       </Select>
                                     );
+                                  } else if (dataType === 'single_select') {
+                                    const config = column.singleSelectConfig || { options: [] };
+                                    return (
+                                      <div style={{ 
+                                        width: '100%',
+                                        height: '100%',
+                                        position: 'absolute',
+                                        top: '0',
+                                        left: '0',
+                                        right: '0',
+                                        bottom: '0',
+                                        boxSizing: 'border-box'
+                                      }}>
+                                        {/* Input Field with Tag Display */}
+                                        <div
+                                          style={{
+                                            border: '1px solid #1890ff',
+                                            borderRadius: '6px',
+                                            padding: '4px 8px',
+                                            backgroundColor: 'white',
+                                            height: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            flexWrap: 'wrap',
+                                            gap: '4px',
+                                            boxSizing: 'border-box'
+                                          }}
+                                        >
+                                          {cellValue ? (
+                                            <Tag
+                                              closable
+                                              onClose={(e) => {
+                                                e.stopPropagation();
+                                                console.log('Clearing single select value');
+                                                setCellValue('');
+                                                
+                                                // Save the record with empty value
+                                                if (editingCell) {
+                                                  const record = records.find(r => r._id === editingCell.recordId);
+                                                  if (record) {
+                                                    const updatedData = { ...record.data };
+                                                    updatedData[editingCell.columnName] = '';
+                                                    
+                                                    console.log('Saving record with cleared data:', updatedData);
+                                                    updateRecordMutation.mutate({
+                                                      recordId: editingCell.recordId,
+                                                      data: updatedData
+                                                    });
+                                                  }
+                                                }
+                                              }}
+                                              style={{
+                                                backgroundColor: '#e6f7ff',
+                                                border: '1px solid #91d5ff',
+                                                color: '#1890ff',
+                                                borderRadius: '4px',
+                                                margin: 0,
+                                                fontSize: '12px'
+                                              }}
+                                            >
+                                              {cellValue}
+                                            </Tag>
+                                          ) : (
+                                            <span style={{ color: '#bfbfbf', fontSize: '12px' }}>Select option</span>
+                                          )}
+                                        </div>
+
+                                        {/* Dropdown Options */}
+                                        <div
+                                          style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            left: 0,
+                                            right: 0,
+                                            backgroundColor: 'white',
+                                            border: '1px solid #d9d9d9',
+                                            borderRadius: '6px',
+                                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                                            zIndex: 1000,
+                                            maxHeight: '200px',
+                                            overflow: 'auto',
+                                            marginTop: '4px'
+                                          }}
+                                        >
+                                          {config.options.map((option, index) => (
+                                            <div
+                                              key={index}
+                                              style={{
+                                                padding: '8px 12px',
+                                                cursor: 'pointer',
+                                                borderBottom: index < config.options.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                                transition: 'background-color 0.2s'
+                                              }}
+                                              onClick={() => {
+                                                console.log('Single select option clicked:', option);
+                                                console.log('Current cellValue:', cellValue);
+                                                console.log('Current editingCell:', editingCell);
+                                                
+                                                // Update cellValue and save immediately
+                                                setCellValue(option);
+                                                
+                                                // Save the record with the new value
+                                                if (editingCell) {
+                                                  const record = records.find(r => r._id === editingCell.recordId);
+                                                  if (record) {
+                                                    const updatedData = { ...record.data };
+                                                    updatedData[editingCell.columnName] = option;
+                                                    
+                                                    console.log('Saving record with data:', updatedData);
+                                                    updateRecordMutation.mutate({
+                                                      recordId: editingCell.recordId,
+                                                      data: updatedData
+                                                    });
+                                                  }
+                                                }
+                                              }}
+                                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                            >
+                                              <Tag
+                                                style={{
+                                                  backgroundColor: '#e6f7ff',
+                                                  border: '1px solid #91d5ff',
+                                                  color: '#1890ff',
+                                                  borderRadius: '4px',
+                                                  margin: 0,
+                                                  fontSize: '12px'
+                                                }}
+                                              >
+                                                {option}
+                                              </Tag>
+                                            </div>
+                                          ))}
+                                          {config.options.length === 0 && (
+                                            <div style={{
+                                              padding: '8px 12px',
+                                              color: '#bfbfbf',
+                                              textAlign: 'center',
+                                              fontSize: '12px'
+                                            }}>
+                                              No options available
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
                                   } else {
                                     return (
                                       <Input
@@ -2817,7 +2998,7 @@ const TableDetail = () => {
                               ) : (
                                 <div
                                   style={{ 
-                                    cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer', 
+                                    cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? 'default' : 'pointer', 
                                     padding: '8px', 
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
@@ -2831,9 +3012,9 @@ const TableDetail = () => {
                                     color: column.isSystem ? '#666' : '#333',
                                     fontStyle: column.isSystem ? 'italic' : 'normal'
                                   }}
-                                  onClick={column.isSystem || column.dataType === 'checkbox' ? undefined : () => handleCellClick(record._id, column.name, value)}
-                                  onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                                  onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                                  onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                                  onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                  onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                                 >
                                   {column.dataType === 'datetime' && value ? 
                                     value // Already formatted by formatDateTime
@@ -2887,6 +3068,69 @@ const TableDetail = () => {
                                                 <BorderOutlined style={{ color: '#666', fontSize: '16px' }} />
                                             )}
                                           </div>
+                                        </div>
+                                      );
+                                    })() 
+                                    : column.dataType === 'single_select' ? 
+                                    (() => {
+                                      const config = column.singleSelectConfig || { options: [] };
+                                      const selectedOption = config.options.find(option => option === value) || value;
+                                      
+                                      return (
+                                        <div style={{ 
+                                          display: 'flex', 
+                                          justifyContent: 'center', 
+                                          alignItems: 'center',
+                                          height: '100%',
+                                          width: '100%'
+                                        }}>
+                                          {selectedOption ? (
+                                            <Tag
+                                              closable
+                                              onClose={(e) => {
+                                                e.stopPropagation();
+                                                console.log('Clearing single select value (display)');
+                                                
+                                                // Save the record with empty value
+                                                const updatedData = { ...record.data };
+                                                updatedData[column.name] = '';
+                                                
+                                                console.log('Saving record with cleared data (display):', updatedData);
+                                                updateRecordMutation.mutate({
+                                                  recordId: record._id,
+                                                  data: updatedData
+                                                });
+                                              }}
+                                              style={{
+                                                backgroundColor: '#e6f7ff',
+                                                border: '1px solid #91d5ff',
+                                                color: '#1890ff',
+                                                borderRadius: '4px',
+                                                margin: 0,
+                                                cursor: 'pointer',
+                                                fontSize: '12px'
+                                              }}
+                                              onClick={() => handleCellClick(record._id, column.name, value)}
+                                            >
+                                              {selectedOption}
+                                            </Tag>
+                                          ) : (
+                                            <div
+                                              onClick={() => handleCellClick(record._id, column.name, value)}
+                                              style={{
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                color: '#bfbfbf',
+                                                backgroundColor: '#fafafa',
+                                                padding: '4px 8px',
+                                                borderRadius: '4px',
+                                                border: '1px solid #d9d9d9',
+                                                transition: 'all 0.2s ease'
+                                              }}
+                                            >
+                                              Select option
+                                            </div>
+                                          )}
                                         </div>
                                       );
                                     })() 
@@ -3134,6 +3378,131 @@ const TableDetail = () => {
                                   <Option value="false">False</Option>
                                 </Select>
                               );
+                            } else if (dataType === 'single_select') {
+                              const config = column.singleSelectConfig || { options: [] };
+                              return (
+                                <div style={{ 
+                                  width: '100%',
+                                  height: '100%',
+                                  position: 'absolute',
+                                  top: '0',
+                                  left: '0',
+                                  right: '0',
+                                  bottom: '0',
+                                  boxSizing: 'border-box'
+                                }}>
+                                  {/* Input Field with Tag Display */}
+                                  <div
+                                    style={{
+                                      border: '1px solid #1890ff',
+                                      borderRadius: '6px',
+                                      padding: '4px 8px',
+                                      backgroundColor: 'white',
+                                      height: '100%',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      flexWrap: 'wrap',
+                                      gap: '4px',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  >
+                                    {cellValue ? (
+                                      <Tag
+                                        style={{
+                                          backgroundColor: '#e6f7ff',
+                                          border: '1px solid #91d5ff',
+                                          color: '#1890ff',
+                                          borderRadius: '4px',
+                                          margin: 0,
+                                          fontSize: '12px'
+                                        }}
+                                      >
+                                        {cellValue}
+                                      </Tag>
+                                    ) : (
+                                      <span style={{ color: '#bfbfbf', fontSize: '12px' }}>Select option</span>
+                                    )}
+                                  </div>
+
+                                  {/* Dropdown Options */}
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '100%',
+                                      left: 0,
+                                      right: 0,
+                                      backgroundColor: 'white',
+                                      border: '1px solid #d9d9d9',
+                                      borderRadius: '6px',
+                                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                                      zIndex: 1000,
+                                      maxHeight: '200px',
+                                      overflow: 'auto',
+                                      marginTop: '4px'
+                                    }}
+                                  >
+                                    {config.options.map((option, index) => (
+                                      <div
+                                        key={index}
+                                        style={{
+                                          padding: '8px 12px',
+                                          cursor: 'pointer',
+                                          borderBottom: index < config.options.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                          transition: 'background-color 0.2s'
+                                        }}
+                                        onClick={() => {
+                                          console.log('Single select option clicked (ungrouped):', option);
+                                          console.log('Current cellValue:', cellValue);
+                                          console.log('Current editingCell:', editingCell);
+                                          
+                                          // Update cellValue and save immediately
+                                          setCellValue(option);
+                                          
+                                          // Save the record with the new value
+                                          if (editingCell) {
+                                            const record = records.find(r => r._id === editingCell.recordId);
+                                            if (record) {
+                                              const updatedData = { ...record.data };
+                                              updatedData[editingCell.columnName] = option;
+                                              
+                                              console.log('Saving record with data (ungrouped):', updatedData);
+                                              updateRecordMutation.mutate({
+                                                recordId: editingCell.recordId,
+                                                data: updatedData
+                                              });
+                                            }
+                                          }
+                                        }}
+                                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                      >
+                                        <Tag
+                                          style={{
+                                            backgroundColor: '#e6f7ff',
+                                            border: '1px solid #91d5ff',
+                                            color: '#1890ff',
+                                            borderRadius: '4px',
+                                            margin: 0,
+                                            fontSize: '12px'
+                                          }}
+                                        >
+                                          {option}
+                                        </Tag>
+                                      </div>
+                                    ))}
+                                    {config.options.length === 0 && (
+                                      <div style={{
+                                        padding: '8px 12px',
+                                        color: '#bfbfbf',
+                                        textAlign: 'center',
+                                        fontSize: '12px'
+                                      }}>
+                                        No options available
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
                             } else {
                               return (
                                 <Input
@@ -3167,8 +3536,8 @@ const TableDetail = () => {
                           })()
                         ) : (
                           <div
-                            style={{ 
-                              cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer', 
+                                                              style={{ 
+                                    cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? 'default' : 'pointer',  
                               padding: '8px', 
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -3182,9 +3551,9 @@ const TableDetail = () => {
                               color: column.isSystem ? '#666' : '#333',
                               fontStyle: column.isSystem ? 'italic' : 'normal'
                             }}
-                            onClick={column.isSystem || column.dataType === 'checkbox' ? undefined : () => handleCellClick(record._id, column.name, value)}
-                                                          onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                            onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                                                          onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                           >
                             {column.dataType === 'datetime' && value ? 
                               value // Already formatted by formatDateTime
@@ -3238,6 +3607,69 @@ const TableDetail = () => {
                                           <BorderOutlined style={{ color: '#666', fontSize: '16px' }} />
                                       )}
                                     </div>
+                                  </div>
+                                );
+                              })() 
+                              : column.dataType === 'single_select' ? 
+                              (() => {
+                                const config = column.singleSelectConfig || { options: [] };
+                                const selectedOption = config.options.find(option => option === value) || value;
+                                
+                                return (
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    height: '100%',
+                                    width: '100%'
+                                  }}>
+                                    {selectedOption ? (
+                                      <Tag
+                                        closable
+                                        onClose={(e) => {
+                                          e.stopPropagation();
+                                          console.log('Clearing single select value (ungrouped display)');
+                                          
+                                          // Save the record with empty value
+                                          const updatedData = { ...record.data };
+                                          updatedData[column.name] = '';
+                                          
+                                          console.log('Saving record with cleared data (ungrouped display):', updatedData);
+                                          updateRecordMutation.mutate({
+                                            recordId: record._id,
+                                            data: updatedData
+                                          });
+                                        }}
+                                        style={{
+                                          backgroundColor: '#e6f7ff',
+                                          border: '1px solid #91d5ff',
+                                          color: '#1890ff',
+                                          borderRadius: '4px',
+                                          margin: 0,
+                                          cursor: 'pointer',
+                                          fontSize: '12px'
+                                        }}
+                                        onClick={() => handleCellClick(record._id, column.name, value)}
+                                      >
+                                        {selectedOption}
+                                      </Tag>
+                                    ) : (
+                                      <div
+                                        onClick={() => handleCellClick(record._id, column.name, value)}
+                                        style={{
+                                          cursor: 'pointer',
+                                          fontSize: '12px',
+                                          color: '#bfbfbf',
+                                          backgroundColor: '#fafafa',
+                                          padding: '4px 8px',
+                                          borderRadius: '4px',
+                                          border: '1px solid #d9d9d9',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      >
+                                        Select option
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })() 
@@ -3360,6 +3792,12 @@ const TableDetail = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <CheckSquareOutlined style={{ color: '#52c41a' }} />
                     <span>Checkbox</span>
+                  </div>
+                </Option>
+                <Option value="single_select">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <DownOutlined style={{ color: '#1890ff' }} />
+                    <span>Single select</span>
                   </div>
                 </Option>
               </Select>
@@ -3506,6 +3944,17 @@ const TableDetail = () => {
               </div>
             )}
 
+            {/* Single Select Configuration */}
+            {newColumn.dataType === 'single_select' && (
+              <SingleSelectConfig
+                config={newColumn.singleSelectConfig}
+                onChange={(config) => setNewColumn({
+                  ...newColumn,
+                  singleSelectConfig: config
+                })}
+              />
+            )}
+
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -3591,6 +4040,12 @@ const TableDetail = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckSquareOutlined style={{ color: '#52c41a' }} />
                       <span>Checkbox</span>
+                    </div>
+                  </Option>
+                  <Option value="single_select">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <DownOutlined style={{ color: '#1890ff' }} />
+                      <span>Single select</span>
                     </div>
                   </Option>
                 </Select>
@@ -3735,6 +4190,17 @@ const TableDetail = () => {
                     </div>
                   </Space>
                 </div>
+              )}
+
+              {/* Single Select Configuration */}
+              {editingColumn.dataType === 'single_select' && (
+                <SingleSelectConfig
+                  config={editingColumn.singleSelectConfig}
+                  onChange={(config) => setEditingColumn({
+                    ...editingColumn,
+                    singleSelectConfig: config
+                  })}
+                />
               )}
 
               <div style={{ 

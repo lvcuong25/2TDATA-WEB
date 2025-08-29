@@ -5,7 +5,7 @@ import Database from '../model/Database.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -16,7 +16,8 @@ export const createColumn = async (req, res) => {
       isRequired,
       isUnique,
       defaultValue,
-      checkboxConfig
+      checkboxConfig,
+      singleSelectConfig
     });
 
     if (!name || name.trim() === '') {
@@ -76,6 +77,15 @@ export const createColumn = async (req, res) => {
         icon: checkboxConfig.icon || 'check-circle',
         color: checkboxConfig.color || '#52c41a',
         defaultValue: checkboxConfig.defaultValue !== undefined ? checkboxConfig.defaultValue : false
+      };
+    }
+
+    // Only add singleSelectConfig if dataType is single_select and singleSelectConfig is provided
+    if (dataType === 'single_select' && singleSelectConfig) {
+      // Ensure singleSelectConfig has all required fields with defaults
+      columnData.singleSelectConfig = {
+        options: singleSelectConfig.options || [],
+        defaultValue: singleSelectConfig.defaultValue || ''
       };
     }
 
@@ -165,7 +175,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -219,6 +229,14 @@ export const updateColumn = async (req, res) => {
     } else if (dataType !== 'checkbox') {
       // Remove checkboxConfig if dataType is not checkbox
       column.checkboxConfig = undefined;
+    }
+
+    // Only update singleSelectConfig if dataType is single_select and singleSelectConfig is provided
+    if (dataType === 'single_select' && singleSelectConfig !== undefined) {
+      column.singleSelectConfig = singleSelectConfig;
+    } else if (dataType !== 'single_select') {
+      // Remove singleSelectConfig if dataType is not single_select
+      column.singleSelectConfig = undefined;
     }
 
     await column.save();
