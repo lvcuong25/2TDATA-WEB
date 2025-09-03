@@ -53,8 +53,53 @@ const FormulaConfig = ({
   };
 
   const addColumnReference = (columnName) => {
-    const newFormula = formula + `{${columnName}}`;
-    setFormula(newFormula);
+    const columnRef = `{${columnName}}`;
+    
+    // Look for the pattern: FUNCTION(){existing_columns}
+    const functionWithTrailingColumnsPattern = /(SUM|AVG|ADD|MIN|MAX|COUNT)\(\)(\{[^}]+\})+$/;
+    const trailingMatch = formula.match(functionWithTrailingColumnsPattern);
+    
+    if (trailingMatch) {
+      // Case: SUM(){col1}{col2} -> need to move everything inside parentheses
+      const funcName = trailingMatch[1];
+      const allTrailingColumns = formula.substring(formula.indexOf(funcName) + funcName.length + 2); // Skip "FUNC()"
+      
+      // Extract all column references
+      const columnMatches = allTrailingColumns.match(/\{[^}]+\}/g) || [];
+      
+      // Build parameters list with new column
+      const allColumns = [...columnMatches, columnRef];
+      const params = allColumns.join(', ');
+      
+      // Reconstruct formula
+      const beforeFunction = formula.substring(0, formula.indexOf(funcName));
+      const newFormula = beforeFunction + `${funcName}(${params})`;
+      setFormula(newFormula);
+      return;
+    }
+    
+    // Look for empty function: FUNCTION()
+    const emptyFunctionPattern = /(SUM|AVG|ADD|MIN|MAX|COUNT)\(\)$/;
+    if (formula.match(emptyFunctionPattern)) {
+      const newFormula = formula.replace(emptyFunctionPattern, `$1(${columnRef})`);
+      setFormula(newFormula);
+      return;
+    }
+    
+    // Look for function with existing parameters: FUNCTION(params)
+    const functionWithParamsPattern = /(SUM|AVG|ADD|MIN|MAX|COUNT)\(([^)]*)\)$/;
+    const funcMatch = formula.match(functionWithParamsPattern);
+    if (funcMatch) {
+      const funcName = funcMatch[1];
+      const currentParams = funcMatch[2].trim();
+      const newParams = currentParams ? `${currentParams}, ${columnRef}` : columnRef;
+      const newFormula = formula.replace(functionWithParamsPattern, `${funcName}(${newParams})`);
+      setFormula(newFormula);
+      return;
+    }
+    
+    // Default: add at the end
+    setFormula(formula + columnRef);
   };
 
   const renderFunctionTooltip = (func) => (
