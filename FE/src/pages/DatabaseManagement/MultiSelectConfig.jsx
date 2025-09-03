@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Input, Button, Space, Typography, Select } from 'antd';
-import { PlusOutlined, DeleteOutlined, MenuOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, MenuOutlined, CheckSquareOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -151,18 +151,24 @@ const MultiSelectConfig = ({
                 color: '#bfbfbf',
                 fontSize: '12px',
                 padding: '4px',
-                width: '16px'
+                width: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                ⋮⋮
+                <MenuOutlined style={{ fontSize: '12px', color: '#bfbfbf' }} />
               </div>
               
               <div style={{ 
-                color: '#bfbfbf',
+                color: '#722ed1',
                 fontSize: '12px',
                 padding: '4px',
-                width: '16px'
+                width: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                ☐☐
+                <CheckSquareOutlined style={{ fontSize: '12px', color: '#722ed1' }} />
               </div>
               
               <Input

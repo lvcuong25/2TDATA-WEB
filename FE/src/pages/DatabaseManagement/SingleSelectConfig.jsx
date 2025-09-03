@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Input, Button, Space, Typography, Select } from 'antd';
-import { PlusOutlined, DeleteOutlined, MenuOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, MenuOutlined, DownOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -149,18 +149,24 @@ const SingleSelectConfig = ({
                 color: '#bfbfbf',
                 fontSize: '12px',
                 padding: '4px',
-                width: '16px'
+                width: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                ⋮⋮
+                <MenuOutlined style={{ fontSize: '12px', color: '#bfbfbf' }} />
               </div>
               
               <div style={{ 
-                color: '#bfbfbf',
+                color: '#1890ff',
                 fontSize: '12px',
                 padding: '4px',
-                width: '16px'
+                width: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}>
-                ▼
+                <DownOutlined style={{ fontSize: '12px', color: '#1890ff' }} />
               </div>
               
               <Input

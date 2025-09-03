@@ -56,7 +56,11 @@ import {
   CheckSquareOutlined,
   BorderOutlined,
   PlusCircleOutlined,
-  MinusCircleOutlined
+  MinusCircleOutlined,
+  MailOutlined,
+  LinkOutlined,
+  CodeOutlined,
+  MenuOutlined
 } from '@ant-design/icons';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 
@@ -1383,22 +1387,30 @@ const TableDetail = () => {
 
   const getDataTypeIcon = (dataType) => {
     switch (dataType) {
-      case 'text': return <FieldBinaryOutlined style={{ color: '#1890ff' }} />;
-              case 'number': return <NumberOutlined style={{ color: '#52c41a' }} />;
-        case 'date': return <CalendarOutlined style={{ color: '#fa8c16' }} />;
-        case 'checkbox': return <CheckSquareOutlined style={{ color: '#52c41a' }} />;
-        case 'single_select': return <DownOutlined style={{ color: '#1890ff' }} />;
-      default: return <FieldBinaryOutlined style={{ color: '#1890ff' }} />;
+      case 'text': return <FieldBinaryOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
+      case 'number': return <NumberOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
+      case 'date': return <CalendarOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
+      case 'checkbox': return <CheckSquareOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
+      case 'single_select': return <DownOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
+      case 'multi_select': return <CheckSquareOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
+      case 'email': return <MailOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
+      case 'url': return <LinkOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
+      case 'json': return <CodeOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
+      default: return <FieldBinaryOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
     }
   };
 
   const getDataTypeColor = (dataType) => {
     switch (dataType) {
       case 'text': return '#1890ff';
-              case 'number': return '#52c41a';
-        case 'date': return '#fa8c16';
-        case 'checkbox': return '#52c41a';
-        case 'single_select': return '#1890ff';
+      case 'number': return '#52c41a';
+      case 'date': return '#fa8c16';
+      case 'checkbox': return '#52c41a';
+      case 'single_select': return '#1890ff';
+      case 'multi_select': return '#722ed1';
+      case 'email': return '#1890ff';
+      case 'url': return '#1890ff';
+      case 'json': return '#722ed1';
       default: return '#1890ff';
     }
   };
@@ -1409,7 +1421,11 @@ const TableDetail = () => {
       number: 'green',
       date: 'orange',
       checkbox: 'green',
-      single_select: 'blue'
+      single_select: 'blue',
+      multi_select: 'purple',
+      email: 'blue',
+      url: 'blue',
+      json: 'purple'
     };
     return <Tag color={colorMap[dataType] || 'blue'}>{dataType.toUpperCase()}</Tag>;
   };
@@ -1615,9 +1631,11 @@ const TableDetail = () => {
                             <div style={{ 
                               cursor: 'grab',
                               color: '#bfbfbf',
-                              fontSize: '12px'
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center'
                             }}>
-                              ⋮⋮
+                              <MenuOutlined style={{ fontSize: '14px' }} />
                             </div>
                             
                             {/* Field Icon */}
@@ -1629,7 +1647,8 @@ const TableDetail = () => {
                               borderRadius: '3px',
                               padding: '2px 6px',
                               minWidth: '16px',
-                              textAlign: 'center'
+                              textAlign: 'center',
+                              border: '1px solid #d9d9d9'
                             }}>
                               {getTypeLetter(column.dataType)}
                             </div>
@@ -4491,6 +4510,27 @@ const TableDetail = () => {
                     <span>Multi select</span>
                   </div>
                 </Option>
+                
+                <Option value="email">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MailOutlined style={{ color: '#1890ff' }} />
+                    <span>Email</span>
+                  </div>
+                </Option>
+                
+                <Option value="url">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <LinkOutlined style={{ color: '#1890ff' }} />
+                    <span>URL</span>
+                  </div>
+                </Option>
+                
+                <Option value="json">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CodeOutlined style={{ color: '#722ed1' }} />
+                    <span>JSON</span>
+                  </div>
+                </Option>
               </Select>
             </div>
 
@@ -4765,8 +4805,29 @@ const TableDetail = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckSquareOutlined style={{ color: '#722ed1' }} />
                       <span>Multi select</span>
-                    </div>
-                  </Option>
+                  </div>
+                </Option>
+                
+                <Option value="email">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MailOutlined style={{ color: '#1890ff' }} />
+                    <span>Email</span>
+                  </div>
+                </Option>
+                
+                <Option value="url">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <LinkOutlined style={{ color: '#1890ff' }} />
+                    <span>URL</span>
+                  </div>
+                </Option>
+                
+                <Option value="json">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CodeOutlined style={{ color: '#722ed1' }} />
+                    <span>JSON</span>
+                  </div>
+                </Option>
                 </Select>
               </div>
 
