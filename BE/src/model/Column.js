@@ -29,7 +29,7 @@ const columnSchema = new mongoose.Schema({
   dataType: {
     type: String,
     required: true,
-    enum: ['string', 'number', 'date', 'text', 'email', 'url', 'json', 'checkbox', 'single_select']
+    enum: ['string', 'number', 'date', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select']
   },
   isRequired: {
     type: Boolean,
@@ -70,6 +70,19 @@ const columnSchema = new mongoose.Schema({
       defaultValue: {
         type: String,
         default: ''
+      }
+    },
+    default: undefined
+  },
+  multiSelectConfig: {
+    type: {
+      options: {
+        type: [String],
+        default: []
+      },
+      defaultValue: {
+        type: [String],
+        default: []
       }
     },
     default: undefined
