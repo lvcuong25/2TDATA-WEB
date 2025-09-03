@@ -521,6 +521,10 @@ const TableDetail = () => {
             options: [],
             defaultValue: ''
           },
+          multiSelectConfig: {
+            options: [],
+            defaultValue: []
+          },
           dateConfig: {
             format: 'DD/MM/YYYY'
           }
@@ -682,6 +686,11 @@ const TableDetail = () => {
     // Add single select configuration if data type is single_select
     if (newColumn.dataType === 'single_select') {
       columnData.singleSelectConfig = newColumn.singleSelectConfig;
+    }
+    
+    // Add multi select configuration if data type is multi_select
+    if (newColumn.dataType === 'multi_select') {
+      columnData.multiSelectConfig = newColumn.multiSelectConfig;
     }
     
     // Add date configuration if data type is date
