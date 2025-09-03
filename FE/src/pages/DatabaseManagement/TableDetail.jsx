@@ -752,6 +752,12 @@ const TableDetail = () => {
         // Use default value from single select configuration
         const config = column.singleSelectConfig || { defaultValue: '' };
         emptyData[column.name] = config.defaultValue;
+        console.log('✅ Single-select default applied:', { 
+          columnName: column.name, 
+          defaultValue: config.defaultValue,
+          hasConfig: !!column.singleSelectConfig,
+          options: config.options 
+        });
       } else if (column.dataType === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
@@ -3385,7 +3391,21 @@ const TableDetail = () => {
                                     : column.dataType === 'single_select' ? 
                                     (() => {
                                       const config = column.singleSelectConfig || { options: [] };
-                                      const selectedOption = config.options.find(option => option === value) || value;
+                                      // Use actual value or default if empty  
+                                      let displayValue = value;
+                                      if (!displayValue && config.defaultValue) {
+                                        displayValue = config.defaultValue;
+                                      }
+                                      const selectedOption = config.options.find(option => option === displayValue) || displayValue;
+                                      
+                                      console.log('Single-select debug:', {
+                                        columnName: column.name,
+                                        rawValue: value,
+                                        displayValue,
+                                        selectedOption,
+                                        config,
+                                        usingDefault: displayValue === config.defaultValue
+                                      });
                                       
                                       return (
                                         <div style={{ 
@@ -4177,7 +4197,21 @@ const TableDetail = () => {
                               : column.dataType === 'single_select' ? 
                               (() => {
                                 const config = column.singleSelectConfig || { options: [] };
-                                const selectedOption = config.options.find(option => option === value) || value;
+                                // Use actual value or default if empty  
+                                      let displayValue = value;
+                                      if (!displayValue && config.defaultValue) {
+                                        displayValue = config.defaultValue;
+                                      }
+                                      const selectedOption = config.options.find(option => option === displayValue) || displayValue;
+                                      
+                                      console.log('Single-select debug:', {
+                                        columnName: column.name,
+                                        rawValue: value,
+                                        displayValue,
+                                        selectedOption,
+                                        config,
+                                        usingDefault: displayValue === config.defaultValue
+                                      });
                                 
                                 return (
                                   <div style={{ 
