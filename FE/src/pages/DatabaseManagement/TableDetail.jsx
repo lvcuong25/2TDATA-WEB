@@ -3,6 +3,7 @@ import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormat
 import SingleSelectConfig from './SingleSelectConfig';
 import MultiSelectConfig from './MultiSelectConfig';
 import DateConfig from './DateConfig';
+import FormulaConfig from './FormulaConfig';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -60,7 +61,8 @@ import {
   MailOutlined,
   LinkOutlined,
   CodeOutlined,
-  MenuOutlined
+  MenuOutlined,
+  FunctionOutlined
 } from '@ant-design/icons';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 
@@ -91,6 +93,12 @@ const TableDetail = () => {
     },
     dateConfig: {
       format: 'DD/MM/YYYY'
+    },
+    formulaConfig: {
+      formula: '',
+      resultType: 'number',
+      dependencies: [],
+      description: ''
     }
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
@@ -735,6 +743,11 @@ const TableDetail = () => {
     if (newColumn.dataType === 'date') {
       columnData.dateConfig = newColumn.dateConfig;
     }
+
+    // Add formula configuration if data type is formula
+    if (newColumn.dataType === 'formula') {
+      columnData.formulaConfig = newColumn.formulaConfig;
+    }
     
     console.log('Frontend sending column data:', columnData);
     addColumnMutation.mutate(columnData);
@@ -906,6 +919,12 @@ const TableDetail = () => {
       },
       dateConfig: column.dateConfig || {
         format: 'DD/MM/YYYY'
+      },
+      formulaConfig: column.formulaConfig || {
+        formula: '',
+        resultType: 'number',
+        dependencies: [],
+        description: ''
       }
     });
     setShowEditColumn(true);
@@ -942,6 +961,11 @@ const TableDetail = () => {
     // Add date configuration if data type is date
     if (editingColumn.dataType === 'date') {
       columnData.dateConfig = editingColumn.dateConfig;
+    }
+
+    // Add formula configuration if data type is formula
+    if (editingColumn.dataType === 'formula') {
+      columnData.formulaConfig = editingColumn.formulaConfig;
     }
     
     updateColumnMutation.mutate({
@@ -1393,6 +1417,7 @@ const TableDetail = () => {
       case 'checkbox': return <CheckSquareOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
       case 'single_select': return <DownOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
       case 'multi_select': return <CheckSquareOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
+      case 'formula': return <FunctionOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
       case 'email': return <MailOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
       case 'url': return <LinkOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
       case 'json': return <CodeOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
@@ -1408,6 +1433,7 @@ const TableDetail = () => {
       case 'checkbox': return '#52c41a';
       case 'single_select': return '#1890ff';
       case 'multi_select': return '#722ed1';
+      case 'formula': return '#722ed1';
       case 'email': return '#1890ff';
       case 'url': return '#1890ff';
       case 'json': return '#722ed1';
@@ -1423,6 +1449,7 @@ const TableDetail = () => {
       checkbox: 'green',
       single_select: 'blue',
       multi_select: 'purple',
+      formula: 'purple',
       email: 'blue',
       url: 'blue',
       json: 'purple'
@@ -4511,9 +4538,16 @@ const TableDetail = () => {
                   </div>
                 </Option>
                 
+                <Option value="formula">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FunctionOutlined style={{ color: '#722ed1' }} />
+                    <span>Formula</span>
+                  </div>
+                </Option>
+                
                 <Option value="email">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <MailOutlined style={{ color: '#1890ff' }} />
+                    <LinkOutlined style={{ color: '#1890ff' }} />
                     <span>Email</span>
                   </div>
                 </Option>
@@ -4708,6 +4742,18 @@ const TableDetail = () => {
               />
             )}
 
+            {/* Formula Configuration */}
+            {newColumn.dataType === 'formula' && (
+              <FormulaConfig
+                formulaConfig={newColumn.formulaConfig}
+                onFormulaConfigChange={(formulaConfig) => setNewColumn({ ...newColumn, formulaConfig })}
+                availableColumns={columns}
+                onValidationChange={(isValid, errors) => {
+                  // Handle validation state if needed
+                }}
+              />
+            )}
+
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -4805,6 +4851,13 @@ const TableDetail = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckSquareOutlined style={{ color: '#722ed1' }} />
                       <span>Multi select</span>
+                  </div>
+                </Option>
+                
+                <Option value="formula">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FunctionOutlined style={{ color: '#722ed1' }} />
+                    <span>Formula</span>
                   </div>
                 </Option>
                 
@@ -5002,6 +5055,18 @@ const TableDetail = () => {
                     ...editingColumn,
                     dateConfig: config
                   })}
+                />
+              )}
+
+              {/* Formula Configuration */}
+              {editingColumn.dataType === 'formula' && (
+                <FormulaConfig
+                  formulaConfig={editingColumn.formulaConfig}
+                  onFormulaConfigChange={(formulaConfig) => setEditingColumn({ ...editingColumn, formulaConfig })}
+                  availableColumns={columns}
+                  onValidationChange={(isValid, errors) => {
+                    // Handle validation state if needed
+                  }}
                 />
               )}
 

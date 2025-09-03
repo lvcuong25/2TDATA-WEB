@@ -3,6 +3,55 @@ import Table from '../model/Table.js';
 import Column from '../model/Column.js';
 import Database from '../model/Database.js';
 import FilterPreference from '../model/FilterPreference.js';
+import { evaluateFormula } from '../utils/formulaEngine.js';
+
+
+// Helper function to calculate formula columns for records
+const calculateFormulaColumns = async (records, tableId) => {
+  try {
+    // Get all columns for this table
+    const columns = await Column.find({ tableId });
+    const formulaColumns = columns.filter(col => col.dataType === 'formula' && col.formulaConfig);
+    
+    if (formulaColumns.length === 0) {
+      return records; // No formula columns, return as is
+    }
+    
+    // Calculate formula values for each record
+    const enhancedRecords = records.map(record => {
+      const enhancedRecord = record.toObject ? record.toObject() : record;
+      
+      // Calculate each formula column
+      formulaColumns.forEach(formulaColumn => {
+        try {
+          const formulaValue = evaluateFormula(
+            formulaColumn.formulaConfig.formula,
+            enhancedRecord.data || {},
+            columns
+          );
+          
+          // Add calculated value to record data
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[formulaColumn.name] = formulaValue;
+          
+        } catch (error) {
+          console.error(`Error calculating formula for column ${formulaColumn.name}:`, error);
+          // Set error value or null for failed calculations
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[formulaColumn.name] = null;
+        }
+      });
+      
+      return enhancedRecord;
+    });
+    
+    return enhancedRecords;
+    
+  } catch (error) {
+    console.error('Error calculating formula columns:', error);
+    return records; // Return original records if calculation fails
+  }
+};
 
 // Record Controllers
 export const createRecord = async (req, res) => {
@@ -242,9 +291,12 @@ export const getRecords = async (req, res) => {
 
     const totalRecords = await Record.countDocuments(filterQuery);
 
+    // Calculate formula columns
+    const enhancedRecords = await calculateFormulaColumns(records, tableId);
+
     res.status(200).json({
       success: true,
-      data: records,
+      data: enhancedRecords,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -276,9 +328,13 @@ export const getRecordById = async (req, res) => {
       return res.status(404).json({ message: 'Record not found' });
     }
 
+    // Calculate formula columns for single record
+    const enhancedRecord = await calculateFormulaColumns([record], tableId);
+    const finalRecord = enhancedRecord[0] || record;
+
     res.status(200).json({
       success: true,
-      data: record
+      data: finalRecord
     });
   } catch (error) {
     console.error('Error fetching record:', error);

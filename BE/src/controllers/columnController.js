@@ -5,7 +5,7 @@ import Database from '../model/Database.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -108,6 +108,17 @@ export const createColumn = async (req, res) => {
       };
     }
 
+    // Only add formulaConfig if dataType is formula and formulaConfig is provided
+    if (dataType === 'formula' && formulaConfig) {
+      // Ensure formulaConfig has all required fields with defaults
+      columnData.formulaConfig = {
+        formula: formulaConfig.formula || '',
+        resultType: formulaConfig.resultType || 'number',
+        dependencies: formulaConfig.dependencies || [],
+        description: formulaConfig.description || ''
+      };
+    }
+
     console.log('Column data to save:', columnData);
 
     const column = new Column(columnData);
@@ -194,7 +205,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -272,6 +283,14 @@ export const updateColumn = async (req, res) => {
     } else if (dataType !== 'date') {
       // Remove dateConfig if dataType is not date
       column.dateConfig = undefined;
+    }
+
+    // Only update formulaConfig if dataType is formula and formulaConfig is provided
+    if (dataType === 'formula' && formulaConfig !== undefined) {
+      column.formulaConfig = formulaConfig;
+    } else if (dataType !== 'formula') {
+      // Remove formulaConfig if dataType is not formula
+      column.formulaConfig = undefined;
     }
 
     await column.save();
