@@ -767,6 +767,8 @@ const TableDetail = () => {
       order: records.length + 1
     };
     
+    console.log('🚀 About to create record with data:', recordData);
+    console.log('🚀 About to create grouped record with data:', recordData);
     addRecordMutation.mutate(recordData);
   };
 
@@ -789,7 +791,22 @@ const TableDetail = () => {
       } else if (column.dataType === 'multi_select') {
         // Use default values from multi select configuration
         const config = column.multiSelectConfig || { defaultValue: [] };
+        
+        console.log('🔍 Multi-select column found:', { 
+          columnName: column.name,
+          fullColumn: column,
+          config: config,
+          defaultValue: config.defaultValue,
+          willSet: config.defaultValue
+        });
+        
         emptyData[column.name] = config.defaultValue;
+        
+        console.log('✅ Multi-select default applied to emptyData:', { 
+          columnName: column.name, 
+          setValue: emptyData[column.name],
+          emptyData: emptyData
+        });
       } else if (column.dataType === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
@@ -3431,7 +3448,21 @@ const TableDetail = () => {
                                     : column.dataType === 'multi_select' ? 
                                     (() => {
                                       const config = column.multiSelectConfig || { options: [] };
-                                      const selectedValues = Array.isArray(value) ? value : [];
+                                      // Use actual value or default if empty
+                                      let selectedValues = Array.isArray(value) ? value : [];
+                                      
+                                      // If no values and we have defaults, use defaults for display
+                                      if (selectedValues.length === 0 && config.defaultValue && config.defaultValue.length > 0) {
+                                        selectedValues = config.defaultValue;
+                                      }
+                                      
+                                      console.log('Multi-select debug:', { 
+                                        columnName: column.name, 
+                                        rawValue: value, 
+                                        selectedValues, 
+                                        config: config,
+                                        usingDefaults: selectedValues === config.defaultValue
+                                      });
                                       
                                       return (
                                         <div style={{ 
@@ -4209,7 +4240,21 @@ const TableDetail = () => {
                               : column.dataType === 'multi_select' ? 
                               (() => {
                                 const config = column.multiSelectConfig || { options: [] };
-                                const selectedValues = Array.isArray(value) ? value : [];
+                                // Use actual value or default if empty
+                                      let selectedValues = Array.isArray(value) ? value : [];
+                                      
+                                      // If no values and we have defaults, use defaults for display
+                                      if (selectedValues.length === 0 && config.defaultValue && config.defaultValue.length > 0) {
+                                        selectedValues = config.defaultValue;
+                                      }
+                                      
+                                      console.log('Multi-select debug:', { 
+                                        columnName: column.name, 
+                                        rawValue: value, 
+                                        selectedValues, 
+                                        config: config,
+                                        usingDefaults: selectedValues === config.defaultValue
+                                      });
                                 
                                 return (
                                   <div style={{ 
