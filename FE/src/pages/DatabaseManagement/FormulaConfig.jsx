@@ -307,7 +307,7 @@ const FormulaConfig = ({
               borderRadius: '4px'
             }}>
               {availableColumns
-                .filter(col => col.dataType !== 'formula')
+                
                 .map(column => (
                   <div
                     key={column._id}
