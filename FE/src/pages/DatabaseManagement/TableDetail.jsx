@@ -436,6 +436,31 @@ const TableDetail = () => {
   const columns = tableStructure?.columns || [];
   const allRecords = recordsResponse?.data || [];
 
+  // Handle clicking outside multi-select dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (editingCell) {
+        const column = columns.find(col => col.name === editingCell.columnName);
+        if (column && column.dataType === 'multi_select') {
+          // Check if click is inside multi-select dropdown
+          const multiSelectDropdown = event.target.closest('[data-multiselect-dropdown]');
+          const multiSelectContainer = event.target.closest('[data-multiselect-container]');
+          
+          if (!multiSelectDropdown && !multiSelectContainer) {
+            // Click outside multi-select, close it
+            setEditingCell(null);
+            setCellValue('');
+          }
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingCell, columns]);
+
   // Apply filters to records
   const records = useMemo(() => {
     if (!isFilterActive || filterRules.length === 0) {
@@ -567,11 +592,20 @@ const TableDetail = () => {
       });
       return response.data;
     },
-          onSuccess: () => {
+          onSuccess: (data, variables) => {
         // toast.success('Record updated successfully');
-        setEditingCell(null);
-        setCellValue('');
-        queryClient.invalidateQueries(['tableRecords', tableId]);
+        
+        // For multi-select, keep the dropdown open to allow multiple selections  
+        const column = columns.find(col => col.name === editingCell?.columnName);
+        if (column && column.dataType === 'multi_select') {
+          // Keep editingCell active for multi-select, just refresh the data
+          queryClient.invalidateQueries(['tableRecords', tableId]);
+        } else {
+          // For other types, close the editing cell as usual
+          setEditingCell(null);
+          setCellValue('');
+          queryClient.invalidateQueries(['tableRecords', tableId]);
+        }
       },
       onError: (error) => {
         console.error('Error updating record:', error);
@@ -2883,16 +2917,18 @@ const TableDetail = () => {
                                   } else if (dataType === 'single_select') {
                                     const config = column.singleSelectConfig || { options: [] };
                                     return (
-                                      <div style={{ 
-                                        width: '100%',
-                                        height: '100%',
-                                        position: 'absolute',
-                                        top: '0',
-                                        left: '0',
-                                        right: '0',
-                                        bottom: '0',
-                                        boxSizing: 'border-box'
-                                      }}>
+                                      <div 
+                                        data-multiselect-container
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box'
+                                        }}>
                                         {/* Input Field with Tag Display */}
                                         <div
                                           style={{
@@ -2949,6 +2985,7 @@ const TableDetail = () => {
 
                                         {/* Dropdown Options */}
                                         <div
+                                          data-multiselect-dropdown
                                           style={{
                                             position: 'absolute',
                                             top: '100%',
@@ -3013,6 +3050,18 @@ const TableDetail = () => {
                                               </Tag>
                                             </div>
                                           ))}
+                                          {config.options.length > 0 && (
+                                            <div style={{
+                                              padding: '4px 8px',
+                                              backgroundColor: '#f6ffed',
+                                              borderBottom: '1px solid #b7eb8f',
+                                              fontSize: '11px',
+                                              color: '#52c41a',
+                                              textAlign: 'center'
+                                            }}>
+                                              ✓ Select multiple options • Click outside to close
+                                            </div>
+                                          )}
                                           {config.options.length === 0 && (
                                             <div style={{
                                               padding: '8px 12px',
@@ -3031,16 +3080,18 @@ const TableDetail = () => {
                                     const currentValues = Array.isArray(cellValue) ? cellValue : [];
                                     
                                     return (
-                                      <div style={{ 
-                                        width: '100%',
-                                        height: '100%',
-                                        position: 'absolute',
-                                        top: '0',
-                                        left: '0',
-                                        right: '0',
-                                        bottom: '0',
-                                        boxSizing: 'border-box'
-                                      }}>
+                                      <div 
+                                        data-multiselect-container
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box'
+                                        }}>
                                         {/* Input Field with Tags Display */}
                                         <div
                                           style={{
@@ -3102,6 +3153,7 @@ const TableDetail = () => {
 
                                         {/* Dropdown Options */}
                                         <div
+                                          data-multiselect-dropdown
                                           style={{
                                             position: 'absolute',
                                             top: '100%',
@@ -3181,6 +3233,18 @@ const TableDetail = () => {
                                               </Tag>
                                             </div>
                                           ))}
+                                          {config.options.length > 0 && (
+                                            <div style={{
+                                              padding: '4px 8px',
+                                              backgroundColor: '#f6ffed',
+                                              borderBottom: '1px solid #b7eb8f',
+                                              fontSize: '11px',
+                                              color: '#52c41a',
+                                              textAlign: 'center'
+                                            }}>
+                                              ✓ Select multiple options • Click outside to close
+                                            </div>
+                                          )}
                                           {config.options.length === 0 && (
                                             <div style={{
                                               padding: '8px 12px',
@@ -3676,16 +3740,18 @@ const TableDetail = () => {
                             } else if (dataType === 'single_select') {
                               const config = column.singleSelectConfig || { options: [] };
                               return (
-                                <div style={{ 
-                                  width: '100%',
-                                  height: '100%',
-                                  position: 'absolute',
-                                  top: '0',
-                                  left: '0',
-                                  right: '0',
-                                  bottom: '0',
-                                  boxSizing: 'border-box'
-                                }}>
+                                      <div 
+                                        data-multiselect-container
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box'
+                                        }}>
                                   {/* Input Field with Tag Display */}
                                   <div
                                     style={{
@@ -3720,9 +3786,10 @@ const TableDetail = () => {
                                   </div>
 
                                   {/* Dropdown Options */}
-                                  <div
-                                    style={{
-                                      position: 'absolute',
+                                        <div
+                                          data-multiselect-dropdown
+                                          style={{
+                                            position: 'absolute',
                                       top: '100%',
                                       left: 0,
                                       right: 0,
@@ -3803,16 +3870,18 @@ const TableDetail = () => {
                               const currentValues = Array.isArray(cellValue) ? cellValue : [];
                               
                               return (
-                                <div style={{ 
-                                  width: '100%',
-                                  height: '100%',
-                                  position: 'absolute',
-                                  top: '0',
-                                  left: '0',
-                                  right: '0',
-                                  bottom: '0',
-                                  boxSizing: 'border-box'
-                                }}>
+                                      <div 
+                                        data-multiselect-container
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box'
+                                        }}>
                                   {/* Input Field with Tags Display */}
                                   <div
                                     style={{
@@ -3873,9 +3942,10 @@ const TableDetail = () => {
                                   </div>
 
                                   {/* Dropdown Options */}
-                                  <div
-                                    style={{
-                                      position: 'absolute',
+                                        <div
+                                          data-multiselect-dropdown
+                                          style={{
+                                            position: 'absolute',
                                       top: '100%',
                                       left: 0,
                                       right: 0,
