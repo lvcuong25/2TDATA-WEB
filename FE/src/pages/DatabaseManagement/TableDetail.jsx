@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormatter.js';
 import SingleSelectConfig from './SingleSelectConfig';
+import MultiSelectConfig from './MultiSelectConfig';
 import DateConfig from './DateConfig';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -79,6 +80,10 @@ const TableDetail = () => {
     singleSelectConfig: {
       options: [],
       defaultValue: ''
+    },
+    multiSelectConfig: {
+      options: [],
+      defaultValue: []
     },
     dateConfig: {
       format: 'DD/MM/YYYY'
@@ -738,6 +743,10 @@ const TableDetail = () => {
         // Use default value from single select configuration
         const config = column.singleSelectConfig || { defaultValue: '' };
         emptyData[column.name] = config.defaultValue;
+      } else if (column.dataType === 'multi_select') {
+        // Use default values from multi select configuration
+        const config = column.multiSelectConfig || { defaultValue: [] };
+        emptyData[column.name] = config.defaultValue;
       } else if (column.dataType === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
@@ -821,6 +830,10 @@ const TableDetail = () => {
         options: [],
         defaultValue: ''
       },
+      multiSelectConfig: column.multiSelectConfig || {
+        options: [],
+        defaultValue: []
+      },
       dateConfig: column.dateConfig || {
         format: 'DD/MM/YYYY'
       }
@@ -851,6 +864,11 @@ const TableDetail = () => {
       columnData.singleSelectConfig = editingColumn.singleSelectConfig;
     }
     
+    // Add multi select configuration if data type is multi_select
+    if (editingColumn.dataType === 'multi_select') {
+      columnData.multiSelectConfig = editingColumn.multiSelectConfig;
+    }
+    
     // Add date configuration if data type is date
     if (editingColumn.dataType === 'date') {
       columnData.dateConfig = editingColumn.dateConfig;
@@ -870,7 +888,23 @@ const TableDetail = () => {
     console.log('Cell clicked:', { recordId, columnName, currentValue });
     console.log('Current editingCell before:', editingCell);
     setEditingCell({ recordId, columnName });
-    setCellValue(currentValue || '');
+    
+    // Handle different data types properly
+    const column = columns.find(col => col.name === columnName);
+    if (column) {
+      if (column.dataType === 'multi_select') {
+        // For multi-select, ensure we have an array
+        setCellValue(Array.isArray(currentValue) ? currentValue : []);
+      } else if (column.dataType === 'single_select') {
+        // For single-select, use string
+        setCellValue(currentValue || '');
+      } else {
+        // For other types, use string
+        setCellValue(currentValue || '');
+      }
+    } else {
+      setCellValue(currentValue || '');
+    }
   };
 
   const handleCellSave = () => {
@@ -2983,6 +3017,173 @@ const TableDetail = () => {
                                         </div>
                                       </div>
                                     );
+                                  } else if (dataType === 'multi_select') {
+                                    const config = column.multiSelectConfig || { options: [] };
+                                    const currentValues = Array.isArray(cellValue) ? cellValue : [];
+                                    
+                                    return (
+                                      <div style={{ 
+                                        width: '100%',
+                                        height: '100%',
+                                        position: 'absolute',
+                                        top: '0',
+                                        left: '0',
+                                        right: '0',
+                                        bottom: '0',
+                                        boxSizing: 'border-box'
+                                      }}>
+                                        {/* Input Field with Tags Display */}
+                                        <div
+                                          style={{
+                                            border: '1px solid #722ed1',
+                                            borderRadius: '6px',
+                                            padding: '4px 8px',
+                                            backgroundColor: 'white',
+                                            height: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            flexWrap: 'wrap',
+                                            gap: '4px',
+                                            boxSizing: 'border-box',
+                                            overflow: 'auto'
+                                          }}
+                                        >
+                                          {currentValues.length > 0 ? (
+                                            currentValues.map((val, index) => (
+                                              <Tag
+                                                key={index}
+                                                closable
+                                                onClose={(e) => {
+                                                  e.stopPropagation();
+                                                  console.log('Removing multi-select value:', val);
+                                                  const updatedValues = currentValues.filter(v => v !== val);
+                                                  setCellValue(updatedValues);
+                                                  
+                                                  // Save the record with updated values
+                                                  if (editingCell) {
+                                                    const record = records.find(r => r._id === editingCell.recordId);
+                                                    if (record) {
+                                                      const updatedData = { ...record.data };
+                                                      updatedData[editingCell.columnName] = updatedValues;
+                                                      
+                                                      console.log('Saving record with updated multi-select data:', updatedData);
+                                                      updateRecordMutation.mutate({
+                                                        recordId: editingCell.recordId,
+                                                        data: updatedData
+                                                      });
+                                                    }
+                                                  }
+                                                }}
+                                                style={{
+                                                  backgroundColor: '#f9f0ff',
+                                                  border: '1px solid #d3adf7',
+                                                  color: '#722ed1',
+                                                  borderRadius: '4px',
+                                                  margin: 0,
+                                                  fontSize: '11px'
+                                                }}
+                                              >
+                                                {val}
+                                              </Tag>
+                                            ))
+                                          ) : (
+                                            <span style={{ color: '#bfbfbf', fontSize: '12px' }}>Select options</span>
+                                          )}
+                                        </div>
+
+                                        {/* Dropdown Options */}
+                                        <div
+                                          style={{
+                                            position: 'absolute',
+                                            top: '100%',
+                                            left: 0,
+                                            right: 0,
+                                            backgroundColor: 'white',
+                                            border: '1px solid #d9d9d9',
+                                            borderRadius: '6px',
+                                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                                            zIndex: 1000,
+                                            maxHeight: '200px',
+                                            overflow: 'auto',
+                                            marginTop: '4px'
+                                          }}
+                                        >
+                                          {config.options.map((option, index) => (
+                                            <div
+                                              key={index}
+                                              style={{
+                                                padding: '8px 12px',
+                                                cursor: 'pointer',
+                                                borderBottom: index < config.options.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                                transition: 'background-color 0.2s',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px'
+                                              }}
+                                              onClick={() => {
+                                                console.log('Multi-select option clicked:', option);
+                                                const isSelected = currentValues.includes(option);
+                                                let updatedValues;
+                                                
+                                                if (isSelected) {
+                                                  // Remove option if already selected
+                                                  updatedValues = currentValues.filter(v => v !== option);
+                                                                                          } else {
+                                            // Add option if not selected
+                                            updatedValues = [...currentValues, option];
+                                          }
+                                                
+                                                setCellValue(updatedValues);
+                                                
+                                                // Save the record with the new values
+                                                if (editingCell) {
+                                                  const record = records.find(r => r._id === editingCell.recordId);
+                                                  if (record) {
+                                                    const updatedData = { ...record.data };
+                                                    updatedData[editingCell.columnName] = updatedValues;
+                                                    
+                                                    console.log('Saving record with multi-select data:', updatedData);
+                                                    updateRecordMutation.mutate({
+                                                      recordId: editingCell.recordId,
+                                                      data: updatedData
+                                                    });
+                                                  }
+                                                }
+                                              }}
+                                              onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                              onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                            >
+                                              <Checkbox
+                                                checked={currentValues.includes(option)}
+                                                style={{ marginRight: '8px' }}
+                                              />
+                                              <Tag
+                                                style={{
+                                                  backgroundColor: currentValues.includes(option) ? '#f9f0ff' : '#f5f5f5',
+                                                  border: currentValues.includes(option) ? '1px solid #d3adf7' : '1px solid #d9d9d9',
+                                                  color: currentValues.includes(option) ? '#722ed1' : '#666',
+                                                  borderRadius: '4px',
+                                                  margin: 0,
+                                                  fontSize: '12px'
+                                                }}
+                                              >
+                                                {option}
+                                              </Tag>
+                                            </div>
+                                          ))}
+                                          {config.options.length === 0 && (
+                                            <div style={{
+                                              padding: '8px 12px',
+                                              color: '#bfbfbf',
+                                              textAlign: 'center',
+                                              fontSize: '12px'
+                                            }}>
+                                              No options available
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
                                   } else {
                                     return (
                                       <Input
@@ -3017,7 +3218,7 @@ const TableDetail = () => {
                               ) : (
                                 <div
                                   style={{ 
-                                    cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? 'default' : 'pointer', 
+                                    cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer', 
                                     padding: '8px', 
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
@@ -3031,9 +3232,9 @@ const TableDetail = () => {
                                     color: column.isSystem ? '#666' : '#333',
                                     fontStyle: column.isSystem ? 'italic' : 'normal'
                                   }}
-                                  onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
-                                  onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                                  onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                                  onClick={column.isSystem || column.dataType === 'checkbox' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                                                                      onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                    onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                                 >
                                   {column.dataType === 'datetime' && value ? 
                                     value // Already formatted by formatDateTime
@@ -3148,6 +3349,79 @@ const TableDetail = () => {
                                               }}
                                             >
                                               Select option
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })() 
+                                    : column.dataType === 'multi_select' ? 
+                                    (() => {
+                                      const config = column.multiSelectConfig || { options: [] };
+                                      const selectedValues = Array.isArray(value) ? value : [];
+                                      
+                                      return (
+                                        <div style={{ 
+                                          display: 'flex', 
+                                          justifyContent: 'center', 
+                                          alignItems: 'center',
+                                          height: '100%',
+                                          width: '100%',
+                                          flexWrap: 'wrap',
+                                          gap: '4px',
+                                          padding: '4px'
+                                        }}>
+                                          {selectedValues.length > 0 ? (
+                                            selectedValues.map((val, index) => {
+                                              const option = config.options.find(option => option === val) || val;
+                                              return (
+                                                <Tag
+                                                  key={index}
+                                                  closable
+                                                  onClose={(e) => {
+                                                    e.stopPropagation();
+                                                    console.log('Removing multi-select value:', val);
+                                                    
+                                                    // Remove the value from the array
+                                                    const updatedValues = selectedValues.filter(v => v !== val);
+                                                    const updatedData = { ...record.data };
+                                                    updatedData[column.name] = updatedValues;
+                                                    
+                                                    console.log('Saving record with updated multi-select data:', updatedData);
+                                                    updateRecordMutation.mutate({
+                                                      recordId: record._id,
+                                                      data: updatedData
+                                                    });
+                                                  }}
+                                                  style={{
+                                                    backgroundColor: '#f6ffed',
+                                                    border: '1px solid #b7eb8f',
+                                                    color: '#52c41a',
+                                                    borderRadius: '4px',
+                                                    margin: 0,
+                                                    cursor: 'pointer',
+                                                    fontSize: '11px'
+                                                  }}
+                                                  onClick={() => handleCellClick(record._id, column.name, value)}
+                                                >
+                                                  {option}
+                                                </Tag>
+                                              );
+                                            })
+                                          ) : (
+                                            <div
+                                              onClick={() => handleCellClick(record._id, column.name, value)}
+                                              style={{
+                                                cursor: 'pointer',
+                                                fontSize: '12px',
+                                                color: '#bfbfbf',
+                                                backgroundColor: '#fafafa',
+                                                padding: '4px 8px',
+                                                borderRadius: '4px',
+                                                border: '1px solid #d9d9d9',
+                                                transition: 'all 0.2s ease'
+                                              }}
+                                            >
+                                              Select options
                                             </div>
                                           )}
                                         </div>
@@ -3514,6 +3788,173 @@ const TableDetail = () => {
                                   </div>
                                 </div>
                               );
+                            } else if (dataType === 'multi_select') {
+                              const config = column.multiSelectConfig || { options: [] };
+                              const currentValues = Array.isArray(cellValue) ? cellValue : [];
+                              
+                              return (
+                                <div style={{ 
+                                  width: '100%',
+                                  height: '100%',
+                                  position: 'absolute',
+                                  top: '0',
+                                  left: '0',
+                                  right: '0',
+                                  bottom: '0',
+                                  boxSizing: 'border-box'
+                                }}>
+                                  {/* Input Field with Tags Display */}
+                                  <div
+                                    style={{
+                                      border: '1px solid #722ed1',
+                                      borderRadius: '6px',
+                                      padding: '4px 8px',
+                                      backgroundColor: 'white',
+                                      height: '100%',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      flexWrap: 'wrap',
+                                      gap: '4px',
+                                      boxSizing: 'border-box',
+                                      overflow: 'auto'
+                                    }}
+                                  >
+                                    {currentValues.length > 0 ? (
+                                      currentValues.map((val, index) => (
+                                        <Tag
+                                          key={index}
+                                          closable
+                                          onClose={(e) => {
+                                            e.stopPropagation();
+                                            console.log('Removing multi-select value (ungrouped):', val);
+                                            const updatedValues = currentValues.filter(v => v !== val);
+                                            setCellValue(updatedValues);
+                                            
+                                            // Save the record with updated values
+                                            if (editingCell) {
+                                              const record = records.find(r => r._id === editingCell.recordId);
+                                              if (record) {
+                                                const updatedData = { ...record.data };
+                                                updatedData[editingCell.columnName] = updatedValues;
+                                                
+                                                console.log('Saving record with updated multi-select data (ungrouped):', updatedData);
+                                                updateRecordMutation.mutate({
+                                                  recordId: editingCell.recordId,
+                                                  data: updatedData
+                                                });
+                                              }
+                                            }
+                                          }}
+                                          style={{
+                                            backgroundColor: '#f9f0ff',
+                                            border: '1px solid #d3adf7',
+                                            color: '#722ed1',
+                                            borderRadius: '4px',
+                                            margin: 0,
+                                            fontSize: '11px'
+                                          }}
+                                        >
+                                          {val}
+                                        </Tag>
+                                      ))
+                                    ) : (
+                                      <span style={{ color: '#bfbfbf', fontSize: '12px' }}>Select options</span>
+                                    )}
+                                  </div>
+
+                                  {/* Dropdown Options */}
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      top: '100%',
+                                      left: 0,
+                                      right: 0,
+                                      backgroundColor: 'white',
+                                      border: '1px solid #d9d9d9',
+                                      borderRadius: '6px',
+                                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                                      zIndex: 1000,
+                                      maxHeight: '200px',
+                                      overflow: 'auto',
+                                      marginTop: '4px'
+                                    }}
+                                  >
+                                    {config.options.map((option, index) => (
+                                      <div
+                                        key={index}
+                                        style={{
+                                          padding: '8px 12px',
+                                          cursor: 'pointer',
+                                          borderBottom: index < config.options.length - 1 ? '1px solid #f0f0f0' : 'none',
+                                          transition: 'background-color 0.2s',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '8px'
+                                        }}
+                                        onClick={() => {
+                                          console.log('Multi-select option clicked (ungrouped):', option);
+                                          const isSelected = currentValues.includes(option);
+                                          let updatedValues;
+                                          
+                                          if (isSelected) {
+                                            // Remove option if already selected
+                                            updatedValues = currentValues.filter(v => v !== option);
+                                          } else {
+                                            // Add option if not selected
+                                            updatedValues = [...currentValues, option];
+                                          }
+                                          
+                                          setCellValue(updatedValues);
+                                          
+                                          // Save the record with the new values
+                                          if (editingCell) {
+                                            const record = records.find(r => r._id === editingCell.recordId);
+                                            if (record) {
+                                              const updatedData = { ...record.data };
+                                              updatedData[editingCell.columnName] = updatedValues;
+                                              
+                                              console.log('Saving record with multi-select data (ungrouped):', updatedData);
+                                              updateRecordMutation.mutate({
+                                                recordId: editingCell.recordId,
+                                                data: updatedData
+                                              });
+                                            }
+                                          }
+                                        }}
+                                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                      >
+                                        <Checkbox
+                                          checked={currentValues.includes(option)}
+                                          style={{ marginRight: '8px' }}
+                                        />
+                                        <Tag
+                                          style={{
+                                            backgroundColor: currentValues.includes(option) ? '#f9f0ff' : '#f5f5f5',
+                                            border: currentValues.includes(option) ? '1px solid #d3adf7' : '1px solid #d9d9d9',
+                                            color: currentValues.includes(option) ? '#722ed1' : '#666',
+                                            borderRadius: '4px',
+                                            margin: 0,
+                                            fontSize: '12px'
+                                          }}
+                                        >
+                                          {option}
+                                        </Tag>
+                                      </div>
+                                    ))}
+                                    {config.options.length === 0 && (
+                                      <div style={{
+                                        padding: '8px 12px',
+                                        color: '#bfbfbf',
+                                        textAlign: 'center',
+                                        fontSize: '12px'
+                                      }}>
+                                        No options available
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
                             } else {
                               return (
                                 <Input
@@ -3548,7 +3989,7 @@ const TableDetail = () => {
                         ) : (
                           <div
                                                               style={{ 
-                                    cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? 'default' : 'pointer',  
+                                    cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer',  
                               padding: '8px', 
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -3562,9 +4003,9 @@ const TableDetail = () => {
                               color: column.isSystem ? '#666' : '#333',
                               fontStyle: column.isSystem ? 'italic' : 'normal'
                             }}
-                            onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
-                                                          onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                            onClick={column.isSystem || column.dataType === 'checkbox' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                                                          onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                           >
                             {column.dataType === 'datetime' && value ? 
                               value // Already formatted by formatDateTime
@@ -3679,6 +4120,79 @@ const TableDetail = () => {
                                         }}
                                       >
                                         Select option
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })() 
+                              : column.dataType === 'multi_select' ? 
+                              (() => {
+                                const config = column.multiSelectConfig || { options: [] };
+                                const selectedValues = Array.isArray(value) ? value : [];
+                                
+                                return (
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    height: '100%',
+                                    width: '100%',
+                                    flexWrap: 'wrap',
+                                    gap: '4px',
+                                    padding: '4px'
+                                  }}>
+                                    {selectedValues.length > 0 ? (
+                                      selectedValues.map((val, index) => {
+                                        const option = config.options.find(option => option === val) || val;
+                                        return (
+                                          <Tag
+                                            key={index}
+                                            closable
+                                            onClose={(e) => {
+                                              e.stopPropagation();
+                                              console.log('Removing multi-select value (ungrouped):', val);
+                                              
+                                              // Remove the value from the array
+                                              const updatedValues = selectedValues.filter(v => v !== val);
+                                              const updatedData = { ...record.data };
+                                              updatedData[column.name] = updatedValues;
+                                              
+                                              console.log('Saving record with updated multi-select data (ungrouped):', updatedData);
+                                              updateRecordMutation.mutate({
+                                                recordId: record._id,
+                                                data: updatedData
+                                              });
+                                            }}
+                                            style={{
+                                              backgroundColor: '#f6ffed',
+                                              border: '1px solid #b7eb8f',
+                                              color: '#52c41a',
+                                              borderRadius: '4px',
+                                              margin: 0,
+                                              cursor: 'pointer',
+                                              fontSize: '11px'
+                                            }}
+                                            onClick={() => handleCellClick(record._id, column.name, value)}
+                                          >
+                                            {option}
+                                          </Tag>
+                                        );
+                                      })
+                                    ) : (
+                                      <div
+                                        onClick={() => handleCellClick(record._id, column.name, value)}
+                                        style={{
+                                          cursor: 'pointer',
+                                          fontSize: '12px',
+                                          color: '#bfbfbf',
+                                          backgroundColor: '#fafafa',
+                                          padding: '4px 8px',
+                                          borderRadius: '4px',
+                                          border: '1px solid #d9d9d9',
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      >
+                                        Select options
                                       </div>
                                     )}
                                   </div>
@@ -3809,6 +4323,12 @@ const TableDetail = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <DownOutlined style={{ color: '#1890ff' }} />
                     <span>Single select</span>
+                  </div>
+                </Option>
+                <Option value="multi_select">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckSquareOutlined style={{ color: '#722ed1' }} />
+                    <span>Multi select</span>
                   </div>
                 </Option>
               </Select>
@@ -3966,6 +4486,17 @@ const TableDetail = () => {
               />
             )}
 
+            {/* Multi Select Configuration */}
+            {newColumn.dataType === 'multi_select' && (
+              <MultiSelectConfig
+                config={newColumn.multiSelectConfig}
+                onChange={(config) => setNewColumn({
+                  ...newColumn,
+                  multiSelectConfig: config
+                })}
+              />
+            )}
+
             {/* Date Configuration */}
             {newColumn.dataType === 'date' && (
               <DateConfig
@@ -4068,6 +4599,12 @@ const TableDetail = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <DownOutlined style={{ color: '#1890ff' }} />
                       <span>Single select</span>
+                    </div>
+                  </Option>
+                  <Option value="multi_select">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckSquareOutlined style={{ color: '#722ed1' }} />
+                      <span>Multi select</span>
                     </div>
                   </Option>
                 </Select>
@@ -4221,6 +4758,17 @@ const TableDetail = () => {
                   onChange={(config) => setEditingColumn({
                     ...editingColumn,
                     singleSelectConfig: config
+                  })}
+                />
+              )}
+
+              {/* Multi Select Configuration */}
+              {editingColumn.dataType === 'multi_select' && (
+                <MultiSelectConfig
+                  config={editingColumn.multiSelectConfig}
+                  onChange={(config) => setEditingColumn({
+                    ...editingColumn,
+                    multiSelectConfig: config
                   })}
                 />
               )}
