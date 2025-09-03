@@ -3129,7 +3129,8 @@ const TableDetail = () => {
                                                 alignItems: 'center',
                                                 gap: '8px'
                                               }}
-                                              onClick={() => {
+                                              onClick={(e) => {
+                                                e.stopPropagation();
                                                 console.log('Multi-select option clicked:', option);
                                                 const isSelected = currentValues.includes(option);
                                                 let updatedValues;
@@ -3900,7 +3901,8 @@ const TableDetail = () => {
                                           alignItems: 'center',
                                           gap: '8px'
                                         }}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           console.log('Multi-select option clicked (ungrouped):', option);
                                           const isSelected = currentValues.includes(option);
                                           let updatedValues;

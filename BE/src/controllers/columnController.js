@@ -5,7 +5,7 @@ import Database from '../model/Database.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, dateConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -18,6 +18,7 @@ export const createColumn = async (req, res) => {
       defaultValue,
       checkboxConfig,
       singleSelectConfig,
+      multiSelectConfig,
       dateConfig
     });
 
@@ -87,6 +88,15 @@ export const createColumn = async (req, res) => {
       columnData.singleSelectConfig = {
         options: singleSelectConfig.options || [],
         defaultValue: singleSelectConfig.defaultValue || ''
+      };
+    }
+
+    // Only add multiSelectConfig if dataType is multi_select and multiSelectConfig is provided
+    if (dataType === 'multi_select' && multiSelectConfig) {
+      // Ensure multiSelectConfig has all required fields with defaults
+      columnData.multiSelectConfig = {
+        options: multiSelectConfig.options || [],
+        defaultValue: multiSelectConfig.defaultValue || []
       };
     }
 
@@ -184,7 +194,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, dateConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -246,6 +256,14 @@ export const updateColumn = async (req, res) => {
     } else if (dataType !== 'single_select') {
       // Remove singleSelectConfig if dataType is not single_select
       column.singleSelectConfig = undefined;
+    }
+
+    // Only update multiSelectConfig if dataType is multi_select and multiSelectConfig is provided
+    if (dataType === 'multi_select' && multiSelectConfig !== undefined) {
+      column.multiSelectConfig = multiSelectConfig;
+    } else if (dataType !== 'multi_select') {
+      // Remove multiSelectConfig if dataType is not multi_select
+      column.multiSelectConfig = undefined;
     }
 
     // Only update dateConfig if dataType is date and dateConfig is provided
