@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { AuthContext } from '../../components/core/Auth';
 import { toast } from 'react-toastify';
+import { TableProvider, useTableContext } from '../../contexts/TableContext';
 import {
   DatabaseOutlined,
   TableOutlined,
@@ -25,6 +26,65 @@ import {
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
+
+// Component to handle delete functionality in header
+const TableHeaderActions = () => {
+  const { selectedRowKeys } = useTableContext();
+  const queryClient = useQueryClient();
+  const location = useLocation();
+  
+  // Extract table ID from current path
+  const getTableId = () => {
+    if (location.pathname.includes('/table/')) {
+      const pathParts = location.pathname.split('/');
+      return pathParts[pathParts.length - 1];
+    }
+    return null;
+  };
+
+  const tableId = getTableId();
+
+  // Bulk delete records mutation
+  const deleteMultipleRecordsMutation = useMutation({
+    mutationFn: async (recordIds) => {
+      const response = await axiosInstance.delete('/database/records/bulk', {
+        data: { recordIds }
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Records deleted successfully');
+      queryClient.invalidateQueries(['tableRecords', tableId]);
+    },
+    onError: (error) => {
+      console.error('Error deleting records:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete records');
+    },
+  });
+
+  const handleDeleteSelected = () => {
+    if (selectedRowKeys.length === 0) {
+      return;
+    }
+    deleteMultipleRecordsMutation.mutate(selectedRowKeys);
+  };
+
+  // Only show delete button when on table detail page and rows are selected
+  if (!location.pathname.includes('/table/') || selectedRowKeys.length === 0) {
+    return null;
+  }
+
+  return (
+    <Button
+      danger
+      icon={<DeleteOutlined />}
+      loading={deleteMultipleRecordsMutation.isPending}
+      onClick={handleDeleteSelected}
+    >
+      Delete Selected ({selectedRowKeys.length})
+    </Button>
+  );
+};
 
 const DatabaseLayout = () => {
   const location = useLocation();
@@ -236,7 +296,15 @@ const DatabaseLayout = () => {
   const getPageTitle = () => {
     if (location.pathname === '/database') return 'Databases';
     if (location.pathname.includes('/database/') && location.pathname.includes('/tables')) return 'Tables';
-    if (location.pathname.includes('/database/') && location.pathname.includes('/table/')) return 'Table Detail';
+    if (location.pathname.includes('/database/') && location.pathname.includes('/table/')) {
+      // Extract table ID from path and find the table name
+      const pathParts = location.pathname.split('/');
+      const tableId = pathParts[pathParts.length - 1];
+      const table = allTables
+        .flatMap(item => item.tables)
+        .find(t => t._id === tableId);
+      return table ? table.name : 'Table Detail';
+    }
     return 'Database Management';
   };
 
@@ -264,7 +332,8 @@ const DatabaseLayout = () => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <TableProvider>
+      <Layout style={{ minHeight: '100vh' }}>
       <Sider
         width={280}
         collapsed={collapsed}
@@ -581,6 +650,9 @@ const DatabaseLayout = () => {
                 {getPageTitle()}
               </Title>
             </div>
+            <div className="flex items-center">
+              <TableHeaderActions />
+            </div>
           </div>
         </Header>
 
@@ -771,7 +843,8 @@ const DatabaseLayout = () => {
           </Space>
         </form>
       </Modal>
-    </Layout>
+      </Layout>
+    </TableProvider>
   );
 };
 

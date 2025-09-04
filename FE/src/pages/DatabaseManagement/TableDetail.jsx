@@ -7,6 +7,7 @@ import FormulaConfig from './FormulaConfig';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
+import { useTableContext } from '../../contexts/TableContext';
 import {
   Button,
   Modal,
@@ -74,6 +75,15 @@ const TableDetail = () => {
   const { databaseId, tableId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { 
+    selectedRowKeys, 
+    setSelectedRowKeys, 
+    selectAll, 
+    setSelectAll, 
+    handleSelectAll, 
+    handleSelectRow, 
+    setAllRecords 
+  } = useTableContext();
 
   const [newColumn, setNewColumn] = useState({ 
     name: '', 
@@ -106,8 +116,6 @@ const TableDetail = () => {
   const [editingColumn, setEditingColumn] = useState(null);
   const [editingCell, setEditingCell] = useState(null);
   const [cellValue, setCellValue] = useState('');
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
   const [visibleCheckboxes, setVisibleCheckboxes] = useState(new Set());
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, recordId: null });
   const [sortRules, setSortRules] = useState([]);
@@ -853,39 +861,13 @@ const TableDetail = () => {
     addRecordMutation.mutate(recordData);
   };
 
-  // Checkbox handlers
-  const handleSelectAll = (checked) => {
-    setSelectAll(checked);
-    if (checked) {
-      const allKeys = records.map(record => record._id);
-      setSelectedRowKeys(allKeys);
-    } else {
-      setSelectedRowKeys([]);
+  // Update context when records change
+  React.useEffect(() => {
+    if (records && records.length > 0) {
+      setAllRecords(records);
     }
-  };
+  }, [records, setAllRecords]);
 
-  const handleSelectRow = (recordId, checked) => {
-    if (checked) {
-      setSelectedRowKeys(prev => [...prev, recordId]);
-    } else {
-      setSelectedRowKeys(prev => prev.filter(key => key !== recordId));
-      setSelectAll(false);
-      // Hide checkbox when unchecked
-      setVisibleCheckboxes(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(recordId);
-        return newSet;
-      });
-    }
-  };
-
-  const handleDeleteSelected = () => {
-    if (selectedRowKeys.length === 0) {
-      // toast.warning('Please select records to delete');
-      return;
-    }
-    deleteMultipleRecordsMutation.mutate(selectedRowKeys);
-  };
 
   const handleDeleteAllRecords = () => {
     if (records.length === 0) {
@@ -1517,26 +1499,11 @@ const TableDetail = () => {
           <div className="mb-6">
             <div className="flex justify-between items-center">
               <div>
-                <Title level={3} style={{ margin: 0 }}>
-                  <TableOutlined /> {table?.name}
-                </Title>
                 <Text type="secondary">
                   {table?.description}
 
                 </Text>
               </div>
-              <Space>
-                {selectedRowKeys.length > 0 && (
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    loading={deleteMultipleRecordsMutation.isPending}
-                    onClick={handleDeleteSelected}
-                  >
-                    Delete Selected ({selectedRowKeys.length})
-                  </Button>
-                )}
-              </Space>
             </div>
           </div>
 
@@ -2587,7 +2554,7 @@ const TableDetail = () => {
               }}>
                 <Checkbox
                   checked={selectAll}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  onChange={(e) => handleSelectAll(e.target.checked, records)}
                   indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < records.length}
                 />
                 <span style={{ fontSize: '12px', color: '#666', fontWeight: 'bold' }}>#</span>
