@@ -1,6 +1,7 @@
 import Column from '../model/Column.js';
 import Table from '../model/Table.js';
 import Database from '../model/Database.js';
+import Record from '../model/Record.js';
 
 // Column Controllers
 export const createColumn = async (req, res) => {
@@ -219,7 +220,11 @@ export const updateColumn = async (req, res) => {
       return res.status(404).json({ message: 'Column not found' });
     }
 
-    if (name && name.trim() !== '') {
+    const oldColumnName = column.name;
+    let shouldUpdateRecordData = false;
+
+    // Check if name is being changed
+    if (name && name.trim() !== '' && name.trim() !== oldColumnName) {
       const existingColumn = await Column.findOne({
         name: name.trim(),
         tableId: column.tableId,
@@ -230,6 +235,41 @@ export const updateColumn = async (req, res) => {
         return res.status(400).json({ message: 'Column with this name already exists in this table' });
       }
 
+      shouldUpdateRecordData = true;
+    }
+
+    // If column name was changed, update all records FIRST before changing column metadata
+    if (shouldUpdateRecordData && name.trim() !== oldColumnName) {
+      console.log(`Updating records: renaming column key from "${oldColumnName}" to "${name.trim()}"`);
+      
+      // Find all records that have data for the old column name
+      const records = await Record.find({ 
+        tableId: column.tableId,
+        [`data.${oldColumnName}`]: { $exists: true }
+      });
+      
+      let updatedCount = 0;
+      for (const record of records) {
+        if (record.data && record.data[oldColumnName] !== undefined) {
+          const oldValue = record.data[oldColumnName];
+          
+          // Create new data object
+          const newData = { ...record.data };
+          delete newData[oldColumnName];
+          newData[name.trim()] = oldValue;
+          
+          record.data = newData;
+          record.markModified('data');
+          await record.save();
+          updatedCount++;
+        }
+      }
+      
+      console.log(`Successfully renamed column key in ${updatedCount} records from "${oldColumnName}" to "${name.trim()}"`);
+    }
+
+    // Now update column metadata
+    if (name && name.trim() !== '') {
       column.name = name.trim();
     }
 
@@ -253,46 +293,38 @@ export const updateColumn = async (req, res) => {
       column.order = order;
     }
 
-    // Only update checkboxConfig if dataType is checkbox and checkboxConfig is provided
+    // Handle config objects based on dataType
     if (dataType === 'checkbox' && checkboxConfig !== undefined) {
       column.checkboxConfig = checkboxConfig;
     } else if (dataType !== 'checkbox') {
-      // Remove checkboxConfig if dataType is not checkbox
       column.checkboxConfig = undefined;
     }
 
-    // Only update singleSelectConfig if dataType is single_select and singleSelectConfig is provided
     if (dataType === 'single_select' && singleSelectConfig !== undefined) {
       column.singleSelectConfig = singleSelectConfig;
     } else if (dataType !== 'single_select') {
-      // Remove singleSelectConfig if dataType is not single_select
       column.singleSelectConfig = undefined;
     }
 
-    // Only update multiSelectConfig if dataType is multi_select and multiSelectConfig is provided
     if (dataType === 'multi_select' && multiSelectConfig !== undefined) {
       column.multiSelectConfig = multiSelectConfig;
     } else if (dataType !== 'multi_select') {
-      // Remove multiSelectConfig if dataType is not multi_select
       column.multiSelectConfig = undefined;
     }
 
-    // Only update dateConfig if dataType is date and dateConfig is provided
     if (dataType === 'date' && dateConfig !== undefined) {
       column.dateConfig = dateConfig;
     } else if (dataType !== 'date') {
-      // Remove dateConfig if dataType is not date
       column.dateConfig = undefined;
     }
 
-    // Only update formulaConfig if dataType is formula and formulaConfig is provided
     if (dataType === 'formula' && formulaConfig !== undefined) {
       column.formulaConfig = formulaConfig;
     } else if (dataType !== 'formula') {
-      // Remove formulaConfig if dataType is not formula
       column.formulaConfig = undefined;
     }
 
+    // Save the column
     await column.save();
 
     res.status(200).json({
@@ -302,7 +334,7 @@ export const updateColumn = async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating column:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
@@ -322,13 +354,27 @@ export const deleteColumn = async (req, res) => {
       return res.status(404).json({ message: 'Column not found' });
     }
 
-    // Warning: This will delete all data in this column
-    // In a real application, you might want to add a confirmation step
+    const columnName = column.name;
+    const tableId = column.tableId;
+
+    console.log(`Deleting column "${columnName}" and cleaning up data in all records`);
+
+    // Remove the column data from all records in this table first
+    await Record.updateMany(
+      { tableId: tableId },
+      {
+        $unset: { [`data.${columnName}`]: "" }
+      }
+    );
+
+    // Then delete column metadata
     await Column.deleteOne({ _id: columnId });
+
+    console.log(`Successfully deleted column "${columnName}" and removed data from all records`);
 
     res.status(200).json({
       success: true,
-      message: 'Column deleted successfully. All data in this column has been lost.'
+      message: `Column "${columnName}" deleted successfully. All data in this column has been removed.`
     });
   } catch (error) {
     console.error('Error deleting column:', error);
