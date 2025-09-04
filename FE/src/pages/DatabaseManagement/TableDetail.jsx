@@ -552,7 +552,7 @@ const TableDetail = () => {
       return response.data;
     },
           onSuccess: () => {
-        // toast.success('Column added successfully');
+        toast.success('Thêm cột thành công');
         setShowAddColumn(false);
         setNewColumn({ 
           name: '', 
@@ -578,7 +578,7 @@ const TableDetail = () => {
       },
       onError: (error) => {
         console.error('Error adding column:', error);
-        // toast.error(error.response?.data?.message || 'Failed to add column');
+        toast.error(error.response?.data?.message || 'Không thể thêm cột');
       },
   });
 
@@ -721,14 +721,40 @@ const TableDetail = () => {
 
   const handleAddColumn = (e) => {
     e.preventDefault();
-    if (!newColumn.name.trim()) {
-      // toast.error('Column name is required');
-      return;
+    
+    // Auto-generate name if empty
+    let finalName = newColumn.name.trim();
+    if (!finalName) {
+      switch (newColumn.dataType) {
+        case 'text':
+          finalName = 'Text';
+          break;
+        case 'number':
+          finalName = 'Number';
+          break;
+        case 'date':
+          finalName = 'Date';
+          break;
+        case 'checkbox':
+          finalName = 'Checkbox';
+          break;
+        case 'single_select':
+          finalName = 'Single Select';
+          break;
+        case 'multi_select':
+          finalName = 'Multi Select';
+          break;
+        case 'formula':
+          finalName = 'Formula';
+          break;
+        default:
+          finalName = 'New Column';
+      }
     }
     
     // Prepare column data based on data type
     const columnData = {
-      name: newColumn.name,
+      name: finalName,
       dataType: newColumn.dataType
     };
     
@@ -4468,18 +4494,53 @@ const TableDetail = () => {
         <form onSubmit={handleAddColumn}>
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             <div>
-              <Text strong>Field Name</Text>
+              <Text strong>Tên cột</Text>
               <Input
                 value={newColumn.name}
                 onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
-                placeholder="Field name (Optional)"
+                placeholder="Nhập tên cột (tự động tạo theo loại dữ liệu nếu để trống)"
               />
             </div>
             <div>
-              <Text strong>Field Type</Text>
+              <Text strong>Loại dữ liệu</Text>
               <Select
                 value={newColumn.dataType}
-                onChange={(value) => setNewColumn({ ...newColumn, dataType: value })}
+                onChange={(value) => {
+                  // Auto-generate column name based on data type if name is empty
+                  let autoName = '';
+                  if (!newColumn.name.trim()) {
+                    switch (value) {
+                      case 'text':
+                        autoName = 'Text';
+                        break;
+                      case 'number':
+                        autoName = 'Number';
+                        break;
+                      case 'date':
+                        autoName = 'Date';
+                        break;
+                      case 'checkbox':
+                        autoName = 'Checkbox';
+                        break;
+                      case 'single_select':
+                        autoName = 'Single Select';
+                        break;
+                      case 'multi_select':
+                        autoName = 'Multi Select';
+                        break;
+                      case 'formula':
+                        autoName = 'Formula';
+                        break;
+                      default:
+                        autoName = 'New Column';
+                    }
+                  }
+                  setNewColumn({ 
+                    ...newColumn, 
+                    dataType: value,
+                    name: newColumn.name.trim() || autoName
+                  });
+                }}
                 style={{ width: '100%' }}
               >
                 <Option value="text">
