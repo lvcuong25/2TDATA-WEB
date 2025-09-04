@@ -38,6 +38,7 @@ import {
   getGroupPreference,
   saveGroupPreference,
   deleteGroupPreference,
+  removeGroupRule,
   getAllGroupPreferences
 } from "../controllers/groupPreferenceController.js";
 
@@ -97,6 +98,7 @@ router.get("/tables/:tableId/structure", getTableStructure);
 router.get("/tables/:tableId/group-preference", getGroupPreference);
 router.post("/tables/:tableId/group-preference", saveGroupPreference);
 router.delete("/tables/:tableId/group-preference", deleteGroupPreference);
+router.patch("/tables/:tableId/group-preference/remove", removeGroupRule);
 router.get("/group-preferences", getAllGroupPreferences);
 
 // Filter preference routes

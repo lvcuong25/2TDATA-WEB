@@ -171,3 +171,68 @@ export const getAllGroupPreferences = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// Remove a specific group rule
+export const removeGroupRule = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { field } = req.body; // The field to remove from group rules
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    console.log(`🗑️ Removing group rule for field "${field}" from table ${tableId}`);
+
+    // Verify table exists and belongs to user
+    const table = await Table.findOne({
+      _id: tableId,
+      userId,
+      siteId
+    });
+
+    if (!table) {
+      console.log(`❌ Table not found: ${tableId}`);
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Find existing group preference
+    const groupPreference = await GroupPreference.findOne({
+      userId,
+      siteId,
+      tableId
+    });
+
+    if (!groupPreference) {
+      console.log(`⚠️ Group preference not found`);
+      return res.status(404).json({ message: 'Group preference not found' });
+    }
+
+    console.log(`📋 Current group rules before removal:`, groupPreference.groupRules);
+
+    // Remove the specific group rule
+    const originalLength = groupPreference.groupRules.length;
+    groupPreference.groupRules = groupPreference.groupRules.filter(rule => rule.field !== field);
+    const newLength = groupPreference.groupRules.length;
+
+    if (originalLength === newLength) {
+      console.log(`⚠️ Group rule with field "${field}" not found`);
+      return res.status(404).json({ message: `Group rule with field "${field}" not found` });
+    }
+
+    console.log(`📋 Group rules after removal:`, groupPreference.groupRules);
+    console.log(`✅ Removed ${originalLength - newLength} group rule(s)`);
+
+    groupPreference.updatedAt = new Date();
+    await groupPreference.save();
+
+    console.log(`✅ Group preference updated successfully: ${groupPreference._id}`);
+
+    res.status(200).json({
+      success: true,
+      message: `Group rule for field "${field}" removed successfully`,
+      data: groupPreference
+    });
+  } catch (error) {
+    console.error('❌ Error removing group rule:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};

@@ -1134,16 +1134,31 @@ const TableDetail = () => {
   };
 
   const removeGroupRule = (index) => {
+    console.log(`🗑️ Removing group rule at index ${index}`);
     const newRules = groupRules.filter((_, i) => i !== index);
     setGroupRules(newRules);
     // Clear expanded groups when removing group rules
     setExpandedGroups(new Set());
+    
+    // Save to backend immediately
+    console.log("💾 Saving updated group rules to backend:", newRules);
+    saveGroupPreferenceMutation.mutate({
+      groupRules: newRules,
+      expandedGroups: []
+    });
   };
-
   const clearAllGroups = () => {
+    console.log("🧹 Clearing all group rules");
     setGroupRules([]);
-    setCurrentGroupField('');
+    setCurrentGroupField("");
     setExpandedGroups(new Set());
+    
+    // Save to backend immediately
+    console.log("💾 Saving cleared group rules to backend");
+    saveGroupPreferenceMutation.mutate({
+      groupRules: [],
+      expandedGroups: []
+    });
   };
 
   const updateGroupRule = (index, field) => {
