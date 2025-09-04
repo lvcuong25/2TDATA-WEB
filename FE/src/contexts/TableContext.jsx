@@ -15,12 +15,20 @@ export const TableProvider = ({ children }) => {
   const [selectAll, setSelectAll] = useState(false);
 
   const handleSelectAll = (checked, records = []) => {
-    setSelectAll(checked);
-    if (checked && records.length > 0) {
-      const allKeys = records.map(record => record._id);
-      setSelectedRowKeys(allKeys);
-    } else {
+    // Toggle logic: nếu đã chọn tất cả thì bỏ chọn, ngược lại chọn tất cả
+    const allKeys = records.map(record => record._id);
+    const isAllSelected = selectedRowKeys.length === records.length && records.length > 0;
+    
+    if (isAllSelected) {
+      // Đã chọn tất cả → bỏ chọn tất cả
+      setSelectAll(false);
       setSelectedRowKeys([]);
+      console.log('🔄 Deselected all rows');
+    } else {
+      // Chưa chọn tất cả → chọn tất cả
+      setSelectAll(true);
+      setSelectedRowKeys(allKeys);
+      console.log('🔄 Selected all rows:', allKeys.length);
     }
   };
 

@@ -2554,7 +2554,7 @@ const TableDetail = () => {
               }}>
                 <Checkbox
                   checked={selectAll}
-                  onChange={(e) => handleSelectAll(e.target.checked, records)}
+                  onClick={() => handleSelectAll(null, records)}
                   indeterminate={selectedRowKeys.length > 0 && selectedRowKeys.length < records.length}
                 />
                 <span style={{ fontSize: '12px', color: '#666', fontWeight: 'bold' }}>#</span>
