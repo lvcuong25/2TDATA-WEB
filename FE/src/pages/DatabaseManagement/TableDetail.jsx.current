@@ -1,0 +1,586 @@
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTableContext } from '../../contexts/TableContext';
+import { Card, Layout, Typography, Spin, Alert, Modal, Input, Select, Menu, Checkbox, Space, Button } from 'antd';
+import axiosInstance from '../../utils/axiosInstance-cookie-only';
+
+// Import custom hooks
+import { useColumnHandlers, useRecordHandlers } from './TableDetail/hooks';
+
+// Import components  
+import { TableToolbar, TableView } from './TableDetail/components';
+import { AddColumnModal, EditColumnModal } from './TableDetail/modals';
+
+const { Title } = Typography;
+const { Content } = Layout;
+const { Option } = Select;
+
+const TableDetail = () => {
+  const { databaseId, tableId } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  const { 
+    selectedRowKeys, 
+    setSelectedRowKeys, 
+    selectAll, 
+    setSelectAll, 
+    handleSelectAll, 
+    handleSelectRow, 
+    setAllRecords 
+  } = useTableContext();
+
+  // State management
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState([]);
+  const [sortField, setSortField] = useState('');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [groupField, setGroupField] = useState('');
+  const [groupRules, setGroupRules] = useState([]);
+  const [visibleColumns, setVisibleColumns] = useState([]);
+  
+  // Popover states
+  const [showSort, setShowSort] = useState(false);
+  const [showGroup, setShowGroup] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [showFields, setShowFields] = useState(false);
+  
+  // Filter modal states
+  const [filterModalType, setFilterModalType] = useState('equals');
+  const [filterModalColumn, setFilterModalColumn] = useState('');
+  const [filterModalValue, setFilterModalValue] = useState('');
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+
+  // Custom hooks
+  const columnHandlers = useColumnHandlers({ databaseId, tableId, queryClient });
+  const recordHandlers = useRecordHandlers({ 
+    databaseId, 
+    tableId, 
+    queryClient, 
+    selectedRowKeys, 
+    setSelectedRowKeys 
+  });
+
+  // Queries
+  const { data: tableData, isLoading: isLoadingTable, error: tableError } = useQuery({
+    queryKey: ['table', databaseId, tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/database/tables/${tableId}`);
+      return response.data;
+    },
+    enabled: !!tableId
+  });
+
+  const { data: recordsData, isLoading: isLoadingRecords, error: recordsError } = useQuery({
+    queryKey: ['records', databaseId, tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/database/tables/${tableId}/records`);
+      return response.data;
+    },
+    enabled: !!tableId
+  });
+
+  // Memoized values
+  const columns = useMemo(() => {
+    console.log('Table data:', tableData);
+    return tableData?.data?.columns || [];
+  }, [tableData]);
+  
+  const records = useMemo(() => {
+    console.log('Records data:', recordsData);
+    return recordsData?.data || [];
+  }, [recordsData]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('TableDetail Debug:', {
+      databaseId,
+      tableId,
+      tableData,
+      recordsData,
+      columns,
+      records,
+      tableError,
+      recordsError,
+      isLoadingTable,
+      isLoadingRecords
+    });
+  }, [databaseId, tableId, tableData, recordsData, columns, records, tableError, recordsError, isLoadingTable, isLoadingRecords]);
+  
+
+  // Initialize visible columns
+  React.useEffect(() => {
+    if (columns.length > 0 && visibleColumns.length === 0) {
+      setVisibleColumns(columns.map(col => col.name));
+    }
+  }, [columns, visibleColumns.length]);
+
+  // Filter and sort records
+  const filteredAndSortedRecords = useMemo(() => {
+    let result = [...records];
+
+    // Apply search filter
+    if (searchTerm) {
+      result = result.filter(record => {
+        return Object.values(record).some(value => 
+          value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      });
+    }
+
+    // Apply custom filters
+    filters.forEach(filter => {
+      result = result.filter(record => {
+        const value = record[filter.column];
+        const filterValue = filter.value;
+        
+        switch (filter.type) {
+          case 'equals':
+            return value == filterValue;
+          case 'not_equals':
+            return value != filterValue;
+          case 'contains':
+            return value && value.toString().toLowerCase().includes(filterValue.toLowerCase());
+          case 'not_contains':
+            return !value || !value.toString().toLowerCase().includes(filterValue.toLowerCase());
+          case 'greater_than':
+            return parseFloat(value) > parseFloat(filterValue);
+          case 'less_than':
+            return parseFloat(value) < parseFloat(filterValue);
+          case 'is_empty':
+            return !value || value === '';
+          case 'is_not_empty':
+            return value && value !== '';
+          default:
+            return true;
+        }
+      });
+    });
+
+    // Apply sorting
+    if (sortField) {
+      result.sort((a, b) => {
+        const aVal = a[sortField];
+        const bVal = b[sortField];
+        
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+        
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        
+        const aStr = aVal.toString();
+        const bStr = bVal.toString();
+        return sortOrder === 'asc' 
+          ? aStr.localeCompare(bStr) 
+          : bStr.localeCompare(aStr);
+      });
+    }
+
+    return result;
+  }, [records, searchTerm, filters, sortField, sortOrder]);
+
+  // Handlers
+  const handleSort = (fieldName) => {
+    if (sortField === fieldName) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(fieldName);
+      setSortOrder('asc');
+    }
+    setShowSort(false);
+  };
+
+  const handleGroup = (fieldName) => {
+    setGroupField(fieldName);
+    const column = columns.find(col => col.name === fieldName);
+    if (column) {
+      setGroupRules([{ field: fieldName, value: null }]);
+    }
+    setShowGroup(false);
+  };
+
+  const handleAddFilter = () => {
+    if (filterModalColumn && filterModalValue) {
+      setFilters([...filters, {
+        column: filterModalColumn,
+        type: filterModalType,
+        value: filterModalValue
+      }]);
+      setFilterModalColumn('');
+      setFilterModalValue('');
+      setIsFilterModalVisible(false);
+    }
+  };
+
+  const handleRemoveFilter = (index) => {
+    setFilters(filters.filter((_, i) => i !== index));
+  };
+
+  const handleFieldToggle = (columnName) => {
+    setVisibleColumns(prev => {
+      if (prev.includes(columnName)) {
+        return prev.filter(name => name !== columnName);
+      } else {
+        return [...prev, columnName];
+      }
+    });
+  };
+
+  // Click outside handlers
+  useClickOutside(showSort, setShowSort, 'sort-dropdown');
+  useClickOutside(showGroup, setShowGroup, 'group-dropdown');
+  useClickOutside(showFilter, setShowFilter, 'filter-dropdown');
+  useClickOutside(showFields, setShowFields, 'fields-dropdown');
+
+  if (isLoadingTable || isLoadingRecords) {
+    return (
+      <div style={{ textAlign: 'center', padding: '50px' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (tableError) {
+    return <Alert message={`Lỗi tải bảng: ${tableError.message}`} type="error" />;
+  }
+
+  if (recordsError) {
+    return <Alert message={`Lỗi tải dữ liệu: ${recordsError.message}`} type="error" />;
+  }
+
+  if (!tableData?.data) {
+    return <Alert message="Không tìm thấy bảng" type="error" />;
+  }
+
+  return (
+    <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+      <Content style={{ padding: '24px' }}>
+        <Card>
+          <Title level={3}>Bảng: {tableData.data.name}</Title>
+          
+          <TableToolbar
+            onBack={() => navigate(`/database-management/${databaseId}`)}
+            onAddColumn={() => columnHandlers.setShowAddColumn(true)}
+            onAddRow={recordHandlers.handleAddRow}
+            onDeleteAll={recordHandlers.handleDeleteAllRecords}
+            onBulkDelete={recordHandlers.handleBulkDelete}
+            selectedCount={selectedRowKeys.length}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            filterCount={filters.length}
+            onFilterClick={(e) => {
+              e.stopPropagation();
+              setShowFilter(!showFilter);
+            }}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSortClick={(e) => {
+              e.stopPropagation();
+              setShowSort(!showSort);
+            }}
+            groupField={groupField}
+            onGroupClick={(e) => {
+              e.stopPropagation();
+              setShowGroup(!showGroup);
+            }}
+            visibleColumns={visibleColumns}
+            onFieldsClick={(e) => {
+              e.stopPropagation();
+              setShowFields(!showFields);
+            }}
+            onRefresh={() => {
+              queryClient.invalidateQueries(['records', databaseId, tableId]);
+            }}
+            isLoading={isLoadingRecords}
+          />
+
+          {/* Sort Dropdown */}
+          {showSort && (
+            <div 
+              id="sort-dropdown"
+              style={{
+                position: 'absolute',
+                top: '150px',
+                right: '300px',
+                zIndex: 1000,
+                background: 'white',
+                border: '1px solid #d9d9d9',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                padding: '8px 0',
+                minWidth: '200px'
+              }}
+            >
+              <Menu
+                selectedKeys={[sortField]}
+                onClick={({ key }) => handleSort(key)}
+              >
+                {columns.map(column => (
+                  <Menu.Item key={column.name}>
+                    {column.name}
+                  </Menu.Item>
+                ))}
+              </Menu>
+            </div>
+          )}
+
+          {/* Group Dropdown */}
+          {showGroup && (
+            <div 
+              id="group-dropdown"
+              style={{
+                position: 'absolute',
+                top: '150px',
+                right: '200px',
+                zIndex: 1000,
+                background: 'white',
+                border: '1px solid #d9d9d9',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                padding: '8px 0',
+                minWidth: '200px'
+              }}
+            >
+              <Menu
+                selectedKeys={[groupField]}
+                onClick={({ key }) => handleGroup(key)}
+              >
+                <Menu.Item key="">Không nhóm</Menu.Item>
+                {columns.map(column => (
+                  <Menu.Item key={column.name}>
+                    {column.name}
+                  </Menu.Item>
+                ))}
+              </Menu>
+            </div>
+          )}
+
+          {/* Filter Dropdown */}
+          {showFilter && (
+            <div 
+              id="filter-dropdown"
+              style={{
+                position: 'absolute',
+                top: '150px',
+                right: '400px',
+                zIndex: 1000,
+                background: 'white',
+                border: '1px solid #d9d9d9',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                padding: '16px',
+                minWidth: '300px'
+              }}
+            >
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5}>Bộ lọc</Title>
+                {filters.map((filter, index) => (
+                  <div key={index} style={{ 
+                    padding: '8px', 
+                    background: '#f0f2f5', 
+                    borderRadius: '4px',
+                    marginBottom: '8px' 
+                  }}>
+                    <Space>
+                      <span>{filter.column}</span>
+                      <span>{filter.type}</span>
+                      <span>{filter.value}</span>
+                      <Button
+                        type="link"
+                        danger
+                        size="small"
+                        onClick={() => handleRemoveFilter(index)}
+                      >
+                        Xóa
+                      </Button>
+                    </Space>
+                  </div>
+                ))}
+                <Button
+                  type="dashed"
+                  style={{ width: '100%' }}
+                  onClick={() => {
+                    setIsFilterModalVisible(true);
+                    setShowFilter(false);
+                  }}
+                >
+                  Thêm điều kiện lọc
+                </Button>
+              </Space>
+            </div>
+          )}
+
+          {/* Fields Dropdown */}
+          {showFields && (
+            <div 
+              id="fields-dropdown"
+              style={{
+                position: 'absolute',
+                top: '150px',
+                right: '100px',
+                zIndex: 1000,
+                background: 'white',
+                border: '1px solid #d9d9d9',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                padding: '16px',
+                minWidth: '250px'
+              }}
+            >
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5}>Hiển thị cột</Title>
+                {columns.map(column => (
+                  <Checkbox
+                    key={column._id}
+                    checked={visibleColumns.includes(column.name)}
+                    onChange={() => handleFieldToggle(column.name)}
+                  >
+                    {column.name}
+                  </Checkbox>
+                ))}
+              </Space>
+            </div>
+          )}
+
+          {/* Table View */}
+          <TableView
+            columns={columns}
+            records={records}
+            loading={isLoadingRecords}
+            editingCell={recordHandlers.editingCell}
+            onCellClick={recordHandlers.handleCellClick}
+            onCellSave={recordHandlers.handleCellSave}
+            onCellCancel={recordHandlers.handleCellCancel}
+            setEditingCell={recordHandlers.setEditingCell}
+            onDeleteColumn={columnHandlers.handleDeleteColumn}
+            onEditColumn={columnHandlers.handleEditColumn}
+            onAddRowToGroup={recordHandlers.handleAddRowToGroup}
+            onDeleteRecord={recordHandlers.handleDeleteRecord}
+            onContextMenu={recordHandlers.handleContextMenu}
+            selectedRowKeys={selectedRowKeys}
+            onRowSelectionChange={setSelectedRowKeys}
+            sortedRecords={filteredAndSortedRecords}
+            groupField={groupField}
+            groupRules={groupRules}
+            visibleColumns={visibleColumns}
+          />
+
+          {/* Context Menu */}
+          {recordHandlers.contextMenu.visible && (
+            <div
+              style={{
+                position: 'fixed',
+                top: recordHandlers.contextMenu.y,
+                left: recordHandlers.contextMenu.x,
+                zIndex: 1000,
+                background: 'white',
+                border: '1px solid #d9d9d9',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                padding: '4px 0'
+              }}
+              onMouseLeave={recordHandlers.handleContextMenuClose}
+            >
+              <Menu>
+                <Menu.Item 
+                  key="delete" 
+                  danger
+                  onClick={recordHandlers.handleContextMenuDelete}
+                >
+                  Xóa dòng này
+                </Menu.Item>
+              </Menu>
+            </div>
+          )}
+        </Card>
+
+        {/* Modals */}
+        <AddColumnModal
+          visible={columnHandlers.showAddColumn}
+          onCancel={() => columnHandlers.setShowAddColumn(false)}
+          onSubmit={columnHandlers.handleAddColumn}
+          newColumn={columnHandlers.newColumn}
+          setNewColumn={columnHandlers.setNewColumn}
+          columns={columns}
+        />
+
+        <EditColumnModal
+          visible={columnHandlers.showEditColumn}
+          onCancel={() => {
+            columnHandlers.setShowEditColumn(false);
+            columnHandlers.setEditingColumn(null);
+          }}
+          onSubmit={columnHandlers.handleEditColumnSubmit}
+          editingColumn={columnHandlers.editingColumn}
+          setEditingColumn={columnHandlers.setEditingColumn}
+          columns={columns}
+        />
+
+        {/* Filter Modal */}
+        <Modal
+          title="Thêm điều kiện lọc"
+          open={isFilterModalVisible}
+          onOk={handleAddFilter}
+          onCancel={() => setIsFilterModalVisible(false)}
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Select
+              placeholder="Chọn cột"
+              style={{ width: '100%' }}
+              value={filterModalColumn}
+              onChange={setFilterModalColumn}
+            >
+              {columns.map(col => (
+                <Option key={col.name} value={col.name}>{col.name}</Option>
+              ))}
+            </Select>
+            <Select
+              placeholder="Chọn điều kiện"
+              style={{ width: '100%' }}
+              value={filterModalType}
+              onChange={setFilterModalType}
+            >
+              <Option value="equals">Bằng</Option>
+              <Option value="not_equals">Không bằng</Option>
+              <Option value="contains">Chứa</Option>
+              <Option value="not_contains">Không chứa</Option>
+              <Option value="greater_than">Lớn hơn</Option>
+              <Option value="less_than">Nhỏ hơn</Option>
+              <Option value="is_empty">Trống</Option>
+              <Option value="is_not_empty">Không trống</Option>
+            </Select>
+            {filterModalType !== 'is_empty' && filterModalType !== 'is_not_empty' && (
+              <Input
+                placeholder="Giá trị"
+                value={filterModalValue}
+                onChange={(e) => setFilterModalValue(e.target.value)}
+              />
+            )}
+          </Space>
+        </Modal>
+      </Content>
+    </Layout>
+  );
+};
+
+// Custom hook for click outside detection
+function useClickOutside(isOpen, setIsOpen, elementId) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event) => {
+      const element = document.getElementById(elementId);
+      if (element && !element.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, setIsOpen, elementId]);
+}
+
+export default TableDetail;
