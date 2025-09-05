@@ -3,7 +3,7 @@ import Header from "./Header";
 import FooterWrapper from "./FooterWrapper";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "./core/Auth";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance-cookie-only";
 import { Tag, Table, Space, Button, Tooltip, Switch, Pagination, Modal, Select, message, InputNumber, Radio, TimePicker, DatePicker } from "antd";
 import { AppstoreOutlined, TableOutlined, LoadingOutlined, SettingOutlined, ClockCircleOutlined, CalendarOutlined } from "@ant-design/icons";
@@ -17,7 +17,6 @@ import dayjs from "dayjs";
 const MyService = () => {
   const navigate = useNavigate();
   const authContext = useContext(AuthContext) || {};
-  const queryClient = useQueryClient();
   const currentUser = authContext?.currentUser || null;
   const [isCardView, setIsCardView] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -170,7 +169,7 @@ const MyService = () => {
       // Cập nhật thời gian cập nhật cuối cùng nếu có auto update
       if (record.autoUpdate?.enabled) {
         try {
-          await instance.put(`/requests/${record._id}/update-time`);
+          await instance.put(`/userService/${record._id}/update-time`);
         } catch (error) {
           console.error('Error updating last update time:', error);
         }
@@ -189,23 +188,19 @@ const MyService = () => {
     setSelectedService(service);
     const currentInterval = service.autoUpdate?.interval || 30;
     
-    // Xác định loại thời gian (custom hoặc schedule)
-    // Kiểm tra xem có phải schedule không (dựa vào scheduleType)
-    const hasScheduleType = service.autoUpdate?.scheduleType;
+    // Xác định loại thời gian (preset, custom, hoặc schedule)
+    const presetOptions = [5, 10, 15, 30, 60, 120, 240, 480, 720, 1440];
+    const isPreset = presetOptions.includes(currentInterval);
     
-    // Xác định timeType: ưu tiên schedule trước, mặc định là custom
-    let timeType = 'custom'; // default
-    if (hasScheduleType) {
-      timeType = 'schedule';
-    } else {
-      timeType = 'custom';
-    }
+    // Kiểm tra xem có phải schedule không (dựa vào nextUpdateAt)
+    const nextUpdate = service.autoUpdate?.nextUpdateAt;
+    const isSchedule = nextUpdate && service.autoUpdate?.scheduleType;
     
     setAutoUpdateSettings({
       enabled: service.autoUpdate?.enabled || false,
       interval: currentInterval,
-      timeType: timeType,
-      customValue: currentInterval >= 1440 ? Math.floor(currentInterval / 1440) : currentInterval >= 60 ? Math.floor(currentInterval / 60) : currentInterval,
+      timeType: isSchedule ? 'schedule' : (isPreset ? 'preset' : 'custom'),
+      customValue: isPreset ? 30 : (currentInterval >= 1440 ? Math.floor(currentInterval / 1440) : currentInterval >= 60 ? Math.floor(currentInterval / 60) : currentInterval),
       customUnit: currentInterval >= 1440 ? 'days' : currentInterval >= 60 ? 'hours' : 'minutes',
       scheduleType: service.autoUpdate?.scheduleType || 'daily',
       scheduleTime: service.autoUpdate?.scheduleTime ? dayjs(`2000-01-01 ${service.autoUpdate.scheduleTime}`) : null,
@@ -253,57 +248,31 @@ const MyService = () => {
 
         // Tính nextUpdateAt dựa trên schedule
         requestData.nextUpdateAt = calculateNextUpdateTime();
-        
-        // Xóa thông tin interval cũ khi chuyển sang schedule
-        requestData.clearInterval = true;
-        requestData.interval = null;
       } else {
-        // Xử lý interval (chỉ custom)
-        const { customValue, customUnit } = autoUpdateSettings;
-        let finalInterval;
+        // Xử lý interval (preset hoặc custom)
+        let finalInterval = autoUpdateSettings.interval;
         
-        if (customUnit === 'days') {
-          finalInterval = customValue * 1440; // 1 ngày = 1440 phút
-        } else if (customUnit === 'hours') {
-          finalInterval = customValue * 60; // 1 giờ = 60 phút
-        } else {
-          finalInterval = customValue; // phút
+        if (autoUpdateSettings.timeType === 'custom') {
+          const { customValue, customUnit } = autoUpdateSettings;
+          if (customUnit === 'days') {
+            finalInterval = customValue * 1440; // 1 ngày = 1440 phút
+          } else if (customUnit === 'hours') {
+            finalInterval = customValue * 60; // 1 giờ = 60 phút
+          } else {
+            finalInterval = customValue; // phút
+          }
         }
         
         requestData.interval = finalInterval;
-        
-        // Xóa thông tin schedule cũ khi chuyển sang interval
-        requestData.clearSchedule = true;
-        requestData.scheduleType = null;
-        requestData.scheduleTime = null;
-        requestData.scheduleDate = null;
-        requestData.scheduleDays = null;
       }
 
-      console.log('🚀 SENDING REQUEST:', requestData);
-      console.log('🔍 Request details:', {
-        enabled: requestData.enabled,
-        interval: requestData.interval,
-        scheduleType: requestData.scheduleType,
-        scheduleTime: requestData.scheduleTime,
-        clearSchedule: requestData.clearSchedule,
-        clearInterval: requestData.clearInterval
-      });
-      const response = await instance.put(`/requests/${selectedService._id}/auto-update`, requestData);
-      console.log('📥 RESPONSE:', response.data);
+      const response = await instance.put(`/userService/${selectedService._id}/auto-update`, requestData);
 
       message.success(response.data.message);
       setAutoUpdateModalVisible(false);
       
-      // Refresh data without full page reload
-      await queryClient.invalidateQueries({ queryKey: ["myServices", currentUser?._id] });
-      await queryClient.invalidateQueries({ queryKey: ["servicesWithLinks", currentUser?._id] });
-      
-      // Force refetch để đảm bảo data được cập nhật
-      console.log('🔄 Refreshing data after save...');
-      await queryClient.refetchQueries({ queryKey: ["myServices", currentUser?._id] });
-      await queryClient.refetchQueries({ queryKey: ["servicesWithLinks", currentUser?._id] });
-      console.log('✅ Data refresh completed');
+      // Refresh data
+      window.location.reload();
     } catch (error) {
       console.error('Error saving auto update settings:', error);
       message.error('Có lỗi xảy ra khi lưu cài đặt');
@@ -354,26 +323,7 @@ const MyService = () => {
   };
 
   const formatIntervalDisplay = (interval, scheduleType, scheduleTime) => {
-    console.log('formatIntervalDisplay called with:', { 
-      interval, 
-      scheduleType, 
-      scheduleTime,
-      intervalType: typeof interval,
-      scheduleTypeType: typeof scheduleType,
-      scheduleTimeType: typeof scheduleTime
-    });
-    
-    // Kiểm tra scheduleType có hợp lệ không (không phải null, undefined, hoặc 'null')
-    const hasValidSchedule = scheduleType && 
-      scheduleType !== null && 
-      scheduleType !== undefined && 
-      scheduleType !== 'null' &&
-      scheduleType.trim() !== '';
-    
-    console.log('hasValidSchedule:', hasValidSchedule);
-    
-    if (hasValidSchedule) {
-      console.log('Using scheduleType logic:', scheduleType);
+    if (scheduleType) {
       const timeStr = scheduleTime ? (typeof scheduleTime === 'string' ? scheduleTime : scheduleTime.format('HH:mm')) : '';
       switch (scheduleType) {
         case 'daily':
@@ -389,23 +339,15 @@ const MyService = () => {
       }
     }
     
-    // Nếu không có scheduleType hợp lệ, hiển thị interval
-    console.log('Using interval logic:', interval);
-    if (interval && interval >= 1440) {
+    if (interval >= 1440) {
       const days = Math.floor(interval / 1440);
-      console.log('Returning days:', days);
       return `${days} ngày`;
-    } else if (interval && interval >= 60) {
+    } else if (interval >= 60) {
       const hours = Math.floor(interval / 60);
-      console.log('Returning hours:', hours);
       return `${hours} giờ`;
-    } else if (interval) {
-      console.log('Returning minutes:', interval);
+    } else {
       return `${interval} phút`;
     }
-    
-    console.log('Returning default: Chưa cài đặt');
-    return 'Chưa cài đặt';
   };
 
   const columns = [
@@ -489,25 +431,11 @@ const MyService = () => {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Tag color={record.autoUpdate?.enabled ? "green" : "default"}>
-              {record.autoUpdate?.enabled ? (() => {
-                console.log('🔍 TABLE DEBUG for service:', record.service?.name);
-                console.log('📊 Raw data:', {
-                  interval: record.autoUpdate.interval,
-                  scheduleType: record.autoUpdate.scheduleType,
-                  scheduleTime: record.autoUpdate.scheduleTime,
-                  enabled: record.autoUpdate.enabled
-                });
-                console.log('🔍 Full autoUpdate object:', record.autoUpdate);
-                
-                const displayText = formatIntervalDisplay(
-                  record.autoUpdate.interval, 
-                  record.autoUpdate.scheduleType, 
-                  record.autoUpdate.scheduleTime
-                );
-                
-                console.log('✅ Final display text:', displayText);
-                return displayText;
-              })() : "Tắt"}
+              {record.autoUpdate?.enabled ? formatIntervalDisplay(
+                record.autoUpdate.interval, 
+                record.autoUpdate.scheduleType, 
+                record.autoUpdate.scheduleTime
+              ) : "Tắt"}
             </Tag>
             <Button
               type="text"
@@ -533,10 +461,10 @@ const MyService = () => {
         <Button
           type="primary"
           onClick={() => handleUpdateLinks(record)}
-          loading={updatingServiceId === record._id || record.autoUpdate?.isUpdating}
-          icon={updatingServiceId === record._id || record.autoUpdate?.isUpdating ? <LoadingOutlined /> : null}
+          loading={updatingServiceId === record._id}
+          icon={updatingServiceId === record._id ? <LoadingOutlined /> : null}
         >
-          {updatingServiceId === record._id || record.autoUpdate?.isUpdating ? "Đang cập nhật..." : "Cập nhật"}
+          {updatingServiceId === record._id ? "Đang cập nhật..." : "Cập nhật"}
         </Button>
       ),
     },
@@ -836,42 +764,33 @@ const MyService = () => {
                 
                 <Radio.Group
                   value={autoUpdateSettings.timeType}
-                  onChange={(e) => {
-                    const newTimeType = e.target.value;
-                    console.log('Changing timeType from', autoUpdateSettings.timeType, 'to', newTimeType);
-                    
-                    // Xóa dữ liệu cũ khi chuyển đổi loại
-                    if (newTimeType === 'schedule') {
-                      // Chuyển sang schedule -> xóa interval data
-                      setAutoUpdateSettings(prev => ({
-                        ...prev,
-                        timeType: newTimeType,
-                        interval: null,
-                        customValue: 30,
-                        customUnit: 'minutes'
-                      }));
-                    } else if (newTimeType === 'custom') {
-                      // Chuyển sang interval -> xóa schedule data
-                      setAutoUpdateSettings(prev => ({
-                        ...prev,
-                        timeType: newTimeType,
-                        scheduleType: null,
-                        scheduleTime: null,
-                        scheduleDate: null,
-                        scheduleDays: []
-                      }));
-                    } else {
-                      setAutoUpdateSettings(prev => ({ ...prev, timeType: newTimeType }));
-                    }
-                  }}
+                  onChange={(e) => setAutoUpdateSettings(prev => ({ ...prev, timeType: e.target.value }))}
                   className="mb-3"
                 >
+                  <Radio value="preset">Thời gian có sẵn</Radio>
                   <Radio value="custom">Thời gian tùy chỉnh</Radio>
                   <Radio value="schedule">Lịch trình cố định</Radio>
                 </Radio.Group>
 
-
-                {autoUpdateSettings.timeType === 'custom' && (
+                {autoUpdateSettings.timeType === 'preset' ? (
+                  <Select
+                    value={autoUpdateSettings.interval}
+                    onChange={(value) => setAutoUpdateSettings(prev => ({ ...prev, interval: value }))}
+                    style={{ width: '100%' }}
+                    options={[
+                      { value: 5, label: '5 phút' },
+                      { value: 10, label: '10 phút' },
+                      { value: 15, label: '15 phút' },
+                      { value: 30, label: '30 phút' },
+                      { value: 60, label: '1 giờ' },
+                      { value: 120, label: '2 giờ' },
+                      { value: 240, label: '4 giờ' },
+                      { value: 480, label: '8 giờ' },
+                      { value: 720, label: '12 giờ' },
+                      { value: 1440, label: '24 giờ' }
+                    ]}
+                  />
+                ) : (
                   <div className="flex gap-2 items-center">
                     <InputNumber
                       min={1}
@@ -991,55 +910,20 @@ const MyService = () => {
               </div>
             )}
 
-            {autoUpdateSettings.enabled && (
+            {selectedService.autoUpdate?.enabled && (
               <div className="bg-gray-50 p-3 rounded">
                 <h5 className="font-medium mb-2">Thông tin hiện tại:</h5>
                 <div className="text-sm space-y-1">
                   <div>Trạng thái: <Tag color="green">Đang bật</Tag></div>
-                  <div>
-                    {(() => {
-                      console.log('Current info display - autoUpdateSettings:', {
-                        timeType: autoUpdateSettings.timeType,
-                        interval: autoUpdateSettings.interval,
-                        scheduleType: autoUpdateSettings.scheduleType,
-                        scheduleTime: autoUpdateSettings.scheduleTime,
-                        customValue: autoUpdateSettings.customValue,
-                        customUnit: autoUpdateSettings.customUnit
-                      });
-                      // Kiểm tra xem có dữ liệu schedule hợp lệ không
-                      const hasValidSchedule = autoUpdateSettings.timeType === 'schedule' && 
-                        autoUpdateSettings.scheduleType && 
-                        autoUpdateSettings.scheduleTime;
-                      
-                      return hasValidSchedule ? (
-                      <>
-                        Loại: <Tag color="blue">Lịch trình cố định</Tag><br/>
-                        Lịch trình: {formatIntervalDisplay(
-                          null,
-                          autoUpdateSettings.scheduleType,
-                          autoUpdateSettings.scheduleTime ? autoUpdateSettings.scheduleTime.format('HH:mm') : null
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        Loại: <Tag color="orange">Khoảng thời gian</Tag><br/>
-                        Khoảng thời gian: {formatIntervalDisplay(
-                          autoUpdateSettings.customUnit === 'days' 
-                            ? autoUpdateSettings.customValue * 1440
-                            : autoUpdateSettings.customUnit === 'hours'
-                            ? autoUpdateSettings.customValue * 60
-                            : autoUpdateSettings.customValue,
-                          null,
-                          null
-                        )}
-                      </>
-                    );
-                    })()}
-                  </div>
-                  {selectedService.autoUpdate?.lastUpdateAt && (
+                  <div>Khoảng thời gian: {formatIntervalDisplay(
+                    selectedService.autoUpdate.interval,
+                    selectedService.autoUpdate.scheduleType,
+                    selectedService.autoUpdate.scheduleTime
+                  )}</div>
+                  {selectedService.autoUpdate.lastUpdateAt && (
                     <div>Cập nhật cuối: {new Date(selectedService.autoUpdate.lastUpdateAt).toLocaleString('vi-VN')}</div>
                   )}
-                  {selectedService.autoUpdate?.nextUpdateAt && (
+                  {selectedService.autoUpdate.nextUpdateAt && (
                     <div>Cập nhật tiếp theo: {formatNextUpdateTime(selectedService.autoUpdate.nextUpdateAt)}</div>
                   )}
                 </div>
@@ -1049,6 +933,7 @@ const MyService = () => {
             <div className="text-xs text-gray-500">
               <p>• Hệ thống sẽ tự động gọi các link cập nhật theo lịch trình đã chọn</p>
               <p>• Chỉ áp dụng cho các dịch vụ có link cập nhật</p>
+              <p>• <strong>Thời gian có sẵn:</strong> Chọn từ các khoảng thời gian cố định</p>
               <p>• <strong>Thời gian tùy chỉnh:</strong> Nhập số + chọn đơn vị (phút/giờ/ngày)</p>
               <p>• <strong>Lịch trình cố định:</strong> Cập nhật vào thời gian cụ thể mỗi ngày/tuần/tháng</p>
               <p>• Bạn có thể tắt bất kỳ lúc nào</p>

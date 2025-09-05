@@ -24,7 +24,9 @@
     "db:cleanup:test": "node db-management/cleanup.js --test-data --old-otps",
     "db:setup-auth": "node db-management/setup-mongodb-auth.js",
     "db:setup-initial": "node db-management/setup-initial-data.js",
-    "setup:production": "npm run db:setup-auth && npm run db:setup-initial"
+    "setup:production": "npm run db:setup-auth && npm run db:setup-initial",
+    "auto-update": "node src/scripts/autoUpdateService.js",
+    "test:auto-update": "node test-auto-update.js"
   },
   "keywords": [],
   "author": "",

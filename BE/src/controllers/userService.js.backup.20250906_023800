@@ -551,17 +551,6 @@ export const updateAutoUpdateSettings = async (req, res, next) => {
         const userId = req.user._id;
         
         console.log('Auto update request body:', req.body);
-        console.log('Request details:', {
-            enabled,
-            interval,
-            scheduleType,
-            scheduleTime,
-            scheduleDate,
-            scheduleDays,
-            nextUpdateAt,
-            clearInterval,
-            clearSchedule
-        });
 
         // Validate input
         if (typeof enabled !== 'boolean') {
@@ -587,16 +576,17 @@ export const updateAutoUpdateSettings = async (req, res, next) => {
         
         if (enabled) {
             // Nếu có scheduleType và không phải null, đây là lịch trình cố định
-            if (scheduleType && scheduleType !== null && scheduleType !== 'null') {
+            if (scheduleType && scheduleType !== null) {
                 userService.autoUpdate.scheduleType = scheduleType;
                 userService.autoUpdate.scheduleTime = scheduleTime;
                 userService.autoUpdate.scheduleDate = scheduleDate;
                 userService.autoUpdate.scheduleDays = scheduleDays;
                 userService.autoUpdate.nextUpdateAt = nextUpdateAt ? new Date(nextUpdateAt) : null;
                 
-                // LUÔN xóa thông tin interval cũ khi chuyển sang schedule
-                console.log('🧹 Clearing old interval data when switching to schedule');
-                userService.autoUpdate.interval = undefined;
+                // Xóa thông tin interval cũ nếu có
+                if (clearInterval) {
+                    userService.autoUpdate.interval = undefined;
+                }
             } else {
                 // Nếu không có scheduleType, đây là interval
                 if (!interval || typeof interval !== 'number' || interval < 1) {
@@ -607,12 +597,21 @@ export const updateAutoUpdateSettings = async (req, res, next) => {
                 // Tính thời gian cập nhật tiếp theo
                 userService.autoUpdate.nextUpdateAt = new Date(Date.now() + interval * 60 * 1000);
                 
-                // LUÔN xóa thông tin schedule cũ khi chuyển sang interval
-                console.log('🧹 Clearing old schedule data when switching to interval');
-                userService.autoUpdate.scheduleType = undefined;
-                userService.autoUpdate.scheduleTime = undefined;
-                userService.autoUpdate.scheduleDate = undefined;
-                userService.autoUpdate.scheduleDays = undefined;
+                // Xóa thông tin schedule cũ nếu có
+                if (clearSchedule) {
+                    userService.autoUpdate.scheduleType = undefined;
+                    userService.autoUpdate.scheduleTime = undefined;
+                    userService.autoUpdate.scheduleDate = undefined;
+                    userService.autoUpdate.scheduleDays = undefined;
+                }
+                
+                // Đảm bảo xóa thông tin schedule cũ khi chuyển sang interval
+                if (!scheduleType || scheduleType === null) {
+                    userService.autoUpdate.scheduleType = undefined;
+                    userService.autoUpdate.scheduleTime = undefined;
+                    userService.autoUpdate.scheduleDate = undefined;
+                    userService.autoUpdate.scheduleDays = undefined;
+                }
             }
         } else {
             // Tắt auto update
@@ -624,26 +623,8 @@ export const updateAutoUpdateSettings = async (req, res, next) => {
         }
 
         console.log('Before save - autoUpdate:', JSON.stringify(userService.autoUpdate, null, 2));
-        console.log('Before save - autoUpdate details:', {
-            enabled: userService.autoUpdate.enabled,
-            interval: userService.autoUpdate.interval,
-            scheduleType: userService.autoUpdate.scheduleType,
-            scheduleTime: userService.autoUpdate.scheduleTime,
-            scheduleDate: userService.autoUpdate.scheduleDate,
-            scheduleDays: userService.autoUpdate.scheduleDays,
-            nextUpdateAt: userService.autoUpdate.nextUpdateAt
-        });
         await userService.save();
         console.log('After save - autoUpdate:', JSON.stringify(userService.autoUpdate, null, 2));
-        console.log('After save - autoUpdate details:', {
-            enabled: userService.autoUpdate.enabled,
-            interval: userService.autoUpdate.interval,
-            scheduleType: userService.autoUpdate.scheduleType,
-            scheduleTime: userService.autoUpdate.scheduleTime,
-            scheduleDate: userService.autoUpdate.scheduleDate,
-            scheduleDays: userService.autoUpdate.scheduleDays,
-            nextUpdateAt: userService.autoUpdate.nextUpdateAt
-        });
 
         // Populate thông tin đầy đủ trước khi trả về
         const updatedUserService = await UserService.findById(userService._id)
@@ -655,7 +636,7 @@ export const updateAutoUpdateSettings = async (req, res, next) => {
 
         let message = "Đã tắt cập nhật tự động";
         if (enabled) {
-            if (scheduleType && scheduleType !== null && scheduleType !== 'null') {
+            if (scheduleType && scheduleType !== null) {
                 const timeStr = scheduleTime || '';
                 switch (scheduleType) {
                     case 'daily':

@@ -116,12 +116,7 @@ const userServiceSchema = new mongoose.Schema(
         min: 0,
         max: 6,
         description: "Các ngày trong tuần (0=CN, 1=T2, ..., 6=T7) - chỉ dùng cho 'weekly'"
-      }],
-      isUpdating: {
-        type: Boolean,
-        default: false,
-        description: "Trạng thái đang cập nhật (true khi auto-update đang chạy)"
-      }
+      }]
     },
   },
   { timestamps: true, versionKey: false }
