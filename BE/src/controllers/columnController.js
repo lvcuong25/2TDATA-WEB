@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -20,7 +20,8 @@ export const createColumn = async (req, res) => {
       checkboxConfig,
       singleSelectConfig,
       multiSelectConfig,
-      dateConfig
+      dateConfig,
+      currencyConfig
     });
 
     if (!name || name.trim() === '') {
@@ -120,6 +121,19 @@ export const createColumn = async (req, res) => {
       };
     }
 
+    // Only add currencyConfig if dataType is currency and currencyConfig is provided
+    if (dataType === 'currency' && currencyConfig) {
+      // Ensure currencyConfig has all required fields with defaults
+      columnData.currencyConfig = {
+        currency: currencyConfig.currency || 'USD',
+        symbol: currencyConfig.symbol || '$',
+        position: currencyConfig.position || 'before',
+        decimalPlaces: currencyConfig.decimalPlaces !== undefined ? currencyConfig.decimalPlaces : 2,
+        thousandsSeparator: currencyConfig.thousandsSeparator || ',',
+        decimalSeparator: currencyConfig.decimalSeparator || '.'
+      };
+    }
+
     console.log('Column data to save:', columnData);
 
     const column = new Column(columnData);
@@ -206,7 +220,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -322,6 +336,12 @@ export const updateColumn = async (req, res) => {
       column.formulaConfig = formulaConfig;
     } else if (dataType !== 'formula') {
       column.formulaConfig = undefined;
+    }
+
+    if (dataType === 'currency' && currencyConfig !== undefined) {
+      column.currencyConfig = currencyConfig;
+    } else if (dataType !== 'currency') {
+      column.currencyConfig = undefined;
     }
 
     // Save the column

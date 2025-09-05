@@ -29,7 +29,7 @@ const columnSchema = new mongoose.Schema({
   dataType: {
     type: String,
     required: true,
-    enum: ['string', 'number', 'date', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula']
+    enum: ['string', 'number', 'date', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency']
   },
   isRequired: {
     type: Boolean,
@@ -116,6 +116,39 @@ const columnSchema = new mongoose.Schema({
         type: String,
         enum: ['YYYY-MM-DD', 'YYYY/MM/DD', 'DD-MM-YYYY', 'MM-DD-YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'DD MM YYYY'],
         default: 'YYYY-MM-DD'
+      }
+    },
+    default: undefined
+  },
+  currencyConfig: {
+    type: {
+      currency: {
+        type: String,
+        enum: ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'VND', 'CAD', 'AUD', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'RUB', 'BRL', 'INR', 'KRW', 'SGD', 'HKD', 'NZD', 'MXN', 'ZAR', 'TRY', 'ILS', 'AED', 'SAR', 'QAR', 'KWD', 'BHD', 'OMR', 'JOD', 'LBP', 'EGP', 'MAD', 'TND', 'DZD', 'LYD', 'SDG', 'ETB', 'KES', 'UGX', 'TZS', 'MWK', 'ZMW', 'BWP', 'SZL', 'LSL', 'NAD', 'AOA', 'MZN', 'XOF', 'XAF', 'CDF', 'RWF', 'BIF', 'KMF', 'DJF', 'SOS', 'ERN', 'STN', 'CVE', 'GMD', 'GNF', 'LRD', 'SLL', 'NGN', 'GHS', 'XPF', 'TOP', 'WST', 'FJD', 'VUV', 'SBD', 'PGK', 'KID', 'TVD', 'XDR'],
+        default: 'USD'
+      },
+      symbol: {
+        type: String,
+        default: '$'
+      },
+      position: {
+        type: String,
+        enum: ['before', 'after'],
+        default: 'before'
+      },
+      decimalPlaces: {
+        type: Number,
+        min: 0,
+        max: 4,
+        default: 2
+      },
+      thousandsSeparator: {
+        type: String,
+        default: ','
+      },
+      decimalSeparator: {
+        type: String,
+        default: '.'
       }
     },
     default: undefined

@@ -4,6 +4,7 @@ import SingleSelectConfig from './SingleSelectConfig';
 import MultiSelectConfig from './MultiSelectConfig';
 import DateConfig from './DateConfig';
 import FormulaConfig from './FormulaConfig';
+import CurrencyConfig from './CurrencyConfig';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -63,7 +64,8 @@ import {
   LinkOutlined,
   CodeOutlined,
   MenuOutlined,
-  FunctionOutlined
+  FunctionOutlined,
+  DollarOutlined
 } from '@ant-design/icons';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 
@@ -411,6 +413,7 @@ const TableDetail = () => {
         case 'date': return 'D';
         case 'checkbox': return '☑';
         case 'single_select': return '▼';
+        case 'currency': return '$';
       case 'time': return '⏰';
       case 'datetime': return '📅';
       default: return 'T';
@@ -526,20 +529,6 @@ const TableDetail = () => {
       });
     });
   }, [allRecords, filterRules, isFilterActive]);
-
-  console.log('TableDetail Debug:', {
-    tableStructure,
-    table,
-    columns,
-    allRecords: allRecords.length,
-    filteredRecords: records.length,
-    filterRules,
-    isFilterActive,
-    tableId,
-    databaseId
-  });
-
-
 
   // Add column mutation
   const addColumnMutation = useMutation({
@@ -747,6 +736,9 @@ const TableDetail = () => {
         case 'formula':
           finalName = 'Formula';
           break;
+        case 'currency':
+          finalName = 'Currency';
+          break;
         default:
           finalName = 'New Column';
       }
@@ -781,6 +773,11 @@ const TableDetail = () => {
     // Add formula configuration if data type is formula
     if (newColumn.dataType === 'formula') {
       columnData.formulaConfig = newColumn.formulaConfig;
+    }
+    
+    // Add currency configuration if data type is currency
+    if (newColumn.dataType === 'currency') {
+      columnData.currencyConfig = newColumn.currencyConfig;
     }
     
     console.log('Frontend sending column data:', columnData);
@@ -974,6 +971,11 @@ const TableDetail = () => {
     // Add formula configuration if data type is formula
     if (editingColumn.dataType === 'formula') {
       columnData.formulaConfig = editingColumn.formulaConfig;
+    }
+    
+    // Add currency configuration if data type is currency
+    if (editingColumn.dataType === 'currency') {
+      columnData.currencyConfig = editingColumn.currencyConfig;
     }
     
     updateColumnMutation.mutate({
@@ -1441,6 +1443,7 @@ const TableDetail = () => {
       case 'single_select': return <DownOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
       case 'multi_select': return <CheckSquareOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
       case 'formula': return <FunctionOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
+      case 'currency': return <DollarOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
       case 'email': return <MailOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
       case 'url': return <LinkOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
       case 'json': return <CodeOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
@@ -1457,6 +1460,7 @@ const TableDetail = () => {
       case 'single_select': return '#1890ff';
       case 'multi_select': return '#722ed1';
       case 'formula': return '#722ed1';
+      case 'currency': return '#52c41a';
       case 'email': return '#1890ff';
       case 'url': return '#1890ff';
       case 'json': return '#722ed1';
@@ -1473,6 +1477,7 @@ const TableDetail = () => {
       single_select: 'blue',
       multi_select: 'purple',
       formula: 'purple',
+      currency: 'green',
       email: 'blue',
       url: 'blue',
       json: 'purple'
@@ -2666,7 +2671,7 @@ const TableDetail = () => {
                       items: [
                         {
                           key: 'edit',
-                          label: 'Edit Column',
+                          label: 'Chỉnh sửa cột',
                           icon: <EditOutlined />,
                           onClick: () => handleEditColumn(column),
                         },
@@ -2738,7 +2743,7 @@ const TableDetail = () => {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
               >
-                <Tooltip title="Add Column">
+                <Tooltip title="Thêm cột">
                   <PlusOutlined 
                     style={{ 
                       color: '#1890ff', 
@@ -2932,6 +2937,37 @@ const TableDetail = () => {
                                     return (
                                       <Input
                                         type="number"
+                                        value={cellValue}
+                                        onChange={(e) => setCellValue(e.target.value)}
+                                        onPressEnter={handleCellSave}
+                                        onBlur={handleCellSave}
+                                        autoFocus
+                                        size="small"
+                                        style={{ 
+                                          width: '100%',
+                                          height: '100%',
+                                          border: 'none',
+                                          padding: '0',
+                                          margin: '0',
+                                          borderRadius: '0',
+                                          backgroundColor: 'transparent',
+                                          boxShadow: 'none',
+                                          fontSize: 'inherit',
+                                          position: 'absolute',
+                                          top: '0',
+                                          left: '0',
+                                          right: '0',
+                                          bottom: '0',
+                                          boxSizing: 'border-box',
+                                          outline: 'none'
+                                        }}
+                                      />
+                                    );
+                                  } else if (dataType === 'currency') {
+                                    return (
+                                      <Input
+                                        type="number"
+                                        step="0.01"
                                         value={cellValue}
                                         onChange={(e) => setCellValue(e.target.value)}
                                         onPressEnter={handleCellSave}
@@ -3606,6 +3642,27 @@ const TableDetail = () => {
                                         </div>
                                       );
                                     })() 
+                                    : column.dataType === 'currency' && value ? 
+                                    (() => {
+                                      const config = column.currencyConfig || { 
+                                        currency: 'USD', 
+                                        symbol: '$', 
+                                        position: 'before', 
+                                        decimalPlaces: 2, 
+                                        thousandsSeparator: ',', 
+                                        decimalSeparator: '.' 
+                                      };
+                                      
+                                      const numValue = parseFloat(value);
+                                      if (isNaN(numValue)) return value;
+                                      
+                                      const formatted = numValue.toLocaleString('en-US', {
+                                        minimumFractionDigits: config.decimalPlaces,
+                                        maximumFractionDigits: config.decimalPlaces
+                                      }).replace(/,/g, config.thousandsSeparator).replace(/\./g, config.decimalSeparator);
+                                      
+                                      return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
+                                    })()
                                     : (value || '')
                                   }
                                 </div>
@@ -3783,6 +3840,37 @@ const TableDetail = () => {
                               return (
                                 <Input
                                   type="number"
+                                  value={cellValue}
+                                  onChange={(e) => setCellValue(e.target.value)}
+                                  onPressEnter={handleCellSave}
+                                  onBlur={handleCellSave}
+                                  autoFocus
+                                  size="small"
+                                  style={{ 
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none',
+                                    padding: '0',
+                                    margin: '0',
+                                    borderRadius: '0',
+                                    backgroundColor: 'transparent',
+                                    boxShadow: 'none',
+                                    fontSize: 'inherit',
+                                    position: 'absolute',
+                                    top: '0',
+                                    left: '0',
+                                    right: '0',
+                                    bottom: '0',
+                                    boxSizing: 'border-box',
+                                    outline: 'none'
+                                  }}
+                                />
+                              );
+                            } else if (dataType === 'currency') {
+                              return (
+                                <Input
+                                  type="number"
+                                  step="0.01"
                                   value={cellValue}
                                   onChange={(e) => setCellValue(e.target.value)}
                                   onPressEnter={handleCellSave}
@@ -4412,6 +4500,27 @@ const TableDetail = () => {
                                   </div>
                                 );
                               })() 
+                              : column.dataType === 'currency' && value ? 
+                              (() => {
+                                const config = column.currencyConfig || { 
+                                  currency: 'USD', 
+                                  symbol: '$', 
+                                  position: 'before', 
+                                  decimalPlaces: 2, 
+                                  thousandsSeparator: ',', 
+                                  decimalSeparator: '.' 
+                                };
+                                
+                                const numValue = parseFloat(value);
+                                if (isNaN(numValue)) return value;
+                                
+                                const formatted = numValue.toLocaleString('en-US', {
+                                  minimumFractionDigits: config.decimalPlaces,
+                                  maximumFractionDigits: config.decimalPlaces
+                                }).replace(/,/g, config.thousandsSeparator).replace(/\./g, config.decimalSeparator);
+                                
+                                return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
+                              })()
                               : (value || '')
                             }
                           </div>
@@ -4485,7 +4594,7 @@ const TableDetail = () => {
 
       {/* Add Column Modal */}
       <Modal
-        title="Add New Column"
+        title="Thêm cột mới"
         open={showAddColumn}
         onCancel={() => setShowAddColumn(false)}
         footer={null}
@@ -4530,6 +4639,9 @@ const TableDetail = () => {
                         break;
                       case 'formula':
                         autoName = 'Formula';
+                        break;
+                      case 'currency':
+                        autoName = 'Currency';
                         break;
                       default:
                         autoName = 'New Column';
@@ -4585,6 +4697,12 @@ const TableDetail = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FunctionOutlined style={{ color: '#722ed1' }} />
                     <span>Formula</span>
+                  </div>
+                </Option>
+                <Option value="currency">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <DollarOutlined style={{ color: '#52c41a' }} />
+                    <span>Tiền tệ</span>
                   </div>
                 </Option>
                 
@@ -4724,7 +4842,7 @@ const TableDetail = () => {
                   </div>
 
                   <div>
-                    <Text strong>Default value</Text>
+                    <Text strong>Giá trị mặc định</Text>
                     <div style={{ marginTop: '8px' }}>
                       <Radio.Group
                         value={newColumn.checkboxConfig.defaultValue}
@@ -4785,6 +4903,17 @@ const TableDetail = () => {
               />
             )}
 
+            {/* Currency Configuration */}
+            {newColumn.dataType === 'currency' && (
+              <CurrencyConfig
+                config={newColumn.currencyConfig || {}}
+                onChange={(config) => setNewColumn({
+                  ...newColumn,
+                  currencyConfig: config
+                })}
+              />
+            )}
+
             {/* Formula Configuration */}
             {newColumn.dataType === 'formula' && (
               <FormulaConfig
@@ -4815,14 +4944,14 @@ const TableDetail = () => {
             <Row justify="end">
               <Space>
                 <Button onClick={() => setShowAddColumn(false)}>
-                  Cancel
+                  Hủy
                 </Button>
                 <Button
                   type="primary"
                   htmlType="submit"
                   loading={addColumnMutation.isPending}
                 >
-                  Save Field
+                  Lưu trường
                 </Button>
               </Space>
             </Row>
@@ -4832,7 +4961,7 @@ const TableDetail = () => {
 
       {/* Edit Column Modal */}
       <Modal
-        title="Edit Column"
+        title="Chỉnh sửa cột"
         open={showEditColumn}
         onCancel={() => {
           setShowEditColumn(false);
@@ -4845,15 +4974,15 @@ const TableDetail = () => {
           <form onSubmit={handleEditColumnSubmit}>
             <Space direction="vertical" style={{ width: '100%' }} size="large">
               <div>
-                <Text strong>Field Name</Text>
+                <Text strong>Tên trường</Text>
                 <Input
                   value={editingColumn.name}
                   onChange={(e) => setEditingColumn({ ...editingColumn, name: e.target.value })}
-                  placeholder="Field name (Optional)"
+                  placeholder="Tên trường (Tùy chọn)"
                 />
               </div>
               <div>
-                <Text strong>Field Type</Text>
+                <Text strong>Loại trường</Text>
                 <Select
                   value={editingColumn.dataType}
                   onChange={(value) => setEditingColumn({ ...editingColumn, dataType: value })}
@@ -4901,6 +5030,12 @@ const TableDetail = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FunctionOutlined style={{ color: '#722ed1' }} />
                     <span>Formula</span>
+                  </div>
+                </Option>
+                <Option value="currency">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <DollarOutlined style={{ color: '#52c41a' }} />
+                    <span>Tiền tệ</span>
                   </div>
                 </Option>
                 
@@ -5040,7 +5175,7 @@ const TableDetail = () => {
                     </div>
 
                     <div>
-                      <Text strong>Default value</Text>
+                      <Text strong>Giá trị mặc định</Text>
                       <div style={{ marginTop: '8px' }}>
                         <Radio.Group
                           value={editingColumn.checkboxConfig.defaultValue}
@@ -5101,6 +5236,17 @@ const TableDetail = () => {
                 />
               )}
 
+              {/* Currency Configuration */}
+              {editingColumn.dataType === 'currency' && (
+                <CurrencyConfig
+                  config={editingColumn.currencyConfig || {}}
+                  onChange={(config) => setEditingColumn({
+                    ...editingColumn,
+                    currencyConfig: config
+                  })}
+                />
+              )}
+
               {/* Formula Configuration */}
               {editingColumn.dataType === 'formula' && (
                 <FormulaConfig
@@ -5121,10 +5267,10 @@ const TableDetail = () => {
                 borderTop: '1px solid #f0f0f0'
               }}>
                 <Button type="link" size="small" style={{ padding: 0 }}>
-                  + Add description
+                  + Thêm mô tả
                 </Button>
                 <Button type="link" size="small" style={{ padding: 0 }}>
-                  Show more <PlusOutlined />
+                  Hiển thị thêm <PlusOutlined />
                 </Button>
               </div>
 
@@ -5136,14 +5282,14 @@ const TableDetail = () => {
                       setEditingColumn(null);
                     }}
                   >
-                    Cancel
+                    Hủy
                   </Button>
                   <Button
                     type="primary"
                     htmlType="submit"
                     loading={updateColumnMutation.isPending}
                   >
-                    Save Field
+                    Lưu trường
                   </Button>
                 </Space>
               </Row>
@@ -5181,7 +5327,7 @@ const TableDetail = () => {
               onClick={handleContextMenuDelete}
               style={{ color: '#ff4d4f' }}
             >
-              Delete Row
+              Xóa hàng
             </Menu.Item>
           </Menu>
         </div>
