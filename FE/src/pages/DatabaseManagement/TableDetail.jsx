@@ -111,7 +111,16 @@ const TableDetail = () => {
       resultType: 'number',
       dependencies: [],
       description: ''
-    }
+    },
+    currencyConfig: {
+      currency: 'USD',
+      symbol: '$',
+      position: 'before',
+      decimalPlaces: 2,
+      thousandsSeparator: ',',
+      decimalSeparator: '.'
+    },
+    defaultValue: null
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [showEditColumn, setShowEditColumn] = useState(false);
@@ -778,13 +787,27 @@ const TableDetail = () => {
     // Add currency configuration if data type is currency
     if (newColumn.dataType === 'currency') {
       columnData.currencyConfig = newColumn.currencyConfig;
+      // Add default value for currency
+      columnData.defaultValue = newColumn.defaultValue !== null && newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0;
     }
     
+    console.log('Column state before sending:', {
+      name: newColumn.name,
+      dataType: newColumn.dataType,
+      defaultValue: newColumn.defaultValue,
+      currencyConfig: newColumn.currencyConfig
+    });
     console.log('Frontend sending column data:', columnData);
     addColumnMutation.mutate(columnData);
   };
 
   const handleAddRow = () => {
+    console.log('handleAddRow - columns:', visibleColumns);
+    console.log('handleAddRow - currency columns:', visibleColumns.filter(c => c.dataType === 'currency').map(c => ({
+      name: c.name,
+      defaultValue: c.defaultValue,
+      currencyConfig: c.currencyConfig
+    })));
     if (!visibleColumns || visibleColumns.length === 0) {
       // toast.error('No columns available. Please add a column first.');
       return;
@@ -809,6 +832,10 @@ const TableDetail = () => {
       } else if (column.dataType === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
+      } else if (column.dataType === 'currency') {
+        // Use default value for currency type
+        console.log('Setting currency default for column:', column.name, 'defaultValue:', column.defaultValue);
+        emptyData[column.name] = column.defaultValue !== null && column.defaultValue !== undefined ? column.defaultValue : 0;
       } else {
       emptyData[column.name] = '';
       }
@@ -864,6 +891,10 @@ const TableDetail = () => {
       } else if (column.dataType === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
+      } else if (column.dataType === 'currency') {
+        // Use default value for currency type
+        console.log('Setting currency default for column:', column.name, 'defaultValue:', column.defaultValue);
+        emptyData[column.name] = column.defaultValue !== null && column.defaultValue !== undefined ? column.defaultValue : 0;
       } else {
       emptyData[column.name] = '';
       }
@@ -905,10 +936,12 @@ const TableDetail = () => {
   };
 
   const handleEditColumn = (column) => {
+    console.log('Editing column:', column);
     setEditingColumn({
       _id: column._id,
       name: column.name,
       dataType: column.dataType,
+      defaultValue: column.defaultValue !== undefined ? column.defaultValue : (column.dataType === 'currency' ? 0 : null),
       checkboxConfig: column.checkboxConfig || {
         icon: 'check-circle',
         color: '#52c41a',
@@ -930,6 +963,14 @@ const TableDetail = () => {
         resultType: 'number',
         dependencies: [],
         description: ''
+      },
+      currencyConfig: column.currencyConfig || {
+        currency: 'USD',
+        symbol: '$',
+        position: 'before',
+        decimalPlaces: 2,
+        thousandsSeparator: ',',
+        decimalSeparator: '.'
       }
     });
     setShowEditColumn(true);
@@ -945,7 +986,9 @@ const TableDetail = () => {
     // Prepare column data based on data type
     const columnData = {
         name: editingColumn.name,
-        dataType: editingColumn.dataType
+        dataType: editingColumn.dataType,
+        // Include defaultValue if specified
+        ...(editingColumn.defaultValue !== null && editingColumn.defaultValue !== undefined ? { defaultValue: editingColumn.defaultValue } : {})
     };
     
     // Add checkbox configuration if data type is checkbox
@@ -976,6 +1019,8 @@ const TableDetail = () => {
     // Add currency configuration if data type is currency
     if (editingColumn.dataType === 'currency') {
       columnData.currencyConfig = editingColumn.currencyConfig;
+      // Add default value for currency
+      columnData.defaultValue = editingColumn.defaultValue !== null && editingColumn.defaultValue !== undefined ? editingColumn.defaultValue : 0;
     }
     
     updateColumnMutation.mutate({
@@ -3642,7 +3687,7 @@ const TableDetail = () => {
                                         </div>
                                       );
                                     })() 
-                                    : column.dataType === 'currency' && value ? 
+                                    : column.dataType === 'currency' && value !== null && value !== undefined ? 
                                     (() => {
                                       const config = column.currencyConfig || { 
                                         currency: 'USD', 
@@ -4500,7 +4545,7 @@ const TableDetail = () => {
                                   </div>
                                 );
                               })() 
-                              : column.dataType === 'currency' && value ? 
+                              : column.dataType === 'currency' && value !== null && value !== undefined ? 
                               (() => {
                                 const config = column.currencyConfig || { 
                                   currency: 'USD', 
@@ -4650,7 +4695,9 @@ const TableDetail = () => {
                   setNewColumn({ 
                     ...newColumn, 
                     dataType: value,
-                    name: newColumn.name.trim() || autoName
+                    name: newColumn.name.trim() || autoName,
+                    // Set default value for currency
+                    ...(value === 'currency' ? { defaultValue: 0 } : {})
                   });
                 }}
                 style={{ width: '100%' }}
@@ -4904,13 +4951,22 @@ const TableDetail = () => {
             )}
 
             {/* Currency Configuration */}
-            {newColumn.dataType === 'currency' && (
+{newColumn.dataType === 'currency' && (
               <CurrencyConfig
-                config={newColumn.currencyConfig || {}}
-                onChange={(config) => setNewColumn({
-                  ...newColumn,
-                  currencyConfig: config
-                })}
+                config={{
+                  ...(newColumn.currencyConfig || {}),
+                  defaultValue: newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0
+                }}
+                onChange={(config) => {
+                  console.log('CurrencyConfig onChange:', config);
+                  const { defaultValue, ...currencyConfig } = config;
+                  console.log('Setting defaultValue:', defaultValue);
+                  setNewColumn({
+                    ...newColumn,
+                    currencyConfig: currencyConfig,
+                    defaultValue: defaultValue !== undefined ? defaultValue : 0
+                  });
+                }}
               />
             )}
 
@@ -5237,13 +5293,21 @@ const TableDetail = () => {
               )}
 
               {/* Currency Configuration */}
-              {editingColumn.dataType === 'currency' && (
+{editingColumn.dataType === 'currency' && (
                 <CurrencyConfig
-                  config={editingColumn.currencyConfig || {}}
-                  onChange={(config) => setEditingColumn({
-                    ...editingColumn,
-                    currencyConfig: config
-                  })}
+                  config={{
+                    ...(editingColumn.currencyConfig || {}),
+                    defaultValue: editingColumn.defaultValue !== undefined ? editingColumn.defaultValue : 0
+                  }}
+                  onChange={(config) => {
+                    console.log('Edit CurrencyConfig onChange:', config);
+                    const { defaultValue, ...currencyConfig } = config;
+                    setEditingColumn({
+                      ...editingColumn,
+                      currencyConfig: currencyConfig,
+                      defaultValue: defaultValue !== undefined ? defaultValue : 0
+                    });
+                  }}
                 />
               )}
 

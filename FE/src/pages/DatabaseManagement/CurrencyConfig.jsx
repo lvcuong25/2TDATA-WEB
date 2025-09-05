@@ -311,6 +311,23 @@ const CurrencyConfig = ({ config, onChange }) => {
             maxLength={1}
           />
         </div>
+        {/* Default Value */}
+        <div>
+          <Text style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>
+            Giá trị mặc định
+          </Text>
+          <InputNumber
+            value={config?.defaultValue !== undefined ? config.defaultValue : 0}
+            onChange={(value) => {
+              const newConfig = { ...(config || {}), defaultValue: value || 0 };
+              onChange(newConfig);
+            }}
+            style={{ width: '100%' }}
+            placeholder="Nhập giá trị mặc định"
+          />
+        </div>
+
+
 
         {/* Preview */}
         <div style={{ 

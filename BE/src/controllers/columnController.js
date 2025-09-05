@@ -134,6 +134,11 @@ export const createColumn = async (req, res) => {
       };
     }
 
+    // Set default value for currency column if not provided
+    if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
+      columnData.defaultValue = 0;
+    }
+
     console.log('Column data to save:', columnData);
 
     const column = new Column(columnData);
@@ -342,6 +347,11 @@ export const updateColumn = async (req, res) => {
       column.currencyConfig = currencyConfig;
     } else if (dataType !== 'currency') {
       column.currencyConfig = undefined;
+    }
+
+    // Set default value for currency column if not provided
+    if (dataType === 'currency' && defaultValue === undefined && column.defaultValue === undefined) {
+      column.defaultValue = 0;
     }
 
     // Save the column
