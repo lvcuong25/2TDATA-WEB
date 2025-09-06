@@ -7,6 +7,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import instance from "../utils/axiosInstance-cookie-only";
 import { Tag, Table, Space, Button, Tooltip, Switch, Pagination, Modal, Select, message, InputNumber, Radio, TimePicker, DatePicker } from "antd";
 import { AppstoreOutlined, TableOutlined, LoadingOutlined, SettingOutlined, ClockCircleOutlined, CalendarOutlined } from "@ant-design/icons";
+
+const { RangePicker } = DatePicker;
 import { 
   createStateObject, 
   encodeState, 
@@ -38,6 +40,11 @@ const MyService = () => {
     scheduleDate: null, // moment object cho ngày (nếu chọn 'once')
     scheduleDays: [], // array các ngày trong tuần (nếu chọn 'weekly')
   });
+
+  // State cho date range picker modal
+  const [dateRangeModalVisible, setDateRangeModalVisible] = useState(false);
+  const [selectedServiceForDateRange, setSelectedServiceForDateRange] = useState(null);
+  const [dateRange, setDateRange] = useState(null); // [startDate, endDate]
 
   useEffect(() => {
     console.log('Current user:', currentUser);
@@ -98,6 +105,74 @@ const MyService = () => {
     }
   }
 
+  // Hàm mở modal chọn khoảng thời gian
+  const handleServiceClickWithDateRange = (service) => {
+    setSelectedServiceForDateRange(service);
+    setDateRange(null); // Reset date range
+    setDateRangeModalVisible(true);
+  };
+
+  // Hàm xử lý khi người dùng chọn khoảng thời gian và kết nối
+  const handleConnectWithDateRange = async () => {
+    const service = selectedServiceForDateRange;
+    
+    try {
+      if (!currentUser?._id) {
+        console.error('Missing user ID');
+        alert('Vui lòng đăng nhập lại.');
+        return;
+      }
+
+      // Find the first authorized link
+      const authorizedLink = service?.service?.authorizedLinks?.[0];
+      if (!authorizedLink) {
+        console.error('No authorized link found for service');
+        return;
+      }
+
+      // Make the webhook request (optional - can be skipped if causing issues)
+      try {
+        const response = await instance.post('https://auto.hcw.com.vn/webhook/e42a9c6d-e5c0-4c11-bfa9-56aa519e8d7c', {
+          userId: currentUser?._id
+        });
+        console.log('Webhook response:', response?.status);
+      } catch (webhookError) {
+        console.warn('Webhook request failed, continuing with redirect:', webhookError);
+        // Continue with redirect even if webhook fails
+      }
+
+      // Tạo state object với dateRange nếu có
+      let dateRangeData = null;
+      if (dateRange && dateRange.length === 2) {
+        dateRangeData = {
+          startDate: dateRange[0].format('YYYY-MM-DD'),
+          endDate: dateRange[1].format('YYYY-MM-DD'),
+          startDateISO: dateRange[0].toISOString(),
+          endDateISO: dateRange[1].toISOString()
+        };
+      }
+
+      // Proceed with redirect - Sử dụng helper functions để truyền thông tin dịch vụ chi tiết
+      const stateObj = createStateObject(currentUser, service, getCleanUrl(), dateRangeData);
+      const encodedState = encodeState(stateObj);
+      const urlWithState = appendStateToUrlHelper(authorizedLink.url, encodedState);
+      
+      console.log('Redirecting to:', urlWithState);
+      console.log('State object being passed:', stateObj);
+      console.log('Date range data:', dateRangeData);
+      
+      // Đóng modal và chuyển hướng
+      setDateRangeModalVisible(false);
+      window.location.href = urlWithState;
+      
+    } catch (error) {
+      console.error('Error in handleConnectWithDateRange:', error);
+      // Show user-friendly error message
+      alert('Có lỗi xảy ra khi kết nối dịch vụ. Vui lòng thử lại.');
+    }
+  };
+
+  // Hàm kết nối trực tiếp không cần chọn thời gian (cho backward compatibility)
   const handleServiceClick = async (service) => {
     try {
       if (!currentUser?._id) {
@@ -583,7 +658,7 @@ const MyService = () => {
               className="bg-blue-500 hover:bg-blue-600"
               onClick={() => {
                 if (hasLink) {
-                  handleServiceClick(record);
+                  handleServiceClickWithDateRange(record);
                 }
               }}
               disabled={!hasLink}
@@ -718,7 +793,7 @@ const MyService = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (authorizedLink) {
-                            handleServiceClick(userService);
+                            handleServiceClickWithDateRange(userService);
                           } else {
                             alert('Dịch vụ này chưa có link kết nối. Vui lòng liên hệ quản trị viên.');
                           }
@@ -1052,6 +1127,81 @@ const MyService = () => {
               <p>• <strong>Thời gian tùy chỉnh:</strong> Nhập số + chọn đơn vị (phút/giờ/ngày)</p>
               <p>• <strong>Lịch trình cố định:</strong> Cập nhật vào thời gian cụ thể mỗi ngày/tuần/tháng</p>
               <p>• Bạn có thể tắt bất kỳ lúc nào</p>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal chọn khoảng thời gian */}
+      <Modal
+        title="Chọn khoảng thời gian (Tùy chọn)"
+        open={dateRangeModalVisible}
+        onOk={handleConnectWithDateRange}
+        onCancel={() => {
+          setDateRangeModalVisible(false);
+          setDateRange(null);
+        }}
+        okText={dateRange && dateRange.length === 2 ? "Kết nối với thời gian đã chọn" : "Kết nối không có thời gian"}
+        cancelText="Hủy"
+        width={500}
+      >
+        {selectedServiceForDateRange && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-3 rounded">
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                <img
+                  src={
+                    selectedServiceForDateRange?.service?.image && selectedServiceForDateRange.service.image.trim() !== ""
+                      ? selectedServiceForDateRange.service.image
+                      : "https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg"
+                  }
+                  alt={selectedServiceForDateRange?.service?.name}
+                  className="w-8 h-8 object-cover rounded"
+                />
+                {selectedServiceForDateRange.service?.name}
+              </h4>
+              <p className="text-sm text-gray-600">
+                <strong className="text-blue-600">Tùy chọn:</strong> Chọn khoảng thời gian để lọc dữ liệu khi kết nối dịch vụ
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                <CalendarOutlined className="mr-2" />
+                Chọn từ ngày - đến ngày <span className="text-gray-400">(tùy chọn)</span>
+              </label>
+              <RangePicker
+                value={dateRange}
+                onChange={(dates) => setDateRange(dates)}
+                style={{ width: '100%' }}
+                placeholder={['Từ ngày', 'Đến ngày']}
+                format="DD/MM/YYYY"
+                allowClear
+              />
+              {(!dateRange || dateRange.length !== 2) && (
+                <div className="text-gray-500 text-xs mt-1">
+                  Để trống nếu không muốn lọc theo thời gian
+                </div>
+              )}
+            </div>
+
+            {dateRange && dateRange.length === 2 && (
+              <div className="bg-green-50 p-3 rounded">
+                <h5 className="font-medium text-green-700 mb-1">Thông tin đã chọn:</h5>
+                <div className="text-sm text-green-600">
+                  <div>Từ ngày: <strong>{dateRange[0].format('DD/MM/YYYY')}</strong></div>
+                  <div>Đến ngày: <strong>{dateRange[1].format('DD/MM/YYYY')}</strong></div>
+                  <div>Tổng số ngày: <strong>{dateRange[1].diff(dateRange[0], 'days') + 1} ngày</strong></div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded">
+              <div className="text-xs text-blue-700 space-y-1">
+                <p>• <strong>Tùy chọn:</strong> Bạn có thể chọn hoặc không chọn thời gian</p>
+                <p>• <strong>Nếu chọn:</strong> Thông tin thời gian sẽ được gửi đến dịch vụ để lọc dữ liệu</p>
+                <p>• <strong>Nếu không chọn:</strong> Sẽ kết nối dịch vụ với toàn bộ dữ liệu</p>
+              </div>
             </div>
           </div>
         )}

@@ -51,7 +51,20 @@ export function getServiceInfoFromState(state) {
     userServiceUpdatedAt: state.userServiceUpdatedAt,
     resultLinks: state.resultLinks || [],
     updateLinks: state.updateLinks || [],
-    authorizedLinks: state.authorizedLinks || []
+    authorizedLinks: state.authorizedLinks || [],
+    dateRange: state.dateRange || null
+  };
+}
+
+// Hàm lấy thông tin dateRange từ state
+export function getDateRangeFromState(state) {
+  if (!state || !state.dateRange) return null;
+  
+  return {
+    startDate: state.dateRange.startDate,
+    endDate: state.dateRange.endDate,
+    startDateISO: state.dateRange.startDateISO,
+    endDateISO: state.dateRange.endDateISO
   };
 }
 
@@ -73,8 +86,8 @@ export function removeStateFromUrl() {
 }
 
 // Hàm tạo state object để truyền sang site khác
-export function createStateObject(user, service, returnUrl) {
-  return {
+export function createStateObject(user, service, returnUrl, dateRange = null) {
+  const stateObj = {
     userId: user?._id || "",
     name: user?.name || "",
     serviceId: service?._id || "",
@@ -90,6 +103,13 @@ export function createStateObject(user, service, returnUrl) {
     authorizedLinks: service?.service?.authorizedLinks || [],
     returnUrl: returnUrl || ""
   };
+
+  // Thêm thông tin dateRange nếu có
+  if (dateRange) {
+    stateObj.dateRange = dateRange;
+  }
+
+  return stateObj;
 }
 
 // Hàm encode state thành base64
