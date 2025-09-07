@@ -5,6 +5,130 @@ import MultiSelectConfig from './MultiSelectConfig';
 import DateConfig from './DateConfig';
 import FormulaConfig from './FormulaConfig';
 import CurrencyConfig from './CurrencyConfig';
+import {
+  addSortRule,
+  removeSortRule,
+  clearAllSorts,
+  updateSortRule,
+  handleSortFieldSelect,
+  getSortDropdownPosition,
+  toggleSortDropdown,
+  isSortActive,
+  getSortRulesCount,
+  getSortButtonStyle,
+  getSortBadgeStyle
+} from './Utils/tableDetailSortUtils.jsx';
+import {
+  getDataTypeIcon,
+  getDataTypeColor,
+  getDataTypeTag,
+  getTypeLetter
+} from './Utils/dataTypeUtils.jsx';
+import {
+  getColumnWidth,
+  isColumnCompact,
+  saveColumnWidths,
+  loadColumnWidths,
+  calculateNewWidth,
+  updateColumnWidth,
+  getColumnHeaderStyle,
+  getColumnDataStyle,
+  getResizeHandleStyle,
+  getCompactHeaderStyle,
+  getNormalHeaderStyle,
+  initializeColumnWidths,
+  getColumnWidthString
+} from './Utils/columnUtils.jsx';
+import {
+  getOperatorOptions,
+  createFilterRule,
+  addFilterRule,
+  removeFilterRule,
+  updateFilterRule,
+  clearAllFilterRules,
+  toggleFilterActive,
+  isFilterActive,
+  getFilterRulesCount,
+  applyFilterRules,
+  evaluateFilterRule,
+  getFilterButtonStyle,
+  getFilterDropdownPosition,
+  toggleFilterDropdown,
+  validateFilterRule,
+  getDefaultFilterRule,
+  isFieldFilterable,
+  getFilterSummary
+} from './Utils/filterUtils.jsx';
+import {
+  createGroupRule,
+  addGroupRule,
+  removeGroupRule,
+  updateGroupRule,
+  clearAllGroupRules,
+  getGroupRulesCount,
+  isFieldUsedInGroup,
+  getAvailableGroupFields,
+  generateGroupKey,
+  generateGroupValues,
+  groupRecords,
+  toggleGroupExpansion,
+  expandAllGroups,
+  collapseAllGroups,
+  isGroupExpanded,
+  getGroupButtonStyle,
+  getGroupDropdownPosition,
+  toggleGroupDropdown,
+  validateGroupRule,
+  getDefaultGroupRule,
+  isFieldGroupable,
+  getGroupSummary,
+  getGroupDisplayName,
+  calculateGroupStats,
+  sortGroups
+} from './Utils/groupUtils.jsx';
+import {
+  initializeCellEditing,
+  cancelCellEditing,
+  isCellEditing,
+  validateCellValue,
+  formatCellValueForDisplay,
+  formatCellValueForInput,
+  getCellInputType,
+  getCellInputPlaceholder,
+  isCellEditable,
+  getCellEditingStyle,
+  handleCellValueChange,
+  prepareCellDataForSave,
+  getCellValidationError,
+  shouldAutoSave,
+  getCellDisplayComponentType,
+  formatCellValueForExport
+} from './Utils/cellUtils.jsx';
+import {
+  SYSTEM_FIELDS,
+  SYSTEM_FIELD_IDS,
+  getAllColumnsWithSystem,
+  getVisibleColumns,
+  toggleFieldVisibility,
+  setFieldVisibility,
+  toggleSystemFields,
+  isFieldVisible,
+  getFieldVisibilityCount,
+  getHiddenFieldsCount,
+  getVisibleFieldsCount,
+  getFieldVisibilityButtonStyle,
+  getSystemFieldsButtonStyle,
+  getFieldItemStyle,
+  getFieldCheckboxStyle,
+  getFieldHoverStyle,
+  getFieldLeaveStyle,
+  filterFieldsBySearch,
+  sortFieldsByVisibility,
+  getFieldVisibilitySummary,
+  resetFieldVisibilityToDefault,
+  exportFieldVisibilitySettings,
+  importFieldVisibilitySettings
+} from './Utils/fieldVisibilityUtils.jsx';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -154,11 +278,7 @@ const TableDetail = () => {
   const [showFieldsDropdown, setShowFieldsDropdown] = useState(false);
   const [fieldsDropdownPosition, setFieldsDropdownPosition] = useState({ x: 0, y: 0 });
   const [fieldSearch, setFieldSearch] = useState('');
-  const [fieldVisibility, setFieldVisibility] = useState(() => {
-    // Load saved field visibility from localStorage
-    const saved = localStorage.getItem(`table_${tableId}_field_visibility`);
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [fieldVisibility, setFieldVisibility] = useState({});
   const [showSystemFields, setShowSystemFields] = useState(false);
 
   // Fetch group preferences from backend
@@ -237,9 +357,7 @@ const TableDetail = () => {
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState(() => {
-    // Load saved column widths from localStorage
-    const saved = localStorage.getItem(`table_${tableId}_column_widths`);
-    return saved ? JSON.parse(saved) : {};
+    return initializeColumnWidths(tableId);
   });
   const [isResizing, setIsResizing] = useState(false);
   const [resizingColumn, setResizingColumn] = useState(null);
@@ -353,7 +471,7 @@ const TableDetail = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    const currentWidth = columnWidths[columnId] || 150;
+    const currentWidth = getColumnWidth(columnWidths, columnId);
     const startClientX = e.clientX;
     
     setIsResizing(true);
@@ -362,16 +480,11 @@ const TableDetail = () => {
     setStartWidth(currentWidth);
 
     const handleMouseMove = (moveEvent) => {
-      const deltaX = moveEvent.clientX - startClientX;
-      const newWidth = Math.max(50, currentWidth + deltaX);
-      
-      const newWidths = {
-        ...columnWidths,
-        [columnId]: newWidth
-      };
+      const newWidth = calculateNewWidth(currentWidth, startClientX, moveEvent.clientX);
+      const newWidths = updateColumnWidth(columnWidths, columnId, newWidth);
       
       setColumnWidths(newWidths);
-      saveColumnWidths(newWidths);
+      saveColumnWidths(tableId, newWidths);
     };
 
     const handleMouseUp = () => {
@@ -388,15 +501,6 @@ const TableDetail = () => {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  // Get column width
-  const getColumnWidth = (columnId) => {
-    return columnWidths[columnId] || 150;
-  };
-
-  // Check if column is compact (only show type letter)
-  const isColumnCompact = (columnId) => {
-    return getColumnWidth(columnId) < 80;
-  };
 
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
@@ -415,24 +519,7 @@ const TableDetail = () => {
   };
 
   // Get type letter for compact display
-  const getTypeLetter = (dataType) => {
-    switch (dataType) {
-      case 'text': return 'T';
-              case 'number': return 'N';
-        case 'date': return 'D';
-        case 'checkbox': return '☑';
-        case 'single_select': return '▼';
-        case 'currency': return '$';
-      case 'time': return '⏰';
-      case 'datetime': return '📅';
-      default: return 'T';
-    }
-  };
 
-  // Save column widths to localStorage
-  const saveColumnWidths = (newWidths) => {
-    localStorage.setItem(`table_${tableId}_column_widths`, JSON.stringify(newWidths));
-  };
 
   // Fetch table structure
   const { data: tableStructureResponse, isLoading, error } = useQuery({
@@ -495,48 +582,7 @@ const TableDetail = () => {
 
   // Apply filters to records
   const records = useMemo(() => {
-    if (!isFilterActive || filterRules.length === 0) {
-      return allRecords;
-    }
-
-    return allRecords.filter(record => {
-      return filterRules.every(rule => {
-        const value = record.data?.[rule.field];
-        
-        switch (rule.operator) {
-          case 'equals':
-            return value === rule.value;
-          case 'not_equals':
-            return value !== rule.value;
-          case 'contains':
-            return String(value || '').toLowerCase().includes(String(rule.value || '').toLowerCase());
-          case 'not_contains':
-            return !String(value || '').toLowerCase().includes(String(rule.value || '').toLowerCase());
-          case 'starts_with':
-            return String(value || '').toLowerCase().startsWith(String(rule.value || '').toLowerCase());
-          case 'ends_with':
-            return String(value || '').toLowerCase().endsWith(String(rule.value || '').toLowerCase());
-          case 'greater_than':
-            return Number(value) > Number(rule.value);
-          case 'less_than':
-            return Number(value) < Number(rule.value);
-          case 'greater_than_or_equal':
-            return Number(value) >= Number(rule.value);
-          case 'less_than_or_equal':
-            return Number(value) <= Number(rule.value);
-          case 'is_empty':
-            return !value || value === '' || value === null || value === undefined;
-          case 'is_not_empty':
-            return value && value !== '' && value !== null && value !== undefined;
-          case 'is_null':
-            return value === null || value === undefined;
-          case 'is_not_null':
-            return value !== null && value !== undefined;
-          default:
-            return true;
-        }
-      });
-    });
+    return applyFilterRules(allRecords, filterRules, isFilterActive);
   }, [allRecords, filterRules, isFilterActive]);
 
   // Add column mutation
@@ -1036,24 +1082,12 @@ const TableDetail = () => {
   const handleCellClick = (recordId, columnName, currentValue) => {
     console.log('Cell clicked:', { recordId, columnName, currentValue });
     console.log('Current editingCell before:', editingCell);
-    setEditingCell({ recordId, columnName });
     
-    // Handle different data types properly
     const column = columns.find(col => col.name === columnName);
-    if (column) {
-      if (column.dataType === 'multi_select') {
-        // For multi-select, ensure we have an array
-        setCellValue(Array.isArray(currentValue) ? currentValue : []);
-      } else if (column.dataType === 'single_select') {
-        // For single-select, use string
-        setCellValue(currentValue || '');
-      } else {
-        // For other types, use string
-        setCellValue(currentValue || '');
-      }
-    } else {
-      setCellValue(currentValue || '');
-    }
+    const { editingCell: newEditingCell, cellValue: newCellValue } = initializeCellEditing(recordId, columnName, currentValue, column);
+    
+    setEditingCell(newEditingCell);
+    setCellValue(newCellValue);
   };
 
   const handleCellSave = () => {
@@ -1062,8 +1096,8 @@ const TableDetail = () => {
     const record = records.find(r => r._id === editingCell.recordId);
     if (!record) return;
 
-    const updatedData = { ...record.data };
-    updatedData[editingCell.columnName] = cellValue;
+    const column = columns.find(col => col.name === editingCell.columnName);
+    const updatedData = prepareCellDataForSave(cellValue, column, record);
 
     updateRecordMutation.mutate({
       recordId: editingCell.recordId,
@@ -1072,8 +1106,9 @@ const TableDetail = () => {
   };
 
   const handleCellCancel = () => {
-    setEditingCell(null);
-    setCellValue('');
+    const { editingCell: newEditingCell, cellValue: newCellValue } = cancelCellEditing();
+    setEditingCell(newEditingCell);
+    setCellValue(newCellValue);
   };
 
   // Context menu handlers
@@ -1104,57 +1139,47 @@ const TableDetail = () => {
     setCurrentSortOrder('asc');
   };
 
-  const addSortRule = () => {
+  const handleAddSortRule = () => {
     if (currentSortField) {
-      const newRule = {
-        field: currentSortField,
-        order: currentSortOrder
-      };
-      setSortRules([...sortRules, newRule]);
+      const newRules = addSortRule(sortRules, currentSortField, currentSortOrder);
+      setSortRules(newRules);
       setCurrentSortField('');
       setCurrentSortOrder('asc');
       setSortFieldSearch('');
     }
   };
 
-  const removeSortRule = (index) => {
-    const newRules = sortRules.filter((_, i) => i !== index);
+  const handleRemoveSortRule = (index) => {
+    const newRules = removeSortRule(sortRules, index);
     setSortRules(newRules);
   };
 
-  const clearAllSorts = () => {
-    setSortRules([]);
+  const handleClearAllSorts = () => {
+    setSortRules(clearAllSorts());
     setCurrentSortField('');
     setCurrentSortOrder('asc');
   };
 
   const handleSortButtonClick = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setSortDropdownPosition({
-      x: rect.left,
-      y: rect.bottom + 5
-    });
-    setShowSortDropdown(!showSortDropdown);
+    const position = getSortDropdownPosition(e);
+    setSortDropdownPosition(position);
+    setShowSortDropdown(toggleSortDropdown(showSortDropdown));
     if (!showSortDropdown) {
       setSortFieldSearch('');
     }
   };
 
-  const handleSortFieldSelect = (fieldName) => {
+  const onSortFieldSelect = (fieldName) => {
     // Auto-add the sort rule when field is selected
-    const newRule = {
-      field: fieldName,
-      order: currentSortOrder
-    };
-    setSortRules([...sortRules, newRule]);
+    const newRules = handleSortFieldSelect(sortRules, fieldName, currentSortOrder);
+    setSortRules(newRules);
     setCurrentSortField('');
     setCurrentSortOrder('asc');
     setSortFieldSearch('');
   };
 
-  const updateSortRule = (index, field, order) => {
-    const newRules = [...sortRules];
-    newRules[index] = { field, order };
+  const handleUpdateSortRule = (index, field, order) => {
+    const newRules = updateSortRule(sortRules, index, field, order);
     setSortRules(newRules);
   };
 
@@ -1173,10 +1198,7 @@ const TableDetail = () => {
 
   const handleGroupFieldSelect = (fieldName) => {
     // Auto-add the group rule when field is selected
-    const newRule = {
-      field: fieldName
-    };
-    const newGroupRules = [...groupRules, newRule];
+    const newGroupRules = addGroupRule(groupRules, fieldName);
     setGroupRules(newGroupRules);
     setCurrentGroupField('');
     setGroupFieldSearch('');
@@ -1188,9 +1210,9 @@ const TableDetail = () => {
     });
   };
 
-  const removeGroupRule = (index) => {
+  const handleRemoveGroupRule = (index) => {
     console.log(`🗑️ Removing group rule at index ${index}`);
-    const newRules = groupRules.filter((_, i) => i !== index);
+    const newRules = removeGroupRule(groupRules, index);
     setGroupRules(newRules);
     // Clear expanded groups when removing group rules
     setExpandedGroups(new Set());
@@ -1202,9 +1224,9 @@ const TableDetail = () => {
       expandedGroups: []
     });
   };
-  const clearAllGroups = () => {
+  const handleClearAllGroups = () => {
     console.log("🧹 Clearing all group rules");
-    setGroupRules([]);
+    setGroupRules(clearAllGroupRules());
     setCurrentGroupField("");
     setExpandedGroups(new Set());
     
@@ -1216,29 +1238,23 @@ const TableDetail = () => {
     });
   };
 
-  const updateGroupRule = (index, field) => {
-    const newRules = [...groupRules];
-    newRules[index] = { field };
+  const handleUpdateGroupRule = (index, field) => {
+    const newRules = updateGroupRule(groupRules, index, field);
     setGroupRules(newRules);
   };
 
-  const toggleGroupExpansion = (groupKey) => {
-    const newExpanded = new Set(expandedGroups);
-    if (newExpanded.has(groupKey)) {
-      newExpanded.delete(groupKey);
-    } else {
-      newExpanded.add(groupKey);
-    }
+  const handleToggleGroupExpansion = (groupKey) => {
+    const newExpanded = toggleGroupExpansion(expandedGroups, groupKey);
     setExpandedGroups(newExpanded);
   };
 
-  const expandAllGroups = () => {
-    const allGroupKeys = groupedData.groups.map(group => group.key);
-    setExpandedGroups(new Set(allGroupKeys));
+  const handleExpandAllGroups = () => {
+    const allGroupKeys = expandAllGroups(groupedData.groups);
+    setExpandedGroups(allGroupKeys);
   };
 
-  const collapseAllGroups = () => {
-    setExpandedGroups(new Set());
+  const handleCollapseAllGroups = () => {
+    setExpandedGroups(collapseAllGroups());
   };
 
   // Filter handlers
@@ -1265,9 +1281,8 @@ const TableDetail = () => {
     }
   };
 
-  // Save field visibility to localStorage and backend
-  const saveFieldVisibility = (newVisibility) => {
-    localStorage.setItem(`table_${tableId}_field_visibility`, JSON.stringify(newVisibility));
+  // Save field visibility to backend only
+  const handleSaveFieldVisibility = (newVisibility) => {
     setFieldVisibility(newVisibility);
     
     // Save to backend
@@ -1278,87 +1293,37 @@ const TableDetail = () => {
   };
 
   // Toggle field visibility
-  const toggleFieldVisibility = (columnId) => {
-    const newVisibility = {
-      ...fieldVisibility,
-      [columnId]: !fieldVisibility[columnId]
-    };
-    saveFieldVisibility(newVisibility);
+  const handleToggleFieldVisibility = (columnId) => {
+    const newVisibility = toggleFieldVisibility(fieldVisibility, columnId);
+    handleSaveFieldVisibility(newVisibility);
   };
 
   // Toggle system fields visibility
-  const toggleSystemFields = () => {
-    const newShowSystemFields = !showSystemFields;
-    setShowSystemFields(newShowSystemFields);
+  const handleToggleSystemFields = () => {
+    const { showSystemFields: newShowSystemFields, fieldVisibility: newFieldVisibility } = toggleSystemFields(showSystemFields, fieldVisibility);
     
-    // If showing system fields for the first time, set their default visibility to true
-    if (newShowSystemFields) {
-      const systemFieldIds = ['system_id', 'system_createdAt', 'system_updatedAt'];
-      const newFieldVisibility = { ...fieldVisibility };
-      
-      systemFieldIds.forEach(fieldId => {
-        if (newFieldVisibility[fieldId] === undefined) {
-          newFieldVisibility[fieldId] = true; // Default visible
-        }
-      });
-      
-      setFieldVisibility(newFieldVisibility);
-      
-      // Save to backend
-      saveFieldPreferenceMutation.mutate({
-        fieldVisibility: newFieldVisibility,
-        showSystemFields: newShowSystemFields
-      });
-    } else {
-      // Save to backend
-      saveFieldPreferenceMutation.mutate({
-        fieldVisibility,
-        showSystemFields: newShowSystemFields
-      });
-    }
+    setShowSystemFields(newShowSystemFields);
+    setFieldVisibility(newFieldVisibility);
+    
+    // Save to backend
+    saveFieldPreferenceMutation.mutate({
+      fieldVisibility: newFieldVisibility,
+      showSystemFields: newShowSystemFields
+    });
   };
 
   // Get visible columns based on visibility settings
   const visibleColumns = useMemo(() => {
-    const allColumnsWithSystem = showSystemFields ? [
-      ...columns,
-      { _id: 'system_id', name: 'Id', dataType: 'text', isSystem: true },
-      { _id: 'system_createdAt', name: 'CreatedAt', dataType: 'datetime', isSystem: true },
-      { _id: 'system_updatedAt', name: 'UpdatedAt', dataType: 'datetime', isSystem: true }
-    ] : columns;
-
-    return allColumnsWithSystem.filter(column => {
-      // For system fields, show if showSystemFields is true and not explicitly hidden
-      if (column.isSystem) {
-        if (!showSystemFields) return false;
-        if (fieldVisibility[column._id] === false) return false;
-        return true; // Show system fields by default when showSystemFields is true
-      }
-      
-      // For regular fields, use normal visibility logic
-      if (fieldVisibility[column._id] === undefined) {
-        return true;
-      }
-      return fieldVisibility[column._id];
-    });
+    return getVisibleColumns(columns, fieldVisibility, showSystemFields);
   }, [columns, fieldVisibility, showSystemFields]);
 
   // Get all columns including system fields
   const allColumnsWithSystem = useMemo(() => {
-    const systemFields = [
-      { _id: 'system_id', name: 'Id', dataType: 'text', isSystem: true },
-      { _id: 'system_createdAt', name: 'CreatedAt', dataType: 'datetime', isSystem: true },
-      { _id: 'system_updatedAt', name: 'UpdatedAt', dataType: 'datetime', isSystem: true }
-    ];
-
-    if (showSystemFields) {
-      return [...columns, ...systemFields];
-    }
-    return columns;
+    return getAllColumnsWithSystem(columns, showSystemFields);
   }, [columns, showSystemFields]);
 
-  const toggleFilterActive = () => {
-    const newIsActive = !isFilterActive;
+  const handleToggleFilterActive = () => {
+    const newIsActive = toggleFilterActive(isFilterActive);
     setIsFilterActive(newIsActive);
     console.log('Filter active toggled:', newIsActive);
     console.log('Current filter rules:', filterRules);
@@ -1366,26 +1331,21 @@ const TableDetail = () => {
     console.log('Records after filter:', records.length);
   };
 
-  const addFilterRule = () => {
+  const handleAddFilterRule = () => {
     if (columns.length > 0) {
-      const newRule = {
-        field: columns[0].name,
-        operator: 'equals',
-        value: ''
-      };
-      setFilterRules([...filterRules, newRule]);
+      const newRules = addFilterRule(filterRules, columns[0].name);
+      setFilterRules(newRules);
       setIsFilterActive(true); // Auto activate when adding rule
     }
   };
 
-  const removeFilterRule = (index) => {
-    const newRules = filterRules.filter((_, i) => i !== index);
+  const handleRemoveFilterRule = (index) => {
+    const newRules = removeFilterRule(filterRules, index);
     setFilterRules(newRules);
   };
 
-  const updateFilterRule = (index, field, operator, value) => {
-    const newRules = [...filterRules];
-    newRules[index] = { field, operator, value };
+  const handleUpdateFilterRule = (index, field, operator, value) => {
+    const newRules = updateFilterRule(filterRules, index, field, operator, value);
     setFilterRules(newRules);
     
     // Auto save to backend if we had the mutation
@@ -1398,137 +1358,14 @@ const TableDetail = () => {
     }
   };
 
-  const getOperatorOptions = (dataType) => {
-    const textOperators = [
-      { value: 'equals', label: 'is equal' },
-      { value: 'not_equals', label: 'is not equal' },
-      { value: 'contains', label: 'is like' },
-      { value: 'not_contains', label: 'is not like' },
-      { value: 'is_empty', label: 'is blank' },
-      { value: 'is_not_empty', label: 'is not blank' }
-    ];
-
-    const numberOperators = [
-      { value: 'equals', label: '=' },
-      { value: 'not_equals', label: '!=' },
-      { value: 'greater_than', label: '>' },
-      { value: 'less_than', label: '<' },
-      { value: 'greater_than_or_equal', label: '>=' },
-      { value: 'less_than_or_equal', label: '<=' },
-      { value: 'is_empty', label: 'is blank' },
-      { value: 'is_not_empty', label: 'is not blank' }
-    ];
-
-    const dateOperators = [
-      { value: 'equals', label: 'is equal' },
-      { value: 'not_equals', label: 'is not equal' },
-      { value: 'greater_than', label: 'is after' },
-      { value: 'less_than', label: 'is before' },
-      { value: 'is_empty', label: 'is blank' },
-      { value: 'is_not_empty', label: 'is not blank' }
-    ];
-
-    switch (dataType) {
-      case 'text': return textOperators;
-      case 'number': return numberOperators;
-      case 'date': return dateOperators;
-      default: return textOperators;
-    }
-  };
 
   // Group data by rules
   const groupedData = useMemo(() => {
-    if (groupRules.length === 0) {
-      return { groups: [], ungroupedRecords: records };
-    }
-
-    const groups = {};
-    const ungroupedRecords = [];
-
-    records.forEach(record => {
-      let groupKey = '';
-      let groupValues = [];
-
-      // Build group key based on group rules
-      groupRules.forEach(rule => {
-        const value = record.data?.[rule.field] || '';
-        groupValues.push(value);
-        groupKey += `${rule.field}:${value}|`;
-      });
-
-      if (groupKey) {
-        if (!groups[groupKey]) {
-          groups[groupKey] = {
-            key: groupKey,
-            values: groupValues,
-            rules: groupRules,
-            records: [],
-            count: 0
-          };
-        }
-        groups[groupKey].records.push(record);
-        groups[groupKey].count++;
-      } else {
-        ungroupedRecords.push(record);
-      }
-    });
-
-    // Convert to array (no sorting - will be handled by main sort functionality)
-    const groupArray = Object.values(groups);
-
-    return { groups: groupArray, ungroupedRecords };
+    return groupRecords(records, groupRules);
   }, [records, groupRules]);
 
-  const getDataTypeIcon = (dataType) => {
-    switch (dataType) {
-      case 'text': return <FieldBinaryOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
-      case 'number': return <NumberOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
-      case 'date': return <CalendarOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
-      case 'checkbox': return <CheckSquareOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
-      case 'single_select': return <DownOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
-      case 'multi_select': return <CheckSquareOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
-      case 'formula': return <FunctionOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
-      case 'currency': return <DollarOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
-      case 'email': return <MailOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
-      case 'url': return <LinkOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
-      case 'json': return <CodeOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
-      default: return <FieldBinaryOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
-    }
-  };
 
-  const getDataTypeColor = (dataType) => {
-    switch (dataType) {
-      case 'text': return '#1890ff';
-      case 'number': return '#52c41a';
-      case 'date': return '#fa8c16';
-      case 'checkbox': return '#52c41a';
-      case 'single_select': return '#1890ff';
-      case 'multi_select': return '#722ed1';
-      case 'formula': return '#722ed1';
-      case 'currency': return '#52c41a';
-      case 'email': return '#1890ff';
-      case 'url': return '#1890ff';
-      case 'json': return '#722ed1';
-      default: return '#1890ff';
-    }
-  };
 
-  const getDataTypeTag = (dataType) => {
-    const colorMap = {
-      text: 'blue',
-      number: 'green',
-      date: 'orange',
-      checkbox: 'green',
-      single_select: 'blue',
-      multi_select: 'purple',
-      formula: 'purple',
-      currency: 'green',
-      email: 'blue',
-      url: 'blue',
-      json: 'purple'
-    };
-    return <Tag color={colorMap[dataType] || 'blue'}>{dataType.toUpperCase()}</Tag>;
-  };
 
 
 
@@ -1605,14 +1442,7 @@ const TableDetail = () => {
                   size="small"
                   onClick={handleFieldsButtonClick}
                   data-fields-button
-                  style={{ 
-                    color: Object.keys(fieldVisibility).length > 0 ? '#1890ff' : '#666',
-                    backgroundColor: Object.keys(fieldVisibility).length > 0 ? '#e6f7ff' : 'transparent',
-                    border: Object.keys(fieldVisibility).length > 0 ? '1px solid #1890ff' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
+                  style={getFieldVisibilityButtonStyle(fieldVisibility)}
                 >
                   Fields
                 </Button>
@@ -1674,10 +1504,7 @@ const TableDetail = () => {
                       maxHeight: '300px',
                       overflow: 'auto'
                     }}>
-                      {allColumnsWithSystem
-                        .filter(column => 
-                          column.name.toLowerCase().includes(fieldSearch.toLowerCase())
-                        )
+                      {filterFieldsBySearch(allColumnsWithSystem, fieldSearch)
                         .map(column => (
                           <div
                             key={column._id}
@@ -1687,30 +1514,17 @@ const TableDetail = () => {
                               gap: '12px',
                               padding: '12px 16px',
                               borderBottom: '1px solid #f0f0f0',
-                              backgroundColor: fieldVisibility[column._id] === false ? '#f5f5f5' : (column.isSystem ? '#f6ffed' : 'white'),
-                              opacity: fieldVisibility[column._id] === false ? 0.6 : 1,
-                              transition: 'all 0.2s ease',
-                              cursor: 'pointer',
-                              borderLeft: column.isSystem ? '3px solid #52c41a' : 'none'
+                              ...getFieldItemStyle(fieldVisibility, column._id, column.isSystem)
                             }}
                             onMouseEnter={(e) => {
-                              // Chỉ hiện hover khi field đã bị bỏ tick (false)
-                              if (fieldVisibility[column._id] === false) {
-                                e.target.style.backgroundColor = '#e6f7ff';
-                                e.target.style.opacity = '1';
-                              }
+                              const hoverStyle = getFieldHoverStyle(fieldVisibility, column._id);
+                              Object.assign(e.target.style, hoverStyle);
                             }}
                             onMouseLeave={(e) => {
-                              // Chỉ reset hover khi field đã bị bỏ tick (false)
-                              if (fieldVisibility[column._id] === false) {
-                                e.target.style.backgroundColor = '#f5f5f5';
-                                e.target.style.opacity = '0.6';
-                              } else {
-                                e.target.style.backgroundColor = column.isSystem ? '#f6ffed' : 'white';
-                                e.target.style.opacity = '1';
-                              }
+                              const leaveStyle = getFieldLeaveStyle(fieldVisibility, column._id, column.isSystem);
+                              Object.assign(e.target.style, leaveStyle);
                             }}
-                            onClick={() => toggleFieldVisibility(column._id)}
+                            onClick={() => handleToggleFieldVisibility(column._id)}
                           >
                             {/* Drag Handle */}
                             <div style={{ 
@@ -1756,10 +1570,8 @@ const TableDetail = () => {
                                 (showSystemFields && fieldVisibility[column._id] !== false) : 
                                 (fieldVisibility[column._id] !== false)
                               }
-                              onChange={() => toggleFieldVisibility(column._id)}
-                              style={{ 
-                                color: fieldVisibility[column._id] === false ? '#ff4d4f' : (column.isSystem ? '#52c41a' : '#1890ff')
-                              }}
+                              onChange={() => handleToggleFieldVisibility(column._id)}
+                              style={getFieldCheckboxStyle(fieldVisibility, column._id, column.isSystem)}
                             />
                           </div>
                         ))}
@@ -1778,13 +1590,8 @@ const TableDetail = () => {
                         type="text"
                         icon={<UserOutlined />}
                         size="small"
-                        onClick={toggleSystemFields}
-                        style={{ 
-                          color: showSystemFields ? '#52c41a' : '#666',
-                          fontSize: '12px',
-                          backgroundColor: showSystemFields ? '#f6ffed' : 'transparent',
-                          border: showSystemFields ? '1px solid #52c41a' : 'none'
-                        }}
+                        onClick={handleToggleSystemFields}
+                        style={getSystemFieldsButtonStyle(showSystemFields)}
                       >
                         System fields
                       </Button>
@@ -1856,7 +1663,7 @@ const TableDetail = () => {
                       </div>
                       <Checkbox
                         checked={isFilterActive}
-                        onChange={toggleFilterActive}
+                        onChange={handleToggleFilterActive}
                         size="small"
                       >
                         Active
@@ -1897,7 +1704,7 @@ const TableDetail = () => {
                                 {/* Field Select */}
                                 <Select
                                   value={rule.field}
-                                  onChange={(value) => updateFilterRule(index, value, rule.operator, rule.value)}
+                                  onChange={(value) => handleUpdateFilterRule(index, value, rule.operator, rule.value)}
                                   size="small"
                                   style={{ 
                                     width: '140px',
@@ -1921,7 +1728,7 @@ const TableDetail = () => {
                                 {/* Operator Select */}
                                 <Select
                                   value={rule.operator}
-                                  onChange={(value) => updateFilterRule(index, rule.field, value, rule.value)}
+                                  onChange={(value) => handleUpdateFilterRule(index, rule.field, value, rule.value)}
                                   size="small"
                                   style={{ 
                                     width: '120px',
@@ -1946,7 +1753,7 @@ const TableDetail = () => {
                                 {!['is_empty', 'is_not_empty'].includes(rule.operator) && (
                                   <Input
                                     value={rule.value}
-                                    onChange={(e) => updateFilterRule(index, rule.field, rule.operator, e.target.value)}
+                                    onChange={(e) => handleUpdateFilterRule(index, rule.field, rule.operator, e.target.value)}
                                     size="small"
                                     style={{ 
                                       flex: 1,
@@ -1963,7 +1770,7 @@ const TableDetail = () => {
                                   type="text"
                                   icon={<DeleteOutlined />}
                                   size="small"
-                                  onClick={() => removeFilterRule(index)}
+                                  onClick={() => handleRemoveFilterRule(index)}
                                   style={{ 
                                     color: '#666',
                                     padding: '4px 8px'
@@ -2013,17 +1820,10 @@ const TableDetail = () => {
                   size="small"
                   onClick={handleGroupButtonClick}
                   data-group-button
-                  style={{ 
-                    color: groupRules.length > 0 ? '#52c41a' : '#666',
-                    backgroundColor: groupRules.length > 0 ? '#f6ffed' : 'transparent',
-                    border: groupRules.length > 0 ? '1px solid #52c41a' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
+                  style={getGroupButtonStyle(groupRules)}
                 >
                   Group
-                  {groupRules.length > 0 && (
+                  {getGroupRulesCount(groupRules) > 0 && (
                     <span style={{
                       backgroundColor: '#52c41a',
                       color: 'white',
@@ -2035,7 +1835,7 @@ const TableDetail = () => {
                       alignItems: 'center',
                       justifyContent: 'center'
                     }}>
-                      {groupRules.length}
+                      {getGroupRulesCount(groupRules)}
                     </span>
                   )}
                 </Button>
@@ -2077,7 +1877,7 @@ const TableDetail = () => {
                             size="small"
                             icon={<DownOutlined />}
                             style={{ color: '#666' }}
-                            onClick={expandAllGroups}
+                            onClick={handleExpandAllGroups}
                           />
                         </Tooltip>
                         <Tooltip title="Collapse All Groups">
@@ -2086,7 +1886,7 @@ const TableDetail = () => {
                             size="small"
                             icon={<RightOutlined />}
                             style={{ color: '#666' }}
-                            onClick={collapseAllGroups}
+                            onClick={handleCollapseAllGroups}
                           />
                         </Tooltip>
                         <Button
@@ -2131,7 +1931,7 @@ const TableDetail = () => {
                               type="text"
                               icon={<DeleteOutlined />}
                               size="small"
-                              onClick={() => removeGroupRule(index)}
+                              onClick={() => handleRemoveGroupRule(index)}
                               style={{ color: '#ff4d4f' }}
                             />
                           </div>
@@ -2184,7 +1984,7 @@ const TableDetail = () => {
                               {columns
                                 .filter(column => 
                                   column.name.toLowerCase().includes(groupFieldSearch.toLowerCase()) &&
-                                  !groupRules.some(rule => rule.field === column.name)
+                                  !isFieldUsedInGroup(groupRules, column.name)
                                 )
                                 .map(column => (
                                   <div
@@ -2252,7 +2052,7 @@ const TableDetail = () => {
                           {columns
                             .filter(column => 
                               column.name.toLowerCase().includes(groupFieldSearch.toLowerCase()) &&
-                              !groupRules.some(rule => rule.field === column.name)
+                              !isFieldUsedInGroup(groupRules, column.name)
                             )
                             .map(column => (
                               <div
@@ -2298,29 +2098,12 @@ const TableDetail = () => {
                   size="small"
                   onClick={handleSortButtonClick}
                   data-sort-button
-                  style={{ 
-                    color: sortRules.length > 0 ? '#fa8c16' : '#666',
-                    backgroundColor: sortRules.length > 0 ? '#fff2e8' : 'transparent',
-                    border: sortRules.length > 0 ? '1px solid #fa8c16' : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
+                  style={getSortButtonStyle(sortRules)}
                 >
                   Sort
-                  {sortRules.length > 0 && (
-                    <span style={{
-                      backgroundColor: '#fa8c16',
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: '16px',
-                      height: '16px',
-                      fontSize: '10px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      {sortRules.length}
+                  {isSortActive(sortRules) && (
+                    <span style={getSortBadgeStyle()}>
+                      {getSortRulesCount(sortRules)}
                     </span>
                   )}
                 </Button>
@@ -2372,7 +2155,7 @@ const TableDetail = () => {
                     </div>
 
                                                             {/* Show sort rules and add option when rules exist */}
-                    {sortRules.length > 0 ? (
+                    {isSortActive(sortRules) ? (
                       <>
                         {/* Existing Sort Rules */}
                         {sortRules.map((rule, index) => (
@@ -2401,7 +2184,7 @@ const TableDetail = () => {
                             </div>
                             <Select
                               value={rule.order}
-                              onChange={(value) => updateSortRule(index, rule.field, value)}
+                              onChange={(value) => handleUpdateSortRule(index, rule.field, value)}
                               size="small"
                               style={{ width: '100px' }}
                               onClick={(e) => e.stopPropagation()}
@@ -2414,7 +2197,7 @@ const TableDetail = () => {
                               type="text"
                               icon={<DeleteOutlined />}
                               size="small"
-                              onClick={() => removeSortRule(index)}
+                              onClick={() => handleRemoveSortRule(index)}
                               style={{ color: '#ff4d4f' }}
                             />
                           </div>
@@ -2482,7 +2265,7 @@ const TableDetail = () => {
                                       borderBottom: '1px solid #f0f0f0',
                                       transition: 'background-color 0.2s'
                                     }}
-                                    onClick={() => handleSortFieldSelect(column.name)}
+                                    onClick={() => onSortFieldSelect(column.name)}
                                     onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
                                     onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
                                   >
@@ -2550,7 +2333,7 @@ const TableDetail = () => {
                                   borderBottom: '1px solid #f0f0f0',
                                   transition: 'background-color 0.2s'
                                 }}
-                                onClick={() => handleSortFieldSelect(column.name)}
+                                onClick={() => onSortFieldSelect(column.name)}
                                 onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
                                 onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
                               >
@@ -2639,13 +2422,13 @@ const TableDetail = () => {
               {/* Data Columns */}
               {visibleColumns.map(column => (
                 <div key={column._id} style={{
-                  width: `${getColumnWidth(column._id)}px`,
+                  width: getColumnWidthString(columnWidths, column._id),
                   minWidth: '50px',
-                  padding: isColumnCompact(column._id) ? '4px' : '8px',
+                  padding: isColumnCompact(columnWidths, column._id) ? '4px' : '8px',
                   borderRight: '1px solid #d9d9d9',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: isColumnCompact(column._id) ? 'center' : 'space-between',
+                  justifyContent: isColumnCompact(columnWidths, column._id) ? 'center' : 'space-between',
                   backgroundColor: column.isSystem ? '#f6ffed' : 
                                  sortRules.some(rule => rule.field === column.name) ? '#fff2e8' : 
                                  groupRules.some(rule => rule.field === column.name) ? '#f6ffed' : '#f5f5f5',
@@ -2655,7 +2438,7 @@ const TableDetail = () => {
                              groupRules.some(rule => rule.field === column.name) ? '2px solid #52c41a' : 'none'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
-                    {isColumnCompact(column._id) ? (
+                    {isColumnCompact(columnWidths, column._id) ? (
                       <span style={{ 
                         fontSize: '14px', 
                         fontWeight: 'bold', 
@@ -2739,8 +2522,8 @@ const TableDetail = () => {
                       size="small" 
                       icon={<MoreOutlined />} 
                       style={{ 
-                        padding: isColumnCompact(column._id) ? '2px' : '2px',
-                        fontSize: isColumnCompact(column._id) ? '10px' : '12px'
+                        padding: isColumnCompact(columnWidths, column._id) ? '2px' : '2px',
+                        fontSize: isColumnCompact(columnWidths, column._id) ? '10px' : '12px'
                       }} 
                     />
                   </Dropdown>
@@ -2826,7 +2609,7 @@ const TableDetail = () => {
                       backgroundColor: '#f6ffed',
                       transition: 'background-color 0.2s'
                     }}
-                    onClick={() => toggleGroupExpansion(group.key)}
+                    onClick={() => handleToggleGroupExpansion(group.key)}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f9ff'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f6ffed'}
                     >
@@ -2930,11 +2713,11 @@ const TableDetail = () => {
                           } else {
                             value = record.data?.[column.name] || '';
                           }
-                          const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
+                          const isEditing = isCellEditing(editingCell, record._id, column.name);
                           
                           return (
                             <div key={column._id} style={{
-                              width: `${getColumnWidth(column._id)}px`,
+                              width: getColumnWidthString(columnWidths, column._id),
                               minWidth: '50px',
                               padding: '0',
                               borderRight: '1px solid #d9d9d9',
@@ -3760,7 +3543,7 @@ const TableDetail = () => {
                         {/* Data Columns */}
                         {visibleColumns.map(column => (
                           <div key={column._id} style={{
-                            width: `${getColumnWidth(column._id)}px`,
+                            width: getColumnWidthString(columnWidths, column._id),
                             minWidth: '50px',
                             padding: '8px',
                             borderRight: '1px solid #d9d9d9'
@@ -3837,7 +3620,7 @@ const TableDetail = () => {
                     
                     return (
                       <div key={column._id} style={{
-                        width: `${getColumnWidth(column._id)}px`,
+                        width: getColumnWidthString(columnWidths, column._id),
                         minWidth: '50px',
                         padding: '0',
                         borderRight: '1px solid #d9d9d9',
@@ -4617,7 +4400,7 @@ const TableDetail = () => {
                 {/* Data Columns */}
                 {visibleColumns.map(column => (
                   <div key={column._id} style={{
-                    width: `${getColumnWidth(column._id)}px`,
+                    width: getColumnWidthString(columnWidths, column._id),
                     minWidth: '50px',
                     padding: '8px',
                     borderRight: '1px solid #d9d9d9'
