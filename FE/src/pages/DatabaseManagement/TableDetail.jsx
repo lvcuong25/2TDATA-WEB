@@ -1,10 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormatter.js';
-import SingleSelectConfig from './Config/SingleSelectConfig';
-import MultiSelectConfig from './Config/MultiSelectConfig';
-import DateConfig from './Config/DateConfig';
-import FormulaConfig from './Config/FormulaConfig';
-import CurrencyConfig from './Config/CurrencyConfig';
+import AddColumnModal from './Components/AddColumnModal';
+import EditColumnModal from './Components/EditColumnModal';
 import {
   addSortRule,
   removeSortRule,
@@ -130,8 +127,7 @@ import {
   importFieldVisibilitySettings
 } from './Utils/fieldVisibilityUtils.jsx';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { useTableData } from './Hooks/useTableData';
 import { useTableContext } from '../../contexts/TableContext';
 import {
   Button,
@@ -200,7 +196,6 @@ const { Header, Sider, Content } = Layout;
 const TableDetail = () => {
   const { databaseId, tableId } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { 
     selectedRowKeys, 
     setSelectedRowKeys, 
@@ -281,59 +276,65 @@ const TableDetail = () => {
   const [fieldVisibility, setFieldVisibility] = useState({});
   const [showSystemFields, setShowSystemFields] = useState(false);
 
-  // Fetch group preferences from backend
-  const { data: groupPreferenceResponse } = useQuery({
-    queryKey: ['groupPreference', tableId],
-    queryFn: async () => {
-      const response = await axiosInstance.get(`/database/tables/${tableId}/group-preference`);
-      return response.data;
-    },
-    enabled: !!tableId,
-  });
+  // Use table data hook
+  const tableContext = {
+    selectedRowKeys,
+    setSelectedRowKeys,
+    selectAll,
+    setSelectAll,
+    setAllRecords
+  };
 
-  // Save group preference mutation
-  const saveGroupPreferenceMutation = useMutation({
-    mutationFn: async ({ groupRules, expandedGroups }) => {
-      const response = await axiosInstance.post(`/database/tables/${tableId}/group-preference`, {
-        groupRules,
-        expandedGroups: Array.from(expandedGroups)
+  // Modal callbacks for handling success states
+  const modalCallbacks = {
+    onAddColumnSuccess: () => {
+      setShowAddColumn(false);
+      setNewColumn({ 
+        name: '', 
+        dataType: 'text',
+        checkboxConfig: {
+          icon: 'check-circle',
+          color: '#52c41a',
+          defaultValue: false
+        },
+        singleSelectConfig: {
+          options: [],
+          defaultValue: ''
+        },
+        multiSelectConfig: {
+          options: [],
+          defaultValue: []
+        },
+        dateConfig: {
+          format: 'DD/MM/YYYY'
+        }
       });
-      return response.data;
     },
-    onSuccess: () => {
-      console.log('Group preference saved successfully');
-    },
-    onError: (error) => {
-      console.error('Error saving group preference:', error);
-    },
-  });
+    onEditColumnSuccess: () => {
+      setShowEditColumn(false);
+      setEditingColumn(null);
+    }
+  };
 
-  // Fetch field preferences from backend
-  const { data: fieldPreferenceResponse } = useQuery({
-    queryKey: ['fieldPreference', tableId],
-    queryFn: async () => {
-      const response = await axiosInstance.get(`/database/tables/${tableId}/field-preference`);
-      return response.data;
-    },
-    enabled: !!tableId,
-  });
-
-  // Save field preference mutation
-  const saveFieldPreferenceMutation = useMutation({
-    mutationFn: async ({ fieldVisibility, showSystemFields }) => {
-      const response = await axiosInstance.post(`/database/tables/${tableId}/field-preference`, {
-        fieldVisibility,
-        showSystemFields
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      console.log('Field preference saved successfully');
-    },
-    onError: (error) => {
-      console.error('Error saving field preference:', error);
-    },
-  });
+  const {
+    groupPreferenceResponse,
+    fieldPreferenceResponse,
+    tableStructureResponse,
+    recordsResponse,
+    isLoading,
+    error,
+    saveGroupPreferenceMutation,
+    saveFieldPreferenceMutation,
+    addColumnMutation,
+    addRecordMutation,
+    updateRecordMutation,
+    deleteRecordMutation,
+    deleteMultipleRecordsMutation,
+    deleteAllRecordsMutation,
+    updateColumnMutation,
+    deleteColumnMutation,
+    queryClient
+  } = useTableData(tableId, databaseId, sortRules, filterRules, isFilterActive, tableContext, modalCallbacks);
 
   // Load group preferences from backend when data is available
   React.useEffect(() => {
@@ -521,34 +522,6 @@ const TableDetail = () => {
   // Get type letter for compact display
 
 
-  // Fetch table structure
-  const { data: tableStructureResponse, isLoading, error } = useQuery({
-    queryKey: ['tableStructure', tableId],
-    queryFn: async () => {
-      const response = await axiosInstance.get(`/database/tables/${tableId}/structure`);
-      return response.data;
-    },
-    enabled: !!tableId,
-  });
-
-  // Fetch table records
-  const { data: recordsResponse } = useQuery({
-    queryKey: ['tableRecords', tableId, sortRules, filterRules, isFilterActive],
-    queryFn: async () => {
-      const sortRulesParam = sortRules.length > 0 ? JSON.stringify(sortRules) : undefined;
-      const filterRulesParam = isFilterActive && filterRules.length > 0 ? JSON.stringify(filterRules) : undefined;
-      const response = await axiosInstance.get(`/database/tables/${tableId}/records`, {
-        params: {
-          sortRules: sortRulesParam,
-          filterRules: filterRulesParam,
-          // Force ascending order when no sort rules are applied
-          forceAscending: sortRules.length === 0 ? 'true' : undefined
-        }
-      });
-      return response.data;
-    },
-    enabled: !!tableId,
-  });
 
   const tableStructure = tableStructureResponse?.data;
   const table = tableStructure?.table;
@@ -585,183 +558,13 @@ const TableDetail = () => {
     return applyFilterRules(allRecords, filterRules, isFilterActive);
   }, [allRecords, filterRules, isFilterActive]);
 
-  // Add column mutation
-  const addColumnMutation = useMutation({
-    mutationFn: async (columnData) => {
-      const response = await axiosInstance.post('/database/columns', {
-        ...columnData,
-        tableId,
-        databaseId
-      });
-      return response.data;
-    },
-          onSuccess: () => {
-        toast.success('Thêm cột thành công');
-        setShowAddColumn(false);
-        setNewColumn({ 
-          name: '', 
-          dataType: 'text',
-          checkboxConfig: {
-            icon: 'check-circle',
-            color: '#52c41a',
-            defaultValue: false
-          },
-          singleSelectConfig: {
-            options: [],
-            defaultValue: ''
-          },
-          multiSelectConfig: {
-            options: [],
-            defaultValue: []
-          },
-          dateConfig: {
-            format: 'DD/MM/YYYY'
-          }
-        });
-        queryClient.invalidateQueries(['tableStructure', tableId]);
-      },
-      onError: (error) => {
-        console.error('Error adding column:', error);
-        toast.error(error.response?.data?.message || 'Không thể thêm cột');
-      },
-  });
 
-  // Add record mutation
-  const addRecordMutation = useMutation({
-    mutationFn: async (recordData) => {
-      const response = await axiosInstance.post('/database/records', {
-        ...recordData,
-        tableId,
-        databaseId
-      });
-      return response.data;
-    },
-          onSuccess: () => {
-        // toast.success('Record added successfully');
-        queryClient.invalidateQueries(['tableRecords', tableId]);
-      },
-      onError: (error) => {
-        console.error('Error adding record:', error);
-        // toast.error(error.response?.data?.message || 'Failed to add record');
-      },
-  });
 
-  // Update record mutation
-  const updateRecordMutation = useMutation({
-    mutationFn: async ({ recordId, data }) => {
-      const response = await axiosInstance.put(`/database/records/${recordId}`, {
-        data,
-        tableId,
-        databaseId
-      });
-      return response.data;
-    },
-          onSuccess: (data, variables) => {
-        // toast.success('Record updated successfully');
-        
-        // For multi-select, keep the dropdown open to allow multiple selections  
-        const column = columns.find(col => col.name === editingCell?.columnName);
-        if (column && column.dataType === 'multi_select') {
-          // Keep editingCell active for multi-select, just refresh the data
-          queryClient.invalidateQueries(['tableRecords', tableId]);
-        } else {
-          // For other types, close the editing cell as usual
-          setEditingCell(null);
-          setCellValue('');
-          queryClient.invalidateQueries(['tableRecords', tableId]);
-        }
-      },
-      onError: (error) => {
-        console.error('Error updating record:', error);
-        // toast.error(error.response?.data?.message || 'Failed to update record');
-      },
-  });
 
-  // Delete record mutation
-  const deleteRecordMutation = useMutation({
-    mutationFn: async (recordId) => {
-      const response = await axiosInstance.delete(`/database/records/${recordId}`);
-      return response.data;
-    },
-          onSuccess: () => {
-        // toast.success('Record deleted successfully');
-        queryClient.invalidateQueries(['tableRecords', tableId]);
-      },
-      onError: (error) => {
-        console.error('Error deleting record:', error);
-        // toast.error(error.response?.data?.message || 'Failed to delete record');
-      },
-  });
 
-  // Bulk delete records mutation
-  const deleteMultipleRecordsMutation = useMutation({
-    mutationFn: async (recordIds) => {
-      const response = await axiosInstance.delete('/database/records/bulk', {
-        data: { recordIds }
-      });
-      return response.data;
-    },
-          onSuccess: (data) => {
-        // toast.success(`${data.deletedCount} records deleted successfully`);
-        setSelectedRowKeys([]);
-        setSelectAll(false);
-        queryClient.invalidateQueries(['tableRecords', tableId]);
-      },
-      onError: (error) => {
-        console.error('Error deleting records:', error);
-        // toast.error(error.response?.data?.message || 'Failed to delete records');
-      },
-  });
 
-  // Delete all records mutation
-  const deleteAllRecordsMutation = useMutation({
-    mutationFn: async () => {
-      const response = await axiosInstance.delete(`/database/tables/${tableId}/records/all`);
-      return response.data;
-    },
-          onSuccess: (data) => {
-        // toast.success(`All ${data.deletedCount} records deleted successfully`);
-        setSelectedRowKeys([]);
-        setSelectAll(false);
-        queryClient.invalidateQueries(['tableRecords', tableId]);
-      },
-      onError: (error) => {
-        console.error('Error deleting all records:', error);
-        // toast.error(error.response?.data?.message || 'Failed to delete all records');
-      },
-  });
 
-  // Update column mutation
-  const updateColumnMutation = useMutation({
-    mutationFn: async ({ columnId, columnData }) => {
-      const response = await axiosInstance.put(`/database/columns/${columnId}`, columnData);
-      return response.data;
-    },
-          onSuccess: () => {
-        // toast.success('Column updated successfully');
-        setShowEditColumn(false);
-        setEditingColumn(null);
-        queryClient.invalidateQueries(['tableStructure', tableId]);
-      },
-      onError: (error) => {
-        console.error('Error updating column:', error);
-        // toast.error(error.response?.data?.message || 'Failed to update column');
-      },
-  });
 
-  // Delete column mutation
-  const deleteColumnMutation = useMutation({
-    mutationFn: async (columnId) => {
-      const response = await axiosInstance.delete(`/database/columns/${columnId}`);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tableStructure', tableId]);
-    },
-    onError: (error) => {
-      console.error('Error deleting column:', error);
-    },
-  });
 
   const handleAddColumn = (e) => {
     e.preventDefault();
@@ -1303,13 +1106,13 @@ const TableDetail = () => {
     const { showSystemFields: newShowSystemFields, fieldVisibility: newFieldVisibility } = toggleSystemFields(showSystemFields, fieldVisibility);
     
     setShowSystemFields(newShowSystemFields);
-    setFieldVisibility(newFieldVisibility);
-    
-    // Save to backend
-    saveFieldPreferenceMutation.mutate({
-      fieldVisibility: newFieldVisibility,
-      showSystemFields: newShowSystemFields
-    });
+      setFieldVisibility(newFieldVisibility);
+      
+      // Save to backend
+      saveFieldPreferenceMutation.mutate({
+        fieldVisibility: newFieldVisibility,
+        showSystemFields: newShowSystemFields
+      });
   };
 
   // Get visible columns based on visibility settings
@@ -4421,729 +4224,29 @@ const TableDetail = () => {
         </div>
 
       {/* Add Column Modal */}
-      <Modal
-        title="Thêm cột mới"
-        open={showAddColumn}
+      <AddColumnModal
+        visible={showAddColumn} 
         onCancel={() => setShowAddColumn(false)}
-        footer={null}
-        width={600}
-      >
-        <form onSubmit={handleAddColumn}>
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <div>
-              <Text strong>Tên cột</Text>
-              <Input
-                value={newColumn.name}
-                onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
-                placeholder="Nhập tên cột (tự động tạo theo loại dữ liệu nếu để trống)"
-              />
-            </div>
-            <div>
-              <Text strong>Loại dữ liệu</Text>
-              <Select
-                value={newColumn.dataType}
-                onChange={(value) => {
-                  // Auto-generate column name based on data type if name is empty
-                  let autoName = '';
-                  if (!newColumn.name.trim()) {
-                    switch (value) {
-                      case 'text':
-                        autoName = 'Text';
-                        break;
-                      case 'number':
-                        autoName = 'Number';
-                        break;
-                      case 'date':
-                        autoName = 'Date';
-                        break;
-                      case 'checkbox':
-                        autoName = 'Checkbox';
-                        break;
-                      case 'single_select':
-                        autoName = 'Single Select';
-                        break;
-                      case 'multi_select':
-                        autoName = 'Multi Select';
-                        break;
-                      case 'formula':
-                        autoName = 'Formula';
-                        break;
-                      case 'currency':
-                        autoName = 'Currency';
-                        break;
-                      default:
-                        autoName = 'New Column';
-                    }
-                  }
-                  setNewColumn({ 
-                    ...newColumn, 
-                    dataType: value,
-                    name: newColumn.name.trim() || autoName,
-                    // Set default value for currency
-                    ...(value === 'currency' ? { defaultValue: 0 } : {})
-                  });
-                }}
-                style={{ width: '100%' }}
-              >
-                <Option value="text">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FieldBinaryOutlined style={{ color: '#1890ff' }} />
-                    <span>Text</span>
-                  </div>
-                </Option>
-                <Option value="number">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <NumberOutlined style={{ color: '#52c41a' }} />
-                    <span>Number</span>
-                  </div>
-                </Option>
-                <Option value="date">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CalendarOutlined style={{ color: '#fa8c16' }} />
-                    <span>Date</span>
-                  </div>
-                </Option>
-
-                <Option value="checkbox">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CheckSquareOutlined style={{ color: '#52c41a' }} />
-                    <span>Checkbox</span>
-                  </div>
-                </Option>
-                <Option value="single_select">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <DownOutlined style={{ color: '#1890ff' }} />
-                    <span>Single select</span>
-                  </div>
-                </Option>
-                <Option value="multi_select">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CheckSquareOutlined style={{ color: '#722ed1' }} />
-                    <span>Multi select</span>
-                  </div>
-                </Option>
-                
-                <Option value="formula">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FunctionOutlined style={{ color: '#722ed1' }} />
-                    <span>Formula</span>
-                  </div>
-                </Option>
-                <Option value="currency">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <DollarOutlined style={{ color: '#52c41a' }} />
-                    <span>Tiền tệ</span>
-                  </div>
-                </Option>
-                
-                <Option value="email">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <LinkOutlined style={{ color: '#1890ff' }} />
-                    <span>Email</span>
-                  </div>
-                </Option>
-                
-                <Option value="url">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <LinkOutlined style={{ color: '#1890ff' }} />
-                    <span>URL</span>
-                  </div>
-                </Option>
-                
-                <Option value="json">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CodeOutlined style={{ color: '#722ed1' }} />
-                    <span>JSON</span>
-                  </div>
-                </Option>
-              </Select>
-            </div>
-
-            {/* Checkbox Configuration */}
-            {newColumn.dataType === 'checkbox' && (
-              <div style={{ 
-                backgroundColor: '#fafafa', 
-                padding: '16px', 
-                borderRadius: '8px',
-                border: '1px solid #f0f0f0'
-              }}>
-                <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                  <div>
-                    <Text strong>Icon</Text>
-                    <Select
-                      value={newColumn.checkboxConfig.icon}
-                      onChange={(value) => setNewColumn({
-                        ...newColumn,
-                        checkboxConfig: { ...newColumn.checkboxConfig, icon: value }
-                      })}
-                      style={{ width: '100%', marginTop: '8px' }}
-                    >
-                      <Option value="check-circle">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                          <span>Check Circle</span>
-                        </div>
-                      </Option>
-                      <Option value="border">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <BorderOutlined style={{ color: '#666' }} />
-                          <span>Border</span>
-                        </div>
-                      </Option>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Text strong>Colour</Text>
-                    <Select
-                      value={newColumn.checkboxConfig.color}
-                      onChange={(value) => setNewColumn({
-                        ...newColumn,
-                        checkboxConfig: { ...newColumn.checkboxConfig, color: value }
-                      })}
-                      style={{ width: '100%', marginTop: '8px' }}
-                    >
-                      <Option value="#52c41a">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '16px', 
-                            backgroundColor: '#52c41a', 
-                            borderRadius: '50%',
-                            border: '2px solid #fff',
-                            boxShadow: '0 0 0 1px #d9d9d9'
-                          }} />
-                          <span>Green</span>
-                        </div>
-                      </Option>
-                      <Option value="#1890ff">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '16px', 
-                            backgroundColor: '#1890ff', 
-                            borderRadius: '50%',
-                            border: '2px solid #fff',
-                            boxShadow: '0 0 0 1px #d9d9d9'
-                          }} />
-                          <span>Blue</span>
-                        </div>
-                      </Option>
-                      <Option value="#fa8c16">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '16px', 
-                            backgroundColor: '#fa8c16', 
-                            borderRadius: '50%',
-                            border: '2px solid #fff',
-                            boxShadow: '0 0 0 1px #d9d9d9'
-                          }} />
-                          <span>Orange</span>
-                        </div>
-                      </Option>
-                      <Option value="#f5222d">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '16px', 
-                            backgroundColor: '#f5222d', 
-                            borderRadius: '50%',
-                            border: '2px solid #fff',
-                            boxShadow: '0 0 0 1px #d9d9d9'
-                          }} />
-                          <span>Red</span>
-                        </div>
-                      </Option>
-                      <Option value="#722ed1">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '16px', 
-                            backgroundColor: '#722ed1', 
-                            borderRadius: '50%',
-                            border: '2px solid #fff',
-                            boxShadow: '0 0 0 1px #d9d9d9'
-                          }} />
-                          <span>Purple</span>
-                        </div>
-                      </Option>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Text strong>Giá trị mặc định</Text>
-                    <div style={{ marginTop: '8px' }}>
-                      <Radio.Group
-                        value={newColumn.checkboxConfig.defaultValue}
-                        onChange={(e) => setNewColumn({
-                          ...newColumn,
-                          checkboxConfig: { ...newColumn.checkboxConfig, defaultValue: e.target.value }
-                        })}
-                      >
-                        <Radio value={false}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <BorderOutlined style={{ color: '#666' }} />
-                            <span>Unchecked</span>
-                          </div>
-                        </Radio>
-                        <Radio value={true}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <CheckCircleOutlined style={{ color: newColumn.checkboxConfig.color }} />
-                            <span>Checked</span>
-                          </div>
-                        </Radio>
-                      </Radio.Group>
-                    </div>
-                  </div>
-                </Space>
-              </div>
-            )}
-
-            {/* Single Select Configuration */}
-            {newColumn.dataType === 'single_select' && (
-              <SingleSelectConfig
-                config={newColumn.singleSelectConfig}
-                onChange={(config) => setNewColumn({
-                  ...newColumn,
-                  singleSelectConfig: config
-                })}
-              />
-            )}
-
-            {/* Multi Select Configuration */}
-            {newColumn.dataType === 'multi_select' && (
-              <MultiSelectConfig
-                config={newColumn.multiSelectConfig}
-                onChange={(config) => setNewColumn({
-                  ...newColumn,
-                  multiSelectConfig: config
-                })}
-              />
-            )}
-
-            {/* Date Configuration */}
-            {newColumn.dataType === 'date' && (
-              <DateConfig
-                config={newColumn.dateConfig}
-                onChange={(config) => setNewColumn({
-                  ...newColumn,
-                  dateConfig: config
-                })}
-              />
-            )}
-
-            {/* Currency Configuration */}
-{newColumn.dataType === 'currency' && (
-              <CurrencyConfig
-                config={{
-                  ...(newColumn.currencyConfig || {}),
-                  defaultValue: newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0
-                }}
-                onChange={(config) => {
-                  console.log('CurrencyConfig onChange:', config);
-                  const { defaultValue, ...currencyConfig } = config;
-                  console.log('Setting defaultValue:', defaultValue);
-                  setNewColumn({
-                    ...newColumn,
-                    currencyConfig: currencyConfig,
-                    defaultValue: defaultValue !== undefined ? defaultValue : 0
-                  });
-                }}
-              />
-            )}
-
-            {/* Formula Configuration */}
-            {newColumn.dataType === 'formula' && (
-              <FormulaConfig
-                formulaConfig={newColumn.formulaConfig}
-                onFormulaConfigChange={(formulaConfig) => setNewColumn({ ...newColumn, formulaConfig })}
-                availableColumns={columns}
-                onValidationChange={(isValid, errors) => {
-                  // Handle validation state if needed
-                }}
-              />
-            )}
-
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              paddingTop: '16px',
-              borderTop: '1px solid #f0f0f0'
-            }}>
-              <Button type="link" size="small" style={{ padding: 0 }}>
-                + Add description
-              </Button>
-              <Button type="link" size="small" style={{ padding: 0 }}>
-                Show more <PlusOutlined />
-              </Button>
-            </div>
-
-            <Row justify="end">
-              <Space>
-                <Button onClick={() => setShowAddColumn(false)}>
-                  Hủy
-                </Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={addColumnMutation.isPending}
-                >
-                  Lưu trường
-                </Button>
-              </Space>
-            </Row>
-          </Space>
-        </form>
-      </Modal>
+        onSubmit={handleAddColumn}
+        newColumn={newColumn}
+        setNewColumn={setNewColumn}
+        columns={columns}
+        loading={addColumnMutation.isPending}
+      />
 
       {/* Edit Column Modal */}
-      <Modal
-        title="Chỉnh sửa cột"
-        open={showEditColumn}
+      <EditColumnModal
+        visible={showEditColumn}
         onCancel={() => {
           setShowEditColumn(false);
           setEditingColumn(null);
         }}
-        footer={null}
-        width={600}
-      >
-        {editingColumn && (
-          <form onSubmit={handleEditColumnSubmit}>
-            <Space direction="vertical" style={{ width: '100%' }} size="large">
-              <div>
-                <Text strong>Tên trường</Text>
-                <Input
-                  value={editingColumn.name}
-                  onChange={(e) => setEditingColumn({ ...editingColumn, name: e.target.value })}
-                  placeholder="Tên trường (Tùy chọn)"
-                />
-              </div>
-              <div>
-                <Text strong>Loại trường</Text>
-                <Select
-                  value={editingColumn.dataType}
-                  onChange={(value) => setEditingColumn({ ...editingColumn, dataType: value })}
-                  style={{ width: '100%' }}
-                >
-                  <Option value="text">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FieldBinaryOutlined style={{ color: '#1890ff' }} />
-                      <span>Text</span>
-                    </div>
-                  </Option>
-                  <Option value="number">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <NumberOutlined style={{ color: '#52c41a' }} />
-                      <span>Number</span>
-                    </div>
-                  </Option>
-                  <Option value="date">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <CalendarOutlined style={{ color: '#fa8c16' }} />
-                      <span>Date</span>
-                    </div>
-                  </Option>
-
-                  <Option value="checkbox">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <CheckSquareOutlined style={{ color: '#52c41a' }} />
-                      <span>Checkbox</span>
-                    </div>
-                  </Option>
-                  <Option value="single_select">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <DownOutlined style={{ color: '#1890ff' }} />
-                      <span>Single select</span>
-                    </div>
-                  </Option>
-                  <Option value="multi_select">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <CheckSquareOutlined style={{ color: '#722ed1' }} />
-                      <span>Multi select</span>
-                  </div>
-                </Option>
-                
-                <Option value="formula">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FunctionOutlined style={{ color: '#722ed1' }} />
-                    <span>Formula</span>
-                  </div>
-                </Option>
-                <Option value="currency">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <DollarOutlined style={{ color: '#52c41a' }} />
-                    <span>Tiền tệ</span>
-                  </div>
-                </Option>
-                
-                <Option value="email">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <MailOutlined style={{ color: '#1890ff' }} />
-                    <span>Email</span>
-                  </div>
-                </Option>
-                
-                <Option value="url">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <LinkOutlined style={{ color: '#1890ff' }} />
-                    <span>URL</span>
-                  </div>
-                </Option>
-                
-                <Option value="json">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CodeOutlined style={{ color: '#722ed1' }} />
-                    <span>JSON</span>
-                  </div>
-                </Option>
-                </Select>
-              </div>
-
-              {/* Checkbox Configuration */}
-              {editingColumn.dataType === 'checkbox' && (
-                <div style={{ 
-                  backgroundColor: '#fafafa', 
-                  padding: '16px', 
-                  borderRadius: '8px',
-                  border: '1px solid #f0f0f0'
-                }}>
-                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                    <div>
-                      <Text strong>Icon</Text>
-                      <Select
-                        value={editingColumn.checkboxConfig.icon}
-                        onChange={(value) => setEditingColumn({
-                          ...editingColumn,
-                          checkboxConfig: { ...editingColumn.checkboxConfig, icon: value }
-                        })}
-                        style={{ width: '100%', marginTop: '8px' }}
-                      >
-                        <Option value="check-circle">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                            <span>Check Circle</span>
-                          </div>
-                        </Option>
-                        <Option value="border">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <BorderOutlined style={{ color: '#666' }} />
-                            <span>Border</span>
-                          </div>
-                        </Option>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Text strong>Colour</Text>
-                      <Select
-                        value={editingColumn.checkboxConfig.color}
-                        onChange={(value) => setEditingColumn({
-                          ...editingColumn,
-                          checkboxConfig: { ...editingColumn.checkboxConfig, color: value }
-                        })}
-                        style={{ width: '100%', marginTop: '8px' }}
-                      >
-                        <Option value="#52c41a">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ 
-                              width: '16px', 
-                              height: '16px', 
-                              backgroundColor: '#52c41a', 
-                              borderRadius: '50%',
-                              border: '2px solid #fff',
-                              boxShadow: '0 0 0 1px #d9d9d9'
-                            }} />
-                            <span>Green</span>
-                          </div>
-                        </Option>
-                        <Option value="#1890ff">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ 
-                              width: '16px', 
-                              height: '16px', 
-                              backgroundColor: '#1890ff', 
-                              borderRadius: '50%',
-                              border: '2px solid #fff',
-                              boxShadow: '0 0 0 1px #d9d9d9'
-                            }} />
-                            <span>Blue</span>
-                          </div>
-                        </Option>
-                        <Option value="#fa8c16">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ 
-                              width: '16px', 
-                              height: '16px', 
-                              backgroundColor: '#fa8c16', 
-                              borderRadius: '50%',
-                              border: '2px solid #fff',
-                              boxShadow: '0 0 0 1px #d9d9d9'
-                            }} />
-                            <span>Orange</span>
-                          </div>
-                        </Option>
-                        <Option value="#f5222d">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ 
-                              width: '16px', 
-                              height: '16px', 
-                              backgroundColor: '#f5222d', 
-                              borderRadius: '50%',
-                              border: '2px solid #fff',
-                              boxShadow: '0 0 0 1px #d9d9d9'
-                            }} />
-                            <span>Red</span>
-                          </div>
-                        </Option>
-                        <Option value="#722ed1">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ 
-                              width: '16px', 
-                              height: '16px', 
-                              backgroundColor: '#722ed1', 
-                              borderRadius: '50%',
-                              border: '2px solid #fff',
-                              boxShadow: '0 0 0 1px #d9d9d9'
-                            }} />
-                            <span>Purple</span>
-                          </div>
-                        </Option>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Text strong>Giá trị mặc định</Text>
-                      <div style={{ marginTop: '8px' }}>
-                        <Radio.Group
-                          value={editingColumn.checkboxConfig.defaultValue}
-                          onChange={(e) => setEditingColumn({
-                            ...editingColumn,
-                            checkboxConfig: { ...editingColumn.checkboxConfig, defaultValue: e.target.value }
-                          })}
-                        >
-                          <Radio value={false}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <BorderOutlined style={{ color: '#666' }} />
-                              <span>Unchecked</span>
-                            </div>
-                          </Radio>
-                          <Radio value={true}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <CheckCircleOutlined style={{ color: editingColumn.checkboxConfig.color }} />
-                              <span>Checked</span>
-                            </div>
-                          </Radio>
-                        </Radio.Group>
-                      </div>
-                    </div>
-                  </Space>
-                </div>
-              )}
-
-              {/* Single Select Configuration */}
-              {editingColumn.dataType === 'single_select' && (
-                <SingleSelectConfig
-                  config={editingColumn.singleSelectConfig}
-                  onChange={(config) => setEditingColumn({
-                    ...editingColumn,
-                    singleSelectConfig: config
-                  })}
-                />
-              )}
-
-              {/* Multi Select Configuration */}
-              {editingColumn.dataType === 'multi_select' && (
-                <MultiSelectConfig
-                  config={editingColumn.multiSelectConfig}
-                  onChange={(config) => setEditingColumn({
-                    ...editingColumn,
-                    multiSelectConfig: config
-                  })}
-                />
-              )}
-
-              {/* Date Configuration */}
-              {editingColumn.dataType === 'date' && (
-                <DateConfig
-                  config={editingColumn.dateConfig}
-                  onChange={(config) => setEditingColumn({
-                    ...editingColumn,
-                    dateConfig: config
-                  })}
-                />
-              )}
-
-              {/* Currency Configuration */}
-{editingColumn.dataType === 'currency' && (
-                <CurrencyConfig
-                  config={{
-                    ...(editingColumn.currencyConfig || {}),
-                    defaultValue: editingColumn.defaultValue !== undefined ? editingColumn.defaultValue : 0
-                  }}
-                  onChange={(config) => {
-                    console.log('Edit CurrencyConfig onChange:', config);
-                    const { defaultValue, ...currencyConfig } = config;
-                    setEditingColumn({
-                      ...editingColumn,
-                      currencyConfig: currencyConfig,
-                      defaultValue: defaultValue !== undefined ? defaultValue : 0
-                    });
-                  }}
-                />
-              )}
-
-              {/* Formula Configuration */}
-              {editingColumn.dataType === 'formula' && (
-                <FormulaConfig
-                  formulaConfig={editingColumn.formulaConfig}
-                  onFormulaConfigChange={(formulaConfig) => setEditingColumn({ ...editingColumn, formulaConfig })}
-                  availableColumns={columns}
-                  onValidationChange={(isValid, errors) => {
-                    // Handle validation state if needed
-                  }}
-                />
-              )}
-
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                paddingTop: '16px',
-                borderTop: '1px solid #f0f0f0'
-              }}>
-                <Button type="link" size="small" style={{ padding: 0 }}>
-                  + Thêm mô tả
-                </Button>
-                <Button type="link" size="small" style={{ padding: 0 }}>
-                  Hiển thị thêm <PlusOutlined />
-                </Button>
-              </div>
-
-              <Row justify="end">
-                <Space>
-                  <Button 
-                    onClick={() => {
-                      setShowEditColumn(false);
-                      setEditingColumn(null);
-                    }}
-                  >
-                    Hủy
-                  </Button>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={updateColumnMutation.isPending}
-                  >
-                    Lưu trường
-                  </Button>
-                </Space>
-              </Row>
-            </Space>
-          </form>
-        )}
-      </Modal>
+        onSubmit={handleEditColumnSubmit}
+        editingColumn={editingColumn}
+        setEditingColumn={setEditingColumn}
+        columns={columns}
+        loading={updateColumnMutation.isPending}
+      />
 
       {/* Context Menu */}
       {contextMenu.visible && (
