@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormatter.js';
-import SingleSelectConfig from './SingleSelectConfig';
-import MultiSelectConfig from './MultiSelectConfig';
-import DateConfig from './DateConfig';
-import FormulaConfig from './FormulaConfig';
-import CurrencyConfig from './CurrencyConfig';
+import SingleSelectConfig from './Config/SingleSelectConfig';
+import MultiSelectConfig from './Config/MultiSelectConfig';
+import DateConfig from './Config/DateConfig';
+import FormulaConfig from './Config/FormulaConfig';
+import CurrencyConfig from './Config/CurrencyConfig';
 import {
   addSortRule,
   removeSortRule,
