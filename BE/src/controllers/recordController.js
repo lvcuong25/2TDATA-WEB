@@ -3,7 +3,7 @@ import Table from '../model/Table.js';
 import Column from '../model/Column.js';
 import Database from '../model/Database.js';
 import FilterPreference from '../model/FilterPreference.js';
-import { evaluateFormula } from '../utils/formulaEngine.js';
+import exprEvalEngine from '../utils/exprEvalEngine.js';
 
 
 // Helper function to calculate formula columns for records
@@ -24,7 +24,7 @@ const calculateFormulaColumns = async (records, tableId) => {
       // Calculate each formula column
       formulaColumns.forEach(formulaColumn => {
         try {
-          const formulaValue = evaluateFormula(
+          const formulaValue = exprEvalEngine.evaluateFormula(
             formulaColumn.formulaConfig.formula,
             enhancedRecord.data || {},
             columns

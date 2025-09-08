@@ -26,26 +26,59 @@ const FormulaConfig = ({
     onFormulaConfigChange(config);
   }, [formula]);
 
-  const functions = [
-    { name: 'AVG', description: 'Average of input parameters', syntax: 'AVG(value1, [value2, ...])', examples: ['AVG(10, 5) ➔ 7.5', 'AVG({column1}, {column2})', 'AVG({column1}, {column2}, {column3})'] },
-    { name: 'ADD', description: 'Sum of input parameters', syntax: 'ADD(value1, [value2, ...])', examples: ['ADD(10, 5) ➔ 15', 'ADD({column1}, {column2})', 'ADD({column1}, {column2}, {column3})'] },
-    { name: 'DATEADD', description: 'Add days to a date', syntax: 'DATEADD(date, days)', examples: ['DATEADD({date}, 7) ➔ date + 7 days', 'DATEADD({startDate}, 30) ➔ startDate + 30 days'] },
-    { name: 'DATESTR', description: 'Convert date to string', syntax: 'DATESTR(date, format)', examples: ['DATESTR({date}, "YYYY-MM-DD")', 'DATESTR({date}, "DD/MM/YYYY")'] },
-    { name: 'DAY', description: 'Extract day from date', syntax: 'DAY(date)', examples: ['DAY({date}) ➔ 15', 'DAY({birthDate}) ➔ 25'] },
-    { name: 'MONTH', description: 'Extract month from date', syntax: 'MONTH(date)', examples: ['MONTH({date}) ➔ 3', 'MONTH({birthDate}) ➔ 12'] },
-    { name: 'YEAR', description: 'Extract year from date', syntax: 'YEAR(date)', examples: ['YEAR({date}) ➔ 2024', 'YEAR({birthDate}) ➔ 1990'] },
-    { name: 'SUM', description: 'Sum of input parameters', syntax: 'SUM(value1, [value2, ...])', examples: ['SUM(10, 5, 3) ➔ 18', 'SUM({column1}, {column2})', 'SUM({jan}, {feb}, {mar})'] },
-    { name: 'MIN', description: 'Minimum of input parameters', syntax: 'MIN(value1, [value2, ...])', examples: ['MIN(10, 5, 3) ➔ 3', 'MIN({column1}, {column2})', 'MIN({price1}, {price2}, {price3})'] },
-    { name: 'MAX', description: 'Maximum of input parameters', syntax: 'MAX(value1, [value2, ...])', examples: ['MAX(10, 5, 3) ➔ 10', 'MAX({column1}, {column2})', 'MAX({score1}, {score2}, {score3})'] },
-    { name: 'COUNT', description: 'Count non-empty values', syntax: 'COUNT(value1, [value2, ...])', examples: ['COUNT({column1}, {column2})', 'COUNT({jan}, {feb}, {mar})'] },
-    { name: 'IF', description: 'Conditional value', syntax: 'IF(condition, trueValue, falseValue)', examples: ['IF({status} == "active", "Yes", "No")', 'IF({age} >= 18, "Adult", "Minor")'] },
-    { name: 'CONCAT', description: 'Concatenate strings', syntax: 'CONCAT(value1, [value2, ...])', examples: ['CONCAT({firstName}, " ", {lastName})', 'CONCAT({city}, ", ", {country})'] },
-    { name: 'UPPER', description: 'Convert to uppercase', syntax: 'UPPER(text)', examples: ['UPPER({status})', 'UPPER({name})'] },
-    { name: 'LOWER', description: 'Convert to lowercase', syntax: 'LOWER(text)', examples: ['LOWER({email})', 'LOWER({status})'] },
-    { name: 'LEN', description: 'String length', syntax: 'LEN(text)', examples: ['LEN({description})', 'LEN({name})'] },
-    { name: 'ROUND', description: 'Round number', syntax: 'ROUND(number, decimals)', examples: ['ROUND({price}, 2)', 'ROUND({score}, 0)'] },
-    { name: 'ABS', description: 'Absolute value', syntax: 'ABS(number)', examples: ['ABS({value})', 'ABS({difference})'] }
-  ];
+  const functionCategories = {
+    'Math & Statistical': [
+      { name: 'SUM', description: 'Sum of values', syntax: 'SUM(value1, [value2, ...])', examples: ['SUM(10, 5, 3) ➔ 18', 'SUM({column1}, {column2})'] },
+      { name: 'AVG', description: 'Average of values', syntax: 'AVG(value1, [value2, ...])', examples: ['AVG(10, 5) ➔ 7.5', 'AVG({column1}, {column2})'] },
+      { name: 'MIN', description: 'Minimum value', syntax: 'MIN(value1, [value2, ...])', examples: ['MIN(10, 5, 3) ➔ 3', 'MIN({column1}, {column2})'] },
+      { name: 'MAX', description: 'Maximum value', syntax: 'MAX(value1, [value2, ...])', examples: ['MAX(10, 5, 3) ➔ 10', 'MAX({column1}, {column2})'] },
+      { name: 'COUNT', description: 'Count non-empty values', syntax: 'COUNT(value1, [value2, ...])', examples: ['COUNT({column1}, {column2})', 'COUNT({jan}, {feb}, {mar})'] },
+      { name: 'MEDIAN', description: 'Median value', syntax: 'MEDIAN(value1, [value2, ...])', examples: ['MEDIAN(1, 2, 3, 4, 5) ➔ 3', 'MEDIAN({scores})'] },
+      { name: 'STDEV', description: 'Standard deviation', syntax: 'STDEV(value1, [value2, ...])', examples: ['STDEV(1, 2, 3, 4, 5)', 'STDEV({values})'] },
+      { name: 'ROUND', description: 'Round number', syntax: 'ROUND(number, decimals)', examples: ['ROUND(3.14159, 2) ➔ 3.14', 'ROUND({price}, 2)'] },
+      { name: 'ROUNDUP', description: 'Round up', syntax: 'ROUNDUP(number, decimals)', examples: ['ROUNDUP(3.1, 0) ➔ 4', 'ROUNDUP({price}, 0)'] },
+      { name: 'ROUNDDOWN', description: 'Round down', syntax: 'ROUNDDOWN(number, decimals)', examples: ['ROUNDDOWN(3.9, 0) ➔ 3', 'ROUNDDOWN({price}, 0)'] },
+      { name: 'ABS', description: 'Absolute value', syntax: 'ABS(number)', examples: ['ABS(-5) ➔ 5', 'ABS({difference})'] },
+      { name: 'SQRT', description: 'Square root', syntax: 'SQRT(number)', examples: ['SQRT(16) ➔ 4', 'SQRT({value})'] },
+      { name: 'POWER', description: 'Power function', syntax: 'POWER(number, power)', examples: ['POWER(2, 3) ➔ 8', 'POWER({base}, 2)'] }
+    ],
+    'Text': [
+      { name: 'CONCAT', description: 'Concatenate strings', syntax: 'CONCAT(value1, [value2, ...])', examples: ['CONCAT("Hello", " ", "World")', 'CONCAT({firstName}, " ", {lastName})'] },
+      { name: 'UPPER', description: 'Convert to uppercase', syntax: 'UPPER(text)', examples: ['UPPER("hello") ➔ "HELLO"', 'UPPER({status})'] },
+      { name: 'LOWER', description: 'Convert to lowercase', syntax: 'LOWER(text)', examples: ['LOWER("HELLO") ➔ "hello"', 'LOWER({email})'] },
+      { name: 'PROPER', description: 'Proper case', syntax: 'PROPER(text)', examples: ['PROPER("hello world") ➔ "Hello World"', 'PROPER({name})'] },
+      { name: 'LEN', description: 'String length', syntax: 'LEN(text)', examples: ['LEN("Hello") ➔ 5', 'LEN({description})'] },
+      { name: 'LEFT', description: 'Extract left characters', syntax: 'LEFT(text, numChars)', examples: ['LEFT("Hello", 3) ➔ "Hel"', 'LEFT({code}, 2)'] },
+      { name: 'RIGHT', description: 'Extract right characters', syntax: 'RIGHT(text, numChars)', examples: ['RIGHT("Hello", 3) ➔ "llo"', 'RIGHT({code}, 2)'] },
+      { name: 'MID', description: 'Extract middle characters', syntax: 'MID(text, start, numChars)', examples: ['MID("Hello", 2, 3) ➔ "ell"', 'MID({text}, 1, 5)'] },
+      { name: 'FIND', description: 'Find text position', syntax: 'FIND(findText, withinText, startNum)', examples: ['FIND("l", "Hello") ➔ 3', 'FIND(" ", {fullName})'] },
+      { name: 'TRIM', description: 'Remove extra spaces', syntax: 'TRIM(text)', examples: ['TRIM("  hello  ") ➔ "hello"', 'TRIM({input})'] }
+    ],
+    'Date & Time': [
+      { name: 'TODAY', description: 'Current date', syntax: 'TODAY()', examples: ['TODAY() ➔ 2024-01-15', 'TODAY()'] },
+      { name: 'NOW', description: 'Current date and time', syntax: 'NOW()', examples: ['NOW() ➔ 2024-01-15 10:30:00', 'NOW()'] },
+      { name: 'DATE', description: 'Create date', syntax: 'DATE(year, month, day)', examples: ['DATE(2024, 1, 15)', 'DATE({year}, {month}, {day})'] },
+      { name: 'YEAR', description: 'Extract year', syntax: 'YEAR(date)', examples: ['YEAR("2024-01-15") ➔ 2024', 'YEAR({birthDate})'] },
+      { name: 'MONTH', description: 'Extract month', syntax: 'MONTH(date)', examples: ['MONTH("2024-01-15") ➔ 1', 'MONTH({birthDate})'] },
+      { name: 'DAY', description: 'Extract day', syntax: 'DAY(date)', examples: ['DAY("2024-01-15") ➔ 15', 'DAY({birthDate})'] },
+      { name: 'DATEDIF', description: 'Date difference', syntax: 'DATEDIF(startDate, endDate, unit)', examples: ['DATEDIF("2024-01-01", "2024-01-15", "D") ➔ 14', 'DATEDIF({start}, {end}, "D")'] },
+      { name: 'DATEADD', description: 'Add days to date', syntax: 'DATEADD(date, days)', examples: ['DATEADD("2024-01-01", 7) ➔ 2024-01-08', 'DATEADD({date}, 30)'] },
+      { name: 'WEEKDAY', description: 'Day of week', syntax: 'WEEKDAY(date, returnType)', examples: ['WEEKDAY("2024-01-15") ➔ 2 (Monday)', 'WEEKDAY({date})'] }
+    ],
+    'Logical': [
+      { name: 'IF', description: 'Conditional value', syntax: 'IF(condition, trueValue, falseValue)', examples: ['IF(5 > 3, "Yes", "No") ➔ "Yes"', 'IF({age} >= 18, "Adult", "Minor")'] },
+      { name: 'AND', description: 'Logical AND', syntax: 'AND(condition1, [condition2, ...])', examples: ['AND(5 > 3, 2 < 4) ➔ true', 'AND({age} >= 18, {status} == "active")'] },
+      { name: 'OR', description: 'Logical OR', syntax: 'OR(condition1, [condition2, ...])', examples: ['OR(5 < 3, 2 < 4) ➔ true', 'OR({status} == "active", {status} == "pending")'] },
+      { name: 'NOT', description: 'Logical NOT', syntax: 'NOT(logical)', examples: ['NOT(true) ➔ false', 'NOT({isDeleted})'] },
+      { name: 'ISBLANK', description: 'Check if blank', syntax: 'ISBLANK(value)', examples: ['ISBLANK("") ➔ true', 'ISBLANK({field})'] },
+      { name: 'ISNUMBER', description: 'Check if number', syntax: 'ISNUMBER(value)', examples: ['ISNUMBER(123) ➔ true', 'ISNUMBER({field})'] },
+      { name: 'ISTEXT', description: 'Check if text', syntax: 'ISTEXT(value)', examples: ['ISTEXT("hello") ➔ true', 'ISTEXT({field})'] },
+      { name: 'IFERROR', description: 'Handle errors', syntax: 'IFERROR(value, valueIfError)', examples: ['IFERROR(1/0, "Error") ➔ "Error"', 'IFERROR({calculation}, 0)'] }
+    ]
+  };
+
+  // Flatten all functions for the old interface
+  const functions = Object.values(functionCategories).flat();
 
   const addFunction = (funcName) => {
     const newFormula = formula + `${funcName}()`;
@@ -242,52 +275,68 @@ const FormulaConfig = ({
 
           {/* Formulas List */}
           <div style={{ marginBottom: '16px' }}>
-            <Text strong style={{ display: 'block', marginBottom: '12px' }}>FORMULAS</Text>
+            <Text strong style={{ display: 'block', marginBottom: '12px' }}>EXCEL FUNCTIONS</Text>
             <div style={{ 
-              maxHeight: '200px', 
+              maxHeight: '300px', 
               overflowY: 'auto',
               border: '1px solid #e8e8e8',
               borderRadius: '4px',
               backgroundColor: 'white'
             }}>
-              {functions.map((func, index) => (
-                <Popover
-                  key={func.name}
-                  content={renderFunctionTooltip(func)}
-                  title={null}
-                  trigger="click"
-                  open={openTooltip === func.name}
-                  onOpenChange={(visible) => {
-                    if (visible) {
-                      setOpenTooltip(func.name);
-                    } else {
-                      setOpenTooltip(null);
-                    }
-                  }}
-                  placement="right"
-                  overlayStyle={{ 
-                    maxWidth: '350px',
-                    padding: '0'
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: '8px 12px',
-                      cursor: 'pointer',
-                      borderBottom: index < functions.length - 1 ? '1px solid #f0f0f0' : 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    onClick={() => addFunction(func.name)}
-                  >
-                    <span style={{ fontSize: '16px', color: '#1890ff' }}>Σ</span>
-                    <span>{func.name}()</span>
+              {Object.entries(functionCategories).map(([categoryName, categoryFunctions]) => (
+                <div key={categoryName} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  <div style={{
+                    padding: '8px 12px',
+                    backgroundColor: '#fafafa',
+                    borderBottom: '1px solid #e8e8e8',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: '#666',
+                    textTransform: 'uppercase'
+                  }}>
+                    {categoryName}
                   </div>
-                </Popover>
+                  {categoryFunctions.map((func, index) => (
+                    <Popover
+                      key={func.name}
+                      content={renderFunctionTooltip(func)}
+                      title={null}
+                      trigger="click"
+                      open={openTooltip === func.name}
+                      onOpenChange={(visible) => {
+                        if (visible) {
+                          setOpenTooltip(func.name);
+                        } else {
+                          setOpenTooltip(null);
+                        }
+                      }}
+                      placement="right"
+                      overlayStyle={{ 
+                        maxWidth: '350px',
+                        padding: '0'
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: '6px 12px 6px 24px',
+                          cursor: 'pointer',
+                          borderBottom: index < categoryFunctions.length - 1 ? '1px solid #f8f8f8' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'background-color 0.2s',
+                          fontSize: '13px'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                        onClick={() => addFunction(func.name)}
+                      >
+                        <span style={{ fontSize: '14px', color: '#1890ff' }}>Σ</span>
+                        <span>{func.name}()</span>
+                      </div>
+                    </Popover>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
