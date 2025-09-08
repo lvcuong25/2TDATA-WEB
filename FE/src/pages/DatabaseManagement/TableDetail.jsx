@@ -988,6 +988,7 @@ const TableDetail = () => {
             handleCellClick={handleCellClick}
             handleCellSave={handleCellSave}
             handleCellCancel={handleCellCancel}
+            setCellValue={setCellValue}
             handleResizeStart={handleResizeStart}
             handleToggleGroupExpansion={handleToggleGroupExpansion}
             handleAddRow={handleAddRow}

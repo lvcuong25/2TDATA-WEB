@@ -188,6 +188,18 @@ export const formatCellValueForDisplay = (value, column) => {
       }
       return '';
 
+    case 'email':
+      if (value && value !== '') {
+        return value; // Return email as-is for display, will be formatted in component
+      }
+      return '';
+
+    case 'url':
+      if (value && value !== '') {
+        return value; // Return URL as-is for display, will be formatted in component
+      }
+      return '';
+
     default:
       return value || '';
   }
@@ -414,6 +426,10 @@ export const getCellDisplayComponentType = (column) => {
     case 'number':
     case 'currency':
       return 'number';
+    case 'email':
+      return 'email';
+    case 'url':
+      return 'url';
     default:
       return 'text';
   }

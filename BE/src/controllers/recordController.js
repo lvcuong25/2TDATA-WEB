@@ -94,6 +94,16 @@ export const createRecord = async (req, res) => {
         });
       }
 
+      // Validate email format for email data type
+      if (column.dataType === 'email' && value && value !== '') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          return res.status(400).json({ 
+            message: `Invalid email format for column '${column.name}'` 
+          });
+        }
+      }
+
       // Check unique constraints
       if (column.isUnique && value !== undefined && value !== null && value !== '') {
         const existingRecord = await Record.findOne({
@@ -372,6 +382,16 @@ export const updateRecord = async (req, res) => {
       const value = data[column.name];
       
       if (value !== undefined) {
+        // Validate email format for email data type
+        if (column.dataType === 'email' && value && value !== '') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            return res.status(400).json({ 
+              message: `Invalid email format for column '${column.name}'` 
+            });
+          }
+        }
+
         // Check unique constraints (excluding current record)
         if (column.isUnique && value !== null && value !== '') {
           const existingRecord = await Record.findOne({

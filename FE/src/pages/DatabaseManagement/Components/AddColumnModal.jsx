@@ -17,6 +17,7 @@ import {
   DownOutlined,
   FunctionOutlined,
   DollarOutlined,
+  MailOutlined,
   LinkOutlined,
   CodeOutlined,
   CheckCircleOutlined,
@@ -69,6 +70,9 @@ const AddColumnModal = ({
           break;
         case 'currency':
           autoName = 'Currency';
+          break;
+        case 'email':
+          autoName = 'Email';
           break;
         default:
           autoName = 'New Column';
@@ -161,7 +165,7 @@ const AddColumnModal = ({
               
               <Option value="email">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <LinkOutlined style={{ color: '#1890ff' }} />
+                  <MailOutlined style={{ color: '#1890ff' }} />
                   <span>Email</span>
                 </div>
               </Option>
