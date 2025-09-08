@@ -185,12 +185,65 @@ export const applyFilterRules = (records, filterRules, isFilterActive) => {
  * @param {Object} rule - Filter rule
  * @returns {boolean} True if rule matches
  */
+/**
+ * Smart comparison for filter values
+ * Handles type conversion appropriately
+ */
+const compareValues = (value, ruleValue, operator) => {
+  // Handle null/undefined values
+  if (value === null || value === undefined) {
+    if (operator === 'is_empty') return true;
+    if (operator === 'is_not_empty') return false;
+    return ruleValue === null || ruleValue === undefined || ruleValue === '';
+  }
+  
+  if (ruleValue === null || ruleValue === undefined || ruleValue === '') {
+    if (operator === 'is_empty') return value === null || value === undefined || value === '';
+    if (operator === 'is_not_empty') return !(value === null || value === undefined || value === '');
+    return value === null || value === undefined || value === '';
+  }
+  
+  // For number comparisons
+  if (typeof value === 'number' || !isNaN(Number(value))) {
+    const numValue = Number(value);
+    const numRuleValue = Number(ruleValue);
+    
+    // Only proceed if both can be converted to valid numbers
+    if (!isNaN(numValue) && !isNaN(numRuleValue)) {
+      return { numValue, numRuleValue, isNumber: true };
+    }
+  }
+  
+  // For string comparisons
+  return { 
+    strValue: String(value), 
+    strRuleValue: String(ruleValue), 
+    isNumber: false 
+  };
+};
+
+/**
+ * Evaluate a single filter rule
+ * @param {any} value - Record value
+ * @param {Object} rule - Filter rule
+ * @returns {boolean} True if rule matches
+ */
 export const evaluateFilterRule = (value, rule) => {
+  const comparison = compareValues(value, rule.value, rule.operator);
+  
   switch (rule.operator) {
     case 'equals':
-      return value === rule.value;
+      if (comparison === true || comparison === false) return comparison;
+      return comparison.isNumber 
+        ? comparison.numValue === comparison.numRuleValue
+        : comparison.strValue === comparison.strRuleValue;
+        
     case 'not_equals':
-      return value !== rule.value;
+      if (comparison === true || comparison === false) return !comparison;
+      return comparison.isNumber 
+        ? comparison.numValue !== comparison.numRuleValue
+        : comparison.strValue !== comparison.strRuleValue;
+        
     case 'contains':
       return String(value || '').toLowerCase().includes(String(rule.value || '').toLowerCase());
     case 'not_contains':
@@ -200,13 +253,21 @@ export const evaluateFilterRule = (value, rule) => {
     case 'ends_with':
       return String(value || '').toLowerCase().endsWith(String(rule.value || '').toLowerCase());
     case 'greater_than':
-      return Number(value) > Number(rule.value);
+      return comparison.isNumber 
+        ? comparison.numValue > comparison.numRuleValue
+        : Number(value) > Number(rule.value);
     case 'less_than':
-      return Number(value) < Number(rule.value);
+      return comparison.isNumber 
+        ? comparison.numValue < comparison.numRuleValue
+        : Number(value) < Number(rule.value);
     case 'greater_than_or_equal':
-      return Number(value) >= Number(rule.value);
+      return comparison.isNumber 
+        ? comparison.numValue >= comparison.numRuleValue
+        : Number(value) >= Number(rule.value);
     case 'less_than_or_equal':
-      return Number(value) <= Number(rule.value);
+      return comparison.isNumber 
+        ? comparison.numValue <= comparison.numRuleValue
+        : Number(value) <= Number(rule.value);
     case 'is_empty':
       return value === null || value === undefined || value === '';
     case 'is_not_empty':
@@ -215,7 +276,6 @@ export const evaluateFilterRule = (value, rule) => {
       return true;
   }
 };
-
 /**
  * Get filter button style
  * @param {Array} filterRules - Filter rules

@@ -851,6 +851,11 @@ const TableDetail = () => {
     setIsFilterActive(!isFilterActive);
   };
 
+  const handleAddFilterRule = () => {
+    const newRules = addFilterRule(filterRules, '', 'equals', '');
+    setFilterRules(newRules);
+  };
+
   // Sort handlers
   const onSortFieldSelect = (fieldName) => {
     const newRules = addSortRule(sortRules, fieldName, 'asc');
@@ -1034,10 +1039,10 @@ const TableDetail = () => {
             getSortRulesCount={getSortRulesCount}
             getSortBadgeStyle={getSortBadgeStyle}
             getOperatorOptions={getOperatorOptions}
-            addFilterRule={addFilterRule}
-            removeFilterRule={removeFilterRule}
-            updateFilterRule={updateFilterRule}
-            toggleFilterActive={toggleFilterActive}
+            addFilterRule={handleAddFilterRule}
+            removeFilterRule={handleRemoveFilterRule}
+            updateFilterRule={handleUpdateFilterRule}
+            toggleFilterActive={handleToggleFilterActive}
             addGroupRule={addGroupRule}
             removeGroupRule={removeGroupRule}
             updateGroupRule={updateGroupRule}
