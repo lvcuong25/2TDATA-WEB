@@ -146,6 +146,7 @@ const TableDetail = () => {
   const [showEditColumn, setShowEditColumn] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
   const [editingCell, setEditingCell] = useState(null);
+  const [selectedCell, setSelectedCell] = useState(null);
   const [cellValue, setCellValue] = useState('');
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, recordId: null });
   const [sortRules, setSortRules] = useState([]);
@@ -422,7 +423,7 @@ const TableDetail = () => {
   const columns = tableStructure?.columns || [];
   const allRecords = recordsResponse?.data || [];
 
-  // Handle clicking outside multi-select dropdown
+  // Handle clicking outside multi-select dropdown and cell selection
   React.useEffect(() => {
     const handleClickOutside = (event) => {
       if (editingCell) {
@@ -439,13 +440,21 @@ const TableDetail = () => {
           }
         }
       }
+      
+      // Handle cell selection - clear selected cell if clicking outside table
+      if (selectedCell) {
+        const tableContainer = event.target.closest('[data-table-container]');
+        if (!tableContainer) {
+          setSelectedCell(null);
+        }
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [editingCell, columns]);
+  }, [editingCell, selectedCell, columns]);
 
   // Apply filters to records
   const records = useMemo(() => {
@@ -744,10 +753,16 @@ const TableDetail = () => {
 
   const handleCellClick = (recordId, columnName, currentValue) => {
     const column = columns.find(col => col.name === columnName);
-    const { editingCell: newEditingCell, cellValue: newCellValue } = initializeCellEditing(recordId, columnName, currentValue, column);
     
-    setEditingCell(newEditingCell);
-    setCellValue(newCellValue);
+    // Set selected cell
+    setSelectedCell({ recordId, columnName });
+    
+    // Only start editing if it's not a system field or checkbox
+    if (!column.isSystem && column.dataType !== 'checkbox') {
+      const { editingCell: newEditingCell, cellValue: newCellValue } = initializeCellEditing(recordId, columnName, currentValue, column);
+      setEditingCell(newEditingCell);
+      setCellValue(newCellValue);
+    }
   };
 
   const handleCellSave = () => {
@@ -1086,6 +1101,7 @@ const TableDetail = () => {
             visibleColumns={visibleColumns}
             columnWidths={columnWidths}
             editingCell={editingCell}
+            selectedCell={selectedCell}
             cellValue={cellValue}
             groupedData={groupedData}
             expandedGroups={expandedGroups}

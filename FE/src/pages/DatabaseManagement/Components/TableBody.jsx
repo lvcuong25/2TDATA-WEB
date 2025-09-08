@@ -33,6 +33,7 @@ const TableBody = ({
   selectedRowKeys,
   columnWidths,
   editingCell,
+  selectedCell,
   cellValue,
   
   // Handlers
@@ -72,13 +73,21 @@ const TableBody = ({
     }
   };
 
+  // Check if a cell is selected
+  const isCellSelected = (recordId, columnName) => {
+    return selectedCell?.recordId === recordId && selectedCell?.columnName === columnName;
+  };
+
   return (
-    <div style={{ 
-      background: 'transparent',
-      overflow: 'auto',
-      cursor: isResizing ? 'col-resize' : 'default',
-      width: '100%'
-    }}>
+    <div 
+      data-table-container
+      style={{ 
+        background: 'transparent',
+        overflow: 'auto',
+        cursor: isResizing ? 'col-resize' : 'default',
+        width: '100%'
+      }}
+    >
       <div style={{
         display: 'block',
         border: '1px solid #d9d9d9',
@@ -385,6 +394,7 @@ const TableBody = ({
                         value = record.data?.[column.name] || '';
                       }
                       const isEditing = isCellEditing(editingCell, record._id, column.name);
+                      const isSelected = isCellSelected(record._id, column.name);
                       
                       return (
                         <div key={column._id} style={{
@@ -393,7 +403,8 @@ const TableBody = ({
                           padding: '0',
                           borderRight: '1px solid #d9d9d9',
                           position: 'relative',
-                          minHeight: '40px'
+                          minHeight: '40px',
+                          boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : 'none'
                         }}>
                           {isEditing ? (
                             (() => {
@@ -625,6 +636,24 @@ const TableBody = ({
                               }
                             </div>
                           )}
+                          
+                          {/* Autofill handle for selected cell */}
+                          {isSelected && !isEditing && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                bottom: '-2px',
+                                right: '-2px',
+                                width: '8px',
+                                height: '8px',
+                                backgroundColor: '#ff4d4f',
+                                border: '1px solid #fff',
+                                borderRadius: '1px',
+                                cursor: 'crosshair',
+                                zIndex: 10
+                              }}
+                            />
+                          )}
                         </div>
                       );
                     })}
@@ -747,6 +776,7 @@ const TableBody = ({
                   value = record.data?.[column.name] || '';
                 }
                 const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
+                const isSelected = isCellSelected(record._id, column.name);
                 
                 return (
                   <div key={column._id} style={{
@@ -755,7 +785,8 @@ const TableBody = ({
                     padding: '0',
                     borderRight: '1px solid #d9d9d9',
                     position: 'relative',
-                    minHeight: '40px'
+                    minHeight: '40px',
+                    boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : 'none'
                   }}>
                     {isEditing ? (
                       (() => {
@@ -1022,6 +1053,24 @@ const TableBody = ({
                           : (value || '')
                         }
                       </div>
+                    )}
+                    
+                    {/* Autofill handle for selected cell */}
+                    {isSelected && !isEditing && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '-2px',
+                          right: '-2px',
+                          width: '8px',
+                          height: '8px',
+                          backgroundColor: '#ff4d4f',
+                          border: '1px solid #fff',
+                          borderRadius: '1px',
+                          cursor: 'crosshair',
+                          zIndex: 10
+                        }}
+                      />
                     )}
                   </div>
                 );
