@@ -180,7 +180,7 @@ const TableHeader = ({
                 maxHeight: '300px',
                 overflow: 'auto'
               }}>
-                {filterFieldsBySearch(allColumnsWithSystem, fieldSearch)
+                {allColumnsWithSystem ? filterFieldsBySearch(allColumnsWithSystem, fieldSearch)
                   .map(column => (
                     <div
                       key={column._id}
@@ -239,7 +239,16 @@ const TableHeader = ({
                         style={{ margin: 0 }}
                       />
                     </div>
-                  ))}
+                  )) : (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      color: '#999', 
+                      fontSize: '14px', 
+                      padding: '20px'
+                    }}>
+                      Loading fields...
+                    </div>
+                  )}
               </div>
               
               {/* Bottom Action Bar */}

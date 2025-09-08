@@ -170,6 +170,15 @@ const TableDetail = () => {
   const [fieldsDropdownPosition, setFieldsDropdownPosition] = useState({ x: 0, y: 0 });
   const [fieldVisibility, setFieldVisibility] = useState({});
   const [showSystemFields, setShowSystemFields] = useState(false);
+  const [fieldSearch, setFieldSearch] = useState('');
+
+  // Group management state
+  const [groupFieldSearch, setGroupFieldSearch] = useState('');
+  const [currentGroupField, setCurrentGroupField] = useState('');
+
+  // Sort management state
+  const [sortFieldSearch, setSortFieldSearch] = useState('');
+  const [currentSortField, setCurrentSortField] = useState('');
 
   // Use table data hook
   const tableContext = {
@@ -813,6 +822,52 @@ const TableDetail = () => {
       expandedGroups: []
     });
   };
+
+  const handleGroupFieldSelect = (fieldName) => {
+    const newRules = addGroupRule(groupRules, fieldName);
+    setGroupRules(newRules);
+    setCurrentGroupField('');
+    setGroupFieldSearch('');
+    
+    // Save to backend immediately
+    saveGroupPreferenceMutation.mutate({
+      groupRules: newRules,
+      expandedGroups: Array.from(expandedGroups)
+    });
+  };
+
+  // Filter handlers
+  const handleUpdateFilterRule = (index, field, operator, value) => {
+    const newRules = updateFilterRule(filterRules, index, field, operator, value);
+    setFilterRules(newRules);
+  };
+
+  const handleRemoveFilterRule = (index) => {
+    const newRules = removeFilterRule(filterRules, index);
+    setFilterRules(newRules);
+  };
+
+  const handleToggleFilterActive = () => {
+    setIsFilterActive(!isFilterActive);
+  };
+
+  // Sort handlers
+  const onSortFieldSelect = (fieldName) => {
+    const newRules = addSortRule(sortRules, fieldName, 'asc');
+    setSortRules(newRules);
+    setCurrentSortField('');
+    setSortFieldSearch('');
+  };
+
+  const handleUpdateSortRule = (index, field, order) => {
+    const newRules = updateSortRule(sortRules, index, field, order);
+    setSortRules(newRules);
+  };
+
+  const handleRemoveSortRule = (index) => {
+    const newRules = removeSortRule(sortRules, index);
+    setSortRules(newRules);
+  };
   const handleClearAllGroups = () => {
     setGroupRules(clearAllGroupRules());
     setExpandedGroups(new Set());
@@ -997,6 +1052,28 @@ const TableDetail = () => {
             toggleSystemFields={toggleSystemFields}
             getAllColumnsWithSystem={getAllColumnsWithSystem}
             getVisibleColumns={getVisibleColumns}
+            allColumnsWithSystem={allColumnsWithSystem}
+            fieldSearch={fieldSearch}
+            setFieldSearch={setFieldSearch}
+            showSystemFields={showSystemFields}
+            handleToggleFieldVisibility={handleToggleFieldVisibility}
+            handleToggleSystemFields={handleToggleSystemFields}
+            groupFieldSearch={groupFieldSearch}
+            setGroupFieldSearch={setGroupFieldSearch}
+            currentGroupField={currentGroupField}
+            setCurrentGroupField={setCurrentGroupField}
+            handleGroupFieldSelect={handleGroupFieldSelect}
+            handleRemoveGroupRule={handleRemoveGroupRule}
+            sortFieldSearch={sortFieldSearch}
+            setSortFieldSearch={setSortFieldSearch}
+            currentSortField={currentSortField}
+            setCurrentSortField={setCurrentSortField}
+            handleUpdateFilterRule={handleUpdateFilterRule}
+            handleRemoveFilterRule={handleRemoveFilterRule}
+            handleToggleFilterActive={handleToggleFilterActive}
+            onSortFieldSelect={onSortFieldSelect}
+            handleUpdateSortRule={handleUpdateSortRule}
+            handleRemoveSortRule={handleRemoveSortRule}
           />
           {/* Table Body Component */}
           <TableBody
