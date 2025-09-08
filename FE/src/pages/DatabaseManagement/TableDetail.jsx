@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormatter.js';
 import AddColumnModal from './Components/AddColumnModal';
 import EditColumnModal from './Components/EditColumnModal';
@@ -28,7 +28,6 @@ import {
   getColumnWidth,
   isColumnCompact,
   saveColumnWidths,
-  loadColumnWidths,
   calculateNewWidth,
   updateColumnWidth,
   getColumnHeaderStyle,
@@ -41,47 +40,24 @@ import {
 } from './Utils/columnUtils.jsx';
 import {
   getOperatorOptions,
-  createFilterRule,
   addFilterRule,
   removeFilterRule,
   updateFilterRule,
-  clearAllFilterRules,
   toggleFilterActive,
-  isFilterActive,
-  getFilterRulesCount,
   applyFilterRules,
-  evaluateFilterRule,
-  getFilterButtonStyle,
-  getFilterDropdownPosition,
-  toggleFilterDropdown,
-  validateFilterRule,
-  getDefaultFilterRule,
-  isFieldFilterable,
-  getFilterSummary
+  getFilterButtonStyle
 } from './Utils/filterUtils.jsx';
 import {
-  createGroupRule,
   addGroupRule,
   removeGroupRule,
   updateGroupRule,
   clearAllGroupRules,
-  getGroupRulesCount,
-  isFieldUsedInGroup,
-  getAvailableGroupFields,
-  generateGroupKey,
-  generateGroupValues,
   groupRecords,
   toggleGroupExpansion,
   expandAllGroups,
   collapseAllGroups,
   isGroupExpanded,
   getGroupButtonStyle,
-  getGroupDropdownPosition,
-  toggleGroupDropdown,
-  validateGroupRule,
-  getDefaultGroupRule,
-  isFieldGroupable,
-  getGroupSummary,
   getGroupDisplayName,
   calculateGroupStats,
   sortGroups
@@ -89,112 +65,32 @@ import {
 import {
   initializeCellEditing,
   cancelCellEditing,
-  isCellEditing,
-  validateCellValue,
   formatCellValueForDisplay,
   formatCellValueForInput,
   getCellInputType,
   getCellInputPlaceholder,
   isCellEditable,
   getCellEditingStyle,
-  handleCellValueChange,
   prepareCellDataForSave,
-  getCellValidationError,
-  shouldAutoSave,
-  getCellDisplayComponentType,
-  formatCellValueForExport
+  getCellDisplayComponentType
 } from './Utils/cellUtils.jsx';
 import {
-  SYSTEM_FIELDS,
-  SYSTEM_FIELD_IDS,
   getAllColumnsWithSystem,
   getVisibleColumns,
   toggleFieldVisibility,
-  setFieldVisibility,
   toggleSystemFields,
-  isFieldVisible,
-  getFieldVisibilityCount,
-  getHiddenFieldsCount,
-  getVisibleFieldsCount,
-  getFieldVisibilityButtonStyle,
-  getSystemFieldsButtonStyle,
-  getFieldItemStyle,
-  getFieldCheckboxStyle,
-  getFieldHoverStyle,
-  getFieldLeaveStyle,
-  filterFieldsBySearch,
-  sortFieldsByVisibility,
-  getFieldVisibilitySummary,
-  resetFieldVisibilityToDefault,
-  exportFieldVisibilitySettings,
-  importFieldVisibilitySettings
+  getFieldVisibilityButtonStyle
 } from './Utils/fieldVisibilityUtils.jsx';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTableData } from './Hooks/useTableData';
 import { useTableContext } from '../../contexts/TableContext';
 import {
   Button,
-  Modal,
-  Input,
-  Select,
-  Dropdown,
-  Space,
   Typography,
-  Card,
-  Row,
-  Col,
-  Tooltip,
-  Popconfirm,
-  Tag,
-  Divider,
   Spin,
-  Alert,
-  Checkbox,
-  Layout,
-  Menu,
-  Radio
+  Alert
 } from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  MoreOutlined,
-  DatabaseOutlined,
-  TableOutlined,
-  FieldBinaryOutlined,
-  NumberOutlined,
-  CalendarOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  ArrowLeftOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  SortAscendingOutlined,
-  SettingOutlined,
-  DownOutlined,
-  UserOutlined,
-  HomeOutlined,
-  UnorderedListOutlined,
-  AppstoreOutlined,
-  BarChartOutlined,
-  RightOutlined,
-  CheckSquareOutlined,
-  BorderOutlined,
-  PlusCircleOutlined,
-  MinusCircleOutlined,
-  MailOutlined,
-  LinkOutlined,
-  CodeOutlined,
-  MenuOutlined,
-  FunctionOutlined,
-  DollarOutlined
-} from '@ant-design/icons';
-import axiosInstance from '../../utils/axiosInstance-cookie-only';
-
-const { Title, Text } = Typography;
-const { Option } = Select;
-const { Header, Sider, Content } = Layout;
+const { Text } = Typography;
 
 const TableDetail = () => {
   const { databaseId, tableId } = useParams();
@@ -249,21 +145,15 @@ const TableDetail = () => {
   const [editingColumn, setEditingColumn] = useState(null);
   const [editingCell, setEditingCell] = useState(null);
   const [cellValue, setCellValue] = useState('');
-  const [visibleCheckboxes, setVisibleCheckboxes] = useState(new Set());
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, recordId: null });
   const [sortRules, setSortRules] = useState([]);
-  const [currentSortField, setCurrentSortField] = useState('');
-  const [currentSortOrder, setCurrentSortOrder] = useState('asc');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [sortDropdownPosition, setSortDropdownPosition] = useState({ x: 0, y: 0 });
-  const [sortFieldSearch, setSortFieldSearch] = useState('');
 
   // Grouping state
   const [groupRules, setGroupRules] = useState([]);
-  const [currentGroupField, setCurrentGroupField] = useState('');
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [groupDropdownPosition, setGroupDropdownPosition] = useState({ x: 0, y: 0 });
-  const [groupFieldSearch, setGroupFieldSearch] = useState('');
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   // Filtering state
@@ -275,7 +165,6 @@ const TableDetail = () => {
   // Fields management state
   const [showFieldsDropdown, setShowFieldsDropdown] = useState(false);
   const [fieldsDropdownPosition, setFieldsDropdownPosition] = useState({ x: 0, y: 0 });
-  const [fieldSearch, setFieldSearch] = useState('');
   const [fieldVisibility, setFieldVisibility] = useState({});
   const [showSystemFields, setShowSystemFields] = useState(false);
 
@@ -332,11 +221,9 @@ const TableDetail = () => {
     addRecordMutation,
     updateRecordMutation,
     deleteRecordMutation,
-    deleteMultipleRecordsMutation,
     deleteAllRecordsMutation,
     updateColumnMutation,
     deleteColumnMutation,
-    queryClient
   } = useTableData(tableId, databaseId, sortRules, filterRules, isFilterActive, tableContext, modalCallbacks);
 
   // Load group preferences from backend when data is available
@@ -345,7 +232,6 @@ const TableDetail = () => {
       const preference = groupPreferenceResponse.data;
       setGroupRules(preference.groupRules || []);
       setExpandedGroups(new Set(preference.expandedGroups || []));
-      console.log('Group preferences loaded from backend:', preference);
     }
   }, [groupPreferenceResponse]);
 
@@ -355,7 +241,6 @@ const TableDetail = () => {
       const preference = fieldPreferenceResponse.data;
       setFieldVisibility(preference.fieldVisibility || {});
       setShowSystemFields(preference.showSystemFields || false);
-      console.log('Field preferences loaded from backend:', preference);
     }
   }, [fieldPreferenceResponse]);
 
@@ -368,10 +253,6 @@ const TableDetail = () => {
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
 
-  // Debug: Log when editingCell changes
-  React.useEffect(() => {
-    console.log('editingCell changed:', editingCell);
-  }, [editingCell]);
 
   // Handle clicking outside sort dropdown
   React.useEffect(() => {
@@ -388,7 +269,6 @@ const TableDetail = () => {
         
         if (!isInsideSortDropdown && !isInsideSortButton && !isInsideAntSelectDropdown) {
           setShowSortDropdown(false);
-          setSortFieldSearch('');
         }
       }
     };
@@ -414,7 +294,6 @@ const TableDetail = () => {
         
         if (!isInsideGroupDropdown && !isInsideGroupButton && !isInsideAntSelectDropdown) {
           setShowGroupDropdown(false);
-          setGroupFieldSearch('');
         }
       }
     };
@@ -459,7 +338,6 @@ const TableDetail = () => {
         
         if (!isInsideFieldsDropdown && !isInsideFieldsButton) {
           setShowFieldsDropdown(false);
-          setFieldSearch('');
         }
       }
     };
@@ -522,7 +400,6 @@ const TableDetail = () => {
     }
   };
 
-  // Get type letter for compact display
 
 
 
@@ -560,14 +437,6 @@ const TableDetail = () => {
   const records = useMemo(() => {
     return applyFilterRules(allRecords, filterRules, isFilterActive);
   }, [allRecords, filterRules, isFilterActive]);
-
-
-
-
-
-
-
-
 
   const handleAddColumn = (e) => {
     e.preventDefault();
@@ -643,23 +512,10 @@ const TableDetail = () => {
       columnData.defaultValue = newColumn.defaultValue !== null && newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0;
     }
     
-    console.log('Column state before sending:', {
-      name: newColumn.name,
-      dataType: newColumn.dataType,
-      defaultValue: newColumn.defaultValue,
-      currencyConfig: newColumn.currencyConfig
-    });
-    console.log('Frontend sending column data:', columnData);
     addColumnMutation.mutate(columnData);
   };
 
   const handleAddRow = () => {
-    console.log('handleAddRow - columns:', visibleColumns);
-    console.log('handleAddRow - currency columns:', visibleColumns.filter(c => c.dataType === 'currency').map(c => ({
-      name: c.name,
-      defaultValue: c.defaultValue,
-      currencyConfig: c.currencyConfig
-    })));
     if (!visibleColumns || visibleColumns.length === 0) {
       // toast.error('No columns available. Please add a column first.');
       return;
@@ -675,18 +531,11 @@ const TableDetail = () => {
         // Use default value from single select configuration
         const config = column.singleSelectConfig || { defaultValue: '' };
         emptyData[column.name] = config.defaultValue;
-        console.log('✅ Single-select default applied:', { 
-          columnName: column.name, 
-          defaultValue: config.defaultValue,
-          hasConfig: !!column.singleSelectConfig,
-          options: config.options 
-        });
       } else if (column.dataType === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
       } else if (column.dataType === 'currency') {
         // Use default value for currency type
-        console.log('Setting currency default for column:', column.name, 'defaultValue:', column.defaultValue);
         emptyData[column.name] = column.defaultValue !== null && column.defaultValue !== undefined ? column.defaultValue : 0;
       } else {
       emptyData[column.name] = '';
@@ -700,8 +549,6 @@ const TableDetail = () => {
       order: records.length + 1
     };
     
-    console.log('🚀 About to create record with data:', recordData);
-    console.log('🚀 About to create grouped record with data:', recordData);
     addRecordMutation.mutate(recordData);
   };
 
@@ -725,27 +572,14 @@ const TableDetail = () => {
         // Use default values from multi select configuration
         const config = column.multiSelectConfig || { defaultValue: [] };
         
-        console.log('🔍 Multi-select column found:', { 
-          columnName: column.name,
-          fullColumn: column,
-          config: config,
-          defaultValue: config.defaultValue,
-          willSet: config.defaultValue
-        });
         
         emptyData[column.name] = config.defaultValue;
         
-        console.log('✅ Multi-select default applied to emptyData:', { 
-          columnName: column.name, 
-          setValue: emptyData[column.name],
-          emptyData: emptyData
-        });
       } else if (column.dataType === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
       } else if (column.dataType === 'currency') {
         // Use default value for currency type
-        console.log('Setting currency default for column:', column.name, 'defaultValue:', column.defaultValue);
         emptyData[column.name] = column.defaultValue !== null && column.defaultValue !== undefined ? column.defaultValue : 0;
       } else {
       emptyData[column.name] = '';
@@ -774,21 +608,11 @@ const TableDetail = () => {
     }
   }, [records, setAllRecords]);
 
-
-  const handleDeleteAllRecords = () => {
-    if (records.length === 0) {
-      // toast.warning('No records to delete');
-      return;
-    }
-    deleteAllRecordsMutation.mutate();
-  };
-
   const handleDeleteRecord = (recordId) => {
     deleteRecordMutation.mutate(recordId);
   };
 
   const handleEditColumn = (column) => {
-    console.log('Editing column:', column);
     setEditingColumn({
       _id: column._id,
       name: column.name,
@@ -886,9 +710,6 @@ const TableDetail = () => {
   };
 
   const handleCellClick = (recordId, columnName, currentValue) => {
-    console.log('Cell clicked:', { recordId, columnName, currentValue });
-    console.log('Current editingCell before:', editingCell);
-    
     const column = columns.find(col => col.name === columnName);
     const { editingCell: newEditingCell, cellValue: newCellValue } = initializeCellEditing(recordId, columnName, currentValue, column);
     
@@ -939,54 +760,10 @@ const TableDetail = () => {
     handleContextMenuClose();
   };
 
-  const handleSort = (fieldName) => {
-    console.log('Sorting by:', fieldName);
-    setCurrentSortField(fieldName);
-    setCurrentSortOrder('asc');
-  };
-
-  const handleAddSortRule = () => {
-    if (currentSortField) {
-      const newRules = addSortRule(sortRules, currentSortField, currentSortOrder);
-      setSortRules(newRules);
-      setCurrentSortField('');
-      setCurrentSortOrder('asc');
-      setSortFieldSearch('');
-    }
-  };
-
-  const handleRemoveSortRule = (index) => {
-    const newRules = removeSortRule(sortRules, index);
-    setSortRules(newRules);
-  };
-
-  const handleClearAllSorts = () => {
-    setSortRules(clearAllSorts());
-    setCurrentSortField('');
-    setCurrentSortOrder('asc');
-  };
-
   const handleSortButtonClick = (e) => {
     const position = getSortDropdownPosition(e);
     setSortDropdownPosition(position);
     setShowSortDropdown(toggleSortDropdown(showSortDropdown));
-    if (!showSortDropdown) {
-      setSortFieldSearch('');
-    }
-  };
-
-  const onSortFieldSelect = (fieldName) => {
-    // Auto-add the sort rule when field is selected
-    const newRules = handleSortFieldSelect(sortRules, fieldName, currentSortOrder);
-    setSortRules(newRules);
-    setCurrentSortField('');
-    setCurrentSortOrder('asc');
-    setSortFieldSearch('');
-  };
-
-  const handleUpdateSortRule = (index, field, order) => {
-    const newRules = updateSortRule(sortRules, index, field, order);
-    setSortRules(newRules);
   };
 
   // Grouping handlers
@@ -997,56 +774,29 @@ const TableDetail = () => {
       y: rect.bottom + 5
     });
     setShowGroupDropdown(!showGroupDropdown);
-    if (!showGroupDropdown) {
-      setGroupFieldSearch('');
-    }
-  };
-
-  const handleGroupFieldSelect = (fieldName) => {
-    // Auto-add the group rule when field is selected
-    const newGroupRules = addGroupRule(groupRules, fieldName);
-    setGroupRules(newGroupRules);
-    setCurrentGroupField('');
-    setGroupFieldSearch('');
-    
-    // Save to backend
-    saveGroupPreferenceMutation.mutate({
-      groupRules: newGroupRules,
-      expandedGroups
-    });
   };
 
   const handleRemoveGroupRule = (index) => {
-    console.log(`🗑️ Removing group rule at index ${index}`);
     const newRules = removeGroupRule(groupRules, index);
     setGroupRules(newRules);
     // Clear expanded groups when removing group rules
     setExpandedGroups(new Set());
     
     // Save to backend immediately
-    console.log("💾 Saving updated group rules to backend:", newRules);
     saveGroupPreferenceMutation.mutate({
       groupRules: newRules,
       expandedGroups: []
     });
   };
   const handleClearAllGroups = () => {
-    console.log("🧹 Clearing all group rules");
     setGroupRules(clearAllGroupRules());
-    setCurrentGroupField("");
     setExpandedGroups(new Set());
     
     // Save to backend immediately
-    console.log("💾 Saving cleared group rules to backend");
     saveGroupPreferenceMutation.mutate({
       groupRules: [],
       expandedGroups: []
     });
-  };
-
-  const handleUpdateGroupRule = (index, field) => {
-    const newRules = updateGroupRule(groupRules, index, field);
-    setGroupRules(newRules);
   };
 
   const handleToggleGroupExpansion = (groupKey) => {
@@ -1065,7 +815,6 @@ const TableDetail = () => {
 
   // Filter handlers
   const handleFilterButtonClick = (e) => {
-    console.log('🔍 Filter button clicked!');
     const rect = e.currentTarget.getBoundingClientRect();
     setFilterDropdownPosition({
       x: rect.left,
@@ -1082,9 +831,6 @@ const TableDetail = () => {
       y: rect.bottom + 5
     });
     setShowFieldsDropdown(!showFieldsDropdown);
-    if (!showFieldsDropdown) {
-      setFieldSearch('');
-    }
   };
 
   // Save field visibility to backend only
@@ -1128,63 +874,12 @@ const TableDetail = () => {
     return getAllColumnsWithSystem(columns, showSystemFields);
   }, [columns, showSystemFields]);
 
-  const handleToggleFilterActive = () => {
-    const newIsActive = toggleFilterActive(isFilterActive);
-    setIsFilterActive(newIsActive);
-    console.log('Filter active toggled:', newIsActive);
-    console.log('Current filter rules:', filterRules);
-    console.log('Records before filter:', allRecords.length);
-    console.log('Records after filter:', records.length);
-  };
-
-  const handleAddFilterRule = () => {
-    if (columns.length > 0) {
-      const newRules = addFilterRule(filterRules, columns[0].name);
-      setFilterRules(newRules);
-      setIsFilterActive(true); // Auto activate when adding rule
-    }
-  };
-
-  const handleRemoveFilterRule = (index) => {
-    const newRules = removeFilterRule(filterRules, index);
-    setFilterRules(newRules);
-  };
-
-  const handleUpdateFilterRule = (index, field, operator, value) => {
-    const newRules = updateFilterRule(filterRules, index, field, operator, value);
-    setFilterRules(newRules);
-    
-    // Auto save to backend if we had the mutation
-    console.log('Filter rule updated:', { index, field, operator, value });
-    console.log('Available columns:', columns.map(col => ({ name: col.name, type: col.dataType })));
-    
-    // Auto-activate filter when rule is updated
-    if (!isFilterActive) {
-      setIsFilterActive(true);
-    }
-  };
 
 
   // Group data by rules
   const groupedData = useMemo(() => {
     return groupRecords(records, groupRules);
   }, [records, groupRules]);
-
-
-
-
-
-
-  // Prepare table data
-  const tableData = useMemo(() => {
-    return records.map((record, index) => ({
-      key: record._id,
-      ...record,
-      index
-    }));
-  }, [records]);
-
-
 
   if (isLoading) {
     return (
