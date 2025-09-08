@@ -21,8 +21,7 @@ import {
 import {
   getDataTypeIcon,
   getDataTypeColor,
-  getDataTypeTag,
-  getTypeLetter
+  getDataTypeTag
 } from './Utils/dataTypeUtils.jsx';
 import {
   getColumnWidth,
@@ -1128,7 +1127,6 @@ const TableDetail = () => {
             getDataTypeIcon={getDataTypeIcon}
             getDataTypeColor={getDataTypeColor}
             getDataTypeTag={getDataTypeTag}
-            getTypeLetter={getTypeLetter}
             formatDateForDisplay={formatDateForDisplay}
             formatDateForInput={formatDateForInput}
             formatDateTime={formatDateTime}

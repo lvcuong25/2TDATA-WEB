@@ -6,7 +6,7 @@
 import React from 'react';
 import { Tag } from 'antd';
 import {
-  FieldBinaryOutlined,
+  FontSizeOutlined,
   NumberOutlined,
   CalendarOutlined,
   CheckSquareOutlined,
@@ -26,7 +26,7 @@ import {
 export const getDataTypeIcon = (dataType) => {
   switch (dataType) {
     case 'text': 
-      return <FieldBinaryOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
+      return <FontSizeOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
     case 'number': 
       return <NumberOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
     case 'date': 
@@ -48,7 +48,7 @@ export const getDataTypeIcon = (dataType) => {
     case 'json': 
       return <CodeOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
     default: 
-      return <FieldBinaryOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
+      return <FontSizeOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
   }
 };
 

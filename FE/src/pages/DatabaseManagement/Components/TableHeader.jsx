@@ -22,7 +22,7 @@ import {
   filterFieldsBySearch
 } from '../Utils/fieldVisibilityUtils.jsx';
 import {
-  getTypeLetter
+  getDataTypeIcon
 } from '../Utils/dataTypeUtils.jsx';
 import {
   getOperatorOptions,
@@ -204,17 +204,17 @@ const TableHeader = ({
                     >
                       {/* Field Icon */}
                       <div style={{ 
-                        fontSize: '14px', 
-                        fontWeight: 'bold', 
-                        color: '#666',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         backgroundColor: column.isSystem ? '#f0f0f0' : '#e6f7ff',
                         borderRadius: '3px',
-                        padding: '2px 6px',
-                        minWidth: '16px',
-                        textAlign: 'center',
+                        padding: '4px 6px',
+                        minWidth: '24px',
+                        minHeight: '20px',
                         border: '1px solid #d9d9d9'
                       }}>
-                        {getTypeLetter(column.dataType)}
+                        {getDataTypeIcon(column.dataType)}
                       </div>
                       
                       {/* Field Name */}
@@ -387,7 +387,10 @@ const TableHeader = ({
                           >
                             {columns.map(col => (
                               <Option key={col._id} value={col.name}>
-                                {getTypeLetter(col.dataType)} {col.name}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {getDataTypeIcon(col.dataType)}
+                                  <span>{col.name}</span>
+                                </div>
                               </Option>
                             ))}
                           </Select>
@@ -581,18 +584,19 @@ const TableHeader = ({
                       backgroundColor: '#f6ffed'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        <span style={{ 
-                          fontSize: '14px', 
-                          fontWeight: 'bold', 
-                          color: '#666',
+                        <div style={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           backgroundColor: '#e6f7ff',
                           borderRadius: '3px',
-                          padding: '2px 6px',
-                          minWidth: '16px',
-                          textAlign: 'center'
+                          padding: '4px 6px',
+                          minWidth: '24px',
+                          minHeight: '20px',
+                          border: '1px solid #d9d9d9'
                         }}>
-                          {getTypeLetter(columns.find(col => col.name === rule.field)?.dataType || 'text')}
-                        </span>
+                          {getDataTypeIcon(columns.find(col => col.name === rule.field)?.dataType || 'text')}
+                        </div>
                         <span style={{ fontSize: '13px', fontWeight: '500' }}>{rule.field}</span>
                       </div>
 
@@ -671,18 +675,19 @@ const TableHeader = ({
                               onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
                               onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
                             >
-                              <span style={{ 
-                                fontSize: '14px', 
-                                fontWeight: 'bold', 
-                                color: '#666',
+                              <div style={{ 
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                                 backgroundColor: '#e6f7ff',
                                 borderRadius: '3px',
-                                padding: '2px 6px',
-                                minWidth: '16px',
-                                textAlign: 'center'
+                                padding: '4px 6px',
+                                minWidth: '24px',
+                                minHeight: '20px',
+                                border: '1px solid #d9d9d9'
                               }}>
-                                {getTypeLetter(column.dataType)}
-                              </span>
+                                {getDataTypeIcon(column.dataType)}
+                              </div>
                               <span style={{ fontSize: '13px' }}>{column.name}</span>
                             </div>
                           ))}
@@ -739,18 +744,19 @@ const TableHeader = ({
                           onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
                           onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
                         >
-                          <span style={{ 
-                            fontSize: '14px', 
-                            fontWeight: 'bold', 
-                            color: '#666',
-                            backgroundColor: '#e6f7ff',
-                            borderRadius: '3px',
-                            padding: '2px 6px',
-                            minWidth: '16px',
-                            textAlign: 'center'
-                          }}>
-                            {getTypeLetter(column.dataType)}
-                          </span>
+                            <div style={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#e6f7ff',
+                              borderRadius: '3px',
+                              padding: '4px 6px',
+                              minWidth: '24px',
+                              minHeight: '20px',
+                              border: '1px solid #d9d9d9'
+                            }}>
+                              {getDataTypeIcon(column.dataType)}
+                            </div>
                           <span style={{ fontSize: '13px' }}>{column.name}</span>
                         </div>
                       ))}
@@ -839,18 +845,19 @@ const TableHeader = ({
                       backgroundColor: '#fafafa'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        <span style={{ 
-                          fontSize: '14px', 
-                          fontWeight: 'bold', 
-                          color: '#666',
+                        <div style={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           backgroundColor: '#e6f7ff',
                           borderRadius: '3px',
-                          padding: '2px 6px',
-                          minWidth: '16px',
-                          textAlign: 'center'
+                          padding: '4px 6px',
+                          minWidth: '24px',
+                          minHeight: '20px',
+                          border: '1px solid #d9d9d9'
                         }}>
-                          {getTypeLetter(columns.find(col => col.name === rule.field)?.dataType || 'text')}
-                        </span>
+                          {getDataTypeIcon(columns.find(col => col.name === rule.field)?.dataType || 'text')}
+                        </div>
                         <span style={{ fontSize: '13px', fontWeight: '500' }}>{rule.field}</span>
                       </div>
                       <Select
@@ -939,18 +946,19 @@ const TableHeader = ({
                               onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
                               onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
                             >
-                              <span style={{ 
-                                fontSize: '14px', 
-                                fontWeight: 'bold', 
-                                color: '#666',
+                              <div style={{ 
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                                 backgroundColor: '#e6f7ff',
                                 borderRadius: '3px',
-                                padding: '2px 6px',
-                                minWidth: '16px',
-                                textAlign: 'center'
+                                padding: '4px 6px',
+                                minWidth: '24px',
+                                minHeight: '20px',
+                                border: '1px solid #d9d9d9'
                               }}>
-                                {getTypeLetter(column.dataType)}
-                              </span>
+                                {getDataTypeIcon(column.dataType)}
+                              </div>
                               <span style={{ fontSize: '13px' }}>{column.name}</span>
                             </div>
                           ))}
@@ -1007,18 +1015,19 @@ const TableHeader = ({
                           onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#f5f5f5'}
                           onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}
                         >
-                          <span style={{ 
-                            fontSize: '14px', 
-                            fontWeight: 'bold', 
-                            color: '#666',
-                            backgroundColor: '#e6f7ff',
-                            borderRadius: '3px',
-                            padding: '2px 6px',
-                            minWidth: '16px',
-                            textAlign: 'center'
-                          }}>
-                            {getTypeLetter(column.dataType)}
-                          </span>
+                            <div style={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: '#e6f7ff',
+                              borderRadius: '3px',
+                              padding: '4px 6px',
+                              minWidth: '24px',
+                              minHeight: '20px',
+                              border: '1px solid #d9d9d9'
+                            }}>
+                              {getDataTypeIcon(column.dataType)}
+                            </div>
                           <span style={{ fontSize: '13px' }}>{column.name}</span>
                         </div>
                       ))}

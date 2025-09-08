@@ -15,8 +15,7 @@ import {
   isColumnCompact
 } from '../Utils/columnUtils.jsx';
 import {
-  getDataTypeIcon,
-  getTypeLetter
+  getDataTypeIcon
 } from '../Utils/dataTypeUtils.jsx';
 import {
   isCellEditing
@@ -135,14 +134,15 @@ const TableBody = ({
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
                 {isColumnCompact(columnWidths, column._id) ? (
-                  <span style={{ 
-                    fontSize: '14px', 
-                    fontWeight: 'bold', 
+                  <div style={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     color: column.isSystem ? '#52c41a' : '#666',
                     fontStyle: column.isSystem ? 'italic' : 'normal'
                   }}>
-                    {getTypeLetter(column.dataType)}
-                  </span>
+                    {getDataTypeIcon(column.dataType)}
+                  </div>
                 ) : (
                   <>
                     {getDataTypeIcon(column.dataType)}
