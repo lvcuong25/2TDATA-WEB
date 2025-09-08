@@ -79,6 +79,20 @@ export const validateCellValue = (value, column) => {
       }
       break;
 
+    case 'year':
+      if (value !== '' && value !== null && value !== undefined) {
+        const yearValue = Number(value);
+        if (isNaN(yearValue)) {
+          return { isValid: false, error: 'Must be a valid year' };
+        }
+        
+        // Check if it's a whole number
+        if (!Number.isInteger(yearValue)) {
+          return { isValid: false, error: 'Year must be a whole number' };
+        }
+      }
+      break;
+
     case 'email':
       if (value && value !== '') {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -426,6 +440,10 @@ export const prepareCellDataForSave = (cellValue, column, record) => {
     }
     
     updatedData[column.name] = urlToSave;
+  } else if (column.dataType === 'year' && cellValue && cellValue !== '') {
+    // Convert year to number
+    const yearValue = Number(cellValue);
+    updatedData[column.name] = isNaN(yearValue) ? cellValue : yearValue;
   } else {
     updatedData[column.name] = cellValue;
   }

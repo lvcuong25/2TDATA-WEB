@@ -15,7 +15,8 @@ import {
   DollarOutlined,
   MailOutlined,
   LinkOutlined,
-  CodeOutlined
+  CodeOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 
 /**
@@ -31,6 +32,8 @@ export const getDataTypeIcon = (dataType) => {
       return <NumberOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
     case 'date': 
       return <CalendarOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
+    case 'year': 
+      return <ClockCircleOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
     case 'checkbox': 
       return <CheckSquareOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
     case 'single_select': 
@@ -62,6 +65,7 @@ export const getDataTypeColor = (dataType) => {
     case 'text': return '#1890ff';
     case 'number': return '#52c41a';
     case 'date': return '#fa8c16';
+    case 'year': return '#fa8c16';
     case 'checkbox': return '#52c41a';
     case 'single_select': return '#1890ff';
     case 'multi_select': return '#722ed1';
@@ -84,6 +88,7 @@ export const getDataTypeTag = (dataType) => {
     text: 'blue',
     number: 'green',
     date: 'orange',
+    year: 'orange',
     checkbox: 'green',
     single_select: 'blue',
     multi_select: 'purple',
@@ -106,6 +111,7 @@ export const getTypeLetter = (dataType) => {
     case 'text': return 'T';
     case 'number': return 'N';
     case 'date': return 'D';
+    case 'year': return 'Y';
     case 'checkbox': return '☑';
     case 'single_select': return '▼';
     case 'currency': return '$';
@@ -124,6 +130,7 @@ export const getSupportedDataTypes = () => {
     { value: 'text', label: 'Text', icon: 'T', color: '#1890ff' },
     { value: 'number', label: 'Number', icon: 'N', color: '#52c41a' },
     { value: 'date', label: 'Date', icon: 'D', color: '#fa8c16' },
+    { value: 'year', label: 'Year', icon: 'Y', color: '#fa8c16' },
     { value: 'checkbox', label: 'Checkbox', icon: '☑', color: '#52c41a' },
     { value: 'single_select', label: 'Single Select', icon: '▼', color: '#1890ff' },
     { value: 'multi_select', label: 'Multi Select', icon: '☑', color: '#722ed1' },

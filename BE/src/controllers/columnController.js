@@ -159,6 +159,7 @@ export const createColumn = async (req, res) => {
       columnData.defaultValue = 0;
     }
 
+
     console.log('Column data to save:', columnData);
 
     const column = new Column(columnData);
@@ -381,6 +382,7 @@ export const updateColumn = async (req, res) => {
     } else if (dataType !== 'url') {
       column.urlConfig = undefined;
     }
+
 
     // Set default value for currency column if not provided
     if (dataType === 'currency' && defaultValue === undefined && column.defaultValue === undefined) {

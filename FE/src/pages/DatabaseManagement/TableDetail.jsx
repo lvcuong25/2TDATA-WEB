@@ -477,6 +477,9 @@ const TableDetail = () => {
         case 'date':
           finalName = 'Date';
           break;
+        case 'year':
+          finalName = 'Year';
+          break;
         case 'checkbox':
           finalName = 'Checkbox';
           break;
@@ -494,6 +497,14 @@ const TableDetail = () => {
           break;
         default:
           finalName = 'New Column';
+      }
+      
+      // Check if column name already exists and add number suffix
+      let counter = 1;
+      let originalName = finalName;
+      while (columns.some(col => col.name === finalName)) {
+        finalName = `${originalName} ${counter}`;
+        counter++;
       }
     }
     
@@ -544,6 +555,7 @@ const TableDetail = () => {
         columnData: columnData
       });
     }
+    
     
     console.log('Frontend: Final columnData:', columnData);
     addColumnMutation.mutate(columnData);
@@ -740,6 +752,7 @@ const TableDetail = () => {
     if (editingColumn.dataType === 'url') {
       columnData.urlConfig = editingColumn.urlConfig;
     }
+    
     
     updateColumnMutation.mutate({
       columnId: editingColumn._id,

@@ -13,6 +13,7 @@ import {
   FieldBinaryOutlined,
   NumberOutlined,
   CalendarOutlined,
+  ClockCircleOutlined,
   CheckSquareOutlined,
   DownOutlined,
   FunctionOutlined,
@@ -86,6 +87,12 @@ const EditColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <CalendarOutlined style={{ color: '#fa8c16' }} />
                   <span>Date</span>
+                </div>
+              </Option>
+              <Option value="year">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ClockCircleOutlined style={{ color: '#fa8c16' }} />
+                  <span>Year</span>
                 </div>
               </Option>
 

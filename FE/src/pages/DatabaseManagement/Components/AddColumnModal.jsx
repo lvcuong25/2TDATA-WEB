@@ -13,6 +13,7 @@ import {
   FieldBinaryOutlined,
   NumberOutlined,
   CalendarOutlined,
+  ClockCircleOutlined,
   CheckSquareOutlined,
   DownOutlined,
   FunctionOutlined,
@@ -44,48 +45,9 @@ const AddColumnModal = ({
   loading
 }) => {
   const handleDataTypeChange = (value) => {
-    // Auto-generate column name based on data type if name is empty
-    let autoName = '';
-    if (!newColumn.name.trim()) {
-      switch (value) {
-        case 'text':
-          autoName = 'Text';
-          break;
-        case 'number':
-          autoName = 'Number';
-          break;
-        case 'date':
-          autoName = 'Date';
-          break;
-        case 'checkbox':
-          autoName = 'Checkbox';
-          break;
-        case 'single_select':
-          autoName = 'Single Select';
-          break;
-        case 'multi_select':
-          autoName = 'Multi Select';
-          break;
-        case 'formula':
-          autoName = 'Formula';
-          break;
-        case 'currency':
-          autoName = 'Currency';
-          break;
-        case 'email':
-          autoName = 'Email';
-          break;
-        case 'url':
-          autoName = 'URL';
-          break;
-        default:
-          autoName = 'New Column';
-      }
-    }
     setNewColumn({ 
       ...newColumn, 
       dataType: value,
-      name: newColumn.name.trim() || autoName,
       // Set default value for currency
       ...(value === 'currency' ? { defaultValue: 0 } : {})
     });
@@ -132,6 +94,12 @@ const AddColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <CalendarOutlined style={{ color: '#fa8c16' }} />
                   <span>Date</span>
+                </div>
+              </Option>
+              <Option value="year">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ClockCircleOutlined style={{ color: '#fa8c16' }} />
+                  <span>Year</span>
                 </div>
               </Option>
 

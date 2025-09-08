@@ -29,7 +29,7 @@ const columnSchema = new mongoose.Schema({
   dataType: {
     type: String,
     required: true,
-    enum: ['string', 'number', 'date', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency']
+    enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency']
   },
   isRequired: {
     type: Boolean,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input, Select, Checkbox, Tooltip, Tag, Dropdown } from 'antd';
+import { Button, Input, Select, Checkbox, Tooltip, Tag, Dropdown, DatePicker } from 'antd';
 import {
   PlusOutlined,
   MoreOutlined,
@@ -10,6 +10,7 @@ import {
   RightOutlined
 } from '@ant-design/icons';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
+import dayjs from 'dayjs';
 import {
   getColumnWidthString,
   isColumnCompact
@@ -471,6 +472,49 @@ const TableBody = ({
                                     }}
                                   />
                                 );
+                              } else if (dataType === 'year') {
+                                return (
+                                  <DatePicker
+                                    picker="year"
+                                    value={cellValue ? dayjs().year(cellValue) : null}
+                                    onChange={(date) => {
+                                      const year = date ? date.year() : '';
+                                      setCellValue(year);
+                                    }}
+                                    onBlur={handleCellSave}
+                                    autoFocus
+                                    size="small"
+                                    placeholder="Select year"
+                                    style={{ 
+                                      width: '100%',
+                                      height: '100%',
+                                      border: 'none',
+                                      padding: '0',
+                                      margin: '0',
+                                      borderRadius: '0',
+                                      backgroundColor: 'transparent',
+                                      boxShadow: 'none',
+                                      fontSize: 'inherit',
+                                      position: 'absolute',
+                                      top: '0',
+                                      left: '0',
+                                      right: '0',
+                                      bottom: '0',
+                                      boxSizing: 'border-box',
+                                      outline: 'none'
+                                    }}
+                                    inputStyle={{
+                                      border: 'none',
+                                      padding: '0',
+                                      margin: '0',
+                                      borderRadius: '0',
+                                      backgroundColor: 'transparent',
+                                      boxShadow: 'none',
+                                      fontSize: 'inherit',
+                                      height: '100%'
+                                    }}
+                                  />
+                                );
                               } else if (dataType === 'checkbox') {
                                 return (
                                   <Select
@@ -556,18 +600,20 @@ const TableBody = ({
                               onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                               onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
-                              {column.dataType === 'datetime' && value ?
+                              {column.dataType === 'datetime' && value ? 
                                 value // Already formatted by formatDateTime
-                                : column.dataType === 'date' && value ?
-                                  (() => {
-                                    try {
-                                      const date = new Date(value);
-                                      return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
-                                    } catch {
-                                      return value;
-                                    }
-                                  })()
-                                  : column.dataType === 'checkbox' ?
+                                : column.dataType === 'date' && value ? 
+                                (() => {
+                                  try {
+                                    const date = new Date(value);
+                                    return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
+                                  } catch {
+                                    return value;
+                                  }
+                                })() 
+                                : column.dataType === "year" ? 
+                                (value || <span style={{color: "#bfbfbf", fontStyle: "italic"}}>Select year</span>)
+                                : column.dataType === 'checkbox' ?
                                     (() => {
                                       const isChecked = value === 'true' || value === true;
                                       const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
@@ -853,6 +899,49 @@ const TableBody = ({
                               }}
                             />
                           );
+                        } else if (dataType === 'year') {
+                          return (
+                            <DatePicker
+                              picker="year"
+                              value={cellValue ? dayjs().year(cellValue) : null}
+                              onChange={(date) => {
+                                const year = date ? date.year() : '';
+                                setCellValue(year);
+                              }}
+                              onBlur={handleCellSave}
+                              autoFocus
+                              size="small"
+                              placeholder="Select year"
+                              style={{ 
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                                padding: '0',
+                                margin: '0',
+                                borderRadius: '0',
+                                backgroundColor: 'transparent',
+                                boxShadow: 'none',
+                                fontSize: 'inherit',
+                                position: 'absolute',
+                                top: '0',
+                                left: '0',
+                                right: '0',
+                                bottom: '0',
+                                boxSizing: 'border-box',
+                                outline: 'none'
+                              }}
+                              inputStyle={{
+                                border: 'none',
+                                padding: '0',
+                                margin: '0',
+                                borderRadius: '0',
+                                backgroundColor: 'transparent',
+                                boxShadow: 'none',
+                                fontSize: 'inherit',
+                                height: '100%'
+                              }}
+                            />
+                          );
                         } else if (dataType === 'checkbox') {
                           return (
                             <Select
@@ -938,18 +1027,20 @@ const TableBody = ({
                         onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                         onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
-                        {column.dataType === 'datetime' && value ?
+                        {column.dataType === 'datetime' && value ? 
                           value // Already formatted by formatDateTime
-                          : column.dataType === 'date' && value ?
-                            (() => {
-                              try {
-                                const date = new Date(value);
-                                return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
-                              } catch {
-                                return value;
-                              }
-                            })()
-                            : column.dataType === 'url' && value ?
+                          : column.dataType === 'date' && value ? 
+                          (() => {
+                            try {
+                              const date = new Date(value);
+                              return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
+                            } catch {
+                              return value;
+                            }
+                          })() 
+                          : column.dataType === "year" ? 
+                          (value || <span style={{color: "#bfbfbf", fontStyle: "italic"}}>Select year</span>)
+                          : column.dataType === 'url' && value ?
                               (() => {
                                 let displayUrl = value;
 
