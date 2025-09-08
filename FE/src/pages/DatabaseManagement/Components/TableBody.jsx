@@ -35,7 +35,7 @@ const TableBody = ({
   editingCell,
   selectedCell,
   cellValue,
-  
+
   // Handlers
   handleSelectAll,
   handleSelectRow,
@@ -50,7 +50,7 @@ const TableBody = ({
   handleToggleGroupExpansion,
   handleContextMenu,
   updateRecordMutation,
-  
+
   // State
   isResizing,
   resizingColumn,
@@ -79,9 +79,9 @@ const TableBody = ({
   };
 
   return (
-    <div 
+    <div
       data-table-container
-      style={{ 
+      style={{
         background: 'transparent',
         overflow: 'auto',
         cursor: isResizing ? 'col-resize' : 'default',
@@ -143,7 +143,7 @@ const TableBody = ({
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
                 {isColumnCompact(columnWidths, column._id) ? (
-                  <div style={{ 
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -155,11 +155,11 @@ const TableBody = ({
                 ) : (
                   <>
                     {getDataTypeIcon(column.dataType)}
-                    <span style={{ 
-                      fontSize: '12px', 
-                      fontWeight: column.isSystem ? '400' : 'bold', 
-                      overflow: 'hidden', 
-                      textOverflow: 'ellipsis', 
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: column.isSystem ? '400' : 'bold',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                       color: column.isSystem ? '#52c41a' : '#333',
                       fontStyle: column.isSystem ? 'italic' : 'normal'
@@ -167,8 +167,8 @@ const TableBody = ({
                       {column.name}
                     </span>
                     {column.isSystem && (
-                      <span style={{ 
-                        fontSize: '10px', 
+                      <span style={{
+                        fontSize: '10px',
                         color: '#52c41a',
                         fontWeight: 'bold',
                         marginLeft: '4px'
@@ -202,17 +202,17 @@ const TableBody = ({
                 }}
                 trigger={['click']}
               >
-                <Button 
-                  type="text" 
-                  size="small" 
-                  icon={<MoreOutlined />} 
-                  style={{ 
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<MoreOutlined />}
+                  style={{
                     padding: isColumnCompact(columnWidths, column._id) ? '2px' : '2px',
                     fontSize: isColumnCompact(columnWidths, column._id) ? '10px' : '12px'
-                  }} 
+                  }}
                 />
               </Dropdown>
-              
+
               {/* Resize handle */}
               <div
                 style={{
@@ -252,17 +252,17 @@ const TableBody = ({
             cursor: 'pointer',
             transition: 'background-color 0.2s'
           }}
-          onClick={() => setShowAddColumn(true)}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+            onClick={() => setShowAddColumn(true)}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
           >
             <Tooltip title="Thêm cột">
-              <PlusOutlined 
-                style={{ 
-                  color: '#1890ff', 
+              <PlusOutlined
+                style={{
+                  color: '#1890ff',
                   fontSize: '16px',
                   fontWeight: 'bold'
-                }} 
+                }}
               />
             </Tooltip>
           </div>
@@ -289,15 +289,15 @@ const TableBody = ({
                   backgroundColor: '#f6ffed',
                   transition: 'background-color 0.2s'
                 }}
-                onClick={() => handleToggleGroupExpansion(group.key)}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f9ff'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f6ffed'}
+                  onClick={() => handleToggleGroupExpansion(group.key)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f9ff'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f6ffed'}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
                     {isExpanded ? <DownOutlined /> : <RightOutlined />}
-                    <span style={{ 
-                      fontSize: '12px', 
-                      fontWeight: 'bold', 
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: 'bold',
                       color: '#52c41a',
                       textTransform: 'uppercase'
                     }}>
@@ -313,7 +313,7 @@ const TableBody = ({
                         type="text"
                         size="small"
                         icon={<PlusOutlined />}
-                        style={{ 
+                        style={{
                           color: '#52c41a',
                           fontSize: '12px',
                           padding: '2px 4px',
@@ -325,8 +325,8 @@ const TableBody = ({
                         }}
                       />
                     </Tooltip>
-                    <span style={{ 
-                      fontSize: '11px', 
+                    <span style={{
+                      fontSize: '11px',
                       color: '#666',
                       backgroundColor: '#e6f7ff',
                       padding: '2px 6px',
@@ -344,7 +344,7 @@ const TableBody = ({
                     borderBottom: '1px solid #f0f0f0',
                     backgroundColor: 'white'
                   }}
-                  onContextMenu={(e) => handleContextMenu(e, record._id)}
+                    onContextMenu={(e) => handleContextMenu(e, record._id)}
                   >
                     {/* Checkbox and Index */}
                     <div style={{
@@ -362,9 +362,9 @@ const TableBody = ({
                         checked={selectedRowKeys.includes(record._id)}
                         onChange={(e) => handleSelectRow(record._id, e.target.checked)}
                       />
-                      <span style={{ 
-                        fontSize: '12px', 
-                        color: '#666', 
+                      <span style={{
+                        fontSize: '12px',
+                        color: '#666',
                         fontWeight: 'bold',
                         opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
                       }}>
@@ -395,7 +395,7 @@ const TableBody = ({
                       }
                       const isEditing = isCellEditing(editingCell, record._id, column.name);
                       const isSelected = isCellSelected(record._id, column.name);
-                      
+
                       return (
                         <div key={column._id} style={{
                           width: getColumnWidthString(columnWidths, column._id),
@@ -409,7 +409,7 @@ const TableBody = ({
                           {isEditing ? (
                             (() => {
                               const dataType = column.dataType;
-                              
+
                               if (dataType === 'date') {
                                 return (
                                   <Input
@@ -420,7 +420,7 @@ const TableBody = ({
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
-                                    style={{ 
+                                    style={{
                                       width: '100%',
                                       height: '100%',
                                       border: 'none',
@@ -451,7 +451,7 @@ const TableBody = ({
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
-                                    style={{ 
+                                    style={{
                                       width: '100%',
                                       height: '100%',
                                       border: 'none',
@@ -481,7 +481,7 @@ const TableBody = ({
                                     }}
                                     autoFocus
                                     size="small"
-                                    style={{ 
+                                    style={{
                                       width: '100%',
                                       height: '100%',
                                       border: 'none',
@@ -513,7 +513,7 @@ const TableBody = ({
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
-                                    style={{ 
+                                    style={{
                                       width: '100%',
                                       height: '100%',
                                       border: 'none',
@@ -537,9 +537,9 @@ const TableBody = ({
                             })()
                           ) : (
                             <div
-                              style={{ 
-                                cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer', 
-                                padding: '8px', 
+                              style={{
+                                cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer',
+                                padding: '8px',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
@@ -556,87 +556,87 @@ const TableBody = ({
                               onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                               onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
-                              {column.dataType === 'datetime' && value ? 
+                              {column.dataType === 'datetime' && value ?
                                 value // Already formatted by formatDateTime
-                                : column.dataType === 'date' && value ? 
-                                (() => {
-                                  try {
-                                    const date = new Date(value);
-                                    return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
-                                  } catch {
-                                    return value;
-                                  }
-                                })() 
-                                : column.dataType === 'checkbox' ? 
-                                (() => {
-                                  const isChecked = value === 'true' || value === true;
-                                  const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
-                                  
-                                  return (
-                                    <div style={{ 
-                                      display: 'flex', 
-                                      justifyContent: 'center', 
-                                      alignItems: 'center',
-                                      height: '100%',
-                                      width: '100%'
-                                    }}>
-                                      <div
-                                        onClick={() => {
-                                          const newValue = !isChecked;
-                                          const updatedData = { ...record.data };
-                                          updatedData[column.name] = newValue;
-                                          
-                                          updateRecordMutation.mutate({
-                                            recordId: record._id,
-                                            data: updatedData
-                                          });
-                                        }}
-                                        style={{
-                                          cursor: 'pointer',
-                                          fontSize: '16px',
-                                          color: isChecked ? config.color : '#666',
-                                          transition: 'all 0.2s ease'
-                                        }}
-                                      >
-                                        {isChecked ? (
-                                          config.icon === 'check-circle' ? 
-                                            <CheckCircleOutlined style={{ color: config.color, fontSize: '16px' }} /> :
-                                            <CheckSquareOutlined style={{ color: config.color, fontSize: '16px' }} />
-                                        ) : (
-                                          config.icon === 'check-circle' ? 
-                                            <BorderOutlined style={{ color: '#666', fontSize: '16px' }} /> :
-                                            <BorderOutlined style={{ color: '#666', fontSize: '16px' }} />
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })() 
-                                : column.dataType === 'currency' && value !== null && value !== undefined ? 
-                                (() => {
-                                  const config = column.currencyConfig || { 
-                                    currency: 'USD', 
-                                    symbol: '$', 
-                                    position: 'before', 
-                                    decimalPlaces: 2, 
-                                    thousandsSeparator: ',', 
-                                    decimalSeparator: '.' 
-                                  };
-                                  
-                                  const numValue = parseFloat(value);
-                                  if (isNaN(numValue)) return value;
-                                  
-                                  const formatted = numValue.toLocaleString('en-US', {
-                                    minimumFractionDigits: config.decimalPlaces,
-                                    maximumFractionDigits: config.decimalPlaces
-                                  }).replace(/,/g, config.thousandsSeparator).replace(/\./g, config.decimalSeparator);
-                                  
-                                  return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
-                                })()
-                                : (value || '')
+                                : column.dataType === 'date' && value ?
+                                  (() => {
+                                    try {
+                                      const date = new Date(value);
+                                      return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
+                                    } catch {
+                                      return value;
+                                    }
+                                  })()
+                                  : column.dataType === 'checkbox' ?
+                                    (() => {
+                                      const isChecked = value === 'true' || value === true;
+                                      const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
+
+                                      return (
+                                        <div style={{
+                                          display: 'flex',
+                                          justifyContent: 'center',
+                                          alignItems: 'center',
+                                          height: '100%',
+                                          width: '100%'
+                                        }}>
+                                          <div
+                                            onClick={() => {
+                                              const newValue = !isChecked;
+                                              const updatedData = { ...record.data };
+                                              updatedData[column.name] = newValue;
+
+                                              updateRecordMutation.mutate({
+                                                recordId: record._id,
+                                                data: updatedData
+                                              });
+                                            }}
+                                            style={{
+                                              cursor: 'pointer',
+                                              fontSize: '16px',
+                                              color: isChecked ? config.color : '#666',
+                                              transition: 'all 0.2s ease'
+                                            }}
+                                          >
+                                            {isChecked ? (
+                                              config.icon === 'check-circle' ?
+                                                <CheckCircleOutlined style={{ color: config.color, fontSize: '16px' }} /> :
+                                                <CheckSquareOutlined style={{ color: config.color, fontSize: '16px' }} />
+                                            ) : (
+                                              config.icon === 'check-circle' ?
+                                                <BorderOutlined style={{ color: '#666', fontSize: '16px' }} /> :
+                                                <BorderOutlined style={{ color: '#666', fontSize: '16px' }} />
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })()
+                                    : column.dataType === 'currency' && value !== null && value !== undefined ?
+                                      (() => {
+                                        const config = column.currencyConfig || {
+                                          currency: 'USD',
+                                          symbol: '$',
+                                          position: 'before',
+                                          decimalPlaces: 2,
+                                          thousandsSeparator: ',',
+                                          decimalSeparator: '.'
+                                        };
+
+                                        const numValue = parseFloat(value);
+                                        if (isNaN(numValue)) return value;
+
+                                        const formatted = numValue.toLocaleString('en-US', {
+                                          minimumFractionDigits: config.decimalPlaces,
+                                          maximumFractionDigits: config.decimalPlaces
+                                        }).replace(/,/g, config.thousandsSeparator).replace(/\./g, config.decimalSeparator);
+
+                                        return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
+                                      })()
+                                      : (value || '')
                               }
                             </div>
                           )}
-                          
+
                           {/* Autofill handle for selected cell */}
                           {isSelected && !isEditing && (
                             <div
@@ -676,9 +676,9 @@ const TableBody = ({
                     cursor: 'pointer',
                     transition: 'background-color 0.2s'
                   }}
-                  onClick={() => handleAddRowToGroup(group.values, group.rules)}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
+                    onClick={() => handleAddRowToGroup(group.values, group.rules)}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
                   >
                     {/* Checkbox and Index Column */}
                     <div style={{
@@ -690,12 +690,12 @@ const TableBody = ({
                       alignItems: 'center',
                       justifyContent: 'center'
                     }}>
-                      <PlusOutlined 
-                        style={{ 
-                          color: '#52c41a', 
+                      <PlusOutlined
+                        style={{
+                          color: '#52c41a',
                           fontSize: '16px',
                           fontWeight: 'bold'
-                        }} 
+                        }}
                       />
                     </div>
 
@@ -727,7 +727,7 @@ const TableBody = ({
               display: 'flex',
               borderBottom: '1px solid #f0f0f0'
             }}
-            onContextMenu={(e) => handleContextMenu(e, record._id)}
+              onContextMenu={(e) => handleContextMenu(e, record._id)}
             >
               {/* Checkbox and Index */}
               <div style={{
@@ -744,9 +744,9 @@ const TableBody = ({
                   checked={selectedRowKeys.includes(record._id)}
                   onChange={(e) => handleSelectRow(record._id, e.target.checked)}
                 />
-                <span style={{ 
-                  fontSize: '12px', 
-                  color: '#666', 
+                <span style={{
+                  fontSize: '12px',
+                  color: '#666',
                   fontWeight: 'bold',
                   opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
                 }}>
@@ -777,7 +777,7 @@ const TableBody = ({
                 }
                 const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
                 const isSelected = isCellSelected(record._id, column.name);
-                
+
                 return (
                   <div key={column._id} style={{
                     width: getColumnWidthString(columnWidths, column._id),
@@ -791,7 +791,7 @@ const TableBody = ({
                     {isEditing ? (
                       (() => {
                         const dataType = column.dataType;
-                        
+
                         if (dataType === 'date') {
                           return (
                             <Input
@@ -802,7 +802,7 @@ const TableBody = ({
                               onBlur={handleCellSave}
                               autoFocus
                               size="small"
-                              style={{ 
+                              style={{
                                 width: '100%',
                                 height: '100%',
                                 border: 'none',
@@ -833,7 +833,7 @@ const TableBody = ({
                               onBlur={handleCellSave}
                               autoFocus
                               size="small"
-                              style={{ 
+                              style={{
                                 width: '100%',
                                 height: '100%',
                                 border: 'none',
@@ -863,7 +863,7 @@ const TableBody = ({
                               }}
                               autoFocus
                               size="small"
-                              style={{ 
+                              style={{
                                 width: '100%',
                                 height: '100%',
                                 border: 'none',
@@ -895,7 +895,7 @@ const TableBody = ({
                               onBlur={handleCellSave}
                               autoFocus
                               size="small"
-                              style={{ 
+                              style={{
                                 width: '100%',
                                 height: '100%',
                                 border: 'none',
@@ -919,9 +919,9 @@ const TableBody = ({
                       })()
                     ) : (
                       <div
-                        style={{ 
-                          cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer',  
-                          padding: '8px', 
+                        style={{
+                          cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer',
+                          padding: '8px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -938,123 +938,123 @@ const TableBody = ({
                         onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                         onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
-                        {column.dataType === 'datetime' && value ? 
+                        {column.dataType === 'datetime' && value ?
                           value // Already formatted by formatDateTime
-                          : column.dataType === 'date' && value ? 
-                          (() => {
-                            try {
-                              const date = new Date(value);
-                              return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
-                            } catch {
-                              return value;
-                            }
-                          })() 
-                          : column.dataType === 'url' && value ? 
-                          (() => {
-                            let displayUrl = value;
-                            
-                            
-                            // Debug log
-                            console.log('TableBody URL Debug:', {
-                              columnName: column.name,
-                              value,
-                              urlConfig: column.urlConfig,
-                              hasUrlConfig: !!column.urlConfig,
-                              protocol: column.urlConfig?.protocol
-                            });
-                            
-                            // Auto-add protocol
-                            if (!value.startsWith('http://') && !value.startsWith('https://')) {
-                              if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
-                                // Use the configured protocol
-                                const protocol = column.urlConfig.protocol;
-                                displayUrl = `${protocol}://${value}`;
-                                console.log('Using configured protocol:', protocol, '→', displayUrl);
-                              } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
-                                // Don't add protocol, keep original value
-                                displayUrl = value;
-                                console.log('Protocol is none, keeping original value:', displayUrl);
-                              } else if (!column.urlConfig) {
-                                // Fallback for old columns without urlConfig
-                                displayUrl = `https://${value}`;
-                                console.log('Using fallback protocol: https →', displayUrl);
+                          : column.dataType === 'date' && value ?
+                            (() => {
+                              try {
+                                const date = new Date(value);
+                                return formatDateForDisplay(value, column.dateConfig?.format || 'DD/MM/YYYY');
+                              } catch {
+                                return value;
                               }
-                            }
-                            
-                            return displayUrl;
-                          })()
-                          : column.dataType === 'email' && value ? 
-                          value
-                          : column.dataType === 'checkbox' ? 
-                          (() => {
-                            const isChecked = value === 'true' || value === true;
-                            const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
-                            
-                            return (
-                              <div style={{ 
-                                display: 'flex', 
-                                justifyContent: 'center', 
-                                alignItems: 'center',
-                                height: '100%',
-                                width: '100%'
-                              }}>
-                                <div
-                                  onClick={() => {
-                                    const newValue = !isChecked;
-                                    const updatedData = { ...record.data };
-                                    updatedData[column.name] = newValue;
-                                    
-                                    updateRecordMutation.mutate({
-                                      recordId: record._id,
-                                      data: updatedData
-                                    });
-                                  }}
-                                  style={{
-                                    cursor: 'pointer',
-                                    fontSize: '16px',
-                                    color: isChecked ? config.color : '#666',
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                >
-                                  {isChecked ? (
-                                    config.icon === 'check-circle' ? 
-                                      <CheckCircleOutlined style={{ color: config.color, fontSize: '16px' }} /> :
-                                      <CheckSquareOutlined style={{ color: config.color, fontSize: '16px' }} />
-                                  ) : (
-                                    config.icon === 'check-circle' ? 
-                                      <BorderOutlined style={{ color: '#666', fontSize: '16px' }} /> :
-                                      <BorderOutlined style={{ color: '#666', fontSize: '16px' }} />
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })() 
-                          : column.dataType === 'currency' && value !== null && value !== undefined ? 
-                          (() => {
-                            const config = column.currencyConfig || { 
-                              currency: 'USD', 
-                              symbol: '$', 
-                              position: 'before', 
-                              decimalPlaces: 2, 
-                              thousandsSeparator: ',', 
-                              decimalSeparator: '.' 
-                            };
-                            
-                            const numValue = parseFloat(value);
-                            if (isNaN(numValue)) return value;
-                            
-                            const formatted = numValue.toLocaleString('en-US', {
-                              minimumFractionDigits: config.decimalPlaces,
-                              maximumFractionDigits: config.decimalPlaces
-                            }).replace(/,/g, config.thousandsSeparator).replace(/\./g, config.decimalSeparator);
-                            
-                            return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
-                          })()
-                          : (value || '')
+                            })()
+                            : column.dataType === 'url' && value ?
+                              (() => {
+                                let displayUrl = value;
+
+
+                                // Debug log
+                                console.log('TableBody URL Debug:', {
+                                  columnName: column.name,
+                                  value,
+                                  urlConfig: column.urlConfig,
+                                  hasUrlConfig: !!column.urlConfig,
+                                  protocol: column.urlConfig?.protocol
+                                });
+
+                                // Auto-add protocol
+                                if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                                  if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
+                                    // Use the configured protocol
+                                    const protocol = column.urlConfig.protocol;
+                                    displayUrl = `${protocol}://${value}`;
+                                    console.log('Using configured protocol:', protocol, '→', displayUrl);
+                                  } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
+                                    // Don't add protocol, keep original value
+                                    displayUrl = value;
+                                    console.log('Protocol is none, keeping original value:', displayUrl);
+                                  } else if (!column.urlConfig) {
+                                    // Fallback for old columns without urlConfig
+                                    displayUrl = `https://${value}`;
+                                    console.log('Using fallback protocol: https →', displayUrl);
+                                  }
+                                }
+
+                                return displayUrl;
+                              })()
+                              : column.dataType === 'email' && value ?
+                                value
+                                : column.dataType === 'checkbox' ?
+                                  (() => {
+                                    const isChecked = value === 'true' || value === true;
+                                    const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
+
+                                    return (
+                                      <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        height: '100%',
+                                        width: '100%'
+                                      }}>
+                                        <div
+                                          onClick={() => {
+                                            const newValue = !isChecked;
+                                            const updatedData = { ...record.data };
+                                            updatedData[column.name] = newValue;
+
+                                            updateRecordMutation.mutate({
+                                              recordId: record._id,
+                                              data: updatedData
+                                            });
+                                          }}
+                                          style={{
+                                            cursor: 'pointer',
+                                            fontSize: '16px',
+                                            color: isChecked ? config.color : '#666',
+                                            transition: 'all 0.2s ease'
+                                          }}
+                                        >
+                                          {isChecked ? (
+                                            config.icon === 'check-circle' ?
+                                              <CheckCircleOutlined style={{ color: config.color, fontSize: '16px' }} /> :
+                                              <CheckSquareOutlined style={{ color: config.color, fontSize: '16px' }} />
+                                          ) : (
+                                            config.icon === 'check-circle' ?
+                                              <BorderOutlined style={{ color: '#666', fontSize: '16px' }} /> :
+                                              <BorderOutlined style={{ color: '#666', fontSize: '16px' }} />
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()
+                                  : column.dataType === 'currency' && value !== null && value !== undefined ?
+                                    (() => {
+                                      const config = column.currencyConfig || {
+                                        currency: 'USD',
+                                        symbol: '$',
+                                        position: 'before',
+                                        decimalPlaces: 2,
+                                        thousandsSeparator: ',',
+                                        decimalSeparator: '.'
+                                      };
+
+                                      const numValue = parseFloat(value);
+                                      if (isNaN(numValue)) return value;
+
+                                      const formatted = numValue.toLocaleString('en-US', {
+                                        minimumFractionDigits: config.decimalPlaces,
+                                        maximumFractionDigits: config.decimalPlaces
+                                      }).replace(/,/g, config.thousandsSeparator).replace(/\./g, config.decimalSeparator);
+
+                                      return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
+                                    })()
+                                    : (value || '')
                         }
                       </div>
                     )}
-                    
+
                     {/* Autofill handle for selected cell */}
                     {isSelected && !isEditing && (
                       <div
@@ -1093,9 +1093,9 @@ const TableBody = ({
             cursor: 'pointer',
             transition: 'background-color 0.2s'
           }}
-          onClick={handleAddRow}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
+            onClick={handleAddRow}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
           >
             {/* Checkbox and Index Column */}
             <div style={{
@@ -1107,12 +1107,12 @@ const TableBody = ({
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <PlusOutlined 
-                style={{ 
-                  color: '#1890ff', 
+              <PlusOutlined
+                style={{
+                  color: '#1890ff',
                   fontSize: '16px',
                   fontWeight: 'bold'
-                }} 
+                }}
               />
             </div>
 
