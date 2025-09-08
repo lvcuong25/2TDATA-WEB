@@ -29,6 +29,7 @@ import MultiSelectConfig from '../Config/MultiSelectConfig';
 import DateConfig from '../Config/DateConfig';
 import FormulaConfig from '../Config/FormulaConfig';
 import CurrencyConfig from '../Config/CurrencyConfig';
+import UrlConfig from '../Config/UrlConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -333,6 +334,19 @@ const EditColumnModal = ({
                   defaultValue: defaultValue !== undefined ? defaultValue : 0
                 });
               }}
+            />
+          )}
+
+          {/* URL Configuration */}
+          {editingColumn.dataType === 'url' && (
+            <UrlConfig
+              config={editingColumn.urlConfig || {
+                protocol: 'https'
+              }}
+              onChange={(config) => setEditingColumn({
+                ...editingColumn,
+                urlConfig: config
+              })}
             />
           )}
 

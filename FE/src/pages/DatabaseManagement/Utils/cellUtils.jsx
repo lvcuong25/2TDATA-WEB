@@ -90,8 +90,22 @@ export const validateCellValue = (value, column) => {
 
     case 'url':
       if (value && value !== '') {
+        let urlToValidate = value;
+        
+        // Auto-add protocol
+        if (!value.startsWith('http://') && !value.startsWith('https://')) {
+          if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
+            const protocol = column.urlConfig.protocol;
+            urlToValidate = `${protocol}://${value}`;
+          } else if (!column.urlConfig) {
+            // Fallback for old columns without urlConfig
+            urlToValidate = `https://${value}`;
+          }
+          // If protocol is 'none', don't add protocol (keep original value)
+        }
+        
         try {
-          new URL(value);
+          new URL(urlToValidate);
         } catch {
           return { isValid: false, error: 'Must be a valid URL' };
         }
@@ -196,7 +210,23 @@ export const formatCellValueForDisplay = (value, column) => {
 
     case 'url':
       if (value && value !== '') {
-        return value; // Return URL as-is for display, will be formatted in component
+        let displayUrl = value;
+        
+        // Auto-add protocol
+        if (!value.startsWith('http://') && !value.startsWith('https://')) {
+          if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
+            const protocol = column.urlConfig.protocol;
+            displayUrl = `${protocol}://${value}`;
+          } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
+            // Don't add protocol, keep original value
+            displayUrl = value;
+          } else if (!column.urlConfig) {
+            // Fallback for old columns without urlConfig
+            displayUrl = `https://${value}`;
+          }
+        }
+        
+        return displayUrl; // Return URL with protocol for display
       }
       return '';
 
@@ -376,7 +406,30 @@ export const handleCellValueChange = (newValue, column, setCellValue, onSave) =>
  */
 export const prepareCellDataForSave = (cellValue, column, record) => {
   const updatedData = { ...record.data };
-  updatedData[column.name] = cellValue;
+  
+  // Handle URL with protocol
+  if (column.dataType === 'url' && cellValue && cellValue !== '') {
+    let urlToSave = cellValue;
+    
+    // Auto-add protocol
+    if (!cellValue.startsWith('http://') && !cellValue.startsWith('https://')) {
+      if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
+        const protocol = column.urlConfig.protocol;
+        urlToSave = `${protocol}://${cellValue}`;
+      } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
+        // Don't add protocol, keep original value
+        urlToSave = cellValue;
+      } else if (!column.urlConfig) {
+        // Fallback for old columns without urlConfig
+        urlToSave = `https://${cellValue}`;
+      }
+    }
+    
+    updatedData[column.name] = urlToSave;
+  } else {
+    updatedData[column.name] = cellValue;
+  }
+  
   return updatedData;
 };
 

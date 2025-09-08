@@ -138,6 +138,9 @@ const TableDetail = () => {
       thousandsSeparator: ',',
       decimalSeparator: '.'
     },
+    urlConfig: {
+      protocol: 'https'
+    },
     defaultValue: null
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
@@ -199,6 +202,9 @@ const TableDetail = () => {
         },
         dateConfig: {
           format: 'DD/MM/YYYY'
+        },
+        urlConfig: {
+          protocol: 'https'
         }
       });
     },
@@ -512,6 +518,17 @@ const TableDetail = () => {
       columnData.defaultValue = newColumn.defaultValue !== null && newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0;
     }
     
+    // Add URL configuration if data type is url
+    if (newColumn.dataType === 'url') {
+      columnData.urlConfig = newColumn.urlConfig;
+      console.log('Frontend: Sending URL config:', {
+        newColumn: newColumn,
+        urlConfig: newColumn.urlConfig,
+        columnData: columnData
+      });
+    }
+    
+    console.log('Frontend: Final columnData:', columnData);
     addColumnMutation.mutate(columnData);
   };
 
@@ -647,6 +664,9 @@ const TableDetail = () => {
         decimalPlaces: 2,
         thousandsSeparator: ',',
         decimalSeparator: '.'
+      },
+      urlConfig: column.urlConfig || {
+        protocol: 'https'
       }
     });
     setShowEditColumn(true);
@@ -697,6 +717,11 @@ const TableDetail = () => {
       columnData.currencyConfig = editingColumn.currencyConfig;
       // Add default value for currency
       columnData.defaultValue = editingColumn.defaultValue !== null && editingColumn.defaultValue !== undefined ? editingColumn.defaultValue : 0;
+    }
+    
+    // Add URL configuration if data type is url
+    if (editingColumn.dataType === 'url') {
+      columnData.urlConfig = editingColumn.urlConfig;
     }
     
     updateColumnMutation.mutate({

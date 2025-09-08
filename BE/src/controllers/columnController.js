@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, urlConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -21,7 +21,8 @@ export const createColumn = async (req, res) => {
       singleSelectConfig,
       multiSelectConfig,
       dateConfig,
-      currencyConfig
+      currencyConfig,
+      urlConfig
     });
 
     if (!name || name.trim() === '') {
@@ -134,6 +135,25 @@ export const createColumn = async (req, res) => {
       };
     }
 
+    // Always add urlConfig for url dataType
+    if (dataType === 'url') {
+      // Ensure urlConfig has all required fields with defaults
+      columnData.urlConfig = {
+        protocol: (urlConfig && urlConfig.protocol) || 'https'
+      };
+      console.log('Backend: Adding URL config:', {
+        dataType,
+        urlConfig,
+        columnData: columnData.urlConfig
+      });
+    } else {
+      console.log('Backend: URL dataType but no urlConfig:', {
+        dataType,
+        urlConfig,
+        hasUrlConfig: !!urlConfig
+      });
+    }
+
     // Set default value for currency column if not provided
     if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
       columnData.defaultValue = 0;
@@ -225,7 +245,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, urlConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -347,6 +367,19 @@ export const updateColumn = async (req, res) => {
       column.currencyConfig = currencyConfig;
     } else if (dataType !== 'currency') {
       column.currencyConfig = undefined;
+    }
+
+    if (dataType === 'url') {
+      column.urlConfig = {
+        protocol: (urlConfig && urlConfig.protocol) || 'https'
+      };
+      console.log('Backend: Updating URL config:', {
+        dataType,
+        urlConfig,
+        columnUrlConfig: column.urlConfig
+      });
+    } else if (dataType !== 'url') {
+      column.urlConfig = undefined;
     }
 
     // Set default value for currency column if not provided

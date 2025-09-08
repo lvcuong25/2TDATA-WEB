@@ -918,6 +918,42 @@ const TableBody = ({
                               return value;
                             }
                           })() 
+                          : column.dataType === 'url' && value ? 
+                          (() => {
+                            let displayUrl = value;
+                            
+                            
+                            // Debug log
+                            console.log('TableBody URL Debug:', {
+                              columnName: column.name,
+                              value,
+                              urlConfig: column.urlConfig,
+                              hasUrlConfig: !!column.urlConfig,
+                              protocol: column.urlConfig?.protocol
+                            });
+                            
+                            // Auto-add protocol
+                            if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                              if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
+                                // Use the configured protocol
+                                const protocol = column.urlConfig.protocol;
+                                displayUrl = `${protocol}://${value}`;
+                                console.log('Using configured protocol:', protocol, '→', displayUrl);
+                              } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
+                                // Don't add protocol, keep original value
+                                displayUrl = value;
+                                console.log('Protocol is none, keeping original value:', displayUrl);
+                              } else if (!column.urlConfig) {
+                                // Fallback for old columns without urlConfig
+                                displayUrl = `https://${value}`;
+                                console.log('Using fallback protocol: https →', displayUrl);
+                              }
+                            }
+                            
+                            return displayUrl;
+                          })()
+                          : column.dataType === 'email' && value ? 
+                          value
                           : column.dataType === 'checkbox' ? 
                           (() => {
                             const isChecked = value === 'true' || value === true;

@@ -29,6 +29,7 @@ import MultiSelectConfig from '../Config/MultiSelectConfig';
 import DateConfig from '../Config/DateConfig';
 import FormulaConfig from '../Config/FormulaConfig';
 import CurrencyConfig from '../Config/CurrencyConfig';
+import UrlConfig from '../Config/UrlConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -73,6 +74,9 @@ const AddColumnModal = ({
           break;
         case 'email':
           autoName = 'Email';
+          break;
+        case 'url':
+          autoName = 'URL';
           break;
         default:
           autoName = 'New Column';
@@ -388,6 +392,23 @@ const AddColumnModal = ({
               availableColumns={columns}
               onValidationChange={(isValid, errors) => {
                 // Handle validation state if needed
+              }}
+            />
+          )}
+
+          {/* URL Configuration */}
+          {newColumn.dataType === 'url' && (
+            <UrlConfig
+              config={newColumn.urlConfig}
+              onChange={(config) => {
+                console.log('AddColumnModal: UrlConfig onChange:', {
+                  currentUrlConfig: newColumn.urlConfig,
+                  newConfig: config
+                });
+                setNewColumn({
+                  ...newColumn,
+                  urlConfig: config
+                });
               }}
             />
           )}

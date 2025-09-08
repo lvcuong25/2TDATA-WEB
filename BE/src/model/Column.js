@@ -153,6 +153,16 @@ const columnSchema = new mongoose.Schema({
     },
     default: undefined
   },
+  urlConfig: {
+    type: {
+      protocol: {
+        type: String,
+        enum: ['https', 'http', 'none'],
+        default: 'https'
+      }
+    },
+    default: undefined
+  },
   order: {
     type: Number,
     default: 0

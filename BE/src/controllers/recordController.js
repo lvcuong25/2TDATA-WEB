@@ -104,6 +104,36 @@ export const createRecord = async (req, res) => {
         }
       }
 
+      // Validate URL format for url data type
+      if (column.dataType === 'url' && value && value !== '') {
+        let urlToValidate = value;
+        
+        // Auto-add protocol
+        if (!value.startsWith('http://') && !value.startsWith('https://')) {
+          if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
+            const protocol = column.urlConfig.protocol;
+            urlToValidate = `${protocol}://${value}`;
+          } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
+            // Don't add protocol, keep original value
+            urlToValidate = value;
+          } else if (!column.urlConfig) {
+            // Fallback for old columns without urlConfig
+            urlToValidate = `https://${value}`;
+          }
+        }
+        
+        // Only validate URL format if protocol is not 'none'
+        if (!(column.urlConfig && column.urlConfig.protocol === 'none')) {
+          try {
+            new URL(urlToValidate);
+          } catch {
+            return res.status(400).json({ 
+              message: `Invalid URL format for column '${column.name}'` 
+            });
+          }
+        }
+      }
+
       // Check unique constraints
       if (column.isUnique && value !== undefined && value !== null && value !== '') {
         const existingRecord = await Record.findOne({
@@ -359,6 +389,13 @@ export const updateRecord = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.siteId;
 
+    console.log('Backend: updateRecord called:', {
+      recordId,
+      data,
+      userId,
+      siteId
+    });
+
     if (!data || typeof data !== 'object') {
       return res.status(400).json({ message: 'Data is required and must be an object' });
     }
@@ -389,6 +426,46 @@ export const updateRecord = async (req, res) => {
             return res.status(400).json({ 
               message: `Invalid email format for column '${column.name}'` 
             });
+          }
+        }
+
+        // Validate URL format for url data type
+        if (column.dataType === 'url' && value && value !== '') {
+          let urlToValidate = value;
+          
+          console.log('Backend: URL validation:', {
+            columnName: column.name,
+            value,
+            urlConfig: column.urlConfig,
+            hasUrlConfig: !!column.urlConfig,
+            protocol: column.urlConfig?.protocol
+          });
+          
+          // Auto-add protocol
+          if (!value.startsWith('http://') && !value.startsWith('https://')) {
+            if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
+              const protocol = column.urlConfig.protocol;
+              urlToValidate = `${protocol}://${value}`;
+            } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
+              // Don't add protocol, keep original value
+              urlToValidate = value;
+            } else if (!column.urlConfig) {
+              // Fallback for old columns without urlConfig
+              urlToValidate = `https://${value}`;
+            }
+          }
+          
+          console.log('Backend: URL to validate:', urlToValidate);
+          
+          // Only validate URL format if protocol is not 'none'
+          if (!(column.urlConfig && column.urlConfig.protocol === 'none')) {
+            try {
+              new URL(urlToValidate);
+            } catch {
+              return res.status(400).json({ 
+                message: `Invalid URL format for column '${column.name}'` 
+              });
+            }
           }
         }
 
