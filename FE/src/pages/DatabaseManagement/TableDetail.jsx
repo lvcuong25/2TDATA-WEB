@@ -495,6 +495,9 @@ const TableDetail = () => {
         case 'currency':
           finalName = 'Currency';
           break;
+        case 'percent':
+          finalName = 'Percent';
+          break;
         default:
           finalName = 'New Column';
       }
