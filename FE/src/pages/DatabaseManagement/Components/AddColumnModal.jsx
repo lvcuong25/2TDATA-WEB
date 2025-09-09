@@ -23,13 +23,15 @@ import {
   CodeOutlined,
   CheckCircleOutlined,
   BorderOutlined,
-  PlusOutlined
+  PlusOutlined,
+  PercentageOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
 import DateConfig from '../Config/DateConfig';
 import FormulaConfig from '../Config/FormulaConfig';
 import CurrencyConfig from '../Config/CurrencyConfig';
+import PercentConfig from '../Config/PercentConfig';
 import UrlConfig from '../Config/UrlConfig';
 
 const { Text } = Typography;
@@ -132,6 +134,12 @@ const AddColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <DollarOutlined style={{ color: '#52c41a' }} />
                   <span>Tiền tệ</span>
+                </div>
+              </Option>
+              <Option value="percent">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <PercentageOutlined style={{ color: '#fa541c' }} />
+                  <span>Phần trăm</span>
                 </div>
               </Option>
               
@@ -361,6 +369,14 @@ const AddColumnModal = ({
               onValidationChange={(isValid, errors) => {
                 // Handle validation state if needed
               }}
+            />
+          )}
+
+          {/* Percent Configuration */}
+          {newColumn.dataType === 'percent' && (
+            <PercentConfig
+              percentConfig={newColumn.percentConfig}
+              onPercentConfigChange={(percentConfig) => setNewColumn({ ...newColumn, percentConfig })}
             />
           )}
 

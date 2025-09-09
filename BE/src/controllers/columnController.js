@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, urlConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -22,6 +22,7 @@ export const createColumn = async (req, res) => {
       multiSelectConfig,
       dateConfig,
       currencyConfig,
+      percentConfig,
       urlConfig
     });
 
@@ -135,6 +136,16 @@ export const createColumn = async (req, res) => {
       };
     }
 
+    // Only add percentConfig if dataType is percent and percentConfig is provided
+    if (dataType === 'percent' && percentConfig) {
+      // Ensure percentConfig has all required fields with defaults
+      columnData.percentConfig = {
+        displayFormat: percentConfig.displayFormat || 'percentage',
+        displayAsProgress: percentConfig.displayAsProgress || false,
+        defaultValue: percentConfig.defaultValue !== undefined ? percentConfig.defaultValue : 0
+      };
+    }
+
     // Always add urlConfig for url dataType
     if (dataType === 'url') {
       // Ensure urlConfig has all required fields with defaults
@@ -156,6 +167,11 @@ export const createColumn = async (req, res) => {
 
     // Set default value for currency column if not provided
     if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
+      columnData.defaultValue = 0;
+    }
+
+    // Set default value for percent column if not provided
+    if (dataType === 'percent' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
       columnData.defaultValue = 0;
     }
 
@@ -246,7 +262,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, urlConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -368,6 +384,12 @@ export const updateColumn = async (req, res) => {
       column.currencyConfig = currencyConfig;
     } else if (dataType !== 'currency') {
       column.currencyConfig = undefined;
+    }
+
+    if (dataType === 'percent' && percentConfig !== undefined) {
+      column.percentConfig = percentConfig;
+    } else if (dataType !== 'percent') {
+      column.percentConfig = undefined;
     }
 
     if (dataType === 'url') {

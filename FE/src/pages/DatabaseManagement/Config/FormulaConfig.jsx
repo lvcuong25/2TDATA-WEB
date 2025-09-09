@@ -40,7 +40,10 @@ const FormulaConfig = ({
       { name: 'ROUNDDOWN', description: 'Round down', syntax: 'ROUNDDOWN(number, decimals)', examples: ['ROUNDDOWN(3.9, 0) ➔ 3', 'ROUNDDOWN({price}, 0)'] },
       { name: 'ABS', description: 'Absolute value', syntax: 'ABS(number)', examples: ['ABS(-5) ➔ 5', 'ABS({difference})'] },
       { name: 'SQRT', description: 'Square root', syntax: 'SQRT(number)', examples: ['SQRT(16) ➔ 4', 'SQRT({value})'] },
-      { name: 'POWER', description: 'Power function', syntax: 'POWER(number, power)', examples: ['POWER(2, 3) ➔ 8', 'POWER({base}, 2)'] }
+      { name: 'POWER', description: 'Power function', syntax: 'POWER(number, power)', examples: ['POWER(2, 3) ➔ 8', 'POWER({base}, 2)'] },
+      { name: 'PERCENT', description: 'Convert to decimal', syntax: 'PERCENT(number)', examples: ['PERCENT(50) ➔ 0.5', 'PERCENT({percentage})'] },
+      { name: 'PERCENTAGE', description: 'Convert to percentage', syntax: 'PERCENTAGE(number)', examples: ['PERCENTAGE(0.5) ➔ 50', 'PERCENTAGE({decimal})'] },
+      { name: 'PERCENTCHANGE', description: 'Calculate percent change', syntax: 'PERCENTCHANGE(oldValue, newValue)', examples: ['PERCENTCHANGE(100, 120) ➔ 20', 'PERCENTCHANGE({old}, {new})'] }
     ],
     'Text': [
       { name: 'CONCAT', description: 'Concatenate strings', syntax: 'CONCAT(value1, [value2, ...])', examples: ['CONCAT("Hello", " ", "World")', 'CONCAT({firstName}, " ", {lastName})'] },

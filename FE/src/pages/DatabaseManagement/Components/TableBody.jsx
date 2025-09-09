@@ -21,6 +21,7 @@ import {
 import {
   isCellEditing
 } from '../Utils/cellUtils.jsx';
+import ProgressBar from './ProgressBar';
 
 const { Option } = Select;
 
@@ -56,7 +57,10 @@ const TableBody = ({
   isResizing,
   resizingColumn,
   selectAll,
-  setShowAddColumn
+  setShowAddColumn,
+
+  // Utility functions
+  formatCellValueForDisplay
 }) => {
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
@@ -392,7 +396,15 @@ const TableBody = ({
                             value = '';
                         }
                       } else {
-                        value = record.data?.[column.name] || '';
+                        // For percent columns, use default value if no value provided
+                        if (column.dataType === 'percent') {
+                          const cellValue = record.data?.[column.name];
+                          value = (cellValue !== null && cellValue !== undefined && cellValue !== '') 
+                            ? cellValue 
+                            : (column.percentConfig?.defaultValue || 0);
+                        } else {
+                          value = record.data?.[column.name] || '';
+                        }
                       }
                       const isEditing = isCellEditing(editingCell, record._id, column.name);
                       const isSelected = isCellSelected(record._id, column.name);
@@ -416,6 +428,37 @@ const TableBody = ({
                                   <Input
                                     type="date"
                                     value={formatDateForInput(cellValue)}
+                                    onChange={(e) => setCellValue(e.target.value)}
+                                    onPressEnter={handleCellSave}
+                                    onBlur={handleCellSave}
+                                    autoFocus
+                                    size="small"
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      border: 'none',
+                                      padding: '0',
+                                      margin: '0',
+                                      borderRadius: '0',
+                                      backgroundColor: 'transparent',
+                                      boxShadow: 'none',
+                                      fontSize: 'inherit',
+                                      position: 'absolute',
+                                      top: '0',
+                                      left: '0',
+                                      right: '0',
+                                      bottom: '0',
+                                      boxSizing: 'border-box',
+                                      outline: 'none'
+                                    }}
+                                  />
+                                );
+                              } else if (dataType === 'percent') {
+                                return (
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={cellValue}
                                     onChange={(e) => setCellValue(e.target.value)}
                                     onPressEnter={handleCellSave}
                                     onBlur={handleCellSave}
@@ -678,7 +721,14 @@ const TableBody = ({
 
                                         return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
                                       })()
-                                      : (value || '')
+                                      : column.dataType === 'percent' && column.percentConfig?.displayAsProgress ? (
+                                        <ProgressBar 
+                                          value={Number(value) || 0} 
+                                          max={100}
+                                          color="#1890ff"
+                                          height="6px"
+                                        />
+                                      ) : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
                               }
                             </div>
                           )}
@@ -819,7 +869,15 @@ const TableBody = ({
                       value = '';
                   }
                 } else {
-                  value = record.data?.[column.name] || '';
+                  // For percent columns, use default value if no value provided
+                  if (column.dataType === 'percent') {
+                    const cellValue = record.data?.[column.name];
+                    value = (cellValue !== null && cellValue !== undefined && cellValue !== '') 
+                      ? cellValue 
+                      : (column.percentConfig?.defaultValue || 0);
+                  } else {
+                    value = record.data?.[column.name] || '';
+                  }
                 }
                 const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
                 const isSelected = isCellSelected(record._id, column.name);
@@ -1141,7 +1199,14 @@ const TableBody = ({
 
                                       return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
                                     })()
-                                    : (value || '')
+                                    : column.dataType === 'percent' && column.percentConfig?.displayAsProgress ? (
+                                      <ProgressBar 
+                                        value={Number(value) || 0} 
+                                        max={100}
+                                        color="#1890ff"
+                                        height="6px"
+                                      />
+                                    ) : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
                         }
                       </div>
                     )}

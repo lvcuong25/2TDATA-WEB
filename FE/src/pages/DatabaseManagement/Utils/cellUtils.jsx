@@ -22,6 +22,19 @@ export const initializeCellEditing = (recordId, columnName, currentValue, column
     } else if (column.dataType === 'single_select') {
       // For single-select, use string
       cellValue = currentValue || '';
+    } else if (column.dataType === 'percent') {
+      // For percent, use the raw value or default value
+      if (currentValue !== null && currentValue !== undefined && currentValue !== '') {
+        // If currentValue is a formatted string like "12%", extract the number
+        if (typeof currentValue === 'string' && currentValue.includes('%')) {
+          cellValue = currentValue.replace('%', '');
+        } else {
+          cellValue = currentValue;
+        }
+      } else {
+        // Use default value if no current value
+        cellValue = column.percentConfig?.defaultValue || 0;
+      }
     } else {
       // For other types, use string
       cellValue = currentValue || '';
@@ -207,6 +220,39 @@ export const formatCellValueForDisplay = (value, column) => {
       }
       return value || '';
 
+    case 'percent':
+      // Use default value if no value provided
+      const displayValue = (value !== null && value !== undefined && value !== '') ? value : (column.percentConfig?.defaultValue || 0);
+      
+      console.log('Percent display debug:', {
+        value,
+        percentConfig: column.percentConfig,
+        defaultValue: column.percentConfig?.defaultValue,
+        displayValue
+      });
+      
+      // Always display something if we have a displayValue
+      if (displayValue !== null && displayValue !== undefined) {
+        const numValue = Number(displayValue);
+        if (!isNaN(numValue)) {
+          const { displayFormat = 'percentage', displayAsProgress = false } = column.percentConfig || {};
+          
+          if (displayAsProgress) {
+            // Progress bar is handled in TableBody component
+            // Return empty string here as the actual display is handled by ProgressBar component
+            return '';
+          } else {
+            // Normal display
+            if (displayFormat === 'percentage') {
+              return `${numValue.toFixed(0)}%`;
+            } else {
+              return numValue.toFixed(2);
+            }
+          }
+        }
+      }
+      return '';
+
     case 'checkbox':
       return value ? '✓' : '';
 
@@ -287,6 +333,7 @@ export const formatCellValueForInput = (value, column) => {
 
     case 'number':
     case 'currency':
+    case 'percent':
       return value || '';
 
     case 'checkbox':
@@ -313,6 +360,7 @@ export const getCellInputType = (column) => {
   switch (dataType) {
     case 'number':
     case 'currency':
+    case 'percent':
       return 'number';
     case 'email':
       return 'email';

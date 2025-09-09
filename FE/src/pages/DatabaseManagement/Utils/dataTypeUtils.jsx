@@ -16,7 +16,8 @@ import {
   MailOutlined,
   LinkOutlined,
   CodeOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  PercentageOutlined
 } from '@ant-design/icons';
 
 /**
@@ -50,6 +51,8 @@ export const getDataTypeIcon = (dataType) => {
       return <LinkOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
     case 'json': 
       return <CodeOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
+    case 'percent': 
+      return <PercentageOutlined style={{ color: '#fa541c', fontSize: '16px' }} />;
     default: 
       return <FontSizeOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
   }
@@ -74,6 +77,7 @@ export const getDataTypeColor = (dataType) => {
     case 'email': return '#1890ff';
     case 'url': return '#1890ff';
     case 'json': return '#722ed1';
+    case 'percent': return '#fa541c';
     default: return '#1890ff';
   }
 };
@@ -96,7 +100,8 @@ export const getDataTypeTag = (dataType) => {
     currency: 'green',
     email: 'blue',
     url: 'blue',
-    json: 'purple'
+    json: 'purple',
+    percent: 'orange'
   };
   return <Tag color={colorMap[dataType] || 'blue'}>{dataType.toUpperCase()}</Tag>;
 };
@@ -136,6 +141,7 @@ export const getSupportedDataTypes = () => {
     { value: 'multi_select', label: 'Multi Select', icon: '☑', color: '#722ed1' },
     { value: 'formula', label: 'Formula', icon: 'f', color: '#722ed1' },
     { value: 'currency', label: 'Currency', icon: '$', color: '#52c41a' },
+    { value: 'percent', label: 'Percent', icon: '%', color: '#fa541c' },
     { value: 'email', label: 'Email', icon: '@', color: '#1890ff' },
     { value: 'url', label: 'URL', icon: '🔗', color: '#1890ff' },
     { value: 'json', label: 'JSON', icon: '{}', color: '#722ed1' }

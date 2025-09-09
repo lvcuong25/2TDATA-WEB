@@ -134,6 +134,31 @@ export const createRecord = async (req, res) => {
         }
       }
 
+      // Validate percent format for percent data type
+      if (column.dataType === 'percent') {
+        if (value !== undefined && value !== null && value !== '') {
+          const numValue = Number(value);
+          if (isNaN(numValue)) {
+            return res.status(400).json({ 
+              message: `Invalid percent value for column '${column.name}'. Must be a number.` 
+            });
+          }
+          
+          // Convert to decimal if needed (e.g., 50 -> 0.5 for 50%)
+          if (column.percentConfig && column.percentConfig.displayFormat === 'percentage') {
+            // If value is > 1, assume it's already in percentage format (50 for 50%)
+            // If value is <= 1, assume it's in decimal format (0.5 for 50%)
+            validatedData[column.name] = numValue > 1 ? numValue / 100 : numValue;
+          } else {
+            validatedData[column.name] = numValue;
+          }
+        } else {
+          // Use default value if no value provided
+          const defaultValue = column.percentConfig?.defaultValue || 0;
+          validatedData[column.name] = defaultValue;
+        }
+      }
+
       // Check unique constraints
       if (column.isUnique && value !== undefined && value !== null && value !== '') {
         const existingRecord = await Record.findOne({
@@ -466,6 +491,31 @@ export const updateRecord = async (req, res) => {
                 message: `Invalid URL format for column '${column.name}'` 
               });
             }
+          }
+        }
+
+        // Validate percent format for percent data type
+        if (column.dataType === 'percent') {
+          if (value !== undefined && value !== null && value !== '') {
+            const numValue = Number(value);
+            if (isNaN(numValue)) {
+              return res.status(400).json({ 
+                message: `Invalid percent value for column '${column.name}'. Must be a number.` 
+              });
+            }
+            
+            // Convert to decimal if needed (e.g., 50 -> 0.5 for 50%)
+            if (column.percentConfig && column.percentConfig.displayFormat === 'percentage') {
+              // If value is > 1, assume it's already in percentage format (50 for 50%)
+              // If value is <= 1, assume it's in decimal format (0.5 for 50%)
+              validatedData[column.name] = numValue > 1 ? numValue / 100 : numValue;
+            } else {
+              validatedData[column.name] = numValue;
+            }
+          } else {
+            // Use default value if no value provided
+            const defaultValue = column.percentConfig?.defaultValue || 0;
+            validatedData[column.name] = defaultValue;
           }
         }
 

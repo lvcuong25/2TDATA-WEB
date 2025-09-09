@@ -23,13 +23,15 @@ import {
   CodeOutlined,
   CheckCircleOutlined,
   BorderOutlined,
-  PlusOutlined
+  PlusOutlined,
+  PercentageOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
 import DateConfig from '../Config/DateConfig';
 import FormulaConfig from '../Config/FormulaConfig';
 import CurrencyConfig from '../Config/CurrencyConfig';
+import PercentConfig from '../Config/PercentConfig';
 import UrlConfig from '../Config/UrlConfig';
 
 const { Text } = Typography;
@@ -125,6 +127,12 @@ const EditColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <DollarOutlined style={{ color: '#52c41a' }} />
                   <span>Tiền tệ</span>
+                </div>
+              </Option>
+              <Option value="percent">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <PercentageOutlined style={{ color: '#fa541c' }} />
+                  <span>Phần trăm</span>
                 </div>
               </Option>
               
@@ -341,6 +349,14 @@ const EditColumnModal = ({
                   defaultValue: defaultValue !== undefined ? defaultValue : 0
                 });
               }}
+            />
+          )}
+
+          {/* Percent Configuration */}
+          {editingColumn.dataType === 'percent' && (
+            <PercentConfig
+              percentConfig={editingColumn.percentConfig}
+              onPercentConfigChange={(percentConfig) => setEditingColumn({ ...editingColumn, percentConfig })}
             />
           )}
 

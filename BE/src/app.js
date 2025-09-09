@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from 'dotenv';
 import router from './router/index.js';
-import testFormulaRouter from './routes/testFormula.js';
 import { connectDB } from "./config/db.js";
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -71,8 +70,6 @@ app.use("/api", (req, res, next) => {
 // Main router
 app.use("/api", router);
 
-// Test formula router
-app.use("/api/test", testFormulaRouter);
 
 // 404 handler
 app.use((req, res, next) => {

@@ -145,6 +145,29 @@ export const mathFunctions = {
   SIGN: (number) => {
     const num = Number(number) || 0;
     return num > 0 ? 1 : num < 0 ? -1 : 0;
+  },
+
+  // Percent Functions
+  PERCENT: (number) => {
+    return (Number(number) || 0) / 100;
+  },
+
+  PERCENTAGE: (number) => {
+    return (Number(number) || 0) * 100;
+  },
+
+  PERCENTCHANGE: (oldValue, newValue) => {
+    const old = Number(oldValue) || 0;
+    const newVal = Number(newValue) || 0;
+    if (old === 0) return newVal > 0 ? 100 : 0;
+    return ((newVal - old) / old) * 100;
+  },
+
+  PERCENTRANK: (array, value) => {
+    const nums = array.map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
+    const val = Number(value) || 0;
+    const rank = nums.filter(n => n < val).length;
+    return nums.length > 0 ? (rank / nums.length) * 100 : 0;
   }
 };
 

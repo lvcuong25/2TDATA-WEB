@@ -29,7 +29,7 @@ const columnSchema = new mongoose.Schema({
   dataType: {
     type: String,
     required: true,
-    enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency']
+    enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency', 'percent']
   },
   isRequired: {
     type: Boolean,
@@ -149,6 +149,24 @@ const columnSchema = new mongoose.Schema({
       decimalSeparator: {
         type: String,
         default: '.'
+      }
+    },
+    default: undefined
+  },
+  percentConfig: {
+    type: {
+      displayFormat: {
+        type: String,
+        enum: ['decimal', 'percentage'],
+        default: 'percentage'
+      },
+      displayAsProgress: {
+        type: Boolean,
+        default: false
+      },
+      defaultValue: {
+        type: Number,
+        default: 0
       }
     },
     default: undefined

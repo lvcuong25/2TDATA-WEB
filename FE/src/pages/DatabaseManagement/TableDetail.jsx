@@ -546,6 +546,16 @@ const TableDetail = () => {
       columnData.defaultValue = newColumn.defaultValue !== null && newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0;
     }
     
+    // Add percent configuration if data type is percent
+    if (newColumn.dataType === 'percent') {
+      columnData.percentConfig = newColumn.percentConfig;
+      console.log('Frontend: Sending percent config:', {
+        newColumn: newColumn,
+        percentConfig: newColumn.percentConfig,
+        columnData: columnData
+      });
+    }
+    
     // Add URL configuration if data type is url
     if (newColumn.dataType === 'url') {
       columnData.urlConfig = newColumn.urlConfig;
@@ -694,6 +704,11 @@ const TableDetail = () => {
         thousandsSeparator: ',',
         decimalSeparator: '.'
       },
+      percentConfig: column.percentConfig || {
+        displayFormat: 'percentage',
+        displayAsProgress: false,
+        defaultValue: 0
+      },
       urlConfig: column.urlConfig || {
         protocol: 'https'
       }
@@ -746,6 +761,16 @@ const TableDetail = () => {
       columnData.currencyConfig = editingColumn.currencyConfig;
       // Add default value for currency
       columnData.defaultValue = editingColumn.defaultValue !== null && editingColumn.defaultValue !== undefined ? editingColumn.defaultValue : 0;
+    }
+    
+    // Add percent configuration if data type is percent
+    if (editingColumn.dataType === 'percent') {
+      columnData.percentConfig = editingColumn.percentConfig;
+      console.log('Frontend: Sending percent config for edit:', {
+        editingColumn: editingColumn,
+        percentConfig: editingColumn.percentConfig,
+        columnData: columnData
+      });
     }
     
     // Add URL configuration if data type is url
