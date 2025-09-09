@@ -146,6 +146,12 @@ const TableDetail = () => {
     timeConfig: {
       format: '24'
     },
+    ratingConfig: {
+      maxStars: 5,
+      icon: 'star',
+      color: '#faad14',
+      defaultValue: 0
+    },
     defaultValue: null
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
@@ -226,6 +232,12 @@ const TableDetail = () => {
         },
         timeConfig: {
           format: '24'
+        },
+        ratingConfig: {
+          maxStars: 5,
+          icon: 'star',
+          color: '#faad14',
+          defaultValue: 0
         }
       });
     },
@@ -516,6 +528,9 @@ const TableDetail = () => {
         case 'time':
           finalName = 'Time';
           break;
+        case 'rating':
+          finalName = 'Rating';
+          break;
         default:
           finalName = 'New Column';
       }
@@ -597,9 +612,20 @@ const TableDetail = () => {
     
     // Time data type doesn't need special config
     if (newColumn.dataType === 'time') {
+      columnData.timeConfig = newColumn.timeConfig;
       console.log('Frontend: Sending time column:', {
         newColumn: newColumn,
         columnData: columnData
+      });
+    }
+    
+    // Rating data type doesn't need special config
+    if (newColumn.dataType === 'rating') {
+      columnData.ratingConfig = newColumn.ratingConfig;
+      console.log('Frontend: Sending rating column:', {
+        newColumn: newColumn,
+        columnData: columnData,
+        ratingConfig: newColumn.ratingConfig
       });
     }
     
@@ -754,6 +780,12 @@ const TableDetail = () => {
       },
       timeConfig: column.timeConfig || {
         format: '24'
+      },
+      ratingConfig: column.ratingConfig || {
+        maxStars: 5,
+        icon: 'star',
+        color: '#faad14',
+        defaultValue: 0
       }
     });
     setShowEditColumn(true);
@@ -831,9 +863,20 @@ const TableDetail = () => {
     
     // Time data type doesn't need special config
     if (editingColumn.dataType === 'time') {
+      columnData.timeConfig = editingColumn.timeConfig;
       console.log('Frontend: Editing time column:', {
         editingColumn: editingColumn,
         columnData: columnData
+      });
+    }
+    
+    // Rating data type doesn't need special config
+    if (editingColumn.dataType === 'rating') {
+      columnData.ratingConfig = editingColumn.ratingConfig;
+      console.log('Frontend: Editing rating column:', {
+        editingColumn: editingColumn,
+        columnData: columnData,
+        ratingConfig: editingColumn.ratingConfig
       });
     }
     

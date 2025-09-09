@@ -147,6 +147,31 @@ export const validateCellValue = (value, column) => {
       }
       break;
 
+    case 'rating':
+      if (value && value !== '') {
+        // Rating validation - always supports half ratings
+        const maxStars = column.ratingConfig?.maxStars || 5;
+        const allowHalf = true; // Always allow half stars
+        
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          return { isValid: false, error: 'Rating must be a number' };
+        }
+        
+        if (numValue < 0) {
+          return { isValid: false, error: 'Rating cannot be negative' };
+        }
+        
+        if (numValue > maxStars) {
+          return { isValid: false, error: `Rating cannot exceed ${maxStars} stars` };
+        }
+        
+        if (!allowHalf && numValue % 1 !== 0) {
+          return { isValid: false, error: 'Half stars are not allowed' };
+        }
+      }
+      break;
+
     case 'url':
       if (value && value !== '') {
         let urlToValidate = value;
@@ -400,6 +425,8 @@ export const getCellInputType = (column) => {
       return 'tel';
     case 'time':
       return 'time';
+    case 'rating':
+      return 'number';
     case 'url':
       return 'url';
     case 'date':
@@ -432,6 +459,9 @@ export const getCellInputPlaceholder = (column) => {
     case 'time':
       const format = column.timeConfig?.format || '24';
       return format === '24' ? 'Enter time (HH:MM)' : 'Enter time (H:MM AM/PM)';
+    case 'rating':
+      const maxStars = column.ratingConfig?.maxStars || 5;
+      return `Enter rating (0-${maxStars}, e.g., 3.5)`;
     case 'url':
       return 'Enter URL';
     case 'date':

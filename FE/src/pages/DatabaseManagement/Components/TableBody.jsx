@@ -7,7 +7,17 @@ import {
   CheckSquareOutlined,
   BorderOutlined,
   DownOutlined,
-  RightOutlined
+  RightOutlined,
+  StarOutlined,
+  StarFilled,
+  HeartOutlined,
+  HeartFilled,
+  LikeOutlined,
+  LikeFilled,
+  FireOutlined,
+  FireFilled,
+  TrophyOutlined,
+  TrophyFilled
 } from '@ant-design/icons';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
@@ -622,6 +632,133 @@ const TableBody = ({
                                       outline: 'none'
                                     }}
                                   />
+                                );
+                              } else if (dataType === 'rating') {
+                                const maxStars = column.ratingConfig?.maxStars || 5;
+                                const allowHalf = true; // Always allow half stars
+                                const icon = column.ratingConfig?.icon || 'star';
+                                const color = column.ratingConfig?.color || '#faad14';
+                                
+                                const iconMap = {
+                                  star: { filled: <StarFilled />, outline: <StarOutlined /> },
+                                  heart: { filled: <HeartFilled />, outline: <HeartOutlined /> },
+                                  like: { filled: <LikeFilled />, outline: <LikeOutlined /> },
+                                  fire: { filled: <FireFilled />, outline: <FireOutlined /> },
+                                  trophy: { filled: <TrophyFilled />, outline: <TrophyOutlined /> }
+                                };
+                                
+                                const icons = iconMap[icon] || iconMap.star;
+                                
+                                const handleStarClick = (starValue) => {
+                                  setCellValue(starValue.toString());
+                                };
+                                
+                                const handleHalfStarClick = (starValue) => {
+                                  if (allowHalf) {
+                                    setCellValue((starValue - 0.5).toString());
+                                  }
+                                };
+                                
+                                return (
+                                  <div style={{
+                                    position: 'absolute',
+                                    top: '0',
+                                    left: '0',
+                                    right: '0',
+                                    bottom: '0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                    padding: '4px',
+                                    backgroundColor: 'white',
+                                    border: '1px solid #1890ff',
+                                    borderRadius: '4px'
+                                  }}>
+                                    {Array.from({ length: maxStars }, (_, index) => {
+                                      const starValue = index + 1;
+                                      const currentValue = Number(cellValue) || 0;
+                                      const isFullStar = currentValue >= starValue;
+                                      const isHalfStar = allowHalf && currentValue > index && currentValue < starValue;
+                                      
+                                      return (
+                                        <div key={index} style={{ position: 'relative', display: 'flex' }}>
+                                          {/* Half star click area */}
+                                          {allowHalf && (
+                                            <div
+                                              style={{
+                                                position: 'absolute',
+                                                left: 0,
+                                                top: 0,
+                                                width: '50%',
+                                                height: '100%',
+                                                cursor: 'pointer',
+                                                zIndex: 2
+                                              }}
+                                              onClick={() => handleHalfStarClick(starValue)}
+                                            />
+                                          )}
+                                          
+                                          {/* Full star click area */}
+                                          <div
+                                            style={{
+                                              position: 'absolute',
+                                              right: 0,
+                                              top: 0,
+                                              width: '50%',
+                                              height: '100%',
+                                              cursor: 'pointer',
+                                              zIndex: 2
+                                            }}
+                                            onClick={() => handleStarClick(starValue)}
+                                          />
+                                          
+                                          {/* Star display */}
+                                          <span
+                                            style={{
+                                              color: isFullStar ? color : '#d9d9d9',
+                                              fontSize: '16px',
+                                              position: 'relative'
+                                            }}
+                                          >
+                                            {isFullStar ? icons.filled : icons.outline}
+                                            {isHalfStar && (
+                                              <span
+                                                style={{
+                                                  position: 'absolute',
+                                                  top: 0,
+                                                  left: 0,
+                                                  width: '50%',
+                                                  overflow: 'hidden',
+                                                  color: color
+                                                }}
+                                              >
+                                                {icons.filled}
+                                              </span>
+                                            )}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                    
+                                    {/* Number input for precise value */}
+                                    <Input
+                                      type="number"
+                                      value={cellValue}
+                                      onChange={(e) => setCellValue(e.target.value)}
+                                      onPressEnter={handleCellSave}
+                                      onBlur={handleCellSave}
+                                      size="small"
+                                      placeholder={allowHalf ? `0-${maxStars}` : `0-${maxStars}`}
+                                      min={0}
+                                      max={maxStars}
+                                      step={allowHalf ? 0.5 : 1}
+                                      style={{
+                                        width: '60px',
+                                        marginLeft: '8px',
+                                        fontSize: '12px'
+                                      }}
+                                    />
+                                  </div>
                                 );
                               } else if (dataType === 'checkbox') {
                                 return (
@@ -1268,6 +1405,87 @@ const TableBody = ({
                                   value
                                   : column.dataType === 'time' && value ?
                                     value
+                                    : column.dataType === 'rating' ?
+                                      (() => {
+                                        const ratingValue = value && value !== '' ? Number(value) : 0;
+                                        const maxStars = column.ratingConfig?.maxStars || 5;
+                                        const icon = column.ratingConfig?.icon || 'star';
+                                        const color = column.ratingConfig?.color || '#faad14';
+                                        const allowHalf = true; // Always allow half stars
+                                        
+                                        console.log('TableBody: Displaying rating', {
+                                          columnName: column.name,
+                                          ratingValue,
+                                          maxStars,
+                                          icon,
+                                          color,
+                                          ratingConfig: column.ratingConfig
+                                        });
+                                        
+                                        const iconMap = {
+                                          star: { filled: <StarFilled />, outline: <StarOutlined /> },
+                                          heart: { filled: <HeartFilled />, outline: <HeartOutlined /> },
+                                          like: { filled: <LikeFilled />, outline: <LikeOutlined /> },
+                                          fire: { filled: <FireFilled />, outline: <FireOutlined /> },
+                                          trophy: { filled: <TrophyFilled />, outline: <TrophyOutlined /> }
+                                        };
+                                        
+                                        const icons = iconMap[icon] || iconMap.star;
+                                        
+                                        const renderStar = (index) => {
+                                          const starValue = index + 1;
+                                          const isHalfStar = allowHalf && ratingValue > index && ratingValue < starValue;
+                                          const isFullStar = ratingValue >= starValue;
+                                          
+                                          if (isHalfStar) {
+                                            return (
+                                              <span
+                                                key={index}
+                                                style={{
+                                                  position: 'relative',
+                                                  fontSize: '14px',
+                                                  color: '#d9d9d9'
+                                                }}
+                                              >
+                                                {icons.outline}
+                                                <span
+                                                  style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '50%',
+                                                    overflow: 'hidden',
+                                                    color: color
+                                                  }}
+                                                >
+                                                  {icons.filled}
+                                                </span>
+                                              </span>
+                                            );
+                                          }
+                                          
+                                          return (
+                                            <span
+                                              key={index}
+                                              style={{
+                                                color: isFullStar ? color : '#d9d9d9',
+                                                fontSize: '14px'
+                                              }}
+                                            >
+                                              {isFullStar ? icons.filled : icons.outline}
+                                            </span>
+                                          );
+                                        };
+                                        
+                                        return (
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                            {Array.from({ length: maxStars }, (_, index) => renderStar(index))}
+                                            <span style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>
+                                              {ratingValue}/{maxStars}
+                                            </span>
+                                          </div>
+                                        );
+                                      })()
                                     : column.dataType === 'checkbox' ?
                                   (() => {
                                     const isChecked = value === 'true' || value === true;

@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -25,7 +25,8 @@ export const createColumn = async (req, res) => {
       percentConfig,
       urlConfig,
       phoneConfig,
-      timeConfig
+      timeConfig,
+      ratingConfig
     });
 
     if (!name || name.trim() === '') {
@@ -195,6 +196,20 @@ export const createColumn = async (req, res) => {
       });
     }
 
+    // Rating data type doesn't need special config, just basic validation
+    if (dataType === 'rating') {
+      // Add ratingConfig if provided (even if empty)
+      if (ratingConfig !== undefined) {
+        columnData.ratingConfig = ratingConfig;
+      }
+      console.log('Backend: Creating rating column:', {
+        dataType,
+        name,
+        hasRatingConfig: !!ratingConfig,
+        ratingConfig
+      });
+    }
+
     // Set default value for currency column if not provided
     if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
       columnData.defaultValue = 0;
@@ -292,7 +307,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -460,6 +475,20 @@ export const updateColumn = async (req, res) => {
         name,
         hasTimeConfig: !!timeConfig,
         timeConfig
+      });
+    }
+
+    // Rating data type doesn't need special config
+    if (dataType === 'rating') {
+      // Add ratingConfig if provided (even if empty)
+      if (ratingConfig !== undefined) {
+        column.ratingConfig = ratingConfig;
+      }
+      console.log('Backend: Updating rating column:', {
+        dataType,
+        name,
+        hasRatingConfig: !!ratingConfig,
+        ratingConfig
       });
     }
 

@@ -140,6 +140,38 @@ export const createRecord = async (req, res) => {
         }
       }
 
+      // Validate rating format for rating data type
+      if (column.dataType === 'rating' && value && value !== '') {
+        // Rating validation - always supports half ratings
+        const maxStars = column.ratingConfig?.maxStars || 5;
+        const allowHalf = true; // Always allow half stars
+        
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          return res.status(400).json({ 
+            message: `Invalid rating format for column '${column.name}'. Rating must be a number` 
+          });
+        }
+        
+        if (numValue < 0) {
+          return res.status(400).json({ 
+            message: `Invalid rating for column '${column.name}'. Rating cannot be negative` 
+          });
+        }
+        
+        if (numValue > maxStars) {
+          return res.status(400).json({ 
+            message: `Invalid rating for column '${column.name}'. Rating cannot exceed ${maxStars} stars` 
+          });
+        }
+        
+        if (!allowHalf && numValue % 1 !== 0) {
+          return res.status(400).json({ 
+            message: `Invalid rating for column '${column.name}'. Half stars are not allowed` 
+          });
+        }
+      }
+
       // Validate URL format for url data type
       if (column.dataType === 'url' && value && value !== '') {
         let urlToValidate = value;
@@ -523,6 +555,38 @@ export const updateRecord = async (req, res) => {
                 message: `Invalid time format for column '${column.name}'. Time must be in 12-hour format (e.g., 2:30 PM)` 
               });
             }
+          }
+        }
+
+        // Validate rating format for rating data type
+        if (column.dataType === 'rating' && value && value !== '') {
+          // Rating validation - always supports half ratings
+          const maxStars = column.ratingConfig?.maxStars || 5;
+          const allowHalf = true; // Always allow half stars
+          
+          const numValue = Number(value);
+          if (isNaN(numValue)) {
+            return res.status(400).json({ 
+              message: `Invalid rating format for column '${column.name}'. Rating must be a number` 
+            });
+          }
+          
+          if (numValue < 0) {
+            return res.status(400).json({ 
+              message: `Invalid rating for column '${column.name}'. Rating cannot be negative` 
+            });
+          }
+          
+          if (numValue > maxStars) {
+            return res.status(400).json({ 
+              message: `Invalid rating for column '${column.name}'. Rating cannot exceed ${maxStars} stars` 
+            });
+          }
+          
+          if (!allowHalf && numValue % 1 !== 0) {
+            return res.status(400).json({ 
+              message: `Invalid rating for column '${column.name}'. Half stars are not allowed` 
+            });
           }
         }
 

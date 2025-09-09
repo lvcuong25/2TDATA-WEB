@@ -29,7 +29,7 @@ const columnSchema = new mongoose.Schema({
   dataType: {
     type: String,
     required: true,
-        enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency', 'percent', 'phone', 'time']
+        enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency', 'percent', 'phone', 'time', 'rating']
   },
   isRequired: {
     type: Boolean,
@@ -194,6 +194,31 @@ const columnSchema = new mongoose.Schema({
         type: String,
         enum: ['12', '24'],
         default: '24'
+      }
+    },
+    default: undefined
+  },
+  ratingConfig: {
+    type: {
+      maxStars: {
+        type: Number,
+        min: 1,
+        max: 10,
+        default: 5
+      },
+      icon: {
+        type: String,
+        enum: ['star', 'heart', 'like', 'fire', 'trophy'],
+        default: 'star'
+      },
+      color: {
+        type: String,
+        default: '#faad14'
+      },
+      defaultValue: {
+        type: Number,
+        min: 0,
+        default: 0
       }
     },
     default: undefined

@@ -26,7 +26,8 @@ import {
   PlusOutlined,
   PercentageOutlined,
   PhoneOutlined,
-  FieldTimeOutlined
+  FieldTimeOutlined,
+  StarOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
@@ -36,6 +37,7 @@ import CurrencyConfig from '../Config/CurrencyConfig';
 import PercentConfig from '../Config/PercentConfig';
 import UrlConfig from '../Config/UrlConfig';
 import TimeConfig from '../Config/TimeConfig';
+import RatingConfig from '../Config/RatingConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -148,6 +150,12 @@ const EditColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FieldTimeOutlined style={{ color: '#fa8c16' }} />
                   <span>Thời gian</span>
+                </div>
+              </Option>
+              <Option value="rating">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <StarOutlined style={{ color: '#faad14' }} />
+                  <span>Đánh giá</span>
                 </div>
               </Option>
               
@@ -393,6 +401,14 @@ const EditColumnModal = ({
             <TimeConfig
               timeConfig={editingColumn.timeConfig || { format: '24' }}
               setTimeConfig={(timeConfig) => setEditingColumn({ ...editingColumn, timeConfig })}
+            />
+          )}
+
+          {/* Rating Configuration */}
+          {editingColumn.dataType === 'rating' && (
+            <RatingConfig
+              ratingConfig={editingColumn.ratingConfig || { maxStars: 5, icon: 'star', color: '#faad14', defaultValue: 0 }}
+              setRatingConfig={(ratingConfig) => setEditingColumn({ ...editingColumn, ratingConfig })}
             />
           )}
 

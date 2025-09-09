@@ -26,7 +26,8 @@ import {
   PlusOutlined,
   PercentageOutlined,
   PhoneOutlined,
-  FieldTimeOutlined
+  FieldTimeOutlined,
+  StarOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
@@ -36,6 +37,7 @@ import CurrencyConfig from '../Config/CurrencyConfig';
 import PercentConfig from '../Config/PercentConfig';
 import UrlConfig from '../Config/UrlConfig';
 import TimeConfig from '../Config/TimeConfig';
+import RatingConfig from '../Config/RatingConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -155,6 +157,12 @@ const AddColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FieldTimeOutlined style={{ color: '#fa8c16' }} />
                   <span>Thời gian</span>
+                </div>
+              </Option>
+              <Option value="rating">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <StarOutlined style={{ color: '#faad14' }} />
+                  <span>Đánh giá</span>
                 </div>
               </Option>
               
@@ -417,6 +425,14 @@ const AddColumnModal = ({
             <TimeConfig
               timeConfig={newColumn.timeConfig}
               setTimeConfig={(timeConfig) => setNewColumn({ ...newColumn, timeConfig })}
+            />
+          )}
+
+          {/* Rating Configuration */}
+          {newColumn.dataType === 'rating' && (
+            <RatingConfig
+              ratingConfig={newColumn.ratingConfig}
+              setRatingConfig={(ratingConfig) => setNewColumn({ ...newColumn, ratingConfig })}
             />
           )}
 
