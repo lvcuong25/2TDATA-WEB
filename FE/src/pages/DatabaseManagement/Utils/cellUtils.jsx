@@ -115,6 +115,17 @@ export const validateCellValue = (value, column) => {
       }
       break;
 
+    case 'phone':
+      if (value && value !== '') {
+        // Phone number validation - supports various formats including Vietnamese numbers
+        const phoneRegex = /^[\+]?[0-9][\d]{6,15}$/;
+        const cleanPhone = value.replace(/[\s\-\(\)\.]/g, '');
+        if (!phoneRegex.test(cleanPhone)) {
+          return { isValid: false, error: 'Phone number should be 7-16 digits and can start with 0 or +' };
+        }
+      }
+      break;
+
     case 'url':
       if (value && value !== '') {
         let urlToValidate = value;
@@ -364,6 +375,8 @@ export const getCellInputType = (column) => {
       return 'number';
     case 'email':
       return 'email';
+    case 'phone':
+      return 'tel';
     case 'url':
       return 'url';
     case 'date':
@@ -391,6 +404,8 @@ export const getCellInputPlaceholder = (column) => {
       return 'Enter number';
     case 'email':
       return 'Enter email';
+    case 'phone':
+      return 'Enter phone number';
     case 'url':
       return 'Enter URL';
     case 'date':

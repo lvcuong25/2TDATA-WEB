@@ -140,6 +140,9 @@ const TableDetail = () => {
     urlConfig: {
       protocol: 'https'
     },
+    phoneConfig: {
+      // Phone doesn't need special config, but we include it for consistency
+    },
     defaultValue: null
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
@@ -214,6 +217,9 @@ const TableDetail = () => {
         },
         urlConfig: {
           protocol: 'https'
+        },
+        phoneConfig: {
+          // Phone doesn't need special config, but we include it for consistency
         }
       });
     },
@@ -498,6 +504,9 @@ const TableDetail = () => {
         case 'percent':
           finalName = 'Percent';
           break;
+        case 'phone':
+          finalName = 'Phone';
+          break;
         default:
           finalName = 'New Column';
       }
@@ -565,6 +574,14 @@ const TableDetail = () => {
       console.log('Frontend: Sending URL config:', {
         newColumn: newColumn,
         urlConfig: newColumn.urlConfig,
+        columnData: columnData
+      });
+    }
+    
+    // Phone data type doesn't need special config
+    if (newColumn.dataType === 'phone') {
+      console.log('Frontend: Sending phone column:', {
+        newColumn: newColumn,
         columnData: columnData
       });
     }
@@ -714,6 +731,9 @@ const TableDetail = () => {
       },
       urlConfig: column.urlConfig || {
         protocol: 'https'
+      },
+      phoneConfig: column.phoneConfig || {
+        // Phone doesn't need special config, but we include it for consistency
       }
     });
     setShowEditColumn(true);
@@ -779,6 +799,14 @@ const TableDetail = () => {
     // Add URL configuration if data type is url
     if (editingColumn.dataType === 'url') {
       columnData.urlConfig = editingColumn.urlConfig;
+    }
+    
+    // Phone data type doesn't need special config
+    if (editingColumn.dataType === 'phone') {
+      console.log('Frontend: Editing phone column:', {
+        editingColumn: editingColumn,
+        columnData: columnData
+      });
     }
     
     

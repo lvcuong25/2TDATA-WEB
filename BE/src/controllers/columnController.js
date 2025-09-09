@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -23,7 +23,8 @@ export const createColumn = async (req, res) => {
       dateConfig,
       currencyConfig,
       percentConfig,
-      urlConfig
+      urlConfig,
+      phoneConfig
     });
 
     if (!name || name.trim() === '') {
@@ -165,6 +166,20 @@ export const createColumn = async (req, res) => {
       });
     }
 
+    // Phone data type doesn't need special config, just basic validation
+    if (dataType === 'phone') {
+      // Add phoneConfig if provided (even if empty)
+      if (phoneConfig !== undefined) {
+        columnData.phoneConfig = phoneConfig;
+      }
+      console.log('Backend: Creating phone column:', {
+        dataType,
+        name,
+        hasPhoneConfig: !!phoneConfig,
+        phoneConfig
+      });
+    }
+
     // Set default value for currency column if not provided
     if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
       columnData.defaultValue = 0;
@@ -262,7 +277,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -403,6 +418,20 @@ export const updateColumn = async (req, res) => {
       });
     } else if (dataType !== 'url') {
       column.urlConfig = undefined;
+    }
+
+    // Phone data type doesn't need special config
+    if (dataType === 'phone') {
+      // Add phoneConfig if provided (even if empty)
+      if (phoneConfig !== undefined) {
+        column.phoneConfig = phoneConfig;
+      }
+      console.log('Backend: Updating phone column:', {
+        dataType,
+        name,
+        hasPhoneConfig: !!phoneConfig,
+        phoneConfig
+      });
     }
 
 

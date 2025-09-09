@@ -24,7 +24,8 @@ import {
   CheckCircleOutlined,
   BorderOutlined,
   PlusOutlined,
-  PercentageOutlined
+  PercentageOutlined,
+  PhoneOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
@@ -140,6 +141,12 @@ const AddColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <PercentageOutlined style={{ color: '#fa541c' }} />
                   <span>Phần trăm</span>
+                </div>
+              </Option>
+              <Option value="phone">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <PhoneOutlined style={{ color: '#13c2c2' }} />
+                  <span>Số điện thoại</span>
                 </div>
               </Option>
               

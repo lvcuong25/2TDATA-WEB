@@ -104,6 +104,18 @@ export const createRecord = async (req, res) => {
         }
       }
 
+      // Validate phone format for phone data type
+      if (column.dataType === 'phone' && value && value !== '') {
+        // Phone number validation - supports various formats including Vietnamese numbers
+        const phoneRegex = /^[\+]?[0-9][\d]{6,15}$/;
+        const cleanPhone = value.replace(/[\s\-\(\)\.]/g, '');
+        if (!phoneRegex.test(cleanPhone)) {
+          return res.status(400).json({ 
+            message: `Invalid phone number format for column '${column.name}'. Phone number should be 7-16 digits and can start with 0 or +` 
+          });
+        }
+      }
+
       // Validate URL format for url data type
       if (column.dataType === 'url' && value && value !== '') {
         let urlToValidate = value;
@@ -450,6 +462,18 @@ export const updateRecord = async (req, res) => {
           if (!emailRegex.test(value)) {
             return res.status(400).json({ 
               message: `Invalid email format for column '${column.name}'` 
+            });
+          }
+        }
+
+        // Validate phone format for phone data type
+        if (column.dataType === 'phone' && value && value !== '') {
+          // Phone number validation - supports various formats including Vietnamese numbers
+          const phoneRegex = /^[\+]?[0-9][\d]{6,15}$/;
+          const cleanPhone = value.replace(/[\s\-\(\)\.]/g, '');
+          if (!phoneRegex.test(cleanPhone)) {
+            return res.status(400).json({ 
+              message: `Invalid phone number format for column '${column.name}'. Phone number should be 7-16 digits and can start with 0 or +` 
             });
           }
         }
