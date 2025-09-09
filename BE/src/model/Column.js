@@ -29,7 +29,7 @@ const columnSchema = new mongoose.Schema({
   dataType: {
     type: String,
     required: true,
-    enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency', 'percent', 'phone']
+        enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency', 'percent', 'phone', 'time']
   },
   isRequired: {
     type: Boolean,
@@ -185,6 +185,16 @@ const columnSchema = new mongoose.Schema({
     type: {
       // Phone doesn't need special config, but we include it for consistency
       // Can be extended in the future if needed
+    },
+    default: undefined
+  },
+  timeConfig: {
+    type: {
+      format: {
+        type: String,
+        enum: ['12', '24'],
+        default: '24'
+      }
     },
     default: undefined
   },

@@ -25,7 +25,8 @@ import {
   BorderOutlined,
   PlusOutlined,
   PercentageOutlined,
-  PhoneOutlined
+  PhoneOutlined,
+  FieldTimeOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
@@ -34,6 +35,7 @@ import FormulaConfig from '../Config/FormulaConfig';
 import CurrencyConfig from '../Config/CurrencyConfig';
 import PercentConfig from '../Config/PercentConfig';
 import UrlConfig from '../Config/UrlConfig';
+import TimeConfig from '../Config/TimeConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -140,6 +142,12 @@ const EditColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <PhoneOutlined style={{ color: '#13c2c2' }} />
                   <span>Số điện thoại</span>
+                </div>
+              </Option>
+              <Option value="time">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FieldTimeOutlined style={{ color: '#fa8c16' }} />
+                  <span>Thời gian</span>
                 </div>
               </Option>
               
@@ -377,6 +385,14 @@ const EditColumnModal = ({
                 ...editingColumn,
                 urlConfig: config
               })}
+            />
+          )}
+
+          {/* Time Configuration */}
+          {editingColumn.dataType === 'time' && (
+            <TimeConfig
+              timeConfig={editingColumn.timeConfig || { format: '24' }}
+              setTimeConfig={(timeConfig) => setEditingColumn({ ...editingColumn, timeConfig })}
             />
           )}
 

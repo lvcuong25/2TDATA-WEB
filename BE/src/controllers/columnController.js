@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -24,7 +24,8 @@ export const createColumn = async (req, res) => {
       currencyConfig,
       percentConfig,
       urlConfig,
-      phoneConfig
+      phoneConfig,
+      timeConfig
     });
 
     if (!name || name.trim() === '') {
@@ -180,6 +181,20 @@ export const createColumn = async (req, res) => {
       });
     }
 
+    // Time data type doesn't need special config, just basic validation
+    if (dataType === 'time') {
+      // Add timeConfig if provided (even if empty)
+      if (timeConfig !== undefined) {
+        columnData.timeConfig = timeConfig;
+      }
+      console.log('Backend: Creating time column:', {
+        dataType,
+        name,
+        hasTimeConfig: !!timeConfig,
+        timeConfig
+      });
+    }
+
     // Set default value for currency column if not provided
     if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
       columnData.defaultValue = 0;
@@ -277,7 +292,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -431,6 +446,20 @@ export const updateColumn = async (req, res) => {
         name,
         hasPhoneConfig: !!phoneConfig,
         phoneConfig
+      });
+    }
+
+    // Time data type doesn't need special config
+    if (dataType === 'time') {
+      // Add timeConfig if provided (even if empty)
+      if (timeConfig !== undefined) {
+        column.timeConfig = timeConfig;
+      }
+      console.log('Backend: Updating time column:', {
+        dataType,
+        name,
+        hasTimeConfig: !!timeConfig,
+        timeConfig
       });
     }
 

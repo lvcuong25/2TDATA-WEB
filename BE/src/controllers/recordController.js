@@ -116,6 +116,30 @@ export const createRecord = async (req, res) => {
         }
       }
 
+      // Validate time format for time data type
+      if (column.dataType === 'time' && value && value !== '') {
+        // Time validation - supports both 12h and 24h format based on column config
+        const format = column.timeConfig?.format || '24';
+        
+        if (format === '24') {
+          // 24-hour format: HH:MM (00:00 to 23:59)
+          const time24Regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+          if (!time24Regex.test(value)) {
+            return res.status(400).json({ 
+              message: `Invalid time format for column '${column.name}'. Time must be in 24-hour format (e.g., 14:30)` 
+            });
+          }
+        } else {
+          // 12-hour format: H:MM AM/PM (1:00 AM to 12:59 PM)
+          const time12Regex = /^(1[0-2]|[1-9]):[0-5][0-9]\s?(AM|PM)$/i;
+          if (!time12Regex.test(value)) {
+            return res.status(400).json({ 
+              message: `Invalid time format for column '${column.name}'. Time must be in 12-hour format (e.g., 2:30 PM)` 
+            });
+          }
+        }
+      }
+
       // Validate URL format for url data type
       if (column.dataType === 'url' && value && value !== '') {
         let urlToValidate = value;
@@ -475,6 +499,30 @@ export const updateRecord = async (req, res) => {
             return res.status(400).json({ 
               message: `Invalid phone number format for column '${column.name}'. Phone number should be 7-16 digits and can start with 0 or +` 
             });
+          }
+        }
+
+        // Validate time format for time data type
+        if (column.dataType === 'time' && value && value !== '') {
+          // Time validation - supports both 12h and 24h format based on column config
+          const format = column.timeConfig?.format || '24';
+          
+          if (format === '24') {
+            // 24-hour format: HH:MM (00:00 to 23:59)
+            const time24Regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            if (!time24Regex.test(value)) {
+              return res.status(400).json({ 
+                message: `Invalid time format for column '${column.name}'. Time must be in 24-hour format (e.g., 14:30)` 
+              });
+            }
+          } else {
+            // 12-hour format: H:MM AM/PM (1:00 AM to 12:59 PM)
+            const time12Regex = /^(1[0-2]|[1-9]):[0-5][0-9]\s?(AM|PM)$/i;
+            if (!time12Regex.test(value)) {
+              return res.status(400).json({ 
+                message: `Invalid time format for column '${column.name}'. Time must be in 12-hour format (e.g., 2:30 PM)` 
+              });
+            }
           }
         }
 

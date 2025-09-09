@@ -143,6 +143,9 @@ const TableDetail = () => {
     phoneConfig: {
       // Phone doesn't need special config, but we include it for consistency
     },
+    timeConfig: {
+      format: '24'
+    },
     defaultValue: null
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
@@ -220,6 +223,9 @@ const TableDetail = () => {
         },
         phoneConfig: {
           // Phone doesn't need special config, but we include it for consistency
+        },
+        timeConfig: {
+          format: '24'
         }
       });
     },
@@ -507,6 +513,9 @@ const TableDetail = () => {
         case 'phone':
           finalName = 'Phone';
           break;
+        case 'time':
+          finalName = 'Time';
+          break;
         default:
           finalName = 'New Column';
       }
@@ -581,6 +590,14 @@ const TableDetail = () => {
     // Phone data type doesn't need special config
     if (newColumn.dataType === 'phone') {
       console.log('Frontend: Sending phone column:', {
+        newColumn: newColumn,
+        columnData: columnData
+      });
+    }
+    
+    // Time data type doesn't need special config
+    if (newColumn.dataType === 'time') {
+      console.log('Frontend: Sending time column:', {
         newColumn: newColumn,
         columnData: columnData
       });
@@ -734,6 +751,9 @@ const TableDetail = () => {
       },
       phoneConfig: column.phoneConfig || {
         // Phone doesn't need special config, but we include it for consistency
+      },
+      timeConfig: column.timeConfig || {
+        format: '24'
       }
     });
     setShowEditColumn(true);
@@ -804,6 +824,14 @@ const TableDetail = () => {
     // Phone data type doesn't need special config
     if (editingColumn.dataType === 'phone') {
       console.log('Frontend: Editing phone column:', {
+        editingColumn: editingColumn,
+        columnData: columnData
+      });
+    }
+    
+    // Time data type doesn't need special config
+    if (editingColumn.dataType === 'time') {
+      console.log('Frontend: Editing time column:', {
         editingColumn: editingColumn,
         columnData: columnData
       });

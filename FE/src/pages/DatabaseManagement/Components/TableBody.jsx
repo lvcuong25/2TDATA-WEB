@@ -589,6 +589,40 @@ const TableBody = ({
                                     }}
                                   />
                                 );
+                              } else if (dataType === 'time') {
+                                const format = column.timeConfig?.format || '24';
+                                const placeholder = format === '24' ? 'Enter time (HH:MM)' : 'Enter time (H:MM AM/PM)';
+                                
+                                return (
+                                  <Input
+                                    type={format === '24' ? 'time' : 'text'}
+                                    value={cellValue}
+                                    onChange={(e) => setCellValue(e.target.value)}
+                                    onPressEnter={handleCellSave}
+                                    onBlur={handleCellSave}
+                                    autoFocus
+                                    size="small"
+                                    placeholder={placeholder}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      border: 'none',
+                                      padding: '0',
+                                      margin: '0',
+                                      borderRadius: '0',
+                                      backgroundColor: 'transparent',
+                                      boxShadow: 'none',
+                                      fontSize: 'inherit',
+                                      position: 'absolute',
+                                      top: '0',
+                                      left: '0',
+                                      right: '0',
+                                      bottom: '0',
+                                      boxSizing: 'border-box',
+                                      outline: 'none'
+                                    }}
+                                  />
+                                );
                               } else if (dataType === 'checkbox') {
                                 return (
                                   <Select
@@ -1019,6 +1053,40 @@ const TableBody = ({
                               }}
                             />
                           );
+                        } else if (dataType === 'time') {
+                          const format = column.timeConfig?.format || '24';
+                          const placeholder = format === '24' ? 'Enter time (HH:MM)' : 'Enter time (H:MM AM/PM)';
+                          
+                          return (
+                            <Input
+                              type={format === '24' ? 'time' : 'text'}
+                              value={cellValue}
+                              onChange={(e) => setCellValue(e.target.value)}
+                              onPressEnter={handleCellSave}
+                              onBlur={handleCellSave}
+                              autoFocus
+                              size="small"
+                              placeholder={placeholder}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                                padding: '0',
+                                margin: '0',
+                                borderRadius: '0',
+                                backgroundColor: 'transparent',
+                                boxShadow: 'none',
+                                fontSize: 'inherit',
+                                position: 'absolute',
+                                top: '0',
+                                left: '0',
+                                right: '0',
+                                bottom: '0',
+                                boxSizing: 'border-box',
+                                outline: 'none'
+                              }}
+                            />
+                          );
                         } else if (dataType === 'year') {
                           return (
                             <DatePicker
@@ -1198,7 +1266,9 @@ const TableBody = ({
                                 value
                                 : column.dataType === 'phone' && value ?
                                   value
-                                  : column.dataType === 'checkbox' ?
+                                  : column.dataType === 'time' && value ?
+                                    value
+                                    : column.dataType === 'checkbox' ?
                                   (() => {
                                     const isChecked = value === 'true' || value === true;
                                     const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
