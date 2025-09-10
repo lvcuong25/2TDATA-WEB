@@ -647,9 +647,8 @@ const TableDetail = () => {
         const config = column.checkboxConfig || { defaultValue: false };
         emptyData[column.name] = config.defaultValue;
       } else if (column.dataType === 'single_select') {
-        // Use default value from single select configuration
-        const config = column.singleSelectConfig || { defaultValue: '' };
-        emptyData[column.name] = config.defaultValue;
+        // For single select, use null so display logic can show default value
+        emptyData[column.name] = null;
       } else if (column.dataType === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
@@ -684,9 +683,8 @@ const TableDetail = () => {
         const config = column.checkboxConfig || { defaultValue: false };
         emptyData[column.name] = config.defaultValue;
       } else if (column.dataType === 'single_select') {
-        // Use default value from single select configuration
-        const config = column.singleSelectConfig || { defaultValue: '' };
-        emptyData[column.name] = config.defaultValue;
+        // For single select, use null so display logic can show default value
+        emptyData[column.name] = null;
       } else if (column.dataType === 'multi_select') {
         // Use default values from multi select configuration
         const config = column.multiSelectConfig || { defaultValue: [] };

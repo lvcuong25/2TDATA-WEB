@@ -412,6 +412,17 @@ const TableBody = ({
                           value = (cellValue !== null && cellValue !== undefined && cellValue !== '') 
                             ? cellValue 
                             : (column.percentConfig?.defaultValue || 0);
+                        } else if (column.dataType === 'single_select') {
+                          // For single select columns, use default value if cell is null/undefined (new records)
+                          // But if cell is empty string (cleared by user), show empty
+                          const cellValue = record.data?.[column.name];
+                          if (cellValue === null || cellValue === undefined) {
+                            // New record - use default value
+                            value = column.singleSelectConfig?.defaultValue || '';
+                          } else {
+                            // Existing record - use actual value (including empty string if cleared)
+                            value = cellValue;
+                          }
                         } else {
                           value = record.data?.[column.name] || '';
                         }
@@ -793,6 +804,45 @@ const TableBody = ({
                                     <Option value="false">False</Option>
                                   </Select>
                                 );
+                              } else if (dataType === 'single_select') {
+                                const options = column.singleSelectConfig?.options || [];
+                                return (
+                                  <Select
+                                    value={cellValue}
+                                    onChange={(value) => {
+                                      setCellValue(value || '');
+                                      handleCellSave();
+                                    }}
+                                    autoFocus
+                                    size="small"
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      border: 'none',
+                                      padding: '0',
+                                      margin: '0',
+                                      borderRadius: '0',
+                                      backgroundColor: 'transparent',
+                                      boxShadow: 'none',
+                                      fontSize: 'inherit',
+                                      position: 'absolute',
+                                      top: '0',
+                                      left: '0',
+                                      right: '0',
+                                      bottom: '0',
+                                      boxSizing: 'border-box',
+                                      outline: 'none'
+                                    }}
+                                    placeholder="Select option"
+                                    allowClear
+                                  >
+                                    {options.map((option, index) => (
+                                      <Option key={index} value={option}>
+                                        {option}
+                                      </Option>
+                                    ))}
+                                  </Select>
+                                );
                               } else {
                                 return (
                                   <Input
@@ -827,7 +877,7 @@ const TableBody = ({
                           ) : (
                             <div
                               style={{
-                                cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer',
+                                cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? 'default' : 'pointer',
                                 padding: '8px',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -841,9 +891,9 @@ const TableBody = ({
                                 color: column.isSystem ? '#666' : '#333',
                                 fontStyle: column.isSystem ? 'italic' : 'normal'
                               }}
-                              onClick={column.isSystem || column.dataType === 'checkbox' ? undefined : () => handleCellClick(record._id, column.name, value)}
-                              onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                              onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
                               {column.dataType === 'datetime' && value ? 
                                 value // Already formatted by formatDateTime
@@ -902,6 +952,47 @@ const TableBody = ({
                                         </div>
                                       );
                                     })()
+                                    : column.dataType === 'single_select' ?
+                                      (() => {
+                                        const options = column.singleSelectConfig?.options || [];
+                                        const selectedValue = value;
+                                        
+                                        return (
+                                          <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            height: '100%',
+                                            width: '100%'
+                                          }}>
+                                            <Select
+                                              value={selectedValue}
+                                              onChange={(newValue) => {
+                                                const updatedData = { ...record.data };
+                                                updatedData[column.name] = newValue || '';
+
+                                                updateRecordMutation.mutate({
+                                                  recordId: record._id,
+                                                  data: updatedData
+                                                });
+                                              }}
+                                              size="small"
+                                              style={{
+                                                width: '100%',
+                                                minWidth: '80px'
+                                              }}
+                                              placeholder="Select option"
+                                              allowClear
+                                            >
+                                              {options.map((option, index) => (
+                                                <Option key={index} value={option}>
+                                                  {option}
+                                                </Option>
+                                              ))}
+                                            </Select>
+                                          </div>
+                                        );
+                                      })()
                                     : column.dataType === 'currency' && value !== null && value !== undefined ?
                                       (() => {
                                         const config = column.currencyConfig || {
@@ -1077,6 +1168,17 @@ const TableBody = ({
                     value = (cellValue !== null && cellValue !== undefined && cellValue !== '') 
                       ? cellValue 
                       : (column.percentConfig?.defaultValue || 0);
+                  } else if (column.dataType === 'single_select') {
+                    // For single select columns, use default value if cell is null/undefined (new records)
+                    // But if cell is empty string (cleared by user), show empty
+                    const cellValue = record.data?.[column.name];
+                    if (cellValue === null || cellValue === undefined) {
+                      // New record - use default value
+                      value = column.singleSelectConfig?.defaultValue || '';
+                    } else {
+                      // Existing record - use actual value (including empty string if cleared)
+                      value = cellValue;
+                    }
                   } else {
                     value = record.data?.[column.name] || '';
                   }
@@ -1300,6 +1402,45 @@ const TableBody = ({
                               <Option value="false">False</Option>
                             </Select>
                           );
+                        } else if (dataType === 'single_select') {
+                          const options = column.singleSelectConfig?.options || [];
+                          return (
+                            <Select
+                              value={cellValue}
+                              onChange={(value) => {
+                                setCellValue(value || '');
+                                handleCellSave();
+                              }}
+                              autoFocus
+                              size="small"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                                padding: '0',
+                                margin: '0',
+                                borderRadius: '0',
+                                backgroundColor: 'transparent',
+                                boxShadow: 'none',
+                                fontSize: 'inherit',
+                                position: 'absolute',
+                                top: '0',
+                                left: '0',
+                                right: '0',
+                                bottom: '0',
+                                boxSizing: 'border-box',
+                                outline: 'none'
+                              }}
+                              placeholder="Select option"
+                              allowClear
+                            >
+                              {options.map((option, index) => (
+                                <Option key={index} value={option}>
+                                  {option}
+                                </Option>
+                              ))}
+                            </Select>
+                          );
                         } else {
                           return (
                             <Input
@@ -1334,7 +1475,7 @@ const TableBody = ({
                     ) : (
                       <div
                         style={{
-                          cursor: column.isSystem || column.dataType === 'checkbox' ? 'default' : 'pointer',
+                          cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? 'default' : 'pointer',
                           padding: '8px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1348,9 +1489,9 @@ const TableBody = ({
                           color: column.isSystem ? '#666' : '#333',
                           fontStyle: column.isSystem ? 'italic' : 'normal'
                         }}
-                        onClick={column.isSystem || column.dataType === 'checkbox' ? undefined : () => handleCellClick(record._id, column.name, value)}
-                        onMouseEnter={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                        onMouseLeave={column.isSystem || column.dataType === 'checkbox' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                        onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                        onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
                         {column.dataType === 'datetime' && value ? 
                           value // Already formatted by formatDateTime
@@ -1530,6 +1671,47 @@ const TableBody = ({
                                       </div>
                                     );
                                   })()
+                                  : column.dataType === 'single_select' ?
+                                    (() => {
+                                      const options = column.singleSelectConfig?.options || [];
+                                      const selectedValue = value;
+                                      
+                                      return (
+                                        <div style={{
+                                          display: 'flex',
+                                          justifyContent: 'center',
+                                          alignItems: 'center',
+                                          height: '100%',
+                                          width: '100%'
+                                        }}>
+                                          <Select
+                                            value={selectedValue}
+                                            onChange={(newValue) => {
+                                              const updatedData = { ...record.data };
+                                              updatedData[column.name] = newValue || '';
+
+                                              updateRecordMutation.mutate({
+                                                recordId: record._id,
+                                                data: updatedData
+                                              });
+                                            }}
+                                            size="small"
+                                            style={{
+                                              width: '100%',
+                                              minWidth: '80px'
+                                            }}
+                                            placeholder="Select option"
+                                            allowClear
+                                          >
+                                            {options.map((option, index) => (
+                                              <Option key={index} value={option}>
+                                                {option}
+                                              </Option>
+                                            ))}
+                                          </Select>
+                                        </div>
+                                      );
+                                    })()
                                   : column.dataType === 'currency' && value !== null && value !== undefined ?
                                     (() => {
                                       const config = column.currencyConfig || {
