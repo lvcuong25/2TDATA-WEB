@@ -1261,6 +1261,7 @@ const TableDetail = () => {
             handleEditColumn={handleEditColumn}
             handleDeleteColumn={handleDeleteColumn}
             updateRecordMutation={updateRecordMutation}
+            updateColumnMutation={updateColumnMutation}
             isResizing={isResizing}
             resizingColumn={resizingColumn}
             // Utility functions

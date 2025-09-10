@@ -62,6 +62,7 @@ const TableBody = ({
   handleToggleGroupExpansion,
   handleContextMenu,
   updateRecordMutation,
+  updateColumnMutation,
 
   // State
   isResizing,
@@ -91,6 +92,27 @@ const TableBody = ({
   // Check if a cell is selected
   const isCellSelected = (recordId, columnName) => {
     return selectedCell?.recordId === recordId && selectedCell?.columnName === columnName;
+  };
+
+  // Function to add new option to single select column
+  const handleAddNewOption = (column, newOption) => {
+    if (!newOption || !newOption.trim()) return;
+    
+    const currentOptions = column.singleSelectConfig?.options || [];
+    const updatedOptions = [...currentOptions, newOption.trim()];
+    
+    const updatedColumnData = {
+      ...column,
+      singleSelectConfig: {
+        ...column.singleSelectConfig,
+        options: updatedOptions
+      }
+    };
+    
+    updateColumnMutation.mutate({
+      columnId: column._id,
+      columnData: updatedColumnData
+    });
   };
 
   return (
@@ -835,6 +857,56 @@ const TableBody = ({
                                     }}
                                     placeholder="Select option"
                                     allowClear
+                                    dropdownRender={(menu) => (
+                                      <div>
+                                        {menu}
+                                        <div style={{ 
+                                          padding: '4px 6px', 
+                                          borderTop: '1px solid #e8e8e8',
+                                          backgroundColor: '#f8f9fa'
+                                        }}>
+                                          <div style={{ 
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            padding: '6px',
+                                            backgroundColor: '#ffffff',
+                                            border: '1px solid #e1e5e9',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                                            width: '100%',
+                                            height: '28px'
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.target.style.backgroundColor = '#f0f7ff';
+                                            e.target.style.borderColor = '#1890ff';
+                                            e.target.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
+                                            e.target.style.transform = 'translateY(-1px)';
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.target.style.backgroundColor = '#ffffff';
+                                            e.target.style.borderColor = '#e1e5e9';
+                                            e.target.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+                                            e.target.style.transform = 'translateY(0)';
+                                          }}
+                                          onClick={() => {
+                                            const newOption = prompt('Enter new option:');
+                                            if (newOption && newOption.trim()) {
+                                              handleAddNewOption(column, newOption);
+                                            }
+                                          }}
+                                          >
+                                            <PlusOutlined style={{ 
+                                              color: '#1890ff', 
+                                              fontSize: '14px',
+                                              fontWeight: 'bold'
+                                            }} />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
                                   >
                                     {options.map((option, index) => (
                                       <Option key={index} value={option}>
@@ -983,6 +1055,56 @@ const TableBody = ({
                                               }}
                                               placeholder="Select option"
                                               allowClear
+                                              dropdownRender={(menu) => (
+                                                <div>
+                                                  {menu}
+                                                  <div style={{ 
+                                                    padding: '4px 6px', 
+                                                    borderTop: '1px solid #e8e8e8',
+                                                    backgroundColor: '#f8f9fa'
+                                                  }}>
+                                                    <div style={{ 
+                                                      display: 'flex', 
+                                                      alignItems: 'center', 
+                                                      justifyContent: 'center',
+                                                      padding: '6px',
+                                                      backgroundColor: '#ffffff',
+                                                      border: '1px solid #e1e5e9',
+                                                      borderRadius: '4px',
+                                                      cursor: 'pointer',
+                                                      transition: 'all 0.2s ease',
+                                                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                                                      width: '100%',
+                                                      height: '28px'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                      e.target.style.backgroundColor = '#f0f7ff';
+                                                      e.target.style.borderColor = '#1890ff';
+                                                      e.target.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
+                                                      e.target.style.transform = 'translateY(-1px)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                      e.target.style.backgroundColor = '#ffffff';
+                                                      e.target.style.borderColor = '#e1e5e9';
+                                                      e.target.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+                                                      e.target.style.transform = 'translateY(0)';
+                                                    }}
+                                                    onClick={() => {
+                                                      const newOption = prompt('Enter new option:');
+                                                      if (newOption && newOption.trim()) {
+                                                        handleAddNewOption(column, newOption);
+                                                      }
+                                                    }}
+                                                    >
+                                                      <PlusOutlined style={{ 
+                                                        color: '#1890ff', 
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold'
+                                                      }} />
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              )}
                                             >
                                               {options.map((option, index) => (
                                                 <Option key={index} value={option}>
@@ -1433,6 +1555,56 @@ const TableBody = ({
                               }}
                               placeholder="Select option"
                               allowClear
+                              dropdownRender={(menu) => (
+                                <div>
+                                  {menu}
+                                  <div style={{ 
+                                    padding: '4px 6px', 
+                                    borderTop: '1px solid #e8e8e8',
+                                    backgroundColor: '#f8f9fa'
+                                  }}>
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      justifyContent: 'center',
+                                      padding: '6px',
+                                      backgroundColor: '#ffffff',
+                                      border: '1px solid #e1e5e9',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease',
+                                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                                      width: '100%',
+                                      height: '28px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.backgroundColor = '#f0f7ff';
+                                      e.target.style.borderColor = '#1890ff';
+                                      e.target.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
+                                      e.target.style.transform = 'translateY(-1px)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.backgroundColor = '#ffffff';
+                                      e.target.style.borderColor = '#e1e5e9';
+                                      e.target.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+                                      e.target.style.transform = 'translateY(0)';
+                                    }}
+                                    onClick={() => {
+                                      const newOption = prompt('Enter new option:');
+                                      if (newOption && newOption.trim()) {
+                                        handleAddNewOption(column, newOption);
+                                      }
+                                    }}
+                                    >
+                                      <PlusOutlined style={{ 
+                                        color: '#1890ff', 
+                                        fontSize: '14px',
+                                        fontWeight: 'bold'
+                                      }} />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             >
                               {options.map((option, index) => (
                                 <Option key={index} value={option}>
@@ -1702,6 +1874,56 @@ const TableBody = ({
                                             }}
                                             placeholder="Select option"
                                             allowClear
+                                            dropdownRender={(menu) => (
+                                              <div>
+                                                {menu}
+                                                <div style={{ 
+                                                  padding: '4px 6px', 
+                                                  borderTop: '1px solid #e8e8e8',
+                                                  backgroundColor: '#f8f9fa'
+                                                }}>
+                                                  <div style={{ 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    justifyContent: 'center',
+                                                    padding: '6px',
+                                                    backgroundColor: '#ffffff',
+                                                    border: '1px solid #e1e5e9',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                                                    width: '100%',
+                                                    height: '28px'
+                                                  }}
+                                                  onMouseEnter={(e) => {
+                                                    e.target.style.backgroundColor = '#f0f7ff';
+                                                    e.target.style.borderColor = '#1890ff';
+                                                    e.target.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
+                                                    e.target.style.transform = 'translateY(-1px)';
+                                                  }}
+                                                  onMouseLeave={(e) => {
+                                                    e.target.style.backgroundColor = '#ffffff';
+                                                    e.target.style.borderColor = '#e1e5e9';
+                                                    e.target.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+                                                    e.target.style.transform = 'translateY(0)';
+                                                  }}
+                                                  onClick={() => {
+                                                    const newOption = prompt('Enter new option:');
+                                                    if (newOption && newOption.trim()) {
+                                                      handleAddNewOption(column, newOption);
+                                                    }
+                                                  }}
+                                                  >
+                                                    <PlusOutlined style={{ 
+                                                      color: '#1890ff', 
+                                                      fontSize: '14px',
+                                                      fontWeight: 'bold'
+                                                    }} />
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            )}
                                           >
                                             {options.map((option, index) => (
                                               <Option key={index} value={option}>
