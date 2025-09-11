@@ -17,7 +17,8 @@ import {
   FireOutlined,
   FireFilled,
   TrophyOutlined,
-  TrophyFilled
+  TrophyFilled,
+  CloseOutlined
 } from '@ant-design/icons';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
@@ -96,14 +97,36 @@ const SingleSelectPill = ({ value, options, onChange, onAddNewOption, isActive =
         }}
       >
         {value || 'Select'}
-        <DownOutlined 
-          style={{ 
-            marginLeft: '4px', 
-            fontSize: '10px',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.2s ease'
-          }} 
-        />
+        {value ? (
+          <CloseOutlined 
+            style={{ 
+              marginLeft: '4px', 
+              fontSize: '10px',
+              cursor: 'pointer',
+              opacity: 0.7,
+              transition: 'opacity 0.2s ease'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange('');
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.opacity = '1';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.opacity = '0.7';
+            }}
+          />
+        ) : (
+          <DownOutlined 
+            style={{ 
+              marginLeft: '4px', 
+              fontSize: '10px',
+              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease'
+            }} 
+          />
+        )}
       </div>
 
       {isOpen && (
