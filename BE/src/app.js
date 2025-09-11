@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser';
 import logger from './utils/logger.js';
 import { authAndSiteDetectionMiddleware } from './middlewares/authAndSiteDetection.js';
 import { applySiteFilterMiddleware } from './middlewares/siteDetection.js';
-
+import {authMiddleware} from './middlewares/authMiddleware.js';
 // Load environment variables
 dotenv.config();
 
@@ -61,7 +61,11 @@ app.use("/api", (req, res, next) => {
     }
     
     // Apply auth and site detection
-    authAndSiteDetectionMiddleware(req, res, (err) => {
+    // authAndSiteDetectionMiddleware(req, res, (err) => {
+    //     if (err) return next(err);
+    //     applySiteFilterMiddleware(req, res, next);
+    // });
+      authMiddleware(req, res, (err) => {
         if (err) return next(err);
         applySiteFilterMiddleware(req, res, next);
     });

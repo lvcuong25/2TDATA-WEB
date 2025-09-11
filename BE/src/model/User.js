@@ -3,15 +3,15 @@ import mongoosePaginate from "mongoose-paginate-v2";
 
 const userSchema = new mongoose.Schema(
   {
-    site_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Site',
-      required: function() {
-        // site_id is not required for super_admin users
-        return this.role !== 'super_admin';
-      },
-      index: true
-    },
+    // site_id: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: 'Site',
+    //   required: function() {
+    //     // site_id is not required for super_admin users
+    //     return this.role !== 'super_admin';
+    //   },
+    //   index: true
+    // },
     email: {
       type: String,
       required: true,
@@ -24,12 +24,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    role: {
-      type: String,
-      enum: ['super_admin', 'site_admin', 'site_moderator', 'member'],
-      default: "member",
-      index: true
-    },
+ 
+    //roles: [{ type: mongoose.Schema.Types.ObjectId, ref: "Role" }],
+    //permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "UserPermission" }],
     phone: {
       type: String,
     },

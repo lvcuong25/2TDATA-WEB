@@ -16,7 +16,8 @@ import adminRouter from "./adminRouter.js";
 
 import routerOrganization from "./routerOrganization.js";
 import routerDatabase from "./routerDatabase.js";
-
+import routerOrder from "./orderRouter.js";
+import routerCell from "./routerCell.js";
 const router = Router();
 
 // Health check endpoint
@@ -64,7 +65,8 @@ router.use("/footer", routerFooterUpload);
 router.use("/sites", routerSite);
 router.use("/site-admins", siteAdminRoutes);
 router.use("/assets", routerAsset);
-
+router.use("/orders", routerOrder);
+router.use("/action", routerCell);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 
