@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button, Input, Select, Checkbox, Tooltip, Tag, Dropdown, DatePicker } from 'antd';
 import {
   PlusOutlined,
@@ -28,6 +28,196 @@ import {
 import {
   getDataTypeIcon
 } from '../Utils/dataTypeUtils.jsx';
+
+// Custom SingleSelectPill component
+const SingleSelectPill = ({ value, options, onChange, onAddNewOption, isActive = false }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const pillRef = React.useRef(null);
+
+  // Color mapping for different options
+  const getPillColor = (option) => {
+    const optionStr = String(option).toLowerCase();
+    if (optionStr === '1' || optionStr.includes('option 1') || optionStr.includes('status 1')) {
+      return { bg: '#e6f7ff', text: '#1890ff', border: '#91d5ff' };
+    } else if (optionStr === '2' || optionStr.includes('option 2') || optionStr.includes('status 2')) {
+      return { bg: '#e6fffb', text: '#13c2c2', border: '#87e8de' };
+    } else if (optionStr === '3' || optionStr.includes('option 3') || optionStr.includes('status 3')) {
+      return { bg: '#f6ffed', text: '#52c41a', border: '#b7eb8f' };
+    } else {
+      return { bg: '#f0f0f0', text: '#666666', border: '#d9d9d9' };
+    }
+  };
+
+  const selectedColor = getPillColor(value);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        ref={pillRef}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          padding: '4px 12px',
+          borderRadius: '16px',
+          backgroundColor: selectedColor.bg,
+          color: selectedColor.text,
+          border: `1px solid ${selectedColor.border}`,
+          cursor: 'pointer',
+          fontSize: '12px',
+          fontWeight: '500',
+          minWidth: '32px',
+          justifyContent: 'center',
+          transition: 'all 0.2s ease',
+          boxShadow: isActive ? '0 0 0 2px #1890ff' : 'none',
+          position: 'relative'
+        }}
+        onClick={() => {
+          if (!isOpen && pillRef.current) {
+            const rect = pillRef.current.getBoundingClientRect();
+            setDropdownPosition({
+              top: rect.bottom + window.scrollY + 4,
+              left: rect.left + window.scrollX + (rect.width / 2)
+            });
+          }
+          setIsOpen(!isOpen);
+        }}
+        onMouseEnter={(e) => {
+          if (!isActive) {
+            e.target.style.transform = 'scale(1.05)';
+            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isActive) {
+            e.target.style.transform = 'scale(1)';
+            e.target.style.boxShadow = 'none';
+          }
+        }}
+      >
+        {value || 'Select'}
+        <DownOutlined 
+          style={{ 
+            marginLeft: '4px', 
+            fontSize: '10px',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease'
+          }} 
+        />
+      </div>
+
+      {isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #e8e8e8',
+            padding: '4px',
+            minWidth: '120px'
+          }}
+        >
+          {options.map((option, index) => {
+            const optionColor = getPillColor(option);
+            const isSelected = option === value;
+            
+            return (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '6px 12px',
+                  borderRadius: '16px',
+                  backgroundColor: isSelected ? optionColor.bg : 'transparent',
+                  color: isSelected ? optionColor.text : '#333',
+                  border: `1px solid ${isSelected ? optionColor.border : 'transparent'}`,
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  margin: '2px 0',
+                  transition: 'all 0.2s ease',
+                  justifyContent: 'center'
+                }}
+                onClick={() => {
+                  onChange(option);
+                  setIsOpen(false);
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.target.style.backgroundColor = optionColor.bg;
+                    e.target.style.color = optionColor.text;
+                    e.target.style.borderColor = optionColor.border;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.target.style.backgroundColor = 'transparent';
+                    e.target.style.color = '#333';
+                    e.target.style.borderColor = 'transparent';
+                  }
+                }}
+              >
+                {option}
+              </div>
+            );
+          })}
+          
+          {onAddNewOption && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px',
+                borderTop: '1px solid #e8e8e8',
+                marginTop: '4px',
+                cursor: 'pointer',
+                borderRadius: '4px',
+                transition: 'all 0.2s ease'
+              }}
+              onClick={() => {
+                const newOption = prompt('Enter new option:');
+                if (newOption && newOption.trim()) {
+                  onAddNewOption(newOption);
+                  setIsOpen(false);
+                }
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#f0f7ff';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+              }}
+            >
+              <PlusOutlined style={{ color: '#1890ff', fontSize: '12px' }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Click outside to close */}
+      {isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9998
+          }}
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
 import {
   isCellEditing
 } from '../Utils/cellUtils.jsx';
@@ -1030,89 +1220,21 @@ const TableBody = ({
                                         const selectedValue = value;
                                         
                                         return (
-                                          <div style={{
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            height: '100%',
-                                            width: '100%'
-                                          }}>
-                                            <Select
-                                              value={selectedValue}
-                                              onChange={(newValue) => {
-                                                const updatedData = { ...record.data };
-                                                updatedData[column.name] = newValue || '';
+                                          <SingleSelectPill
+                                            value={selectedValue}
+                                            options={options}
+                                            onChange={(newValue) => {
+                                              const updatedData = { ...record.data };
+                                              updatedData[column.name] = newValue || '';
 
-                                                updateRecordMutation.mutate({
-                                                  recordId: record._id,
-                                                  data: updatedData
-                                                });
-                                              }}
-                                              size="small"
-                                              style={{
-                                                width: '100%',
-                                                minWidth: '80px'
-                                              }}
-                                              placeholder="Select option"
-                                              allowClear
-                                              dropdownRender={(menu) => (
-                                                <div>
-                                                  {menu}
-                                                  <div style={{ 
-                                                    padding: '4px 6px', 
-                                                    borderTop: '1px solid #e8e8e8',
-                                                    backgroundColor: '#f8f9fa'
-                                                  }}>
-                                                    <div style={{ 
-                                                      display: 'flex', 
-                                                      alignItems: 'center', 
-                                                      justifyContent: 'center',
-                                                      padding: '6px',
-                                                      backgroundColor: '#ffffff',
-                                                      border: '1px solid #e1e5e9',
-                                                      borderRadius: '4px',
-                                                      cursor: 'pointer',
-                                                      transition: 'all 0.2s ease',
-                                                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                                                      width: '100%',
-                                                      height: '28px'
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                      e.target.style.backgroundColor = '#f0f7ff';
-                                                      e.target.style.borderColor = '#1890ff';
-                                                      e.target.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
-                                                      e.target.style.transform = 'translateY(-1px)';
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                      e.target.style.backgroundColor = '#ffffff';
-                                                      e.target.style.borderColor = '#e1e5e9';
-                                                      e.target.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
-                                                      e.target.style.transform = 'translateY(0)';
-                                                    }}
-                                                    onClick={() => {
-                                                      const newOption = prompt('Enter new option:');
-                                                      if (newOption && newOption.trim()) {
-                                                        handleAddNewOption(column, newOption);
-                                                      }
-                                                    }}
-                                                    >
-                                                      <PlusOutlined style={{ 
-                                                        color: '#1890ff', 
-                                                        fontSize: '14px',
-                                                        fontWeight: 'bold'
-                                                      }} />
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              )}
-                                            >
-                                              {options.map((option, index) => (
-                                                <Option key={index} value={option}>
-                                                  {option}
-                                                </Option>
-                                              ))}
-                                            </Select>
-                                          </div>
+                                              updateRecordMutation.mutate({
+                                                recordId: record._id,
+                                                data: updatedData
+                                              });
+                                            }}
+                                            onAddNewOption={(newOption) => handleAddNewOption(column, newOption)}
+                                            isActive={isCellSelected(record._id, column.name)}
+                                          />
                                         );
                                       })()
                                     : column.dataType === 'currency' && value !== null && value !== undefined ?
@@ -1849,89 +1971,21 @@ const TableBody = ({
                                       const selectedValue = value;
                                       
                                       return (
-                                        <div style={{
-                                          display: 'flex',
-                                          justifyContent: 'center',
-                                          alignItems: 'center',
-                                          height: '100%',
-                                          width: '100%'
-                                        }}>
-                                          <Select
-                                            value={selectedValue}
-                                            onChange={(newValue) => {
-                                              const updatedData = { ...record.data };
-                                              updatedData[column.name] = newValue || '';
+                                        <SingleSelectPill
+                                          value={selectedValue}
+                                          options={options}
+                                          onChange={(newValue) => {
+                                            const updatedData = { ...record.data };
+                                            updatedData[column.name] = newValue || '';
 
-                                              updateRecordMutation.mutate({
-                                                recordId: record._id,
-                                                data: updatedData
-                                              });
-                                            }}
-                                            size="small"
-                                            style={{
-                                              width: '100%',
-                                              minWidth: '80px'
-                                            }}
-                                            placeholder="Select option"
-                                            allowClear
-                                            dropdownRender={(menu) => (
-                                              <div>
-                                                {menu}
-                                                <div style={{ 
-                                                  padding: '4px 6px', 
-                                                  borderTop: '1px solid #e8e8e8',
-                                                  backgroundColor: '#f8f9fa'
-                                                }}>
-                                                  <div style={{ 
-                                                    display: 'flex', 
-                                                    alignItems: 'center', 
-                                                    justifyContent: 'center',
-                                                    padding: '6px',
-                                                    backgroundColor: '#ffffff',
-                                                    border: '1px solid #e1e5e9',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s ease',
-                                                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                                                    width: '100%',
-                                                    height: '28px'
-                                                  }}
-                                                  onMouseEnter={(e) => {
-                                                    e.target.style.backgroundColor = '#f0f7ff';
-                                                    e.target.style.borderColor = '#1890ff';
-                                                    e.target.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
-                                                    e.target.style.transform = 'translateY(-1px)';
-                                                  }}
-                                                  onMouseLeave={(e) => {
-                                                    e.target.style.backgroundColor = '#ffffff';
-                                                    e.target.style.borderColor = '#e1e5e9';
-                                                    e.target.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
-                                                    e.target.style.transform = 'translateY(0)';
-                                                  }}
-                                                  onClick={() => {
-                                                    const newOption = prompt('Enter new option:');
-                                                    if (newOption && newOption.trim()) {
-                                                      handleAddNewOption(column, newOption);
-                                                    }
-                                                  }}
-                                                  >
-                                                    <PlusOutlined style={{ 
-                                                      color: '#1890ff', 
-                                                      fontSize: '14px',
-                                                      fontWeight: 'bold'
-                                                    }} />
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            )}
-                                          >
-                                            {options.map((option, index) => (
-                                              <Option key={index} value={option}>
-                                                {option}
-                                              </Option>
-                                            ))}
-                                          </Select>
-                                        </div>
+                                            updateRecordMutation.mutate({
+                                              recordId: record._id,
+                                              data: updatedData
+                                            });
+                                          }}
+                                          onAddNewOption={(newOption) => handleAddNewOption(column, newOption)}
+                                          isActive={isCellSelected(record._id, column.name)}
+                                        />
                                       );
                                     })()
                                   : column.dataType === 'currency' && value !== null && value !== undefined ?
