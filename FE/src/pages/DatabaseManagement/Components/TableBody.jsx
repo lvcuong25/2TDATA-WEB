@@ -30,214 +30,169 @@ import {
   getDataTypeIcon
 } from '../Utils/dataTypeUtils.jsx';
 
-// Custom SingleSelectPill component
-const SingleSelectPill = ({ value, options, onChange, onAddNewOption, isActive = false }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
-  const pillRef = React.useRef(null);
+// Custom AddOptionInput component for dropdown
+const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
+  const [newOptionInput, setNewOptionInput] = useState('');
+  const [isAddingOption, setIsAddingOption] = useState(false);
 
-  // Color mapping for different options
-  const getPillColor = (option) => {
-    const optionStr = String(option).toLowerCase();
-    if (optionStr === '1' || optionStr.includes('option 1') || optionStr.includes('status 1')) {
-      return { bg: '#e6f7ff', text: '#1890ff', border: '#91d5ff' };
-    } else if (optionStr === '2' || optionStr.includes('option 2') || optionStr.includes('status 2')) {
-      return { bg: '#e6fffb', text: '#13c2c2', border: '#87e8de' };
-    } else if (optionStr === '3' || optionStr.includes('option 3') || optionStr.includes('status 3')) {
-      return { bg: '#f6ffed', text: '#52c41a', border: '#b7eb8f' };
-    } else {
-      return { bg: '#f0f0f0', text: '#666666', border: '#d9d9d9' };
+  const handleAddOption = () => {
+    if (newOptionInput.trim()) {
+      onAddOption(newOptionInput.trim());
+      setNewOptionInput('');
+      setIsAddingOption(false);
     }
   };
 
-  const selectedColor = getPillColor(value);
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleAddOption();
+    } else if (e.key === 'Escape') {
+      setNewOptionInput('');
+      setIsAddingOption(false);
+    }
+  };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div
-        ref={pillRef}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          padding: '4px 12px',
-          borderRadius: '16px',
-          backgroundColor: selectedColor.bg,
-          color: selectedColor.text,
-          border: `1px solid ${selectedColor.border}`,
-          cursor: 'pointer',
-          fontSize: '12px',
-          fontWeight: '500',
-          minWidth: '32px',
+    <div style={{ 
+      padding: '4px 6px', 
+      borderTop: '1px solid #e8e8e8',
+      backgroundColor: '#f8f9fa'
+    }}>
+      {isAddingOption ? (
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <Input
+            value={newOptionInput}
+            onChange={(e) => setNewOptionInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={placeholder}
+            size="small"
+            style={{ flex: 1 }}
+            autoFocus
+          />
+          <Button
+            type="primary"
+            size="small"
+            onClick={handleAddOption}
+            disabled={!newOptionInput.trim()}
+            style={{ minWidth: 'auto', padding: '0 8px' }}
+          >
+            Add
+          </Button>
+          <Button
+            size="small"
+            onClick={() => {
+              setNewOptionInput('');
+              setIsAddingOption(false);
+            }}
+            style={{ minWidth: 'auto', padding: '0 8px' }}
+          >
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
           justifyContent: 'center',
+          padding: '6px',
+          backgroundColor: '#ffffff',
+          border: '1px solid #e1e5e9',
+          borderRadius: '4px',
+          cursor: 'pointer',
           transition: 'all 0.2s ease',
-          boxShadow: isActive ? '0 0 0 2px #1890ff' : 'none',
-          position: 'relative'
-        }}
-        onClick={() => {
-          if (!isOpen && pillRef.current) {
-            const rect = pillRef.current.getBoundingClientRect();
-            setDropdownPosition({
-              top: rect.bottom + window.scrollY + 4,
-              left: rect.left + window.scrollX + (rect.width / 2)
-            });
-          }
-          setIsOpen(!isOpen);
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+          width: '100%',
+          height: '28px'
         }}
         onMouseEnter={(e) => {
-          if (!isActive) {
-            e.target.style.transform = 'scale(1.05)';
-            e.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
-          }
+          e.target.style.backgroundColor = '#f0f7ff';
+          e.target.style.borderColor = '#1890ff';
+          e.target.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
+          e.target.style.transform = 'translateY(-1px)';
         }}
         onMouseLeave={(e) => {
-          if (!isActive) {
-            e.target.style.transform = 'scale(1)';
-            e.target.style.boxShadow = 'none';
-          }
+          e.target.style.backgroundColor = '#ffffff';
+          e.target.style.borderColor = '#e1e5e9';
+          e.target.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
+          e.target.style.transform = 'translateY(0)';
         }}
-      >
-        {value || 'Select'}
-        {value ? (
-          <CloseOutlined 
-            style={{ 
-              marginLeft: '4px', 
-              fontSize: '10px',
-              cursor: 'pointer',
-              opacity: 0.7,
-              transition: 'opacity 0.2s ease'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange('');
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.opacity = '1';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.opacity = '0.7';
-            }}
-          />
-        ) : (
-          <DownOutlined 
-            style={{ 
-              marginLeft: '4px', 
-              fontSize: '10px',
-              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease'
-            }} 
-          />
-        )}
-      </div>
-
-      {isOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            transform: 'translateX(-50%)',
-            zIndex: 9999,
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            border: '1px solid #e8e8e8',
-            padding: '4px',
-            minWidth: '120px'
-          }}
+        onClick={() => setIsAddingOption(true)}
         >
-          {options.map((option, index) => {
-            const optionColor = getPillColor(option);
-            const isSelected = option === value;
-            
-            return (
-              <div
-                key={index}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 12px',
-                  borderRadius: '16px',
-                  backgroundColor: isSelected ? optionColor.bg : 'transparent',
-                  color: isSelected ? optionColor.text : '#333',
-                  border: `1px solid ${isSelected ? optionColor.border : 'transparent'}`,
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  margin: '2px 0',
-                  transition: 'all 0.2s ease',
-                  justifyContent: 'center'
-                }}
-                onClick={() => {
-                  onChange(option);
-                  setIsOpen(false);
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.target.style.backgroundColor = optionColor.bg;
-                    e.target.style.color = optionColor.text;
-                    e.target.style.borderColor = optionColor.border;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.target.style.backgroundColor = 'transparent';
-                    e.target.style.color = '#333';
-                    e.target.style.borderColor = 'transparent';
-                  }
-                }}
-              >
-                {option}
-              </div>
-            );
-          })}
-          
-          {onAddNewOption && (
+          <PlusOutlined style={{ 
+            color: '#1890ff', 
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Custom SingleSelectPill component
+const SingleSelectPill = ({ value, options, onChange, onAddNewOption, isActive = false }) => {
+  return (
+    <div style={{ width: '100%', height: '100%' }}>
+      <Select
+        value={value || ''}
+        onChange={onChange}
+        style={{ width: '100%' }}
+        placeholder="Select option"
+        allowClear
+        tagRender={(props) => {
+          const { label, closable, onClose } = props;
+          return (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                padding: '6px',
-                borderTop: '1px solid #e8e8e8',
-                marginTop: '4px',
-                cursor: 'pointer',
-                borderRadius: '4px',
-                transition: 'all 0.2s ease'
-              }}
-              onClick={() => {
-                const newOption = prompt('Enter new option:');
-                if (newOption && newOption.trim()) {
-                  onAddNewOption(newOption);
-                  setIsOpen(false);
-                }
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#f0f7ff';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
+                gap: '4px',
+                padding: '2px 8px',
+                backgroundColor: '#f0f0f0',
+                borderRadius: '12px',
+                fontSize: '12px',
+                color: '#333',
+                border: '1px solid #d9d9d9',
+                margin: '2px'
               }}
             >
-              <PlusOutlined style={{ color: '#1890ff', fontSize: '12px' }} />
+              <span>{label}</span>
+              {closable && (
+                <div
+                  onClick={onClose}
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '10px',
+                    color: 'white',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  ×
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Click outside to close */}
-      {isOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 9998
-          }}
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+          );
+        }}
+        dropdownRender={(menu) => (
+          <div>
+            {menu}
+            <AddOptionInput onAddOption={onAddNewOption} />
+          </div>
+        )}
+      >
+        {options.map((option, index) => (
+          <Option key={index} value={option}>
+            {option}
+          </Option>
+        ))}
+      </Select>
     </div>
   );
 };
@@ -307,20 +262,37 @@ const TableBody = ({
     return selectedCell?.recordId === recordId && selectedCell?.columnName === columnName;
   };
 
-  // Function to add new option to single select column
+  // Function to add new option to single select or multi select column
   const handleAddNewOption = (column, newOption) => {
     if (!newOption || !newOption.trim()) return;
     
-    const currentOptions = column.singleSelectConfig?.options || [];
-    const updatedOptions = [...currentOptions, newOption.trim()];
+    let updatedColumnData;
     
-    const updatedColumnData = {
-      ...column,
-      singleSelectConfig: {
-        ...column.singleSelectConfig,
-        options: updatedOptions
-      }
-    };
+    if (column.dataType === 'single_select') {
+      const currentOptions = column.singleSelectConfig?.options || [];
+      const updatedOptions = [...currentOptions, newOption.trim()];
+      
+      updatedColumnData = {
+        ...column,
+        singleSelectConfig: {
+          ...column.singleSelectConfig,
+          options: updatedOptions
+        }
+      };
+    } else if (column.dataType === 'multi_select') {
+      const currentOptions = column.multiSelectConfig?.options || [];
+      const updatedOptions = [...currentOptions, newOption.trim()];
+      
+      updatedColumnData = {
+        ...column,
+        multiSelectConfig: {
+          ...column.multiSelectConfig,
+          options: updatedOptions
+        }
+      };
+    } else {
+      return; // Unsupported column type
+    }
     
     updateColumnMutation.mutate({
       columnId: column._id,
@@ -657,6 +629,17 @@ const TableBody = ({
                           } else {
                             // Existing record - use actual value (including empty string if cleared)
                             value = cellValue;
+                          }
+                        } else if (column.dataType === 'multi_select') {
+                          // For multi select columns, use default value if cell is null/undefined (new records)
+                          // But if cell is empty array (cleared by user), show empty
+                          const cellValue = record.data?.[column.name];
+                          if (cellValue === null || cellValue === undefined) {
+                            // New record - use default value
+                            value = column.multiSelectConfig?.defaultValue || [];
+                          } else {
+                            // Existing record - use actual value (including empty array if cleared)
+                            value = Array.isArray(cellValue) ? cellValue : [];
                           }
                         } else {
                           value = record.data?.[column.name] || '';
@@ -1162,7 +1145,7 @@ const TableBody = ({
                           ) : (
                             <div
                               style={{
-                                cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? 'default' : 'pointer',
+                                cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? 'default' : 'pointer',
                                 padding: '8px',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -1176,9 +1159,9 @@ const TableBody = ({
                                 color: column.isSystem ? '#666' : '#333',
                                 fontStyle: column.isSystem ? 'italic' : 'normal'
                               }}
-                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
-                              onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                              onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
                               {column.dataType === 'datetime' && value ? 
                                 value // Already formatted by formatDateTime
@@ -1258,6 +1241,85 @@ const TableBody = ({
                                             onAddNewOption={(newOption) => handleAddNewOption(column, newOption)}
                                             isActive={isCellSelected(record._id, column.name)}
                                           />
+                                        );
+                                      })()
+                                    : column.dataType === 'multi_select' ?
+                                      (() => {
+                                        const options = column.multiSelectConfig?.options || [];
+                                        const selectedValues = Array.isArray(value) ? value : [];
+                                        
+                                        return (
+                                          <Select
+                                            mode="multiple"
+                                            value={selectedValues}
+                                            onChange={(newValues) => {
+                                              const updatedData = { ...record.data };
+                                              updatedData[column.name] = newValues || [];
+
+                                              updateRecordMutation.mutate({
+                                                recordId: record._id,
+                                                data: updatedData
+                                              });
+                                            }}
+                                            style={{ width: '100%' }}
+                                            placeholder="Select options"
+                                            allowClear
+                                            tagRender={(props) => {
+                                              const { label, closable, onClose } = props;
+                                              return (
+                                                <div
+                                                  style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    padding: '2px 8px',
+                                                    backgroundColor: '#f0f0f0',
+                                                    borderRadius: '12px',
+                                                    fontSize: '12px',
+                                                    color: '#333',
+                                                    border: '1px solid #d9d9d9',
+                                                    margin: '2px'
+                                                  }}
+                                                >
+                                                  <span>{label}</span>
+                                                  {closable && (
+                                                    <div
+                                                      onClick={onClose}
+                                                      style={{
+                                                        width: '14px',
+                                                        height: '14px',
+                                                        borderRadius: '50%',
+                                                        backgroundColor: 'rgba(0,0,0,0.2)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        cursor: 'pointer',
+                                                        fontSize: '10px',
+                                                        color: 'white',
+                                                        fontWeight: 'bold'
+                                                      }}
+                                                    >
+                                                      ×
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              );
+                                            }}
+                                            dropdownRender={(menu) => (
+                                              <div>
+                                                {menu}
+                                                <AddOptionInput 
+                                                  onAddOption={(newOption) => handleAddNewOption(column, newOption)} 
+                                                />
+                                              </div>
+                                            )}
+                                          >
+                                            {options.map((option, index) => (
+                                              <Option key={index} value={option}>
+                                                {option}
+                                              </Option>
+                                            ))}
+                                          </Select>
                                         );
                                       })()
                                     : column.dataType === 'currency' && value !== null && value !== undefined ?
@@ -1445,6 +1507,17 @@ const TableBody = ({
                     } else {
                       // Existing record - use actual value (including empty string if cleared)
                       value = cellValue;
+                    }
+                  } else if (column.dataType === 'multi_select') {
+                    // For multi select columns, use default value if cell is null/undefined (new records)
+                    // But if cell is empty array (cleared by user), show empty
+                    const cellValue = record.data?.[column.name];
+                    if (cellValue === null || cellValue === undefined) {
+                      // New record - use default value
+                      value = column.multiSelectConfig?.defaultValue || [];
+                    } else {
+                      // Existing record - use actual value (including empty array if cleared)
+                      value = Array.isArray(cellValue) ? cellValue : [];
                     }
                   } else {
                     value = record.data?.[column.name] || '';
@@ -1792,7 +1865,7 @@ const TableBody = ({
                     ) : (
                       <div
                         style={{
-                          cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? 'default' : 'pointer',
+                          cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? 'default' : 'pointer',
                           padding: '8px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1806,9 +1879,9 @@ const TableBody = ({
                           color: column.isSystem ? '#666' : '#333',
                           fontStyle: column.isSystem ? 'italic' : 'normal'
                         }}
-                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
-                        onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                        onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                        onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                        onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
                         {column.dataType === 'datetime' && value ? 
                           value // Already formatted by formatDateTime
@@ -2009,6 +2082,85 @@ const TableBody = ({
                                           onAddNewOption={(newOption) => handleAddNewOption(column, newOption)}
                                           isActive={isCellSelected(record._id, column.name)}
                                         />
+                                      );
+                                    })()
+                                  : column.dataType === 'multi_select' ?
+                                    (() => {
+                                      const options = column.multiSelectConfig?.options || [];
+                                      const selectedValues = Array.isArray(value) ? value : [];
+                                      
+                                      return (
+                                        <Select
+                                          mode="multiple"
+                                          value={selectedValues}
+                                          onChange={(newValues) => {
+                                            const updatedData = { ...record.data };
+                                            updatedData[column.name] = newValues || [];
+
+                                            updateRecordMutation.mutate({
+                                              recordId: record._id,
+                                              data: updatedData
+                                            });
+                                          }}
+                                          style={{ width: '100%' }}
+                                          placeholder="Select options"
+                                          allowClear
+                                          tagRender={(props) => {
+                                            const { label, closable, onClose } = props;
+                                            return (
+                                              <div
+                                                style={{
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  gap: '4px',
+                                                  padding: '2px 8px',
+                                                  backgroundColor: '#f0f0f0',
+                                                  borderRadius: '12px',
+                                                  fontSize: '12px',
+                                                  color: '#333',
+                                                  border: '1px solid #d9d9d9',
+                                                  margin: '2px'
+                                                }}
+                                              >
+                                                <span>{label}</span>
+                                                {closable && (
+                                                  <div
+                                                    onClick={onClose}
+                                                    style={{
+                                                      width: '14px',
+                                                      height: '14px',
+                                                      borderRadius: '50%',
+                                                      backgroundColor: 'rgba(0,0,0,0.2)',
+                                                      display: 'flex',
+                                                      alignItems: 'center',
+                                                      justifyContent: 'center',
+                                                      cursor: 'pointer',
+                                                      fontSize: '10px',
+                                                      color: 'white',
+                                                      fontWeight: 'bold'
+                                                    }}
+                                                  >
+                                                    ×
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          }}
+                                          dropdownRender={(menu) => (
+                                            <div>
+                                              {menu}
+                                              <AddOptionInput 
+                                                onAddOption={(newOption) => handleAddNewOption(column, newOption)} 
+                                              />
+                                            </div>
+                                          )}
+                                        >
+                                          {options.map((option, index) => (
+                                            <Option key={index} value={option}>
+                                              {option}
+                                            </Option>
+                                          ))}
+                                        </Select>
                                       );
                                     })()
                                   : column.dataType === 'currency' && value !== null && value !== undefined ?
