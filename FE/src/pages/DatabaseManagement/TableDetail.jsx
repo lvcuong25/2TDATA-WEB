@@ -80,6 +80,14 @@ import {
   toggleSystemFields,
   getFieldVisibilityButtonStyle
 } from './Utils/fieldVisibilityUtils.jsx';
+import {
+  loadRowHeightSettings,
+  saveRowHeightSettings,
+  getRowHeight,
+  getRowHeightStyle,
+  getRowContentStyle
+} from './Utils/rowHeightUtils.jsx';
+import RowHeightDropdown from './Components/RowHeightDropdown';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTableData } from './Hooks/useTableData';
 import { useTableContext } from '../../contexts/TableContext';
@@ -184,6 +192,9 @@ const TableDetail = () => {
   const [showSystemFields, setShowSystemFields] = useState(false);
   const [fieldSearch, setFieldSearch] = useState('');
 
+  // Row height management state
+  const [rowHeightSettings, setRowHeightSettings] = useState({});
+
   // Group management state
   const [groupFieldSearch, setGroupFieldSearch] = useState('');
   const [currentGroupField, setCurrentGroupField] = useState('');
@@ -282,6 +293,17 @@ const TableDetail = () => {
       setShowSystemFields(preference.showSystemFields || false);
     }
   }, [fieldPreferenceResponse]);
+
+  // Load row height settings from localStorage
+  React.useEffect(() => {
+    if (tableId) {
+      const settings = loadRowHeightSettings(tableId);
+      setRowHeightSettings(prev => ({
+        ...prev,
+        [tableId]: settings
+      }));
+    }
+  }, [tableId]);
 
   // Column resizing state
   const [columnWidths, setColumnWidths] = useState(() => {
@@ -716,6 +738,15 @@ const TableDetail = () => {
     };
     
     addRecordMutation.mutate(recordData);
+  };
+
+  // Handle row height change
+  const handleRowHeightChange = (tableId, settings) => {
+    setRowHeightSettings(prev => ({
+      ...prev,
+      [tableId]: settings
+    }));
+    saveRowHeightSettings(tableId, settings);
   };
 
   // Update context when records change
@@ -1231,6 +1262,10 @@ const TableDetail = () => {
             onSortFieldSelect={onSortFieldSelect}
             handleUpdateSortRule={handleUpdateSortRule}
             handleRemoveSortRule={handleRemoveSortRule}
+            // Row height props
+            tableId={tableId}
+            rowHeightSettings={rowHeightSettings}
+            onRowHeightChange={handleRowHeightChange}
           />
           {/* Table Body Component */}
           <TableBody
@@ -1289,6 +1324,9 @@ const TableDetail = () => {
             getGroupDisplayName={getGroupDisplayName}
             calculateGroupStats={calculateGroupStats}
             sortGroups={sortGroups}
+            // Row height props
+            tableId={tableId}
+            rowHeightSettings={rowHeightSettings}
           />
           {/* Context Menu Component */}
           <ContextMenu

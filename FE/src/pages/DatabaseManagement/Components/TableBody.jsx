@@ -29,6 +29,12 @@ import {
 import {
   getDataTypeIcon
 } from '../Utils/dataTypeUtils.jsx';
+import {
+  getRowHeight,
+  getRowHeightStyle,
+  getRowContentStyle,
+  getCellContentStyle
+} from '../Utils/rowHeightUtils.jsx';
 
 // Custom AddOptionInput component for dropdown
 const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
@@ -239,7 +245,10 @@ const TableBody = ({
   setShowAddColumn,
 
   // Utility functions
-  formatCellValueForDisplay
+  formatCellValueForDisplay,
+  // Row height props
+  tableId,
+  rowHeightSettings
 }) => {
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
@@ -261,6 +270,12 @@ const TableBody = ({
   const isCellSelected = (recordId, columnName) => {
     return selectedCell?.recordId === recordId && selectedCell?.columnName === columnName;
   };
+
+  // Get row height for current table
+  const currentRowHeight = getRowHeight(rowHeightSettings, tableId);
+  const rowHeightStyle = getRowHeightStyle(currentRowHeight);
+  const rowContentStyle = getRowContentStyle(currentRowHeight);
+  const cellContentStyle = getCellContentStyle(currentRowHeight);
 
   // Function to add new option to single select or multi select column
   const handleAddNewOption = (column, newOption) => {
@@ -564,7 +579,8 @@ const TableBody = ({
                   <div key={record._id} style={{
                     display: 'flex',
                     borderBottom: '1px solid #f0f0f0',
-                    backgroundColor: 'white'
+                    backgroundColor: 'white',
+                    ...rowHeightStyle
                   }}
                     onContextMenu={(e) => handleContextMenu(e, record._id)}
                   >
@@ -572,7 +588,7 @@ const TableBody = ({
                     <div style={{
                       width: '60px',
                       minWidth: '60px',
-                      padding: '8px',
+                      ...rowContentStyle,
                       borderRight: '1px solid #d9d9d9',
                       display: 'flex',
                       alignItems: 'center',
@@ -655,7 +671,7 @@ const TableBody = ({
                           padding: '0',
                           borderRight: '1px solid #d9d9d9',
                           position: 'relative',
-                          minHeight: '40px',
+                          ...cellContentStyle,
                           boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : 'none'
                         }}>
                           {isEditing ? (
@@ -1146,7 +1162,7 @@ const TableBody = ({
                             <div
                               style={{
                                 cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? 'default' : 'pointer',
-                                padding: '8px',
+                                ...cellContentStyle,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
@@ -1443,7 +1459,8 @@ const TableBody = ({
           {groupedData.ungroupedRecords.map((record, index) => (
             <div key={record._id} style={{
               display: 'flex',
-              borderBottom: '1px solid #f0f0f0'
+              borderBottom: '1px solid #f0f0f0',
+              ...rowHeightStyle
             }}
               onContextMenu={(e) => handleContextMenu(e, record._id)}
             >
@@ -1451,7 +1468,7 @@ const TableBody = ({
               <div style={{
                 width: '60px',
                 minWidth: '60px',
-                padding: '8px',
+                ...rowContentStyle,
                 borderRight: '1px solid #d9d9d9',
                 display: 'flex',
                 alignItems: 'center',
@@ -1533,7 +1550,7 @@ const TableBody = ({
                     padding: '0',
                     borderRight: '1px solid #d9d9d9',
                     position: 'relative',
-                    minHeight: '40px',
+                    ...cellContentStyle,
                     boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : 'none'
                   }}>
                     {isEditing ? (
@@ -1866,7 +1883,7 @@ const TableBody = ({
                       <div
                         style={{
                           cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? 'default' : 'pointer',
-                          padding: '8px',
+                          ...cellContentStyle,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',

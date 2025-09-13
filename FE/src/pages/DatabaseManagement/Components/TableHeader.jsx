@@ -39,6 +39,7 @@ import {
   isSortActive,
   getSortRulesCount
 } from '../Utils/tableDetailSortUtils.jsx';
+import RowHeightDropdown from './RowHeightDropdown';
 
 const { Option } = Select;
 
@@ -93,7 +94,11 @@ const TableHeader = ({
   handleSortButtonClick,
   onSortFieldSelect,
   handleUpdateSortRule,
-  handleRemoveSortRule
+  handleRemoveSortRule,
+  // Row height props
+  tableId,
+  rowHeightSettings,
+  onRowHeightChange
 }) => {
   return (
     <div style={{
@@ -1038,6 +1043,13 @@ const TableHeader = ({
           )}
         </div>
 
+        {/* Row Height Dropdown */}
+        <RowHeightDropdown
+          tableId={tableId}
+          currentSettings={rowHeightSettings}
+          onRowHeightChange={onRowHeightChange}
+        />
+        
         <Button 
           type="text" 
           icon={<MoreOutlined />}
