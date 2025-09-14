@@ -37,6 +37,7 @@ import {
   getCellContentStyle
 } from '../Utils/rowHeightUtils.jsx';
 import LinkedTableSelectModal from './LinkedTableSelectModal';
+import LookupDropdown from './LookupDropdown';
 
 // Custom AddOptionInput component for dropdown
 const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
@@ -1184,7 +1185,7 @@ const TableBody = ({
                                 color: column.isSystem ? '#666' : '#333',
                                 fontStyle: column.isSystem ? 'italic' : 'normal'
                               }}
-                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' ? undefined : () => handleCellClick(record._id, column.name, value)}
                               onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                               onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
@@ -1445,6 +1446,45 @@ const TableBody = ({
                                               </div>
                                             );
                                           }
+                                        })()
+                                      : column.dataType === 'lookup' ? 
+                                        (() => {
+                                          if (isEditing && editingCell.columnName === column.name) {
+                                            return (
+                                              <LookupDropdown
+                                                column={column}
+                                                value={value}
+                                                onChange={(selectedOption) => {
+                                                  handleCellSave(record._id, column.name, selectedOption);
+                                                }}
+                                                placeholder={`Select from ${column.lookupConfig?.linkedTableName || 'table'}...`}
+                                              />
+                                            );
+                                          }
+                                          
+                                          // Hiển thị giá trị đã được pull từ bảng liên kết
+                                          if (!value) {
+                                            return (
+                                              <div style={{
+                                                color: '#bfbfbf',
+                                                fontStyle: 'italic',
+                                                cursor: 'pointer'
+                                              }}
+                                              onClick={() => handleCellClick(record._id, column.name, value)}
+                                              >
+                                                Select value...
+                                              </div>
+                                            );
+                                          }
+                                          
+                                          // Hiển thị label đã được pull từ bảng liên kết
+                                          return (
+                                            <div style={{ cursor: 'pointer' }}
+                                            onClick={() => handleCellClick(record._id, column.name, value)}
+                                            >
+                                              {value.label || 'Lookup Value'}
+                                            </div>
+                                          );
                                         })()
                                         : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
                               }
@@ -1976,7 +2016,7 @@ const TableBody = ({
                           color: column.isSystem ? '#666' : '#333',
                           fontStyle: column.isSystem ? 'italic' : 'normal'
                         }}
-                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' ? undefined : () => handleCellClick(record._id, column.name, value)}
                         onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                         onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
@@ -2358,6 +2398,45 @@ const TableBody = ({
                                             </div>
                                           );
                                         }
+                                      })()
+                                    : column.dataType === 'lookup' ? 
+                                      (() => {
+                                        if (isEditing && editingCell.columnName === column.name) {
+                                          return (
+                                            <LookupDropdown
+                                              column={column}
+                                              value={value}
+                                              onChange={(selectedOption) => {
+                                                handleCellSave(record._id, column.name, selectedOption);
+                                              }}
+                                              placeholder={`Select from ${column.lookupConfig?.linkedTableName || 'table'}...`}
+                                            />
+                                          );
+                                        }
+                                        
+                                        // Hiển thị giá trị đã được pull từ bảng liên kết
+                                        if (!value) {
+                                          return (
+                                            <div style={{
+                                              color: '#bfbfbf',
+                                              fontStyle: 'italic',
+                                              cursor: 'pointer'
+                                            }}
+                                            onClick={() => handleCellClick(record._id, column.name, value)}
+                                            >
+                                              Select value...
+                                            </div>
+                                          );
+                                        }
+                                        
+                                        // Hiển thị label đã được pull từ bảng liên kết
+                                        return (
+                                          <div style={{ cursor: 'pointer' }}
+                                          onClick={() => handleCellClick(record._id, column.name, value)}
+                                          >
+                                            {value.label || 'Lookup Value'}
+                                          </div>
+                                        );
                                       })()
                                       : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
                         }

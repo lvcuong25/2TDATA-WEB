@@ -596,6 +596,16 @@ const TableDetail = () => {
             finalName = 'Linked Table';
           }
           break;
+        case 'lookup':
+          // Use the lookup column name if available
+          if (newColumn.lookupConfig?.lookupColumnName && newColumn.lookupConfig?.linkedTableName) {
+            finalName = `${newColumn.lookupConfig.lookupColumnName} (from ${newColumn.lookupConfig.linkedTableName})`;
+          } else if (newColumn.lookupConfig?.linkedTableName) {
+            finalName = `Lookup (${newColumn.lookupConfig.linkedTableName})`;
+          } else {
+            finalName = 'Lookup';
+          }
+          break;
         default:
           finalName = 'New Column';
       }
@@ -701,6 +711,16 @@ const TableDetail = () => {
         newColumn: newColumn,
         columnData: columnData,
         linkedTableConfig: newColumn.linkedTableConfig
+      });
+    }
+    
+    // Add lookup configuration if data type is lookup
+    if (newColumn.dataType === 'lookup') {
+      columnData.lookupConfig = newColumn.lookupConfig;
+      safeLog('Frontend: Sending lookup column:', {
+        newColumn: newColumn,
+        columnData: columnData,
+        lookupConfig: newColumn.lookupConfig
       });
     }
     

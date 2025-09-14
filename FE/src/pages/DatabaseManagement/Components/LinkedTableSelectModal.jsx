@@ -3,6 +3,8 @@ import { Modal, Input, Button, List, Avatar, Typography, Space, Tag, Spin, Alert
 import { SearchOutlined, LinkOutlined, CheckOutlined, PlusOutlined, ArrowLeftOutlined, ReloadOutlined, CloseOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import axiosInstance from '../../../axios/axiosInstance';
+import { safeLog } from '../../../utils/safeLog';
+import LookupDropdown from './LookupDropdown';
 
 const { Text, Title } = Typography;
 
@@ -25,15 +27,15 @@ const LinkedTableSelectModal = ({
     queryKey: ['linkedTableData', column?._id, column?.linkedTableConfig?.linkedTableId, searchValue, currentPage, pageSize, refreshKey],
     queryFn: async () => {
       if (!column || !column.linkedTableConfig?.linkedTableId) {
-        console.log('❌ LinkedTableSelectModal: Missing column or linkedTableId', {
+        safeLog('❌ LinkedTableSelectModal: Missing column or linkedTableId', {
           column: column ? { _id: column._id, name: column.name } : null,
           linkedTableId: column?.linkedTableConfig?.linkedTableId
         });
         return { data: { options: [], totalCount: 0 } };
       }
 
-      console.log('🔍 LinkedTableSelectModal: Fetching data for linkedTableId:', column.linkedTableConfig.linkedTableId);
-      console.log('🔍 Query key:', ['linkedTableData', column._id, column.linkedTableConfig.linkedTableId, searchValue, currentPage, pageSize, refreshKey]);
+      safeLog('🔍 LinkedTableSelectModal: Fetching data for linkedTableId:', column.linkedTableConfig.linkedTableId);
+      safeLog('🔍 Query key:', ['linkedTableData', column._id, column.linkedTableConfig.linkedTableId, searchValue, currentPage, pageSize, refreshKey]);
 
       const params = new URLSearchParams();
       if (searchValue) params.append('search', searchValue);
@@ -44,7 +46,7 @@ const LinkedTableSelectModal = ({
         `/database/columns/${column._id}/linked-data?${params.toString()}`
       );
       
-      console.log('✅ LinkedTableSelectModal: API Response:', {
+      safeLog('✅ LinkedTableSelectModal: API Response:', {
         linkedTableId: column.linkedTableConfig.linkedTableId,
         response: response.data,
         options: response.data?.data?.options || [],
@@ -65,7 +67,7 @@ const LinkedTableSelectModal = ({
   const totalCount = linkedData?.data?.totalCount || 0;
 
   // Debug logging
-  console.log('🔍 LinkedTableSelectModal Data:', {
+  safeLog('🔍 LinkedTableSelectModal Data:', {
     optionsCount: options.length,
     linkedTable: linkedTable,
     linkedTableColumns: linkedTableColumns,
@@ -77,7 +79,7 @@ const LinkedTableSelectModal = ({
   });
 
   // Debug all columns
-  console.log('🔍 All Linked Table Columns:', linkedTableColumns.map((col, index) => ({
+  safeLog('🔍 All Linked Table Columns:', linkedTableColumns.map((col, index) => ({
     index: index,
     _id: col._id,
     name: col.name,
@@ -86,7 +88,7 @@ const LinkedTableSelectModal = ({
   })));
 
   // Debug all records data
-  console.log('🔍 All Records Data:', options.map((option, index) => ({
+  safeLog('🔍 All Records Data:', options.map((option, index) => ({
     index: index,
     value: option.value,
     label: option.label,
@@ -97,7 +99,7 @@ const LinkedTableSelectModal = ({
   // Initialize selected items from current record data
   React.useEffect(() => {
     if (visible && record && column) {
-      console.log('🔍 LinkedTableSelectModal: Modal opened with column:', {
+      safeLog('🔍 LinkedTableSelectModal: Modal opened with column:', {
         columnId: column._id,
         columnName: column.name,
         linkedTableId: column.linkedTableConfig?.linkedTableId,
@@ -120,7 +122,7 @@ const LinkedTableSelectModal = ({
   // Auto-refresh when modal opens
   React.useEffect(() => {
     if (visible && column?.linkedTableConfig?.linkedTableId) {
-      console.log('🔄 Auto-refreshing data when modal opens');
+      safeLog('🔄 Auto-refreshing data when modal opens');
       setRefreshKey(Date.now());
       refetch();
     }
@@ -148,7 +150,7 @@ const LinkedTableSelectModal = ({
       data: updatedData
     }, {
       onSuccess: () => {
-        console.log('✅ Item added successfully');
+        safeLog('✅ Item added successfully');
         // Don't close modal, just update the selection
       }
     });
@@ -176,7 +178,7 @@ const LinkedTableSelectModal = ({
       data: updatedData
     }, {
       onSuccess: () => {
-        console.log('✅ Item removed successfully');
+        safeLog('✅ Item removed successfully');
         // Don't close modal, just update the selection
       }
     });
@@ -259,7 +261,7 @@ const LinkedTableSelectModal = ({
             type="text" 
             icon={<ReloadOutlined />} 
             onClick={() => {
-              console.log('🔄 Manual refresh triggered');
+              safeLog('🔄 Manual refresh triggered');
               setRefreshKey(Date.now());
               refetch();
             }}
@@ -333,6 +335,13 @@ const LinkedTableSelectModal = ({
                   color: '#666'
                 }}>
                   <div style={{ flex: 1, display: 'flex', gap: '20px', overflowX: 'auto' }}>
+                    {/* Lookup Column Header */}
+                    {column.lookupConfig?.lookupColumnId && (
+                      <div style={{ minWidth: '150px', flex: '0 0 auto' }}>
+                        Lookup ({column.lookupConfig?.lookupColumnName || 'Value'})
+                      </div>
+                    )}
+                    
                     {linkedTableColumns.map((col, colIndex) => (
                       <div key={col._id} style={{ minWidth: '150px', flex: '0 0 auto' }}>
                         {col.name}
@@ -376,6 +385,19 @@ const LinkedTableSelectModal = ({
                       gap: '20px',
                       overflowX: 'auto'
                     }}>
+                      {/* Lookup Column - Show lookup value if available */}
+                      {column.lookupConfig?.lookupColumnId && (
+                        <div style={{ minWidth: '150px', flex: '0 0 auto' }}>
+                          <LookupDropdown
+                            column={column}
+                            value={item}
+                            onChange={() => {}} // Read-only in this context
+                            placeholder="Lookup value"
+                            disabled={true}
+                          />
+                        </div>
+                      )}
+                      
                       {linkedTableColumns.map((col, colIndex) => {
                         // Try multiple ways to get the value
                         let value = item.data?.[col.name];
@@ -408,7 +430,7 @@ const LinkedTableSelectModal = ({
                         
                         // Debug logging for first record
                         if (index === 0) {
-                          console.log('🔍 Record data debug:', {
+                          safeLog('🔍 Record data debug:', {
                             recordId: item.value,
                             columnName: col.name,
                             columnId: col._id,
@@ -502,7 +524,7 @@ const LinkedTableSelectModal = ({
           icon={<PlusOutlined />}
           onClick={() => {
             // TODO: Implement new record creation
-            console.log('Create new record');
+            safeLog('Create new record');
           }}
         >
           + New record

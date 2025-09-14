@@ -738,3 +738,137 @@ export const deleteColumn = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// Get lookup data for a lookup column
+export const getLookupData = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { search = '', page = 1, limit = 10 } = req.query;
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    console.log('🔍 getLookupData called:', { columnId, search, page, limit });
+
+    // Get the column
+    const column = await Column.findOne({
+      _id: columnId,
+      userId,
+      siteId
+    });
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    // Check if it's a lookup column
+    if (column.dataType !== 'lookup') {
+      return res.status(400).json({ message: 'Column is not a lookup type' });
+    }
+
+    const lookupConfig = column.lookupConfig;
+    if (!lookupConfig || !lookupConfig.linkedTableId || !lookupConfig.lookupColumnId) {
+      return res.status(400).json({ message: 'Lookup configuration not found' });
+    }
+
+    console.log('🔍 Lookup config:', lookupConfig);
+
+    // Get the linked table
+    const linkedTable = await Table.findById(lookupConfig.linkedTableId);
+    if (!linkedTable) {
+      return res.status(404).json({ message: 'Linked table not found' });
+    }
+
+    // Get the lookup column
+    const lookupColumn = await Column.findById(lookupConfig.lookupColumnId);
+    if (!lookupColumn) {
+      return res.status(404).json({ message: 'Lookup column not found' });
+    }
+
+    console.log('🔍 Linked table:', linkedTable.name);
+    console.log('🔍 Lookup column:', lookupColumn.name);
+
+    // Build search query - search in all text fields
+    let query = { tableId: lookupConfig.linkedTableId };
+    
+    if (search && search.trim()) {
+      // Search in the specific lookup column
+      const searchRegex = new RegExp(search.trim(), 'i');
+      query[`data.${lookupColumn.name}`] = searchRegex;
+    }
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Fetch records with pagination
+    const records = await Record.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Get total count
+    const totalCount = await Record.countDocuments(query);
+
+    // Get columns of the linked table for display
+    const linkedTableColumns = await Column.find({
+      tableId: lookupConfig.linkedTableId
+    }).sort({ order: 1 });
+
+    // Transform records into options
+    const options = records.map((record, index) => {
+      // Create a display label from the specific lookup column
+      let label = `Record ${index + 1}`;
+      
+      // Try lookup column first
+      const lookupValue = record.data?.[lookupColumn.name];
+      if (lookupValue && String(lookupValue).trim()) {
+        label = String(lookupValue);
+      } else {
+        // Fallback: create meaningful label
+        const data = record.data || {};
+        const priorityFields = ["Tên giao dịch", "Loại giao dịch", "chiến dịch", "Text 1"];
+        
+        for (const field of priorityFields) {
+          if (data[field] && String(data[field]).trim()) {
+            label = `${field}: ${String(data[field])}`;
+            break;
+          }
+        }
+      }
+
+      return {
+        value: record._id,
+        label: label,
+        data: record.data
+      };
+    });
+
+    console.log('🔍 Lookup data result:', {
+      totalCount,
+      optionsCount: options.length,
+      linkedTable: linkedTable.name,
+      linkedTableColumns: linkedTableColumns.length
+    });
+
+    res.json({
+      success: true,
+      data: {
+        options,
+        totalCount,
+        linkedTable: {
+          _id: linkedTable._id,
+          name: linkedTable.name
+        },
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          _id: col._id,
+          name: col.name,
+          dataType: col.dataType,
+          order: col.order
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting lookup data:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
