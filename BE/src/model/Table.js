@@ -6,20 +6,21 @@ const tableSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true },
   databaseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Database',
-    required: true
+    //required: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    //required: true
   },
   siteId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Site',
-    required: true
+    //required: true
   },
   description: {
     type: String,
@@ -42,7 +43,7 @@ const tableSchema = new mongoose.Schema({
 tableSchema.index({ name: 1, databaseId: 1 }, { unique: true });
 
 // Pre-save middleware to update the updatedAt field
-tableSchema.pre('save', function(next) {
+tableSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });

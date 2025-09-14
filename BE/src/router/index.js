@@ -18,6 +18,18 @@ import routerOrganization from "./routerOrganization.js";
 import routerDatabase from "./routerDatabase.js";
 import routerOrder from "./orderRouter.js";
 import routerCell from "./routerCell.js";
+import basesRouter from "./bases.routes.js";
+import membersRouter from "./members.routes.js";
+import rolesRouter from "./roles.routes.js";
+import locksRouter from "./locks.routes.js";
+import rowsRouter from "./rows.routes.js";
+import columnsRouter from "./columns.routes.js";
+import columnsReadRouter from "./columns.read.routes.js";
+import tableRouter from "./table.routes.js";
+import columnPermsRouter from "./column-perms.routes.js";
+import columnVisibilityRuleRouter from "./column-visibility-rule.routes.js";
+import rolesPermsRouter from "./roles-perms.routes.js";
+
 const router = Router();
 
 // Health check endpoint
@@ -67,6 +79,18 @@ router.use("/site-admins", siteAdminRoutes);
 router.use("/assets", routerAsset);
 router.use("/orders", routerOrder);
 router.use("/action", routerCell);
+
+router.use(basesRouter);
+router.use(membersRouter);
+router.use(rolesRouter);
+router.use(locksRouter);
+router.use(rowsRouter);
+router.use(columnsRouter);
+router.use(columnsReadRouter);
+router.use(tableRouter);
+router.use(columnPermsRouter);
+router.use(columnVisibilityRuleRouter);
+router.use(rolesPermsRouter);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 

@@ -8,6 +8,7 @@ import logger from './utils/logger.js';
 import { authAndSiteDetectionMiddleware } from './middlewares/authAndSiteDetection.js';
 import { applySiteFilterMiddleware } from './middlewares/siteDetection.js';
 import {authMiddleware} from './middlewares/authMiddleware.js';
+import {listEndpoints} from './utils/listEndpoints.js'
 // Load environment variables
 dotenv.config();
 
@@ -65,15 +66,16 @@ app.use("/api", (req, res, next) => {
     //     if (err) return next(err);
     //     applySiteFilterMiddleware(req, res, next);
     // });
-      authMiddleware(req, res, (err) => {
-        if (err) return next(err);
-        applySiteFilterMiddleware(req, res, next);
-    });
+    authMiddleware(req, res, next);
+    //   authMiddleware(req, res, (err) => {
+    //     // if (err) return next(err);
+    //     // applySiteFilterMiddleware(req, res, next);
+    // });
 });
 
 // Main router
 app.use("/api", router);
-
+// listEndpoints(app)
 
 // 404 handler
 app.use((req, res, next) => {
@@ -84,7 +86,10 @@ app.use((req, res, next) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-    return res.status(err.status || 500).json({
+      if (res.headersSent) {
+        return;
+      }
+     res.status(err.status || 500).json({
       name: err.name,
       message: err.message,
     });

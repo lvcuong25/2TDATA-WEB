@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
-const BaseSchema = new mongoose.Schema({
-  org: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
-  site: { type: mongoose.Schema.Types.ObjectId, ref: "Site", required: false }, // base có thể gắn site
-  name: { type: String, required: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  maxUsers: { type: Number },
-  description: String,
-  active: { type: Boolean, default: true }
-}, { timestamps: true });
-
+const BaseSchema = new mongoose.Schema(
+  {
+    orgId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
+    name: { type: String, required: true, trim: true },
+    ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }
+  },
+  { timestamps: true, versionKey: false }
+);
+// Mỗi org không được có 2 base trùng tên
+BaseSchema.index({ orgId: 1, name: 1 }, { unique: true });
 export default mongoose.model("Base", BaseSchema);

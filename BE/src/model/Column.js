@@ -6,6 +6,9 @@ const columnSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  key: { type: String, required: true },
+  baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true },
+  type: { type: String, enum: ["string", "number", "date", "boolean", "json"], default: "string" },
   tableId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Table',
@@ -14,17 +17,17 @@ const columnSchema = new mongoose.Schema({
   databaseId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Database',
-    required: true
+    //required: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    //required: true
   },
   siteId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Site',
-    required: true
+    //required: true
   },
   dataType: {
     type: String,

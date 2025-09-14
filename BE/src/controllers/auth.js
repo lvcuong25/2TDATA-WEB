@@ -6,6 +6,8 @@ import jwt from "jsonwebtoken";
 import Service from "../model/Service.js";
 import UserSession from '../model/UserSession.js';
 import Site from '../model/Site.js';
+import BaseMember from "../model/BaseMember.js";
+import Organization from "../model/Organization.js";
 
 const hashPassword = (password) => hashSync(password, 10);
 const comparePassword = (password, hashPassword) => compareSync(password, hashPassword);
@@ -98,8 +100,8 @@ export const signUp = async (req, res, next) => {
 
 export const signIn = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
-        const userExist = await User.findOne({ email }).populate('site_id');
+        const { email, password, preferOrgId, preferBaseId } = req.body;
+        const userExist = await User.findOne({ email }).lean();
         if (!userExist) {
             return res.status(400).json({
                 message: "Email không tồn tại",
@@ -117,22 +119,75 @@ export const signIn = async (req, res, next) => {
             });
         }
 
-        // Check site access permissions
-        const currentSiteId = req.site?._id?.toString();
-        const userSiteId = userExist.site_id?._id?.toString() || userExist.site_id?.toString();
-        
-        // Super admin can login to any site
-        if (userExist.role !== 'super_admin') {
-            // Other users can only login to their assigned site
-            if (!userSiteId || userSiteId !== currentSiteId) {
-                return res.status(403).json({
-                    message: "Bạn không có quyền truy cập vào site này",
-                    error: "SITE_ACCESS_DENIED"
-                });
-            }
-        }
+        const memberships = await BaseMember.aggregate([
+            { $match: { userId: userExist._id } },
+            { $lookup: { from: "base", localField: "baseId", foreignField: "_id", as: "base" } },
+            { $unwind: "$base" },
+            {$lookup: { from: "baseroles", localField: "roleId", foreignField: "_id", as: "role" }},
+             { $unwind: "$role" },
+             { $project: {
+                 _id: 1,
+                 baseId: 1, 
+                 roleId: 1,
+                "base.name": 1,
+                "base.orgId": 1,
+                "role.name": 1,
+                "role.canManageMembers": 1,
+                "role.canManagerSchema": 1,
+                "role.canCreateTables": 1,
+                
+             } }
+        ]);
 
-        const accessToken = token({ _id: userExist._id }, "365d");
+        if(!memberships || memberships.length === 0) {
+            console.log('User has no memberships in any base:', userExist._id);
+            return res.status(403).json({
+                message: "Bạn không có quyền truy cập vào hệ thống vì chưa được thêm vào Base nào.",
+                error: "NO_BASE_MEMBERSHIP"
+            });
+        }
+        // Chọn primary membership (nếu có nhiều hơn 1)
+        let primary = null;
+        if (preferBaseId) {
+            primary = memberships.find(m => String(m.baseId) === String(preferBaseId));
+        }
+        if (!primary && preferOrgId) {
+            primary = memberships.find(m => String(m.base.orgId) === String(preferOrgId));
+        }   
+        if (!primary) {
+            primary = memberships[0];
+        }
+        const orgId = primary.base.orgId;
+        const baseId = primary.baseId;
+
+        const org = await Organization.findById(orgId).populate({patch:'site_id', select:'name domains'}).lean();
+        if (!org) {
+            return res.status(403).json({
+                message: "Organization không tồn tại",
+                error: "ORG_NOT_FOUND"
+            });
+        }   
+
+
+
+        //userExist.memberships = memberships;    
+
+        // // Check site access permissions
+        // const currentSiteId = req.site?._id?.toString();
+        // const userSiteId = userExist.site_id?._id?.toString() || userExist.site_id?.toString();
+        
+        // // Super admin can login to any site
+        // if (userExist.role !== 'super_admin') {
+        //     // Other users can only login to their assigned site
+        //     if (!userSiteId || userSiteId !== currentSiteId) {
+        //         return res.status(403).json({
+        //             message: "Bạn không có quyền truy cập vào site này",
+        //             error: "SITE_ACCESS_DENIED"
+        //         });
+        //     }
+        // }
+
+        const accessToken = token({ _id: userExist._id,orgId:orgId, email:userExist.email }, "365d");
         
         // Create session with site context
         const siteId = req.site?._id || userExist.site_id;
