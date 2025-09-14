@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig, lookupConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -27,7 +27,8 @@ export const createColumn = async (req, res) => {
       phoneConfig,
       timeConfig,
       ratingConfig,
-      linkedTableConfig
+      linkedTableConfig,
+      lookupConfig
     });
 
     if (!name || name.trim() === '') {
@@ -225,6 +226,24 @@ export const createColumn = async (req, res) => {
         name,
         hasLinkedTableConfig: !!linkedTableConfig,
         linkedTableConfig: columnData.linkedTableConfig
+      });
+    }
+
+    // Only add lookupConfig if dataType is lookup and lookupConfig is provided
+    if (dataType === 'lookup' && lookupConfig) {
+      // Ensure lookupConfig has all required fields with defaults
+      columnData.lookupConfig = {
+        linkedTableId: lookupConfig.linkedTableId,
+        lookupColumnId: lookupConfig.lookupColumnId,
+        linkedTableName: lookupConfig.linkedTableName || '',
+        lookupColumnName: lookupConfig.lookupColumnName || '',
+        defaultValue: lookupConfig.defaultValue || null
+      };
+      console.log('Backend: Creating lookup column:', {
+        dataType,
+        name,
+        hasLookupConfig: !!lookupConfig,
+        lookupConfig: columnData.lookupConfig
       });
     }
 
