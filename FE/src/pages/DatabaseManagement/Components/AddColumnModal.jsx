@@ -38,6 +38,7 @@ import PercentConfig from '../Config/PercentConfig';
 import UrlConfig from '../Config/UrlConfig';
 import TimeConfig from '../Config/TimeConfig';
 import RatingConfig from '../Config/RatingConfig';
+import LinkedTableConfig from '../Config/LinkedTableConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -49,7 +50,9 @@ const AddColumnModal = ({
   newColumn,
   setNewColumn,
   columns,
-  loading
+  loading,
+  currentTableId = null,
+  currentDatabaseId = null
 }) => {
   const handleDataTypeChange = (value) => {
     setNewColumn({ 
@@ -177,6 +180,13 @@ const AddColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LinkOutlined style={{ color: '#1890ff' }} />
                   <span>URL</span>
+                </div>
+              </Option>
+              
+              <Option value="linked_table">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <LinkOutlined style={{ color: '#722ed1' }} />
+                  <span>Linked Table</span>
                 </div>
               </Option>
               
@@ -433,6 +443,19 @@ const AddColumnModal = ({
             <RatingConfig
               ratingConfig={newColumn.ratingConfig}
               setRatingConfig={(ratingConfig) => setNewColumn({ ...newColumn, ratingConfig })}
+            />
+          )}
+
+          {/* Linked Table Configuration */}
+          {newColumn.dataType === 'linked_table' && (
+            <LinkedTableConfig
+              config={newColumn.linkedTableConfig}
+              onChange={(config) => setNewColumn({
+                ...newColumn,
+                linkedTableConfig: config
+              })}
+              currentTableId={currentTableId}
+              currentDatabaseId={currentDatabaseId}
             />
           )}
 

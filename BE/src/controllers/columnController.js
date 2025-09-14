@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -26,7 +26,8 @@ export const createColumn = async (req, res) => {
       urlConfig,
       phoneConfig,
       timeConfig,
-      ratingConfig
+      ratingConfig,
+      linkedTableConfig
     });
 
     if (!name || name.trim() === '') {
@@ -210,6 +211,23 @@ export const createColumn = async (req, res) => {
       });
     }
 
+    // Only add linkedTableConfig if dataType is linked_table and linkedTableConfig is provided
+    if (dataType === 'linked_table' && linkedTableConfig) {
+      // Ensure linkedTableConfig has all required fields with defaults
+      columnData.linkedTableConfig = {
+        linkedTableId: linkedTableConfig.linkedTableId,
+        allowMultiple: linkedTableConfig.allowMultiple || false,
+        defaultValue: linkedTableConfig.defaultValue || null,
+        filterRules: linkedTableConfig.filterRules || []
+      };
+      console.log('Backend: Creating linked_table column:', {
+        dataType,
+        name,
+        hasLinkedTableConfig: !!linkedTableConfig,
+        linkedTableConfig: columnData.linkedTableConfig
+      });
+    }
+
     // Set default value for currency column if not provided
     if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
       columnData.defaultValue = 0;
@@ -307,7 +325,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -492,6 +510,18 @@ export const updateColumn = async (req, res) => {
       });
     }
 
+    // Linked table data type configuration
+    if (dataType === 'linked_table' && linkedTableConfig !== undefined) {
+      column.linkedTableConfig = linkedTableConfig;
+      console.log('Backend: Updating linked_table column:', {
+        dataType,
+        name,
+        hasLinkedTableConfig: !!linkedTableConfig,
+        linkedTableConfig
+      });
+    } else if (dataType !== 'linked_table') {
+      column.linkedTableConfig = undefined;
+    }
 
     // Set default value for currency column if not provided
     if (dataType === 'currency' && defaultValue === undefined && column.defaultValue === undefined) {
@@ -508,6 +538,159 @@ export const updateColumn = async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating column:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+export const getLinkedTableData = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { search, limit = 50, page = 1 } = req.query;
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    // Find the column
+    const column = await Column.findOne({
+      _id: columnId,
+      userId,
+      siteId
+    });
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    if (column.dataType !== 'linked_table') {
+      return res.status(400).json({ message: 'Column is not a linked table type' });
+    }
+
+    if (!column.linkedTableConfig || !column.linkedTableConfig.linkedTableId) {
+      return res.status(400).json({ message: 'Linked table configuration not found' });
+    }
+
+    const linkedTableId = column.linkedTableConfig.linkedTableId;
+
+    // Build query for records
+    let query = { tableId: linkedTableId };
+    
+    // Add search functionality if search term provided
+    if (search && search.trim()) {
+      query.$or = [
+        { 'data.name': { $regex: search.trim(), $options: 'i' } },
+        { 'data.title': { $regex: search.trim(), $options: 'i' } },
+        { 'data.email': { $regex: search.trim(), $options: 'i' } }
+      ];
+    }
+
+    // Calculate pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get records from linked table
+    const records = await Record.find(query)
+      .skip(skip)
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
+
+    // Get total count for pagination
+    const totalCount = await Record.countDocuments(query);
+
+    console.log('🔍 Backend: Query and Records:', {
+      query: query,
+      recordsCount: records.length,
+      totalCount: totalCount,
+      firstRecord: records[0] ? {
+        _id: records[0]._id,
+        tableId: records[0].tableId,
+        data: records[0].data,
+        dataKeys: Object.keys(records[0].data || {})
+      } : null
+    });
+
+    // Get linked table info
+    const linkedTable = await Table.findOne({ _id: linkedTableId });
+
+    // Get columns of the linked table
+    const linkedTableColumns = await Column.find({
+      tableId: linkedTableId,
+      userId,
+      siteId
+    }).sort({ order: 1 });
+
+    console.log('🔍 getLinkedTableData Debug:', {
+      columnId,
+      linkedTableId,
+      query,
+      recordsCount: records.length,
+      totalCount,
+      linkedTable: linkedTable ? { _id: linkedTable._id, name: linkedTable.name } : null,
+      linkedTableColumns: linkedTableColumns.map(col => ({ _id: col._id, name: col.name })),
+      firstRecord: records[0] ? { _id: records[0]._id, data: records[0].data } : null,
+      allRecordsData: records.map(r => ({ _id: r._id, dataKeys: Object.keys(r.data || {}) }))
+    });
+
+    // Transform records to options format
+    const options = records.map((record, index) => {
+      // Try to get the first column with data as label
+      let label = `Record ${index + 1}`;
+      if (record.data && Object.keys(record.data).length > 0) {
+        // Get the first column that has data
+        const firstColumn = linkedTableColumns[0];
+        if (firstColumn && record.data[firstColumn.name]) {
+          label = String(record.data[firstColumn.name]);
+        } else {
+          // Fallback to any available data
+          const dataKeys = Object.keys(record.data);
+          const firstDataKey = dataKeys.find(key => record.data[key] && String(record.data[key]).trim());
+          if (firstDataKey) {
+            label = String(record.data[firstDataKey]);
+          }
+        }
+      }
+      
+      return {
+        value: record._id,
+        label: label,
+        recordId: record._id,
+        data: record.data
+      };
+    });
+
+    console.log('🔍 Backend: All records data:', records.map(record => ({
+      _id: record._id,
+      tableId: record.tableId,
+      data: record.data,
+      dataKeys: Object.keys(record.data || {}),
+      dataEntries: Object.entries(record.data || {}).map(([key, val]) => ({ key, value: val }))
+    })));
+
+    console.log('🔍 Backend: Transformed options:', options.map(option => ({
+      value: option.value,
+      label: option.label,
+      data: option.data,
+      dataKeys: Object.keys(option.data || {})
+    })));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        options,
+        totalCount,
+        linkedTable: linkedTable ? {
+          _id: linkedTable._id,
+          name: linkedTable.name
+        } : null,
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          _id: col._id,
+          name: col.name,
+          dataType: col.dataType,
+          order: col.order
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching linked table data:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormatter.js';
 import AddColumnModal from './Components/AddColumnModal';
 import EditColumnModal from './Components/EditColumnModal';
@@ -101,6 +101,29 @@ const { Text } = Typography;
 
 const TableDetail = () => {
   const { databaseId, tableId } = useParams();
+  
+  // Safe console.log helper
+  const safeLog = (...args) => {
+    if (typeof console !== 'undefined' && console.log) {
+      console.log(...args);
+    }
+  };
+  
+  // Debug logging
+  safeLog('🔍 TableDetail Debug:', {
+    databaseId,
+    tableId,
+    fromUseParams: { databaseId, tableId }
+  });
+
+  // Reset editingColumn when tableId changes
+  useEffect(() => {
+    if (editingColumn) {
+      safeLog('🔄 Table changed, resetting editingColumn state');
+      setEditingColumn(null);
+      setShowEditColumn(false);
+    }
+  }, [tableId]);
   const navigate = useNavigate();
   const { 
     selectedRowKeys, 
@@ -159,6 +182,12 @@ const TableDetail = () => {
       icon: 'star',
       color: '#faad14',
       defaultValue: 0
+    },
+    linkedTableConfig: {
+      linkedTableId: null,
+      allowMultiple: false,
+      defaultValue: null,
+      filterRules: []
     },
     defaultValue: null
   });
@@ -249,6 +278,12 @@ const TableDetail = () => {
           icon: 'star',
           color: '#faad14',
           defaultValue: 0
+        },
+        linkedTableConfig: {
+          linkedTableId: null,
+          allowMultiple: false,
+          defaultValue: null,
+          filterRules: []
         }
       });
     },
@@ -553,6 +588,14 @@ const TableDetail = () => {
         case 'rating':
           finalName = 'Rating';
           break;
+        case 'linked_table':
+          // Use the connected table name if available
+          if (newColumn.linkedTableConfig?.linkedTableName) {
+            finalName = newColumn.linkedTableConfig.linkedTableName;
+          } else {
+            finalName = 'Linked Table';
+          }
+          break;
         default:
           finalName = 'New Column';
       }
@@ -607,7 +650,7 @@ const TableDetail = () => {
     // Add percent configuration if data type is percent
     if (newColumn.dataType === 'percent') {
       columnData.percentConfig = newColumn.percentConfig;
-      console.log('Frontend: Sending percent config:', {
+      safeLog('Frontend: Sending percent config:', {
         newColumn: newColumn,
         percentConfig: newColumn.percentConfig,
         columnData: columnData
@@ -617,7 +660,7 @@ const TableDetail = () => {
     // Add URL configuration if data type is url
     if (newColumn.dataType === 'url') {
       columnData.urlConfig = newColumn.urlConfig;
-      console.log('Frontend: Sending URL config:', {
+      safeLog('Frontend: Sending URL config:', {
         newColumn: newColumn,
         urlConfig: newColumn.urlConfig,
         columnData: columnData
@@ -626,7 +669,7 @@ const TableDetail = () => {
     
     // Phone data type doesn't need special config
     if (newColumn.dataType === 'phone') {
-      console.log('Frontend: Sending phone column:', {
+      safeLog('Frontend: Sending phone column:', {
         newColumn: newColumn,
         columnData: columnData
       });
@@ -635,7 +678,7 @@ const TableDetail = () => {
     // Time data type doesn't need special config
     if (newColumn.dataType === 'time') {
       columnData.timeConfig = newColumn.timeConfig;
-      console.log('Frontend: Sending time column:', {
+      safeLog('Frontend: Sending time column:', {
         newColumn: newColumn,
         columnData: columnData
       });
@@ -644,15 +687,25 @@ const TableDetail = () => {
     // Rating data type doesn't need special config
     if (newColumn.dataType === 'rating') {
       columnData.ratingConfig = newColumn.ratingConfig;
-      console.log('Frontend: Sending rating column:', {
+      safeLog('Frontend: Sending rating column:', {
         newColumn: newColumn,
         columnData: columnData,
         ratingConfig: newColumn.ratingConfig
       });
     }
     
+    // Add linked table configuration if data type is linked_table
+    if (newColumn.dataType === 'linked_table') {
+      columnData.linkedTableConfig = newColumn.linkedTableConfig;
+      safeLog('Frontend: Sending linked_table column:', {
+        newColumn: newColumn,
+        columnData: columnData,
+        linkedTableConfig: newColumn.linkedTableConfig
+      });
+    }
     
-    console.log('Frontend: Final columnData:', columnData);
+    
+    safeLog('Frontend: Final columnData:', columnData);
     addColumnMutation.mutate(columnData);
   };
 
@@ -815,6 +868,12 @@ const TableDetail = () => {
         icon: 'star',
         color: '#faad14',
         defaultValue: 0
+      },
+      linkedTableConfig: column.linkedTableConfig || {
+        linkedTableId: null,
+        allowMultiple: false,
+        defaultValue: null,
+        filterRules: []
       }
     });
     setShowEditColumn(true);
@@ -870,7 +929,7 @@ const TableDetail = () => {
     // Add percent configuration if data type is percent
     if (editingColumn.dataType === 'percent') {
       columnData.percentConfig = editingColumn.percentConfig;
-      console.log('Frontend: Sending percent config for edit:', {
+      safeLog('Frontend: Sending percent config for edit:', {
         editingColumn: editingColumn,
         percentConfig: editingColumn.percentConfig,
         columnData: columnData
@@ -884,7 +943,7 @@ const TableDetail = () => {
     
     // Phone data type doesn't need special config
     if (editingColumn.dataType === 'phone') {
-      console.log('Frontend: Editing phone column:', {
+      safeLog('Frontend: Editing phone column:', {
         editingColumn: editingColumn,
         columnData: columnData
       });
@@ -893,7 +952,7 @@ const TableDetail = () => {
     // Time data type doesn't need special config
     if (editingColumn.dataType === 'time') {
       columnData.timeConfig = editingColumn.timeConfig;
-      console.log('Frontend: Editing time column:', {
+      safeLog('Frontend: Editing time column:', {
         editingColumn: editingColumn,
         columnData: columnData
       });
@@ -902,10 +961,20 @@ const TableDetail = () => {
     // Rating data type doesn't need special config
     if (editingColumn.dataType === 'rating') {
       columnData.ratingConfig = editingColumn.ratingConfig;
-      console.log('Frontend: Editing rating column:', {
+      safeLog('Frontend: Editing rating column:', {
         editingColumn: editingColumn,
         columnData: columnData,
         ratingConfig: editingColumn.ratingConfig
+      });
+    }
+    
+    // Add linked table configuration if data type is linked_table
+    if (editingColumn.dataType === 'linked_table') {
+      columnData.linkedTableConfig = editingColumn.linkedTableConfig;
+      safeLog('Frontend: Editing linked_table column:', {
+        editingColumn: editingColumn,
+        columnData: columnData,
+        linkedTableConfig: editingColumn.linkedTableConfig
       });
     }
     
@@ -1344,6 +1413,8 @@ const TableDetail = () => {
             setNewColumn={setNewColumn}
             columns={columns}
             loading={addColumnMutation.isPending}
+            currentTableId={tableId}
+            currentDatabaseId={databaseId}
           />
 
           {/* Edit Column Modal */}
@@ -1358,6 +1429,8 @@ const TableDetail = () => {
             setEditingColumn={setEditingColumn}
             columns={columns}
             loading={updateColumnMutation.isPending}
+            currentTableId={tableId}
+            currentDatabaseId={databaseId}
           />
         </div>
       );

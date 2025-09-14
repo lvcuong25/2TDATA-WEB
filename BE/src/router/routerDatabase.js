@@ -20,7 +20,8 @@ import {
   getColumns,
   getColumnById,
   updateColumn,
-  deleteColumn
+  deleteColumn,
+  getLinkedTableData
 } from "../controllers/columnController.js";
 
 import {
@@ -75,6 +76,7 @@ router.delete("/tables/:tableId", deleteTable);
 router.post("/columns", createColumn);
 router.get("/tables/:tableId/columns", getColumns);
 router.get("/columns/:columnId", getColumnById);
+router.get("/columns/:columnId/linked-data", getLinkedTableData);
 router.put("/columns/:columnId", updateColumn);
 router.delete("/columns/:columnId", deleteColumn);
 

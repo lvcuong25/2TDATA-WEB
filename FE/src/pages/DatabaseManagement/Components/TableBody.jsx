@@ -18,7 +18,8 @@ import {
   FireFilled,
   TrophyOutlined,
   TrophyFilled,
-  CloseOutlined
+  CloseOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
@@ -35,6 +36,7 @@ import {
   getRowContentStyle,
   getCellContentStyle
 } from '../Utils/rowHeightUtils.jsx';
+import LinkedTableSelectModal from './LinkedTableSelectModal';
 
 // Custom AddOptionInput component for dropdown
 const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
@@ -250,6 +252,13 @@ const TableBody = ({
   tableId,
   rowHeightSettings
 }) => {
+  // State for linked table modal
+  const [linkedTableModal, setLinkedTableModal] = useState({
+    visible: false,
+    column: null,
+    record: null
+  });
+
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
     if (!dateString) return '';
@@ -1175,7 +1184,7 @@ const TableBody = ({
                                 color: column.isSystem ? '#666' : '#333',
                                 fontStyle: column.isSystem ? 'italic' : 'normal'
                               }}
-                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' ? undefined : () => handleCellClick(record._id, column.name, value)}
                               onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                               onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
@@ -1366,7 +1375,78 @@ const TableBody = ({
                                           color="#1890ff"
                                           height="6px"
                                         />
-                                      ) : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
+                                      ) : column.dataType === 'linked_table' ?
+                                        (() => {
+                                          const linkedValue = value;
+                                          const isMultiple = column.linkedTableConfig?.allowMultiple;
+                                          
+                                          if (!linkedValue) {
+                                            return (
+                                              <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                color: '#bfbfbf',
+                                                fontStyle: 'italic',
+                                                cursor: 'pointer'
+                                              }}
+                                              onClick={() => setLinkedTableModal({
+                                                visible: true,
+                                                column: column,
+                                                record: record
+                                              })}
+                                              >
+                                                <LinkOutlined />
+                                                <span>Chọn dữ liệu</span>
+                                              </div>
+                                            );
+                                          }
+
+                                          if (isMultiple && Array.isArray(linkedValue)) {
+                                            return (
+                                              <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                flexWrap: 'wrap',
+                                                cursor: 'pointer'
+                                              }}
+                                              onClick={() => setLinkedTableModal({
+                                                visible: true,
+                                                column: column,
+                                                record: record
+                                              })}
+                                              >
+                                                {linkedValue.map((item, index) => (
+                                                  <Tag key={index} color="blue" size="small">
+                                                    {item.label || item.data?.name || `Item ${index + 1}`}
+                                                  </Tag>
+                                                ))}
+                                                <Tag color="green" size="small">+</Tag>
+                                              </div>
+                                            );
+                                          } else {
+                                            const singleItem = isMultiple ? linkedValue[0] : linkedValue;
+                                            return (
+                                              <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                cursor: 'pointer'
+                                              }}
+                                              onClick={() => setLinkedTableModal({
+                                                visible: true,
+                                                column: column,
+                                                record: record
+                                              })}
+                                              >
+                                                <LinkOutlined style={{ color: '#722ed1' }} />
+                                                <span>{singleItem?.label || singleItem?.data?.name || 'Linked Item'}</span>
+                                              </div>
+                                            );
+                                          }
+                                        })()
+                                        : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
                               }
                             </div>
                           )}
@@ -1896,7 +1976,7 @@ const TableBody = ({
                           color: column.isSystem ? '#666' : '#333',
                           fontStyle: column.isSystem ? 'italic' : 'normal'
                         }}
-                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' ? undefined : () => handleCellClick(record._id, column.name, value)}
                         onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                         onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
@@ -2208,7 +2288,78 @@ const TableBody = ({
                                         color="#1890ff"
                                         height="6px"
                                       />
-                                    ) : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
+                                    ) : column.dataType === 'linked_table' ?
+                                      (() => {
+                                        const linkedValue = value;
+                                        const isMultiple = column.linkedTableConfig?.allowMultiple;
+                                        
+                                        if (!linkedValue) {
+                                          return (
+                                            <div style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '8px',
+                                              color: '#bfbfbf',
+                                              fontStyle: 'italic',
+                                              cursor: 'pointer'
+                                            }}
+                                            onClick={() => setLinkedTableModal({
+                                              visible: true,
+                                              column: column,
+                                              record: record
+                                            })}
+                                            >
+                                              <LinkOutlined />
+                                              <span>Chọn dữ liệu</span>
+                                            </div>
+                                          );
+                                        }
+
+                                        if (isMultiple && Array.isArray(linkedValue)) {
+                                          return (
+                                            <div style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
+                                              flexWrap: 'wrap',
+                                              cursor: 'pointer'
+                                            }}
+                                            onClick={() => setLinkedTableModal({
+                                              visible: true,
+                                              column: column,
+                                              record: record
+                                            })}
+                                            >
+                                              {linkedValue.map((item, index) => (
+                                                <Tag key={index} color="blue" size="small">
+                                                  {item.label || item.data?.name || `Item ${index + 1}`}
+                                                </Tag>
+                                              ))}
+                                              <Tag color="green" size="small">+</Tag>
+                                            </div>
+                                          );
+                                        } else {
+                                          const singleItem = isMultiple ? linkedValue[0] : linkedValue;
+                                          return (
+                                            <div style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '8px',
+                                              cursor: 'pointer'
+                                            }}
+                                            onClick={() => setLinkedTableModal({
+                                              visible: true,
+                                              column: column,
+                                              record: record
+                                            })}
+                                            >
+                                              <LinkOutlined style={{ color: '#722ed1' }} />
+                                              <span>{singleItem?.label || singleItem?.data?.name || 'Linked Item'}</span>
+                                            </div>
+                                          );
+                                        }
+                                      })()
+                                      : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
                         }
                       </div>
                     )}
@@ -2293,6 +2444,18 @@ const TableBody = ({
           </div>
         </div>
       </div>
+
+      {/* Linked Table Select Modal */}
+      <LinkedTableSelectModal
+        visible={linkedTableModal.visible}
+        onCancel={() => setLinkedTableModal({ visible: false, column: null, record: null })}
+        onSelect={(selectedData) => {
+          console.log('Selected linked table data:', selectedData);
+        }}
+        column={linkedTableModal.column}
+        record={linkedTableModal.record}
+        updateRecordMutation={updateRecordMutation}
+      />
     </div>
   );
 };
