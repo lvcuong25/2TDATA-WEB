@@ -1054,7 +1054,7 @@ const TableBody = ({
                                   <Select
                                     value={cellValue}
                                     onChange={(value) => {
-                                      setCellValue(value || '');
+                                      setCellValue(typeof value === 'object' ? JSON.stringify(value) : (value || ''));
                                       handleCellSave();
                                     }}
                                     autoFocus
@@ -1351,15 +1351,13 @@ const TableBody = ({
                                     : column.dataType === 'currency' && value !== null && value !== undefined ?
                                       (() => {
                                         const config = column.currencyConfig || {
-                                          currency: 'USD',
-                                          symbol: '$',
                                           position: 'before',
                                           decimalPlaces: 2,
                                           thousandsSeparator: ',',
                                           decimalSeparator: '.'
                                         };
 
-                                        const numValue = parseFloat(value);
+                                        const numValue = parseFloat(typeof value === 'object' && value.amount !== undefined ? value.amount : value);
                                         if (isNaN(numValue)) return value;
 
                                         const formatted = numValue.toLocaleString('en-US', {
@@ -1486,7 +1484,7 @@ const TableBody = ({
                                             </div>
                                           );
                                         })()
-                                        : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
+                                        : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' ? JSON.stringify(value) : (value || ''))
                               }
                             </div>
                           )}
@@ -1885,7 +1883,7 @@ const TableBody = ({
                             <Select
                               value={cellValue}
                               onChange={(value) => {
-                                setCellValue(value || '');
+                                setCellValue(typeof value === 'object' ? JSON.stringify(value) : (value || ''));
                                 handleCellSave();
                               }}
                               autoFocus
@@ -2303,6 +2301,9 @@ const TableBody = ({
                                   : column.dataType === 'currency' && value !== null && value !== undefined ?
                                     (() => {
                                       const config = column.currencyConfig || {
+                                          
+                                          currency: (typeof value === 'object' && value.currency) || column.currencyConfig?.currency || 'USD',
+                                          symbol: (typeof value === 'object' && value.currency === 'VND') ? '₫' : column.currencyConfig?.symbol || '$',
                                         currency: 'USD',
                                         symbol: '$',
                                         position: 'before',
@@ -2311,7 +2312,7 @@ const TableBody = ({
                                         decimalSeparator: '.'
                                       };
 
-                                      const numValue = parseFloat(value);
+                                      const numValue = parseFloat(typeof value === 'object' && value.amount !== undefined ? value.amount : value);
                                       if (isNaN(numValue)) return value;
 
                                       const formatted = numValue.toLocaleString('en-US', {
@@ -2438,7 +2439,7 @@ const TableBody = ({
                                           </div>
                                         );
                                       })()
-                                      : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
+                                      : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' ? JSON.stringify(value) : (value || ''))
                         }
                       </div>
                     )}

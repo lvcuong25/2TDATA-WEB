@@ -68,12 +68,7 @@ const ViewTypeDropdown = ({ visible, position, onClose, onSelectViewType }) => {
     }
   ];
 
-  if (!visible) {
-    console.log('ViewTypeDropdown: Not visible');
-    return null;
-  }
-
-  console.log('ViewTypeDropdown: Rendering with position:', position);
+  if (!visible) return null;
 
   return (
     <div
@@ -417,23 +412,6 @@ const DatabaseLayout = () => {
     },
   });
 
-
-  // Delete view mutation
-  const deleteViewMutation = useMutation({
-    mutationFn: async (viewId) => {
-      const response = await axiosInstance.delete(`/database/views/${viewId}`);
-      return response.data;
-    },
-    onSuccess: () => {
-      toast.success("View deleted successfully");
-      queryClient.invalidateQueries(["allViews"]);
-      queryClient.refetchQueries(["allViews"]);
-    },
-    onError: (error) => {
-      console.error("Error deleting view:", error);
-      toast.error(error.response?.data?.message || "Failed to delete view");
-    },
-  });
   // Copy database mutation
   const copyDatabaseMutation = useMutation({
     mutationFn: async (databaseData) => {
@@ -538,8 +516,6 @@ const DatabaseLayout = () => {
     setSelectedContext(context);
     setShowViewTypeDropdown(true);
     console.log('Dropdown should be visible now');
-    console.log('Position:', { x, y });
-    console.log('Context:', context);
   };
 
   const handleSelectViewType = async (viewType) => {
@@ -763,7 +739,7 @@ const DatabaseLayout = () => {
         )}
 
         {/* Navigation Menu */}
-        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div className="flex-1 overflow-y-auto">
           <Menu
             theme="light"
             mode="inline"
@@ -783,7 +759,7 @@ const DatabaseLayout = () => {
 
           {/* Databases Section */}
           {!collapsed && (
-            <div className="px-4 py-2" style={{ paddingBottom: '20px' }}>
+            <div className="px-4 py-2">
               
               {filteredDatabases.length === 0 ? (
                 <div className="text-center py-4">
@@ -795,7 +771,7 @@ const DatabaseLayout = () => {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1" style={{ maxHeight: 'none', overflow: 'visible' }}>
+                <div className="space-y-1">
                   {filteredDatabases.map((database) => {
                     const isExpanded = expandedDatabases.has(database._id);
                     const databaseTables = getTablesForDatabase(database._id);
@@ -873,7 +849,7 @@ const DatabaseLayout = () => {
                         
                         {/* Tables under this database */}
                         {isExpanded && (
-                          <div className="ml-6 space-y-1" style={{ maxHeight: 'none', overflow: 'visible' }}>
+                          <div className="ml-6 space-y-1">
                             {databaseTables.length > 0 ? (
                               <>
                                 {databaseTables.map((table) => {
@@ -882,38 +858,38 @@ const DatabaseLayout = () => {
                                   
                                   return (
                                     <div key={table._id}>
-                                  <Dropdown
-                                    menu={{
-                                      items: [
-                                        {
+                                      <Dropdown
+                                        menu={{
+                                          items: [
+                                            {
                                               key: "edit",
-                                          icon: <EditOutlined />,
+                                              icon: <EditOutlined />,
                                               label: "Sửa tên",
-                                          onClick: () => {
-                                            setEditingTable({
-                                              _id: table._id,
-                                              name: table.name,
+                                              onClick: () => {
+                                                setEditingTable({
+                                                  _id: table._id,
+                                                  name: table.name,
                                                   description: table.description || "",
-                                              databaseId: database._id
-                                            });
-                                            setShowEditTableModal(true);
-                                          }
-                                        },
-                                        {
+                                                  databaseId: database._id
+                                                });
+                                                setShowEditTableModal(true);
+                                              }
+                                            },
+                                            {
                                               key: "copy",
-                                          icon: <CopyOutlined />,
+                                              icon: <CopyOutlined />,
                                               label: "Copy",
-                                          onClick: () => {
-                                            setCopyingTable({
-                                              _id: table._id,
-                                              name: `${table.name} - Copy`,
+                                              onClick: () => {
+                                                setCopyingTable({
+                                                  _id: table._id,
+                                                  name: `${table.name} - Copy`,
                                                   description: table.description || "",
-                                              targetDatabaseId: database._id
-                                            });
-                                            setShowCopyTableModal(true);
-                                          }
-                                        },
-                                        {
+                                                  targetDatabaseId: database._id
+                                                });
+                                                setShowCopyTableModal(true);
+                                              }
+                                            },
+                                            {
                                               key: "createView",
                                               icon: <TableOutlined />,
                                               label: "Tạo View",
@@ -927,32 +903,32 @@ const DatabaseLayout = () => {
                                             },
                                             {
                                               key: "delete",
-                                          icon: <DeleteOutlined />,
+                                              icon: <DeleteOutlined />,
                                               label: "Xóa table",
-                                          danger: true,
-                                          onClick: () => {
-                                            if (window.confirm(`Bạn có chắc muốn xóa table "${table.name}"?`)) {
-                                              deleteTableMutation.mutate(table._id);
+                                              danger: true,
+                                              onClick: () => {
+                                                if (window.confirm(`Bạn có chắc muốn xóa table "${table.name}"?`)) {
+                                                  deleteTableMutation.mutate(table._id);
+                                                }
+                                              }
                                             }
-                                          }
-                                        }
-                                      ]
-                                    }}
+                                          ]
+                                        }}
                                         trigger={["contextMenu"]}
-                                  >
-                                    <div
-                                      className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
-                                        location.pathname.includes(`/table/${table._id}`)
+                                      >
+                                        <div
+                                          className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                                            location.pathname.includes(`/table/${table._id}`)
                                               ? "bg-blue-50 text-blue-600"
                                               : "text-gray-600 hover:bg-gray-100"
-                                      }`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/database/${database._id}/table/${table._id}`);
-                                      }}
-                                    >
-                                      <TableOutlined className="mr-3" />
-                                      <span className="truncate flex-1">{table.name}</span>
+                                          }`}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/database/${database._id}/table/${table._id}`);
+                                          }}
+                                        >
+                                          <TableOutlined className="mr-3" />
+                                          <span className="truncate flex-1">{table.name}</span>
                                           <div className="flex items-center">
                                             {tableViews.length > 0 && (
                                               <span className="text-xs text-gray-400 mr-2">
@@ -969,12 +945,12 @@ const DatabaseLayout = () => {
                                               }}
                                             />
                                           </div>
-                                    </div>
-                                  </Dropdown>
+                                        </div>
+                                      </Dropdown>
                                       
                                       {/* Views for this table */}
                                       {isTableExpanded && (
-                                        <div className="ml-6 space-y-1" style={{ maxHeight: 'none', overflow: 'visible' }}>
+                                        <div className="ml-6 space-y-1">
                                           {tableViews.length > 0 ? (
                                             tableViews.map((view) => (
                                               <div
@@ -986,12 +962,7 @@ const DatabaseLayout = () => {
                                                 }`}
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  if (view.type === 'form') {
-                                                    navigate(`/database/${database._id}/table/${table._id}/view/${view._id}`);
-                                                  } else {
-                                                    // TODO: Handle other view types
-                                                    console.log("Navigate to view:", view._id, "type:", view.type);
-                                                  }
+                                                  console.log("Navigate to view:", view._id);
                                                 }}
                                               >
                                                 <div className="mr-3 text-xs">
@@ -1002,20 +973,6 @@ const DatabaseLayout = () => {
                                                   {view.type === "calendar" && <CalendarOutlined style={{ color: "#f5222d" }} />}
                                                 </div>
                                                 <span className="truncate flex-1">{view.name}</span>
-                                                <button
-                                                  className="ml-2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (window.confirm(`Bạn có chắc muốn xóa view "${view.name}"?`)) {
-                                                      deleteViewMutation.mutate(view._id);
-                                                    }
-                                                  }}
-                                                  title="Xóa view"
-                                                >
-                                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                                    <path d="M11.354 4.646a.5.5 0 0 0-.708 0L8 7.293 5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0 0-.708z"/>
-                                                  </svg>
-                                                </button>
                                               </div>
                                             ))
                                           ) : (

@@ -59,6 +59,21 @@ import {
   deleteFieldPreference
 } from "../controllers/fieldPreferenceController.js";
 
+import {
+  createView,
+  getViews,
+  getViewById,
+  updateView,
+  deleteView,
+  copyView
+} from "../controllers/viewController.js";
+
+import {
+  createViewValidation,
+  updateViewValidation,
+  copyViewValidation
+} from "../validations/viewValidation.js";
+
 const router = Router();
 
 // Database routes
@@ -119,5 +134,13 @@ router.get("/filter-preferences", getAllFilterPreferences);
 router.get("/tables/:tableId/field-preference", getFieldPreference);
 router.post("/tables/:tableId/field-preference", saveFieldPreference);
 router.delete("/tables/:tableId/field-preference", deleteFieldPreference);
+
+// View routes
+router.post("/views", createViewValidation, createView);
+router.get("/tables/:tableId/views", getViews);
+router.get("/views/:viewId", getViewById);
+router.put("/views/:viewId", updateViewValidation, updateView);
+router.delete("/views/:viewId", deleteView);
+router.post("/views/:viewId/copy", copyViewValidation, copyView);
 
 export default router;

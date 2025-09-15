@@ -1,0 +1,16 @@
+--- a/src/pages/DatabaseManagement/DatabaseLayout.jsx
++++ b/src/pages/DatabaseManagement/DatabaseLayout.jsx
+@@ -541,8 +541,11 @@
+       if (response.data.success) {
+         toast.success(`${viewType.charAt(0).toUpperCase() + viewType.slice(1)} view created successfully!`);
+         // Invalidate queries to refresh data
+-        queryClient.invalidateQueries(['allTables']);
+-        queryClient.invalidateQueries(['allViews']);
++        // Only invalidate views for the specific table
++        queryClient.invalidateQueries(['allViews']);
++        // Force refetch to ensure UI updates
++        queryClient.refetchQueries(['allViews']);
++        console.log('Refreshed views for table:', selectedContext.id);
+       } else {
+         toast.error(response.data.message || 'Failed to create view');
+       }

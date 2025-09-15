@@ -53,6 +53,7 @@ import DatabaseLayout from "../pages/DatabaseManagement/DatabaseLayout.jsx";
 import DatabaseList from "../pages/DatabaseManagement/DatabaseList.jsx";
 import TableList from "../pages/DatabaseManagement/TableList.jsx";
 import TableDetail from "../pages/DatabaseManagement/TableDetail.jsx";
+import FormView from "../pages/DatabaseManagement/FormView.jsx";
 
 const Router = () => {
   return (
@@ -115,6 +116,7 @@ const Router = () => {
           }>
             <Route index element={<DatabaseList />} />
             <Route path=":databaseId/tables" element={<TableList />} />
+            <Route path=":databaseId/table/:tableId/view/:viewId" element={<FormView />} />
             <Route path=":databaseId/table/:tableId" element={<TableDetail />} />
           </Route>
         </Route>
