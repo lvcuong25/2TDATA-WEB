@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
+import { SearchOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
 
 const DatabaseList = () => {
   const navigate = useNavigate();
@@ -14,6 +15,9 @@ const DatabaseList = () => {
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copyingDatabase, setCopyingDatabase] = useState({ _id: '', name: '', description: '' });
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('name'); // 'name', 'createdAt', 'updatedAt'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
 
   // Fetch databases using React Query
   const { data: responseData, isLoading, error } = useQuery({
@@ -28,6 +32,45 @@ const DatabaseList = () => {
 
   // Extract databases array from response
   const databases = responseData?.data || [];
+
+  // Filter and sort databases
+  const filteredAndSortedDatabases = React.useMemo(() => {
+    let filtered = databases.filter(db => 
+      db.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (db.description && db.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    // Sort databases
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt);
+          bValue = new Date(b.createdAt);
+          break;
+        case 'updatedAt':
+          aValue = new Date(a.updatedAt);
+          bValue = new Date(b.updatedAt);
+          break;
+        default:
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+
+    return filtered;
+  }, [databases, searchTerm, sortBy, sortOrder]);
 
   // Create database mutation
   const createDatabaseMutation = useMutation({
@@ -217,16 +260,71 @@ const DatabaseList = () => {
         </div>
       </div>
 
+      {/* Search and Sort Bar */}
+      <div className="mb-6 bg-white p-4 rounded-lg border border-gray-200">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Search */}
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm databases..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          
+          {/* Sort Options */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Sắp xếp:</span>
+              <select
+                value={`${sortBy}-${sortOrder}`}
+                onChange={(e) => {
+                  const [field, order] = e.target.value.split('-');
+                  setSortBy(field);
+                  setSortOrder(order);
+                }}
+                className="text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="name-asc">Tên A-Z</option>
+                <option value="name-desc">Tên Z-A</option>
+                <option value="createdAt-desc">Mới nhất</option>
+                <option value="createdAt-asc">Cũ nhất</option>
+                <option value="updatedAt-desc">Cập nhật gần đây</option>
+                <option value="updatedAt-asc">Cập nhật xa nhất</option>
+              </select>
+            </div>
+            
+            {/* Stats */}
+            <div className="text-sm text-gray-500">
+              {searchTerm ? (
+                <span>Kết quả: {filteredAndSortedDatabases.length}/{databases.length}</span>
+              ) : (
+                <span>Tổng cộng: {databases.length} databases</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Database Grid */}
-      {databases.length === 0 ? (
+      {filteredAndSortedDatabases.length === 0 ? (
         <div className="text-center py-12">
           <div className="mx-auto h-12 w-12 text-gray-400">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
             </svg>
           </div>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Chưa có database nào</h3>
-          <p className="mt-1 text-sm text-gray-500">Bắt đầu bằng cách tạo database đầu tiên của bạn.</p>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            {searchTerm ? 'Không tìm thấy database nào' : 'Chưa có database nào'}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {searchTerm ? 'Thử thay đổi từ khóa tìm kiếm' : 'Bắt đầu bằng cách tạo database đầu tiên của bạn.'}
+          </p>
           <div className="mt-6">
             <button
               onClick={() => setShowCreateModal(true)}
@@ -241,7 +339,7 @@ const DatabaseList = () => {
           {/* Grid View */}
           {viewMode === 'grid' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {databases.map((database) => (
+              {filteredAndSortedDatabases.map((database) => (
                 <div
                   key={database._id}
                   className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
@@ -350,7 +448,7 @@ const DatabaseList = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {databases.map((database) => (
+                    {filteredAndSortedDatabases.map((database) => (
                       <tr 
                         key={database._id}
                         className="hover:bg-gray-50 cursor-pointer"
