@@ -4,7 +4,8 @@ import {
   getDatabases,
   getDatabaseById,
   updateDatabase,
-  deleteDatabase
+  deleteDatabase,
+  copyDatabase
 } from "../controllers/databaseController.js";
 
 import {
@@ -12,7 +13,8 @@ import {
   getTables,
   getTableById,
   updateTable,
-  deleteTable
+  deleteTable,
+  copyTable
 } from "../controllers/tableController.js";
 
 import {
@@ -65,6 +67,7 @@ router.get("/databases", getDatabases);
 router.get("/databases/:databaseId", getDatabaseById);
 router.put("/databases/:databaseId", updateDatabase);
 router.delete("/databases/:databaseId", deleteDatabase);
+router.post("/databases/:databaseId/copy", copyDatabase);
 
 // Table routes
 router.post("/tables", createTable);
@@ -72,6 +75,7 @@ router.get("/databases/:databaseId/tables", getTables);
 router.get("/tables/:tableId", getTableById);
 router.put("/tables/:tableId", updateTable);
 router.delete("/tables/:tableId", deleteTable);
+router.post("/tables/:tableId/copy", copyTable);
 
 // Column routes
 router.post("/columns", createColumn);

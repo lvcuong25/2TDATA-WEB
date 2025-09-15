@@ -10,6 +10,8 @@ const TableList = () => {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTable, setNewTable] = useState({ name: '', description: '' });
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copyingTable, setCopyingTable] = useState({ _id: '', name: '', description: '', targetDatabaseId: '' });
 
   // Fetch database
   const { data: databaseResponse, isLoading: databaseLoading, error: databaseError } = useQuery({
@@ -19,6 +21,15 @@ const TableList = () => {
       return response.data;
     },
     enabled: !!databaseId,
+  });
+
+  // Fetch all databases for copy target selection
+  const { data: allDatabasesResponse } = useQuery({
+    queryKey: ['databases'],
+    queryFn: async () => {
+      const response = await axiosInstance.get('/database/databases');
+      return response.data;
+    },
   });
 
   // Fetch tables
@@ -34,6 +45,7 @@ const TableList = () => {
   // Extract data from responses
   const database = databaseResponse?.data;
   const tables = tablesResponse?.data || [];
+  const allDatabases = allDatabasesResponse?.data || [];
 
   // Create table mutation
   const createTableMutation = useMutation({
@@ -72,6 +84,29 @@ const TableList = () => {
     },
   });
 
+  // Copy table mutation
+  const copyTableMutation = useMutation({
+    mutationFn: async (tableData) => {
+      const response = await axiosInstance.post(`/database/tables/${tableData._id}/copy`, {
+        name: tableData.name,
+        description: tableData.description,
+        targetDatabaseId: tableData.targetDatabaseId
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Table copied successfully');
+      setShowCopyModal(false);
+      setCopyingTable({ _id: '', name: '', description: '', targetDatabaseId: '' });
+      queryClient.invalidateQueries(['tables', databaseId]);
+      queryClient.invalidateQueries(['tables', copyingTable.targetDatabaseId]);
+    },
+    onError: (error) => {
+      console.error('Error copying table:', error);
+      toast.error(error.response?.data?.message || 'Failed to copy table');
+    },
+  });
+
   const handleCreateTable = async (e) => {
     e.preventDefault();
     createTableMutation.mutate(newTable);
@@ -82,6 +117,19 @@ const TableList = () => {
       return;
     }
     deleteTableMutation.mutate(tableId);
+  };
+
+  const handleCopyTable = async (e) => {
+    e.preventDefault();
+    if (!copyingTable.name.trim()) {
+      toast.error('Table name is required');
+      return;
+    }
+    if (!copyingTable.targetDatabaseId) {
+      toast.error('Target database is required');
+      return;
+    }
+    copyTableMutation.mutate(copyingTable);
   };
 
   const formatDate = (dateString) => {
@@ -203,19 +251,39 @@ const TableList = () => {
                       <p className="text-sm text-gray-500">Table</p>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteTable(table._id, table.name);
-                    }}
-                    className="text-red-600 hover:text-red-800 p-1"
-                    title="Xóa table"
-                    disabled={deleteTableMutation.isPending}
-                  >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCopyingTable({
+                          _id: table._id,
+                          name: `${table.name} - Copy`,
+                          description: table.description || '',
+                          targetDatabaseId: databaseId
+                        });
+                        setShowCopyModal(true);
+                      }}
+                      className="text-green-600 hover:text-green-800 p-1"
+                      title="Sao chép table"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTable(table._id, table.name);
+                      }}
+                      className="text-red-600 hover:text-red-800 p-1"
+                      title="Xóa table"
+                      disabled={deleteTableMutation.isPending}
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 
                 {table.description && (
@@ -280,6 +348,85 @@ const TableList = () => {
                   disabled={createTableMutation.isPending}
                 >
                   {createTableMutation.isPending ? 'Creating...' : 'Tạo Table'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Copy Table Modal */}
+      {showCopyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">Sao chép Table</h2>
+            <form onSubmit={handleCopyTable}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tên Table mới *
+                </label>
+                <input
+                  type="text"
+                  value={copyingTable.name}
+                  onChange={(e) => setCopyingTable({ ...copyingTable, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Ví dụ: Products - Copy"
+                  required
+                  disabled={copyTableMutation.isPending}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Database đích *
+                </label>
+                <select
+                  value={copyingTable.targetDatabaseId}
+                  onChange={(e) => setCopyingTable({ ...copyingTable, targetDatabaseId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  required
+                  disabled={copyTableMutation.isPending}
+                >
+                  <option value="">Chọn database đích</option>
+                  {allDatabases.map((db) => (
+                    <option key={db._id} value={db._id}>
+                      {db.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mô tả (tùy chọn)
+                </label>
+                <textarea
+                  value={copyingTable.description}
+                  onChange={(e) => setCopyingTable({ ...copyingTable, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Mô tả về table này..."
+                  rows="3"
+                  disabled={copyTableMutation.isPending}
+                />
+              </div>
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <strong>Lưu ý:</strong> Việc sao chép sẽ tạo ra một table mới với tất cả columns và dữ liệu từ table gốc.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCopyModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  disabled={copyTableMutation.isPending}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+                  disabled={copyTableMutation.isPending}
+                >
+                  {copyTableMutation.isPending ? 'Copying...' : 'Sao chép'}
                 </button>
               </div>
             </form>

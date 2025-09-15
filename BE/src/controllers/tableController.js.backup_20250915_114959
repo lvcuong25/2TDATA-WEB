@@ -255,10 +255,7 @@ export const copyTable = async (req, res) => {
     // Get all columns from original table
     const originalColumns = await Column.find({ tableId: originalTable._id });
 
-    // Create mapping for old to new column IDs (for formula references)
-    const columnIdMapping = {};
-
-    // Copy all columns FIRST
+    // Copy all columns
     for (const originalColumn of originalColumns) {
       const newColumn = new Column({
         name: originalColumn.name,
@@ -280,43 +277,31 @@ export const copyTable = async (req, res) => {
         isUnique: originalColumn.isUnique,
         isIndexed: originalColumn.isIndexed,
         validationRules: originalColumn.validationRules,
-        options: originalColumn.options,
-        // IMPORTANT: Copy formula configuration
-        formulaConfig: originalColumn.formulaConfig,
-        // Copy additional properties that might exist
-        format: originalColumn.format,
-        precision: originalColumn.precision,
-        min: originalColumn.min,
-        max: originalColumn.max,
-        step: originalColumn.step,
-        width: originalColumn.width,
-        order: originalColumn.order
+        options: originalColumn.options
       });
 
       await newColumn.save();
-      
-      // Store mapping for formula references
-      columnIdMapping[originalColumn._id.toString()] = newColumn._id.toString();
-    }
 
-    // Now copy all records ONCE (outside the column loop)
-    const originalRecords = await Record.find({ tableId: originalTable._id });
+      // Get all records from original table
+      const originalRecords = await Record.find({ tableId: originalTable._id });
 
-    for (const originalRecord of originalRecords) {
-      const newRecord = new Record({
-        data: originalRecord.data,
-        tableId: newTable._id,
-        databaseId: targetDatabaseId,
-        userId,
-        siteId
-      });
+      // Copy all records
+      for (const originalRecord of originalRecords) {
+        const newRecord = new Record({
+          data: originalRecord.data,
+          tableId: newTable._id,
+          databaseId: targetDatabaseId,
+          userId,
+          siteId
+        });
 
-      await newRecord.save();
+        await newRecord.save();
+      }
     }
 
     res.status(201).json({
       success: true,
-      message: 'Table copied successfully with all columns and formulas',
+      message: 'Table copied successfully',
       data: newTable
     });
   } catch (error) {

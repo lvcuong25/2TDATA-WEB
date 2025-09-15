@@ -11,6 +11,8 @@ const DatabaseList = () => {
   const [newDatabase, setNewDatabase] = useState({ name: '', description: '' });
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingDatabase, setEditingDatabase] = useState({ _id: '', name: '', description: '' });
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copyingDatabase, setCopyingDatabase] = useState({ _id: '', name: '', description: '' });
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
   // Fetch databases using React Query
@@ -79,6 +81,27 @@ const DatabaseList = () => {
     },
   });
 
+  // Copy database mutation
+  const copyDatabaseMutation = useMutation({
+    mutationFn: async (databaseData) => {
+      const response = await axiosInstance.post(`/database/databases/${databaseData._id}/copy`, {
+        name: databaseData.name,
+        description: databaseData.description
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Database copied successfully');
+      setShowCopyModal(false);
+      setCopyingDatabase({ _id: '', name: '', description: '' });
+      queryClient.invalidateQueries(['databases']);
+    },
+    onError: (error) => {
+      console.error('Error copying database:', error);
+      toast.error(error.response?.data?.message || 'Failed to copy database');
+    },
+  });
+
   const handleCreateDatabase = async (e) => {
     e.preventDefault();
     createDatabaseMutation.mutate(newDatabase);
@@ -98,6 +121,15 @@ const DatabaseList = () => {
       return;
     }
     editDatabaseMutation.mutate(editingDatabase);
+  };
+
+  const handleCopyDatabase = async (e) => {
+    e.preventDefault();
+    if (!copyingDatabase.name.trim()) {
+      toast.error('Database name is required');
+      return;
+    }
+    copyDatabaseMutation.mutate(copyingDatabase);
   };
 
   const formatDate = (dateString) => {
@@ -249,6 +281,23 @@ const DatabaseList = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            setCopyingDatabase({
+                              _id: database._id,
+                              name: `${database.name} - Copy`,
+                              description: database.description || ''
+                            });
+                            setShowCopyModal(true);
+                          }}
+                          className="text-green-600 hover:text-green-800 p-1"
+                          title="Sao chép database"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleDeleteDatabase(database._id, database.name);
                           }}
                           className="text-red-600 hover:text-red-800 p-1"
@@ -348,6 +397,23 @@ const DatabaseList = () => {
                             >
                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCopyingDatabase({
+                                  _id: database._id,
+                                  name: `${database.name} - Copy`,
+                                  description: database.description || ''
+                                });
+                                setShowCopyModal(true);
+                              }}
+                              className="text-green-600 hover:text-green-800 p-1"
+                              title="Sao chép database"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                               </svg>
                             </button>
                             <button
@@ -478,6 +544,66 @@ const DatabaseList = () => {
                   disabled={editDatabaseMutation.isPending}
                 >
                   {editDatabaseMutation.isPending ? 'Updating...' : 'Cập nhật'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Copy Database Modal */}
+      {showCopyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">Sao chép Database</h2>
+            <form onSubmit={handleCopyDatabase}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tên Database mới *
+                </label>
+                <input
+                  type="text"
+                  value={copyingDatabase.name}
+                  onChange={(e) => setCopyingDatabase({ ...copyingDatabase, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Ví dụ: ShopDB - Copy"
+                  required
+                  disabled={copyDatabaseMutation.isPending}
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mô tả (tùy chọn)
+                </label>
+                <textarea
+                  value={copyingDatabase.description}
+                  onChange={(e) => setCopyingDatabase({ ...copyingDatabase, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Mô tả về database này..."
+                  rows="3"
+                  disabled={copyDatabaseMutation.isPending}
+                />
+              </div>
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <strong>Lưu ý:</strong> Việc sao chép sẽ tạo ra một database mới với tất cả tables, columns và dữ liệu từ database gốc.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCopyModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  disabled={copyDatabaseMutation.isPending}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+                  disabled={copyDatabaseMutation.isPending}
+                >
+                  {copyDatabaseMutation.isPending ? 'Copying...' : 'Sao chép'}
                 </button>
               </div>
             </form>
