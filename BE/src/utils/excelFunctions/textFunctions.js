@@ -9,6 +9,10 @@ export const textFunctions = {
     return args.map(val => String(val || '')).join('');
   },
 
+  CONCATENATE: (...args) => {
+    return args.map(val => String(val || '')).join('');
+  },
+
   UPPER: (text) => {
     return String(text || '').toUpperCase();
   },
@@ -148,7 +152,16 @@ export const textFunctions = {
   CODE: (text) => {
     const str = String(text || '');
     return str.length > 0 ? str.charCodeAt(0) : 0;
-  }
+  },
+
+  // Convert minutes to HH:MM format
+  MINUTESTOTIME: (minutes) => {
+    const totalMinutes = Math.abs(Number(minutes) || 0);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  },
 };
 
 export default textFunctions;
+

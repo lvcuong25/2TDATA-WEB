@@ -48,11 +48,23 @@ export const dateFunctions = {
   },
 
   HOUR: (date) => {
+    // Handle time string format like "09:45" or "17:30"
+    if (typeof date === 'string' && date.match(/^\d{1,2}:\d{2}$/)) {
+      const [hours] = date.split(':');
+      return parseInt(hours) || 0;
+    }
+    
     const d = new Date(date);
     return isNaN(d.getTime()) ? 0 : d.getHours();
   },
 
   MINUTE: (date) => {
+    // Handle time string format like "09:45" or "17:30"
+    if (typeof date === 'string' && date.match(/^\d{1,2}:\d{2}$/)) {
+      const [, minutes] = date.split(':');
+      return parseInt(minutes) || 0;
+    }
+    
     const d = new Date(date);
     return isNaN(d.getTime()) ? 0 : d.getMinutes();
   },
@@ -61,6 +73,25 @@ export const dateFunctions = {
     const d = new Date(date);
     return isNaN(d.getTime()) ? 0 : d.getSeconds();
   },
+
+
+  // Convert total minutes to HH:MM format
+  TIMEVALUE: (totalMinutes) => {
+    const minutes = Math.abs(Number(totalMinutes) || 0);
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  },
+  // Convert HH:MM format back to total minutes
+  TIMETOVALUE: (timeString) => {
+    if (typeof timeString === 'string' && timeString.match(/^\d{1,2}:\d{2}$/)) {
+      const [hours, minutes] = timeString.split(':');
+      return parseInt(hours) * 60 + parseInt(minutes);
+    }
+    // If it's already a number, return as-is
+    return Number(timeString) || 0;
+  },
+
 
   // Date Calculations
   DATEDIF: (startDate, endDate, unit) => {

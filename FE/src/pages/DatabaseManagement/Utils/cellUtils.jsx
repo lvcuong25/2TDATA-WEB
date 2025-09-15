@@ -346,6 +346,22 @@ export const formatCellValueForDisplay = (value, column) => {
         return displayUrl; // Return URL with protocol for display
       }
       return '';
+    case 'formula':
+      // Formula columns display their calculated results
+      if (value !== null && value !== undefined) {
+        // Format the calculated result based on its type
+        if (typeof value === 'number') {
+          return value.toLocaleString();
+        } else if (typeof value === 'boolean') {
+          return value ? '✓' : '✗';
+        } else if (value instanceof Date) {
+          return value.toLocaleString();
+        } else {
+          return String(value);
+        }
+      }
+      return 'No result';
+
 
     default:
       return value || '';
