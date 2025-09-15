@@ -21,7 +21,8 @@ import {
   MenuUnfoldOutlined,
   RightOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -105,6 +106,12 @@ const DatabaseLayout = () => {
   const [editingDatabase, setEditingDatabase] = useState({ _id: '', name: '', description: '' });
   const [showEditTableModal, setShowEditTableModal] = useState(false);
   const [editingTable, setEditingTable] = useState({ _id: '', name: '', description: '', databaseId: '' });
+  
+  // Copy states
+  const [showCopyDatabaseModal, setShowCopyDatabaseModal] = useState(false);
+  const [copyingDatabase, setCopyingDatabase] = useState({ _id: '', name: '', description: '' });
+  const [showCopyTableModal, setShowCopyTableModal] = useState(false);
+  const [copyingTable, setCopyingTable] = useState({ _id: '', name: '', description: '', targetDatabaseId: '' });
 
   // Fetch databases for sidebar
   const { data: databasesResponse } = useQuery({
@@ -266,6 +273,50 @@ const DatabaseLayout = () => {
     },
   });
 
+  // Copy database mutation
+  const copyDatabaseMutation = useMutation({
+    mutationFn: async (databaseData) => {
+      const response = await axiosInstance.post(`/database/databases/${databaseData._id}/copy`, {
+        name: databaseData.name,
+        description: databaseData.description
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Database copied successfully');
+      setShowCopyDatabaseModal(false);
+      setCopyingDatabase({ _id: '', name: '', description: '' });
+      queryClient.invalidateQueries(['databases']);
+      queryClient.invalidateQueries(['allTables']);
+    },
+    onError: (error) => {
+      console.error('Error copying database:', error);
+      toast.error(error.response?.data?.message || 'Failed to copy database');
+    },
+  });
+
+  // Copy table mutation
+  const copyTableMutation = useMutation({
+    mutationFn: async (tableData) => {
+      const response = await axiosInstance.post(`/database/tables/${tableData._id}/copy`, {
+        name: tableData.name,
+        description: tableData.description,
+        targetDatabaseId: tableData.targetDatabaseId
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Table copied successfully');
+      setShowCopyTableModal(false);
+      setCopyingTable({ _id: '', name: '', description: '', targetDatabaseId: '' });
+      queryClient.invalidateQueries(['allTables']);
+    },
+    onError: (error) => {
+      console.error('Error copying table:', error);
+      toast.error(error.response?.data?.message || 'Failed to copy table');
+    },
+  });
+
   const handleEditDatabase = async (e) => {
     e.preventDefault();
     if (!editingDatabase.name.trim()) {
@@ -282,6 +333,28 @@ const DatabaseLayout = () => {
       return;
     }
     editTableMutation.mutate(editingTable);
+  };
+
+  const handleCopyDatabase = async (e) => {
+    e.preventDefault();
+    if (!copyingDatabase.name.trim()) {
+      toast.error('Database name is required');
+      return;
+    }
+    copyDatabaseMutation.mutate(copyingDatabase);
+  };
+
+  const handleCopyTable = async (e) => {
+    e.preventDefault();
+    if (!copyingTable.name.trim()) {
+      toast.error('Table name is required');
+      return;
+    }
+    if (!copyingTable.targetDatabaseId) {
+      toast.error('Target database is required');
+      return;
+    }
+    copyTableMutation.mutate(copyingTable);
   };
 
   const handleLogout = async () => {
@@ -488,6 +561,19 @@ const DatabaseLayout = () => {
                                 }
                               },
                               {
+                                key: 'copy',
+                                icon: <CopyOutlined />,
+                                label: 'Copy',
+                                onClick: () => {
+                                  setCopyingDatabase({
+                                    _id: database._id,
+                                    name: `${database.name} - Copy`,
+                                    description: database.description || ''
+                                  });
+                                  setShowCopyDatabaseModal(true);
+                                }
+                              },
+                              {
                                 key: 'delete',
                                 icon: <DeleteOutlined />,
                                 label: 'Xóa database',
@@ -547,6 +633,20 @@ const DatabaseLayout = () => {
                                               databaseId: database._id
                                             });
                                             setShowEditTableModal(true);
+                                          }
+                                        },
+                                        {
+                                          key: 'copy',
+                                          icon: <CopyOutlined />,
+                                          label: 'Copy',
+                                          onClick: () => {
+                                            setCopyingTable({
+                                              _id: table._id,
+                                              name: `${table.name} - Copy`,
+                                              description: table.description || '',
+                                              targetDatabaseId: database._id
+                                            });
+                                            setShowCopyTableModal(true);
                                           }
                                         },
                                         {
@@ -837,6 +937,130 @@ const DatabaseLayout = () => {
                   loading={editTableMutation.isPending}
                 >
                   Cập nhật
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Copy Database Modal */}
+      <Modal
+        title="Sao chép Database"
+        open={showCopyDatabaseModal}
+        onCancel={() => setShowCopyDatabaseModal(false)}
+        footer={null}
+      >
+        <form onSubmit={handleCopyDatabase}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>Tên Database mới *</Typography.Text>
+              <Input
+                value={copyingDatabase.name}
+                onChange={(e) => setCopyingDatabase({ ...copyingDatabase, name: e.target.value })}
+                placeholder="Ví dụ: ShopDB - Copy"
+                required
+              />
+            </div>
+            <div>
+              <Typography.Text strong>Mô tả (tùy chọn)</Typography.Text>
+              <Input.TextArea
+                value={copyingDatabase.description}
+                onChange={(e) => setCopyingDatabase({ ...copyingDatabase, description: e.target.value })}
+                placeholder="Mô tả về database này..."
+                rows={3}
+              />
+            </div>
+            <div style={{ padding: '12px', background: '#fff7e6', border: '1px solid #ffd591', borderRadius: '6px' }}>
+              <Typography.Text style={{ color: '#d46b08', fontSize: '14px' }}>
+                <strong>Lưu ý:</strong> Việc sao chép sẽ tạo ra một database mới với tất cả tables, columns và dữ liệu từ database gốc.
+              </Typography.Text>
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowCopyDatabaseModal(false)}>
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={copyDatabaseMutation.isPending}
+                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                >
+                  Sao chép
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Copy Table Modal */}
+      <Modal
+        title="Sao chép Table"
+        open={showCopyTableModal}
+        onCancel={() => setShowCopyTableModal(false)}
+        footer={null}
+      >
+        <form onSubmit={handleCopyTable}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>Tên Table mới *</Typography.Text>
+              <Input
+                value={copyingTable.name}
+                onChange={(e) => setCopyingTable({ ...copyingTable, name: e.target.value })}
+                placeholder="Ví dụ: Products - Copy"
+                required
+              />
+            </div>
+            <div>
+              <Typography.Text strong>Database đích *</Typography.Text>
+              <select
+                value={copyingTable.targetDatabaseId}
+                onChange={(e) => setCopyingTable({ ...copyingTable, targetDatabaseId: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+                required
+              >
+                <option value="">Chọn database đích</option>
+                {databases.map((db) => (
+                  <option key={db._id} value={db._id}>
+                    {db.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Typography.Text strong>Mô tả (tùy chọn)</Typography.Text>
+              <Input.TextArea
+                value={copyingTable.description}
+                onChange={(e) => setCopyingTable({ ...copyingTable, description: e.target.value })}
+                placeholder="Mô tả về table này..."
+                rows={3}
+              />
+            </div>
+            <div style={{ padding: '12px', background: '#fff7e6', border: '1px solid #ffd591', borderRadius: '6px' }}>
+              <Typography.Text style={{ color: '#d46b08', fontSize: '14px' }}>
+                <strong>Lưu ý:</strong> Việc sao chép sẽ tạo ra một table mới với tất cả columns và dữ liệu từ table gốc.
+              </Typography.Text>
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowCopyTableModal(false)}>
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={copyTableMutation.isPending}
+                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                >
+                  Sao chép
                 </Button>
               </Space>
             </Row>
