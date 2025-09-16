@@ -276,18 +276,15 @@ const DatabaseLayout = () => {
 
   // Fetch views for all tables
   const { data: allViewsResponse } = useQuery({
-    queryKey: ['allViews', allTablesResponse?.length || 0],
+    queryKey: ['allViews'],
     queryFn: async () => {
       const allTables = allTablesResponse || [];
       const viewsPromises = allTables.flatMap(item => 
         item.tables.map(async (table) => {
           try {
             const response = await axiosInstance.get(`/database/tables/${table._id}/views`);
-            const views = response.data.data || [];
-            console.log(`Loaded ${views.length} views for table ${table.name}`);
-            return { tableId: table._id, views: views };
+            return { tableId: table._id, views: response.data.data || [] };
           } catch (error) {
-            console.warn(`Failed to load views for table ${table.name}:`, error.response?.data?.message || error.message);
             return { tableId: table._id, views: [] };
           }
         })
@@ -296,10 +293,6 @@ const DatabaseLayout = () => {
       return results;
     },
     enabled: allTablesResponse && allTablesResponse.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
-    refetchOnWindowFocus: false,
   });
 
   const allTables = allTablesResponse || [];
@@ -705,14 +698,7 @@ const DatabaseLayout = () => {
   const getViewsForTable = (tableId) => {
     const allViews = allViewsResponse || [];
     const tableViews = allViews.find(item => item.tableId === tableId);
-    const views = tableViews ? tableViews.views : [];
-    
-    // Debug logging when no views found
-    if (views.length === 0 && allViews.length > 0) {
-      console.log(`No views found for table ${tableId}. Total views data:`, allViews.length);
-    }
-    
-    return views;
+    return tableViews ? tableViews.views : [];
   };
 
   return (

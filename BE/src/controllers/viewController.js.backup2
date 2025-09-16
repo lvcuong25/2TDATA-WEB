@@ -16,16 +16,6 @@ export const createView = async (req, res) => {
     }
 
     const { tableId, name, type, description, config, isDefault, isPublic } = req.body;
-    
-    // Check if user is authenticated
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-        error: "UNAUTHORIZED"
-      });
-    }
-
     const userId = req.user._id;
     const siteId = req.user.site_id?._id || req.site?._id;
 
@@ -99,16 +89,6 @@ export const createView = async (req, res) => {
 export const getViews = async (req, res) => {
   try {
     const { tableId } = req.params;
-    
-    // Check if user is authenticated
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-        error: "UNAUTHORIZED"
-      });
-    }
-
     const userId = req.user._id;
 
     // Verify table exists
@@ -150,16 +130,6 @@ export const getViews = async (req, res) => {
 export const getViewById = async (req, res) => {
   try {
     const { viewId } = req.params;
-    
-    // Check if user is authenticated
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-        error: "UNAUTHORIZED"
-      });
-    }
-
     const userId = req.user._id;
 
     const view = await View.findOne({
@@ -205,16 +175,6 @@ export const updateView = async (req, res) => {
     }
 
     const { viewId } = req.params;
-    
-    // Check if user is authenticated
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-        error: "UNAUTHORIZED"
-      });
-    }
-
     const userId = req.user._id;
     const { name, type, description, config, isDefault, isPublic } = req.body;
 
@@ -291,16 +251,6 @@ export const updateView = async (req, res) => {
 export const deleteView = async (req, res) => {
   try {
     const { viewId } = req.params;
-    
-    // Check if user is authenticated
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-        error: "UNAUTHORIZED"
-      });
-    }
-
     const userId = req.user._id;
 
     const view = await View.findOne({
@@ -336,16 +286,6 @@ export const deleteView = async (req, res) => {
 export const copyView = async (req, res) => {
   try {
     const { viewId } = req.params;
-    
-    // Check if user is authenticated
-    if (!req.user || !req.user._id) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-        error: "UNAUTHORIZED"
-      });
-    }
-
     const userId = req.user._id;
     const { name, targetTableId } = req.body;
 
