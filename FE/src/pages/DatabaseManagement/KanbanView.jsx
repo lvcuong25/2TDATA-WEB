@@ -17,7 +17,8 @@ import {
   Avatar,
   Tooltip,
   Input,
-  Divider
+  Divider,
+  Switch
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -27,9 +28,16 @@ import {
   EditOutlined,
   DeleteOutlined,
   DragOutlined,
-  UserOutlined
+  UserOutlined,
+  SearchOutlined,
+  SettingOutlined,
+  EyeOutlined,
+  RightOutlined,
+  ClockCircleOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getDataTypeIcon, getDataTypeColor } from './Utils/dataTypeUtils';
 
 // Custom scrollbar styles for all scrollbars
 const customScrollbarStyles = `
@@ -76,6 +84,21 @@ const KanbanView = () => {
   const [newColumnName, setNewColumnName] = useState('');
   const [draggedCard, setDraggedCard] = useState(null);
   const [draggedFromColumn, setDraggedFromColumn] = useState(null);
+  
+  // State for Edit Cards modal
+  const [showEditCardsModal, setShowEditCardsModal] = useState(false);
+  const [visibleFields, setVisibleFields] = useState({});
+  const [searchField, setSearchField] = useState('');
+
+  // Fetch table columns for edit cards modal
+  const { data: tableColumns } = useQuery({
+    queryKey: ['tableColumns', tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/database/tables/${tableId}/columns`);
+      return response.data;
+    },
+    enabled: !!tableId,
+  });
 
   // Fetch Kanban configuration
   const { data: kanbanConfig, isLoading: configLoading, isError: configError, error: configErrorData } = useQuery({
@@ -103,6 +126,18 @@ const KanbanView = () => {
       setStackByField(kanbanConfig.defaultStackBy.name);
     }
   }, [kanbanConfig, stackByField]);
+
+  // Initialize visible fields when table columns are loaded
+  useEffect(() => {
+    if (tableColumns?.data && Object.keys(visibleFields).length === 0) {
+      const initialVisibleFields = {};
+      // Set default visible fields (first 3 fields)
+      tableColumns.data.slice(0, 3).forEach(column => {
+        initialVisibleFields[column.name] = true;
+      });
+      setVisibleFields(initialVisibleFields);
+    }
+  }, [tableColumns, visibleFields]);
 
   // Update record column mutation
   const updateRecordColumnMutation = useMutation({
@@ -217,6 +252,123 @@ const KanbanView = () => {
     return colorMap[value] || 'default';
   };
 
+  // Use the consistent icon function from utils
+  const getFieldIcon = (dataType) => {
+    return getDataTypeIcon(dataType);
+  };
+
+  // Format field value based on data type
+  const formatFieldValue = (value, dataType) => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    // Handle different data types
+    switch (dataType) {
+      case 'lookup':
+      case 'linked_table':
+        // For lookup and linked_table, value is usually an object
+        if (typeof value === 'object') {
+          if (Array.isArray(value)) {
+            // Multiple linked records
+            return value.map(item => {
+              if (typeof item === 'object' && item !== null) {
+                return item.label || item.name || item.title || item._id || 'Linked Record';
+              }
+              return String(item);
+            }).join(', ');
+          } else {
+            // Single linked record
+            return value.label || value.name || value.title || value._id || 'Linked Record';
+          }
+        }
+        return String(value);
+
+      case 'single_select':
+      case 'multi_select':
+        if (Array.isArray(value)) {
+          return value.join(', ');
+        }
+        return String(value);
+
+      case 'date':
+      case 'datetime':
+        if (value instanceof Date) {
+          return value.toLocaleDateString('vi-VN');
+        }
+        if (typeof value === 'string' && value) {
+          try {
+            return new Date(value).toLocaleDateString('vi-VN');
+          } catch {
+            return value;
+          }
+        }
+        return String(value);
+
+      case 'number':
+      case 'currency':
+      case 'percent':
+      case 'rating':
+        if (typeof value === 'number') {
+          return value.toLocaleString('vi-VN');
+        }
+        return String(value);
+
+      case 'checkbox':
+        return value ? 'Có' : 'Không';
+
+      case 'json':
+        if (typeof value === 'object') {
+          return JSON.stringify(value, null, 2);
+        }
+        return String(value);
+
+      default:
+        return String(value);
+    }
+  };
+
+  // Toggle field visibility
+  const toggleFieldVisibility = (fieldName) => {
+    setVisibleFields(prev => ({
+      ...prev,
+      [fieldName]: !prev[fieldName]
+    }));
+  };
+
+  // Toggle all fields visibility (Select All / Deselect All)
+  const toggleAllFields = () => {
+    const allFields = tableColumns?.data || [];
+    const allVisible = allFields.every(field => visibleFields[field.name]);
+    
+    if (allVisible) {
+      // Deselect all
+      const newVisibleFields = {};
+      allFields.forEach(field => {
+        newVisibleFields[field.name] = false;
+      });
+      setVisibleFields(newVisibleFields);
+    } else {
+      // Select all
+      const newVisibleFields = {};
+      allFields.forEach(field => {
+        newVisibleFields[field.name] = true;
+      });
+      setVisibleFields(newVisibleFields);
+    }
+  };
+
+  // Check if all fields are selected
+  const isAllFieldsSelected = () => {
+    const allFields = tableColumns?.data || [];
+    return allFields.length > 0 && allFields.every(field => visibleFields[field.name]);
+  };
+
+  // Get visible fields count
+  const getVisibleFieldsCount = () => {
+    return Object.values(visibleFields).filter(Boolean).length;
+  };
+
   // Handle authentication errors
   if (configError || dataError) {
     const errorMessage = configErrorData?.response?.data?.message || dataErrorData?.response?.data?.message;
@@ -306,8 +458,12 @@ const KanbanView = () => {
                 </Select>
               </div>
               
-              <Button icon={<EditOutlined />} className="text-gray-600">
-                Edit Cards {kanbanData?.data?.columns?.reduce((total, col) => total + col.count, 0) || 0}
+              <Button 
+                icon={<EditOutlined />} 
+                className="text-gray-600"
+                onClick={() => setShowEditCardsModal(true)}
+              >
+                Edit Cards {getVisibleFieldsCount()}
               </Button>
               
               <Button icon={<FilterOutlined />} className="text-gray-600">
@@ -385,36 +541,50 @@ const KanbanView = () => {
                       <Card
                         key={record._id}
                         size="small"
-                        className="cursor-move hover:shadow-md transition-shadow border border-gray-200 rounded-lg"
-                        bodyStyle={{ padding: '12px' }}
+                        className="cursor-move hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 rounded-lg bg-white"
+                        bodyStyle={{ padding: '16px' }}
                         draggable
                         onDragStart={(e) => handleDragStart(e, record, column.id)}
                       >
                         <div>
                           {/* Record ID/Title */}
-                          <Text strong className="text-sm text-gray-800 block mb-2">
-                            {record.data?.['T CD'] || record.data?.['CD'] || record._id?.slice(-4) || 'Record'}
-                          </Text>
+                          <div className="mb-3 pb-2 border-b border-gray-100">
+                            <Text strong className="text-base text-gray-900 font-semibold">
+                              {record.data?.['T CD'] || record.data?.['CD'] || record._id?.slice(-4) || 'Record'}
+                            </Text>
+                          </div>
                           
-                          {/* Record fields */}
-                          {Object.entries(record.data || {}).slice(0, 3).map(([key, value]) => (
-                            <div key={key} className="mb-1">
-                              <Text className="text-xs text-gray-500">{key}:</Text>
-                              <Text className="text-xs text-gray-700 ml-1">
-                                {typeof value === 'string' && value.length > 30 
-                                  ? `${value.substring(0, 30)}...` 
-                                  : String(value || '')
-                                }
-                              </Text>
-                            </div>
-                          ))}
+                          {/* Record fields - only show visible fields */}
+                          <div className="space-y-2">
+                            {Object.entries(record.data || {})
+                              .filter(([key]) => visibleFields[key])
+                              .map(([key, value]) => {
+                                const column = tableColumns?.data?.find(col => col.name === key);
+                                const dataType = column?.dataType || 'text';
+                                return (
+                                  <div key={key} className="flex items-start group hover:bg-gray-50 p-2 rounded-md transition-colors">
+                                    <div className="w-5 h-5 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                                      {getDataTypeIcon(dataType)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-xs font-medium text-gray-600 mb-1">
+                                        {key}
+                                      </div>
+                                      <div className="text-sm text-gray-800 break-words leading-relaxed">
+                                        {formatFieldValue(value, dataType)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
                           
                           {/* Tags for specific values */}
                           {record.data?.['T Giai đoạn'] && (
-                            <div className="mt-2">
+                            <div className="mt-3 pt-2 border-t border-gray-100">
                               <Tag 
                                 color={getTagColor(record.data['T Giai đoạn'])}
-                                className="text-xs"
+                                className="text-xs font-medium"
                               >
                                 {record.data['T Giai đoạn']}
                               </Tag>
@@ -423,9 +593,12 @@ const KanbanView = () => {
                           
                           {/* Record metadata */}
                           <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
-                            <Avatar size="small" icon={<UserOutlined />} className="bg-blue-500" />
-                            <Text className="text-xs text-gray-400">
-                              {new Date(record.createdAt).toLocaleDateString()}
+                            <div className="flex items-center gap-2">
+                              <Avatar size="small" icon={<UserOutlined />} className="bg-blue-500" />
+                              <span className="text-xs text-gray-500 font-medium">Created</span>
+                            </div>
+                            <Text className="text-xs text-gray-500 font-medium">
+                              {new Date(record.createdAt).toLocaleDateString('vi-VN')}
                             </Text>
                           </div>
                         </div>
@@ -475,6 +648,120 @@ const KanbanView = () => {
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Edit Cards Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
+              <span className="text-blue-600 text-sm">📋</span>
+            </div>
+            <span>Edit Cards</span>
+            <Tag color="blue">{getVisibleFieldsCount()}</Tag>
+          </div>
+        }
+        open={showEditCardsModal}
+        onCancel={() => setShowEditCardsModal(false)}
+        footer={null}
+        width={600}
+        className="edit-cards-modal"
+      >
+        <div className="space-y-4">
+            {/* Search Fields */}
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Search fields"
+                prefix={<SearchOutlined />}
+                value={searchField}
+                onChange={(e) => setSearchField(e.target.value)}
+                className="flex-1"
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Select All</span>
+                <Switch 
+                  size="small" 
+                  checked={isAllFieldsSelected()}
+                  onChange={toggleAllFields}
+                />
+              </div>
+            </div>
+
+          {/* Fields List */}
+          <div className="max-h-96 overflow-y-auto">
+            {tableColumns?.data
+              ?.filter(column => 
+                column.name.toLowerCase().includes(searchField.toLowerCase())
+              )
+              ?.map((column) => (
+                <div
+                  key={column._id}
+                  className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Dropdown
+                      menu={{
+                        items: [
+                          {
+                            key: 'info',
+                            label: (
+                              <div className="p-2">
+                                <div className="font-medium text-gray-800">{column.name}</div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Type: {column.dataType}
+                                </div>
+                                {column.description && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {column.description}
+                                  </div>
+                                )}
+                                <div className="text-xs text-gray-500 mt-1">
+                                  Required: {column.isRequired ? 'Yes' : 'No'}
+                                </div>
+                                {column.isUnique && (
+                                  <div className="text-xs text-blue-500 mt-1">
+                                    Unique field
+                                  </div>
+                                )}
+                              </div>
+                            ),
+                            disabled: true
+                          }
+                        ]
+                      }}
+                      trigger={['click']}
+                      placement="bottomLeft"
+                    >
+                      <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-200 transition-colors">
+                        {getFieldIcon(column.dataType)}
+                      </div>
+                    </Dropdown>
+                    <span className="text-sm text-gray-700">{column.name}</span>
+                    {column.dataType === 'linked_table' && (
+                      <RightOutlined className="text-gray-400 text-xs" />
+                    )}
+                  </div>
+                  <Switch
+                    checked={visibleFields[column.name] || false}
+                    onChange={() => toggleFieldVisibility(column.name)}
+                    size="small"
+                  />
+                </div>
+              ))}
+          </div>
+
+          {/* System Fields */}
+          <Divider />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <EyeOutlined className="text-gray-400" />
+              <span className="text-sm text-gray-600">System fields</span>
+            </div>
+            <Button type="text" size="small" className="text-blue-600">
+              + New Field
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
