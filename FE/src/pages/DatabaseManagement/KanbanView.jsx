@@ -30,6 +30,36 @@ import {
   UserOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+// Custom scrollbar styles for all scrollbars
+const customScrollbarStyles = `
+  /* Global scrollbar styling */
+  *::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: #e9ecef;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background: #dee2e6;
+  }
+
+  /* Firefox scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #e9ecef #f8f9fa;
+  }
+`;
+
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 
 const { Title, Text } = Typography;
@@ -254,6 +284,7 @@ const KanbanView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <style dangerouslySetInnerHTML={{ __html: customScrollbarStyles }} />
       {/* Kanban Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <Row justify="space-between" align="middle">

@@ -37,6 +37,36 @@ import {
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
+// Custom scrollbar styles for consistent scrollbars across all views
+const customScrollbarStyles = `
+  /* Global scrollbar styling */
+  *::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: #e9ecef;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background: #dee2e6;
+  }
+
+  /* Firefox scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #e9ecef #f8f9fa;
+  }
+`;
+
+
 // View Type Dropdown Component
 const ViewTypeDropdown = ({ visible, position, onClose, onSelectViewType }) => {
   const viewTypes = [
@@ -718,6 +748,7 @@ const DatabaseLayout = () => {
   return (
     <TableProvider>
       <Layout style={{ minHeight: '100vh' }}>
+      <style dangerouslySetInnerHTML={{ __html: customScrollbarStyles }} />
       <Sider
         width={280}
         collapsed={collapsed}
