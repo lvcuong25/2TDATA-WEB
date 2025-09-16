@@ -1107,12 +1107,13 @@ const DatabaseLayout = () => {
         <Header 
           style={{ 
             padding: '0 24px', 
-            background: '#fff',
-            borderBottom: '1px solid #f0f0f0',
+            background: 'linear-gradient(135deg, #ffffff 0%, #fafbfc 100%)',
+            borderBottom: '1px solid #e8eaed',
             position: 'sticky',
             top: 0,
             zIndex: 999,
             minHeight: location.pathname.includes('/view/') ? '120px' : '64px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
         >
           <div className="flex items-center justify-between" style={{ height: '64px' }}>
@@ -1144,8 +1145,8 @@ const DatabaseLayout = () => {
           
           {/* Tabs and Breadcrumb Section - Only show on form view pages */}
           {location.pathname.includes('/view/') && (
-            <div className="flex items-center justify-between mt-4 pb-4">
-              <div className="flex items-center space-x-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center" style={{ gap: '36px' }}>
                 {/* Tabs */}
                 <Tabs
                   activeKey={activeTab}
@@ -1153,34 +1154,74 @@ const DatabaseLayout = () => {
                   items={[
                     {
                       key: 'data',
-                      label: 'Data',
+                      label: (
+                        <span style={{ 
+                          fontSize: '14px', 
+                          fontWeight: 500,
+                          color: activeTab === 'data' ? '#1890ff' : '#5f6368'
+                        }}>
+                          Data
+                        </span>
+                      ),
                     },
                     {
                       key: 'details',
-                      label: 'Details',
+                      label: (
+                        <span style={{ 
+                          fontSize: '14px', 
+                          fontWeight: 500,
+                          color: activeTab === 'details' ? '#1890ff' : '#5f6368'
+                        }}>
+                          Details
+                        </span>
+                      ),
                     },
                   ]}
                   style={{ margin: 0 }}
-                  tabBarStyle={{ margin: 0 }}
+                  tabBarStyle={{ 
+                    margin: 0,
+                    borderBottom: 'none'
+                  }}
+                  tabBarGutter={28}
                 />
                 
                 {/* Breadcrumb */}
-                <div className="text-gray-600 text-sm">
+                <div style={{ 
+                  fontSize: '13px',
+                  color: '#5f6368',
+                  fontWeight: 400,
+                  letterSpacing: '0.2px'
+                }}>
                   {getBreadcrumbPath()}
                 </div>
               </div>
               
               {/* Action Buttons */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center" style={{ gap: '6px' }}>
                 <Button
                   icon={<ReloadOutlined />}
                   type="text"
-                  className="text-gray-500"
+                  style={{ 
+                    color: '#5f6368',
+                    height: '32px',
+                    width: '32px',
+                    borderRadius: '6px',
+                    border: '1px solid #e8eaed',
+                    background: '#fff'
+                  }}
                 />
                 <Button
                   type="primary"
                   icon={<ShareAltOutlined />}
-                  style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+                  style={{ 
+                    backgroundColor: '#1890ff', 
+                    borderColor: '#1890ff',
+                    height: '32px',
+                    borderRadius: '6px',
+                    fontWeight: 500,
+                    fontSize: '13px',
+                    boxShadow: '0 1px 3px rgba(24, 144, 255, 0.3)'
+                  }}
                 >
                   Chia sẻ
                 </Button>
@@ -1188,8 +1229,19 @@ const DatabaseLayout = () => {
                   icon={<EyeOutlined />}
                   style={{ 
                     backgroundColor: '#fff', 
-                    borderColor: '#d9d9d9',
-                    color: '#262626'
+                    borderColor: '#e8eaed',
+                    color: '#5f6368',
+                    height: '32px',
+                    borderRadius: '6px',
+                    fontWeight: 500,
+                    fontSize: '13px'
+                  }}
+                  onClick={() => {
+                    // Extract database ID and table ID from current path
+                    const pathParts = location.pathname.split('/');
+                    const databaseId = pathParts[2];
+                    const tableId = pathParts[4];
+                    navigate(`/database/${databaseId}/table/${tableId}`);
                   }}
                 >
                   Xem dữ liệu
@@ -1197,7 +1249,14 @@ const DatabaseLayout = () => {
                 <Button
                   icon={<LockOutlined />}
                   type="text"
-                  className="text-gray-500"
+                  style={{ 
+                    color: '#5f6368',
+                    height: '32px',
+                    width: '32px',
+                    borderRadius: '6px',
+                    border: '1px solid #e8eaed',
+                    background: '#fff'
+                  }}
                 />
               </div>
             </div>
