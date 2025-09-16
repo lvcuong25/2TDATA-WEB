@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Typography, Avatar, Button, Input, Modal, Space, Row, Dropdown } from 'antd';
+import { Layout, Menu, Typography, Avatar, Button, Input, Modal, Space, Row, Dropdown, Tabs } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { AuthContext } from '../../components/core/Auth';
@@ -27,7 +27,11 @@ import {
   FormOutlined,
   PictureOutlined,
   BarsOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  ShareAltOutlined,
+  EyeOutlined,
+  LockOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -235,6 +239,9 @@ const DatabaseLayout = () => {
   const [showViewTypeDropdown, setShowViewTypeDropdown] = useState(false);
   const [viewDropdownPosition, setViewDropdownPosition] = useState({ x: 0, y: 0 });
   const [selectedContext, setSelectedContext] = useState({ type: '', id: '', databaseId: '' });
+  
+  // Header states
+  const [activeTab, setActiveTab] = useState('data');
 
   // Fetch databases for sidebar
   const { data: databasesResponse } = useQuery({
@@ -621,6 +628,36 @@ const DatabaseLayout = () => {
       return table ? table.name : 'Table Detail';
     }
     return 'Database Management';
+  };
+
+  // Get breadcrumb path for form view
+  const getBreadcrumbPath = () => {
+    if (location.pathname.includes('/view/')) {
+      // Extract database ID, table ID, and view ID from path
+      const pathParts = location.pathname.split('/');
+      const databaseId = pathParts[2];
+      const tableId = pathParts[4];
+      const viewId = pathParts[6];
+      
+      // Find database name
+      const database = databases.find(db => db._id === databaseId);
+      const databaseName = database ? database.name : 'Database';
+      
+      // Find table name
+      const table = allTables
+        .flatMap(item => item.tables)
+        .find(t => t._id === tableId);
+      const tableName = table ? table.name : 'Table';
+      
+      // Find view name
+      const allViews = allViewsResponse || [];
+      const tableViews = allViews.find(item => item.tableId === tableId);
+      const view = tableViews ? tableViews.views.find(v => v._id === viewId) : null;
+      const viewName = view ? view.name : 'View';
+      
+      return `/${databaseName} / ${tableName} / ${viewName}`;
+    }
+    return '';
   };
 
   // Filter databases based on search
@@ -1075,9 +1112,10 @@ const DatabaseLayout = () => {
             position: 'sticky',
             top: 0,
             zIndex: 999,
+            minHeight: location.pathname.includes('/view/') ? '120px' : '64px',
           }}
         >
-          <div className="flex items-center justify-between h-full">
+          <div className="flex items-center justify-between" style={{ height: '64px' }}>
             <div className="flex items-center">
               {location.pathname !== '/database' && (
                 <Button
@@ -1103,6 +1141,67 @@ const DatabaseLayout = () => {
               <TableHeaderActions />
             </div>
           </div>
+          
+          {/* Tabs and Breadcrumb Section - Only show on form view pages */}
+          {location.pathname.includes('/view/') && (
+            <div className="flex items-center justify-between mt-4 pb-4">
+              <div className="flex items-center space-x-6">
+                {/* Tabs */}
+                <Tabs
+                  activeKey={activeTab}
+                  onChange={setActiveTab}
+                  items={[
+                    {
+                      key: 'data',
+                      label: 'Data',
+                    },
+                    {
+                      key: 'details',
+                      label: 'Details',
+                    },
+                  ]}
+                  style={{ margin: 0 }}
+                  tabBarStyle={{ margin: 0 }}
+                />
+                
+                {/* Breadcrumb */}
+                <div className="text-gray-600 text-sm">
+                  {getBreadcrumbPath()}
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-3">
+                <Button
+                  icon={<ReloadOutlined />}
+                  type="text"
+                  className="text-gray-500"
+                />
+                <Button
+                  type="primary"
+                  icon={<ShareAltOutlined />}
+                  style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+                >
+                  Chia sẻ
+                </Button>
+                <Button
+                  icon={<EyeOutlined />}
+                  style={{ 
+                    backgroundColor: '#fff', 
+                    borderColor: '#d9d9d9',
+                    color: '#262626'
+                  }}
+                >
+                  Xem dữ liệu
+                </Button>
+                <Button
+                  icon={<LockOutlined />}
+                  type="text"
+                  className="text-gray-500"
+                />
+              </div>
+            </div>
+          )}
         </Header>
 
         <Content style={{ 
