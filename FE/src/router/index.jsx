@@ -56,6 +56,7 @@ import TableDetail from "../pages/DatabaseManagement/TableDetail.jsx";
 import FormView from "../pages/DatabaseManagement/FormView.jsx";
 import KanbanView from "../pages/DatabaseManagement/KanbanView.jsx";
 import CalendarView from "../pages/DatabaseManagement/CalendarView.jsx";
+import GalleryView from "../pages/DatabaseManagement/GalleryView.jsx";
 
 const Router = () => {
   return (
@@ -121,6 +122,7 @@ const Router = () => {
             <Route path=":databaseId/table/:tableId/view/:viewId" element={<FormView />} />
             <Route path=":databaseId/table/:tableId/kanban/:viewId" element={<KanbanView />} />
             <Route path=":databaseId/table/:tableId/calendar/:viewId" element={<CalendarView />} />
+            <Route path=":databaseId/table/:tableId/gallery/:viewId" element={<GalleryView />} />
             <Route path=":databaseId/table/:tableId" element={<TableDetail />} />
           </Route>
         </Route>
