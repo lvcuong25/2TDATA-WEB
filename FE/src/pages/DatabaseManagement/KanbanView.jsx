@@ -18,7 +18,8 @@ import {
   Tooltip,
   Input,
   Divider,
-  Switch
+  Switch,
+  Badge
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -34,10 +35,16 @@ import {
   EyeOutlined,
   RightOutlined,
   ClockCircleOutlined,
-  LinkOutlined
+  LinkOutlined,
+  ClearOutlined,
+  SortDescendingOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDataTypeIcon, getDataTypeColor } from './Utils/dataTypeUtils';
+
+// Import our new components
+import SortModal from '../../components/Kanban/SortModal';
+import FilterModal from '../../components/Kanban/FilterModal';
 
 // Custom scrollbar styles for all scrollbars
 const customScrollbarStyles = `
@@ -90,6 +97,13 @@ const KanbanView = () => {
   const [visibleFields, setVisibleFields] = useState({});
   const [searchField, setSearchField] = useState('');
 
+  // State for Sort and Filter
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [currentSort, setCurrentSort] = useState(null);
+  const [currentFilters, setCurrentFilters] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Fetch table columns for edit cards modal
   const { data: tableColumns } = useQuery({
     queryKey: ['tableColumns', tableId],
@@ -110,11 +124,32 @@ const KanbanView = () => {
     enabled: !!tableId,
   });
 
-  // Fetch Kanban data
+  // Fetch Kanban data with sort and filter parameters
   const { data: kanbanData, isLoading: dataLoading, isError: dataError, error: dataErrorData, refetch: refetchKanbanData } = useQuery({
-    queryKey: ['kanbanData', tableId, stackByField],
+    queryKey: ['kanbanData', tableId, stackByField, currentSort, currentFilters, searchQuery],
     queryFn: async () => {
-      const response = await axiosInstance.get(`/database/tables/${tableId}/kanban?stackByField=${stackByField}`);
+      const params = new URLSearchParams({
+        stackByField: stackByField || ''
+      });
+
+      // Add sort parameters
+      if (currentSort) {
+        params.append('sortBy', currentSort.field);
+        params.append('sortDirection', currentSort.direction);
+        params.append('sortType', currentSort.type);
+      }
+
+      // Add filter parameters
+      if (Object.keys(currentFilters).length > 0) {
+        params.append('filters', JSON.stringify(currentFilters));
+      }
+
+      // Add search parameter
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+
+      const response = await axiosInstance.get(`/database/tables/${tableId}/kanban?${params.toString()}`);
       return response.data;
     },
     enabled: !!tableId && !!stackByField,
@@ -227,13 +262,49 @@ const KanbanView = () => {
     });
   };
 
+  // Handle sort functionality
+  const handleApplySort = (sortConfig) => {
+    setCurrentSort(sortConfig);
+    setShowSortModal(false);
+    message.success(`Sorted by ${sortConfig.field} (${sortConfig.direction})`);
+  };
+
+  const handleClearSort = () => {
+    setCurrentSort(null);
+    setShowSortModal(false);
+    message.success('Sort cleared');
+  };
+
+  // Handle filter functionality
+  const handleApplyFilters = (filters, search) => {
+    setCurrentFilters(filters);
+    setSearchQuery(search);
+    setShowFilterModal(false);
+    
+    const filterCount = Object.keys(filters).length;
+    const hasSearch = search && search.trim();
+    
+    if (filterCount > 0 || hasSearch) {
+      message.success(`Applied ${filterCount} filter${filterCount !== 1 ? 's' : ''}${hasSearch ? ' + search' : ''}`);
+    } else {
+      message.success('Filters cleared');
+    }
+  };
+
+  const handleClearFilters = () => {
+    setCurrentFilters({});
+    setSearchQuery('');
+    setShowFilterModal(false);
+    message.success('All filters cleared');
+  };
+
   // Get column color based on title
   const getColumnColor = (title) => {
     const colorMap = {
       'Uncategorized': '#d9d9d9',
       'Nhận diện thương hiệu': '#eb2f96',
       'Tăng traffic tự nhiên': '#52c41a',
-      'Khuyến mãi mùa cao đi...': '#1890ff',
+      'Khuyến mãi mùa cao điểm': '#1890ff',
       'Tăng đơn hàng cuối năm': '#722ed1',
       'Duy trì khách': '#f5222d'
     };
@@ -369,6 +440,11 @@ const KanbanView = () => {
     return Object.values(visibleFields).filter(Boolean).length;
   };
 
+  // Get active filters count
+  const getActiveFiltersCount = () => {
+    return Object.keys(currentFilters).length + (searchQuery ? 1 : 0);
+  };
+
   // Handle authentication errors
   if (configError || dataError) {
     const errorMessage = configErrorData?.response?.data?.message || dataErrorData?.response?.data?.message;
@@ -433,6 +509,7 @@ const KanbanView = () => {
   }
 
   const columns = kanbanData?.data?.columns || [];
+  const allColumns = kanbanConfig?.allColumns || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -466,22 +543,107 @@ const KanbanView = () => {
                 Edit Cards {getVisibleFieldsCount()}
               </Button>
               
-              <Button icon={<FilterOutlined />} className="text-gray-600">
-                Filter
-              </Button>
+              <Badge count={getActiveFiltersCount()} size="small">
+                <Button 
+                  icon={<FilterOutlined />} 
+                  className="text-gray-600"
+                  type={getActiveFiltersCount() > 0 ? "primary" : "default"}
+                  onClick={() => setShowFilterModal(true)}
+                >
+                  Filter
+                </Button>
+              </Badge>
               
-              <Button icon={<SortAscendingOutlined />} className="text-gray-600">
+              <Button 
+                icon={currentSort ? <SortDescendingOutlined /> : <SortAscendingOutlined />} 
+                className="text-gray-600"
+                type={currentSort ? "primary" : "default"}
+                onClick={() => setShowSortModal(true)}
+              >
                 Sort
+                {currentSort && (
+                  <Text className="ml-1 text-xs">
+                    ({currentSort.field})
+                  </Text>
+                )}
               </Button>
+
+              {(currentSort || getActiveFiltersCount() > 0) && (
+                <Button 
+                  icon={<ClearOutlined />}
+                  size="small"
+                  type="text"
+                  className="text-red-500"
+                  onClick={() => {
+                    setCurrentSort(null);
+                    setCurrentFilters({});
+                    setSearchQuery('');
+                    message.success('All sort and filters cleared');
+                  }}
+                >
+                  Clear All
+                </Button>
+              )}
             </Space>
           </Col>
           
           <Col>
             <Space>
-              {/* Removed buttons as requested */}
+              {kanbanData?.data?.totalRecords && (
+                <Text type="secondary" className="text-sm">
+                  {kanbanData.data.totalRecords} records
+                </Text>
+              )}
             </Space>
           </Col>
         </Row>
+
+        {/* Applied filters and sort display */}
+        {(currentSort || getActiveFiltersCount() > 0 || searchQuery) && (
+          <Row className="mt-3">
+            <Col span={24}>
+              <Space size="small" wrap>
+                {currentSort && (
+                  <Tag 
+                    color="blue" 
+                    closable
+                    onClose={() => setCurrentSort(null)}
+                    className="flex items-center"
+                  >
+                    <SortAscendingOutlined className="mr-1" />
+                    Sort: {currentSort.field} ({currentSort.direction})
+                  </Tag>
+                )}
+                
+                {Object.entries(currentFilters).map(([field, filter]) => (
+                  <Tag 
+                    key={field}
+                    color="green"
+                    closable
+                    onClose={() => {
+                      const newFilters = { ...currentFilters };
+                      delete newFilters[field];
+                      setCurrentFilters(newFilters);
+                    }}
+                  >
+                    {field}: {filter.operator} {typeof filter.value === 'object' ? JSON.stringify(filter.value) : filter.value}
+                  </Tag>
+                ))}
+
+                {searchQuery && (
+                  <Tag 
+                    color="orange"
+                    closable
+                    onClose={() => setSearchQuery('')}
+                  >
+                    <SearchOutlined className="mr-1" />
+                    Search: "{searchQuery}"
+                  </Tag>
+                )}
+              </Space>
+            </Col>
+          </Row>
+        )}
       </div>
 
       {/* Kanban Board */}
@@ -590,17 +752,6 @@ const KanbanView = () => {
                               </Tag>
                             </div>
                           )}
-                          
-                          {/* Record metadata */}
-                          <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
-                            <div className="flex items-center gap-2">
-                              <Avatar size="small" icon={<UserOutlined />} className="bg-blue-500" />
-                              <span className="text-xs text-gray-500 font-medium">Created</span>
-                            </div>
-                            <Text className="text-xs text-gray-500 font-medium">
-                              {new Date(record.createdAt).toLocaleDateString('vi-VN')}
-                            </Text>
-                          </div>
                         </div>
                       </Card>
                     ))}
@@ -627,6 +778,27 @@ const KanbanView = () => {
           ))}
         </div>
       </div>
+
+      {/* Sort Modal */}
+      <SortModal
+        open={showSortModal}
+        onCancel={() => setShowSortModal(false)}
+        onApply={handleApplySort}
+        onClear={handleClearSort}
+        columns={allColumns}
+        currentSort={currentSort}
+      />
+
+      {/* Filter Modal */}
+      <FilterModal
+        open={showFilterModal}
+        onCancel={() => setShowFilterModal(false)}
+        onApply={handleApplyFilters}
+        onClear={handleClearFilters}
+        columns={allColumns}
+        currentFilters={currentFilters}
+        searchQuery={searchQuery}
+      />
 
       {/* Add Column Modal */}
       <Modal

@@ -2,11 +2,149 @@ import Table from '../model/Table.js';
 import Record from '../model/Record.js';
 import Column from '../model/Column.js';
 
-// Get Kanban data for a table
+// Helper function to apply filters to records
+const applyFilters = (records, filters, columns) => {
+  if (!filters || Object.keys(filters).length === 0) {
+    return records;
+  }
+
+  return records.filter(record => {
+    return Object.entries(filters).every(([fieldName, filterValue]) => {
+      if (!filterValue) return true;
+
+      const recordValue = record.data?.[fieldName];
+      const column = columns.find(col => col.name === fieldName);
+
+      // Handle different data types and filter operators
+      if (typeof filterValue === 'object' && filterValue.operator) {
+        const { operator, value } = filterValue;
+        
+        switch (operator) {
+          case 'contains':
+            return recordValue && String(recordValue).toLowerCase().includes(String(value).toLowerCase());
+          case 'not_contains':
+            return !recordValue || !String(recordValue).toLowerCase().includes(String(value).toLowerCase());
+          case 'equals':
+            return recordValue === value;
+          case 'not_equals':
+            return recordValue !== value;
+          case 'starts_with':
+            return recordValue && String(recordValue).toLowerCase().startsWith(String(value).toLowerCase());
+          case 'ends_with':
+            return recordValue && String(recordValue).toLowerCase().endsWith(String(value).toLowerCase());
+          case 'is_empty':
+            return !recordValue || recordValue === '' || recordValue === null || recordValue === undefined;
+          case 'is_not_empty':
+            return recordValue && recordValue !== '' && recordValue !== null && recordValue !== undefined;
+          case 'greater_than':
+            return recordValue && Number(recordValue) > Number(value);
+          case 'less_than':
+            return recordValue && Number(recordValue) < Number(value);
+          case 'greater_equal':
+            return recordValue && Number(recordValue) >= Number(value);
+          case 'less_equal':
+            return recordValue && Number(recordValue) <= Number(value);
+          case 'date_is':
+            if (!recordValue || !value) return false;
+            const recordDate = new Date(recordValue).toDateString();
+            const filterDate = new Date(value).toDateString();
+            return recordDate === filterDate;
+          case 'date_before':
+            return recordValue && new Date(recordValue) < new Date(value);
+          case 'date_after':
+            return recordValue && new Date(recordValue) > new Date(value);
+          case 'in':
+            return Array.isArray(value) && value.includes(recordValue);
+          case 'not_in':
+            return !Array.isArray(value) || !value.includes(recordValue);
+          default:
+            return true;
+        }
+      } else {
+        // Simple string matching for backward compatibility
+        if (Array.isArray(filterValue)) {
+          return filterValue.includes(recordValue);
+        }
+        return recordValue && String(recordValue).toLowerCase().includes(String(filterValue).toLowerCase());
+      }
+    });
+  });
+};
+
+// Helper function to apply sorting to records
+const applySorting = (records, sortConfig, columns) => {
+  if (!sortConfig || !sortConfig.field) {
+    return records;
+  }
+
+  const { field, direction = 'asc', type = 'auto' } = sortConfig;
+
+  return records.sort((a, b) => {
+    const valueA = a.data?.[field];
+    const valueB = b.data?.[field];
+
+    // Handle null/undefined values - always put them at the end
+    if (valueA == null && valueB == null) return 0;
+    if (valueA == null) return 1;
+    if (valueB == null) return -1;
+
+    let comparison = 0;
+
+    // Determine sort type based on column data type or auto-detect
+    const column = columns.find(col => col.name === field);
+    const dataType = column?.dataType || type;
+
+    switch (dataType) {
+      case 'number':
+      case 'currency':
+      case 'percent':
+      case 'rating':
+        comparison = Number(valueA) - Number(valueB);
+        break;
+        
+      case 'date':
+      case 'datetime':
+        comparison = new Date(valueA) - new Date(valueB);
+        break;
+        
+      case 'checkbox':
+        comparison = (valueA ? 1 : 0) - (valueB ? 1 : 0);
+        break;
+        
+      case 'text':
+      case 'long_text':
+      case 'email':
+      case 'url':
+      case 'phone':
+      case 'single_select':
+      case 'auto':
+      default:
+        // Try numeric comparison first if both values are numbers
+        if (!isNaN(valueA) && !isNaN(valueB)) {
+          comparison = Number(valueA) - Number(valueB);
+        } else {
+          // Fallback to string comparison
+          comparison = String(valueA).localeCompare(String(valueB));
+        }
+        break;
+    }
+
+    return direction === 'desc' ? -comparison : comparison;
+  });
+};
+
+// Get Kanban data for a table with sorting and filtering
 export const getKanbanData = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { stackByField } = req.query;
+    const { 
+      stackByField, 
+      sortBy, 
+      sortDirection = 'asc',
+      sortType = 'auto',
+      filters = {},
+      search = ''
+    } = req.query;
     
     // Check if user is authenticated
     if (!req.user || !req.user._id) {
@@ -84,7 +222,43 @@ export const getKanbanData = async (req, res) => {
     }
     
     // Get all records for this table
-    const records = await Record.find({ tableId, userId, siteId }).sort({ createdAt: -1 });
+    let records = await Record.find({ tableId, userId, siteId }).sort({ createdAt: -1 });
+
+    // Parse filters if they come as string
+    let parsedFilters = {};
+    try {
+      if (typeof filters === 'string') {
+        parsedFilters = JSON.parse(filters);
+      } else {
+        parsedFilters = filters;
+      }
+    } catch (error) {
+      console.warn('Error parsing filters:', error);
+      parsedFilters = {};
+    }
+
+    // Apply search filter if provided
+    if (search) {
+      records = records.filter(record => {
+        return Object.values(record.data || {}).some(value => {
+          if (value == null) return false;
+          return String(value).toLowerCase().includes(search.toLowerCase());
+        });
+      });
+    }
+
+    // Apply filters
+    records = applyFilters(records, parsedFilters, columns);
+
+    // Apply sorting if specified
+    if (sortBy) {
+      const sortConfig = {
+        field: sortBy,
+        direction: sortDirection,
+        type: sortType
+      };
+      records = applySorting(records, sortConfig, columns);
+    }
     
     // Group records by stackBy field value
     const kanbanColumns = {};
@@ -120,6 +294,19 @@ export const getKanbanData = async (req, res) => {
         kanbanColumns['Uncategorized'].count++;
       }
     });
+
+    // Sort records within each column if sorting is applied
+    if (sortBy) {
+      const sortConfig = {
+        field: sortBy,
+        direction: sortDirection,
+        type: sortType
+      };
+      
+      Object.values(kanbanColumns).forEach(column => {
+        column.records = applySorting(column.records, sortConfig, columns);
+      });
+    }
     
     // Convert to array format
     const kanbanData = Object.values(kanbanColumns);
@@ -132,12 +319,58 @@ export const getKanbanData = async (req, res) => {
         stackByField: stackByColumn.name,
         stackByColumn: stackByColumn,
         eligibleColumns: eligibleColumns,
-        availableValues: availableValues
+        availableValues: availableValues,
+        totalRecords: records.length,
+        appliedFilters: parsedFilters,
+        appliedSort: sortBy ? { field: sortBy, direction: sortDirection, type: sortType } : null,
+        searchQuery: search
       }
     });
     
   } catch (error) {
     console.error('Error getting Kanban data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Get available filter operators for a field type
+export const getFilterOperators = async (req, res) => {
+  try {
+    const { fieldType } = req.params;
+    
+    const operatorsByType = {
+      text: ['contains', 'not_contains', 'equals', 'not_equals', 'starts_with', 'ends_with', 'is_empty', 'is_not_empty'],
+      long_text: ['contains', 'not_contains', 'is_empty', 'is_not_empty'],
+      number: ['equals', 'not_equals', 'greater_than', 'less_than', 'greater_equal', 'less_equal', 'is_empty', 'is_not_empty'],
+      currency: ['equals', 'not_equals', 'greater_than', 'less_than', 'greater_equal', 'less_equal', 'is_empty', 'is_not_empty'],
+      percent: ['equals', 'not_equals', 'greater_than', 'less_than', 'greater_equal', 'less_equal', 'is_empty', 'is_not_empty'],
+      date: ['date_is', 'date_before', 'date_after', 'is_empty', 'is_not_empty'],
+      datetime: ['date_is', 'date_before', 'date_after', 'is_empty', 'is_not_empty'],
+      single_select: ['equals', 'not_equals', 'in', 'not_in', 'is_empty', 'is_not_empty'],
+      multi_select: ['contains', 'not_contains', 'in', 'not_in', 'is_empty', 'is_not_empty'],
+      checkbox: ['equals', 'not_equals'],
+      email: ['contains', 'not_contains', 'equals', 'not_equals', 'is_empty', 'is_not_empty'],
+      url: ['contains', 'not_contains', 'equals', 'not_equals', 'is_empty', 'is_not_empty'],
+      phone: ['contains', 'not_contains', 'equals', 'not_equals', 'is_empty', 'is_not_empty'],
+      rating: ['equals', 'not_equals', 'greater_than', 'less_than', 'greater_equal', 'less_equal', 'is_empty', 'is_not_empty']
+    };
+
+    const operators = operatorsByType[fieldType] || operatorsByType['text'];
+    
+    res.json({
+      success: true,
+      operators: operators.map(op => ({
+        value: op,
+        label: op.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error getting filter operators:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -364,7 +597,8 @@ export const getKanbanConfig = async (req, res) => {
       eligible: true,
       eligibleColumns: eligibleColumns,
       defaultStackBy: defaultStackBy,
-      availableValues: availableValues
+      availableValues: availableValues,
+      allColumns: columns // Include all columns for sorting/filtering
     });
     
   } catch (error) {

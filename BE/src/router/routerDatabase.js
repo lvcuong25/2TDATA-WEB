@@ -67,12 +67,12 @@ import {
   deleteView,
   copyView
 } from "../controllers/viewController.js";
-
 import {
   getKanbanData,
   updateRecordColumn,
   addKanbanColumn,
-  getKanbanConfig
+  getKanbanConfig,
+  getFilterOperators
 } from "../controllers/kanbanController.js";
 
 import {
@@ -153,6 +153,7 @@ router.post("/views/:viewId/copy", copyViewValidation, copyView);
 // Kanban routes
 router.get("/tables/:tableId/kanban", getKanbanData);
 router.get("/tables/:tableId/kanban/config", getKanbanConfig);
+router.get("/kanban/filter-operators/:fieldType", getFilterOperators);
 router.put("/records/:recordId/kanban", updateRecordColumn);
 router.post("/tables/:tableId/kanban/column", addKanbanColumn);
 
