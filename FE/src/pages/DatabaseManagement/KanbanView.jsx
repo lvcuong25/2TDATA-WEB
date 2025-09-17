@@ -350,7 +350,7 @@ const KanbanView = () => {
             }).join(', ');
           } else {
             // Single linked record
-            return value.label || value.name || value.title || value._id || 'Linked Record';
+            return String(value?.label || value?.name || value?.title || value?._id || 'Linked Record');
           }
         }
         return String(value);
@@ -626,7 +626,7 @@ const KanbanView = () => {
                       setCurrentFilters(newFilters);
                     }}
                   >
-                    {field}: {filter.operator} {typeof filter.value === 'object' ? JSON.stringify(filter.value) : filter.value}
+                    {field}: {filter.operator} {typeof filter.value === 'object' ? JSON.stringify(filter.value) : String(filter.value || '')}
                   </Tag>
                 ))}
 

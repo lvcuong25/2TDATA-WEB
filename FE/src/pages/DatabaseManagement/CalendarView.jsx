@@ -200,7 +200,7 @@ const CalendarView = () => {
             }).join(', ');
           } else {
             // Single linked record
-            return value.label || value.name || value.title || value._id || 'Linked Record';
+            return String(value?.label || value?.name || value?.title || value?._id || 'Linked Record');
           }
         }
         return String(value);

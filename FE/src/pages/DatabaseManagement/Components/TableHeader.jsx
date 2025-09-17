@@ -231,7 +231,7 @@ const TableHeader = ({
                         fontStyle: column.isSystem ? 'italic' : 'normal',
                         textDecoration: fieldVisibility[column._id] === false ? 'line-through' : 'none'
                       }}>
-                        {column.name}
+                        {String(column.name || '')}
                       </span>
                       
                       {/* Visibility Toggle */}
@@ -394,7 +394,7 @@ const TableHeader = ({
                               <Option key={col._id} value={col.name}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   {getDataTypeIcon(col.dataType)}
-                                  <span>{col.name}</span>
+                                  <span>{String(col.name || '')}</span>
                                 </div>
                               </Option>
                             ))}

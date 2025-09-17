@@ -198,7 +198,7 @@ const SingleSelectPill = ({ value, options, onChange, onAddNewOption, isActive =
       >
         {options.map((option, index) => (
           <Option key={index} value={option}>
-            {option}
+            {String(option || '')}
           </Option>
         ))}
       </Select>
@@ -551,11 +551,11 @@ const TableBody = ({
                       {group.rules[0].field}
                     </span>
                     <span style={{ fontSize: '12px', color: '#666' }}>
-                      {group.values[0] || '(empty)'}
+                      {String(group.values[0] || '(empty)')}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Tooltip title={`Add record to ${group.rules[0].field}: ${group.values[0] || '(empty)'}`}>
+                    <Tooltip title={`Add record to ${group.rules[0].field}: ${String(group.values[0] || '(empty)')}`}>
                       <Button
                         type="text"
                         size="small"
@@ -1132,7 +1132,7 @@ const TableBody = ({
                                   >
                                     {options.map((option, index) => (
                                       <Option key={index} value={option}>
-                                        {option}
+                                        {String(option || '')}
                                       </Option>
                                     ))}
                                   </Select>
@@ -1342,7 +1342,7 @@ const TableBody = ({
                                           >
                                             {options.map((option, index) => (
                                               <Option key={index} value={option}>
-                                                {option}
+                                                {String(option || '')}
                                               </Option>
                                             ))}
                                           </Select>
@@ -1369,7 +1369,7 @@ const TableBody = ({
                                       })()
                                       : column.dataType === 'percent' && column.percentConfig?.displayAsProgress ? (
                                         <ProgressBar 
-                                          value={Number(value) || 0} 
+                                          value={Number(String(value)) || 0} 
                                           max={100}
                                           color="#1890ff"
                                           height="6px"
@@ -1418,7 +1418,7 @@ const TableBody = ({
                                               >
                                                 {linkedValue.map((item, index) => (
                                                   <Tag key={index} color="blue" size="small">
-                                                    {item.label || item.data?.name || `Item ${index + 1}`}
+                                                    {String(item?.label || item?.data?.name || `Item ${index + 1}`)}
                                                   </Tag>
                                                 ))}
                                                 <Tag color="green" size="small">+</Tag>
@@ -1440,7 +1440,7 @@ const TableBody = ({
                                               })}
                                               >
                                                 <LinkOutlined style={{ color: '#722ed1' }} />
-                                                <span>{singleItem?.label || singleItem?.data?.name || 'Linked Item'}</span>
+                                                <span>{String(singleItem?.label || singleItem?.data?.name || 'Linked Item')}</span>
                                               </div>
                                             );
                                           }
@@ -1480,11 +1480,11 @@ const TableBody = ({
                                             <div style={{ cursor: 'pointer' }}
                                             onClick={() => handleCellClick(record._id, column.name, value)}
                                             >
-                                              {value.label || 'Lookup Value'}
+                                              {String(value?.label || 'Lookup Value')}
                                             </div>
                                           );
                                         })()
-                                        : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' ? JSON.stringify(value) : (value || ''))
+                                        : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''))
                               }
                             </div>
                           )}
@@ -1528,7 +1528,7 @@ const TableBody = ({
                     cursor: 'pointer',
                     transition: 'background-color 0.2s'
                   }}
-                    onClick={() => handleAddRowToGroup(group.values, group.rules)}
+                    onClick={() => handleAddRowToGroup(String(group.values), group.rules)}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
                   >
@@ -1961,7 +1961,7 @@ const TableBody = ({
                             >
                               {options.map((option, index) => (
                                 <Option key={index} value={option}>
-                                  {option}
+                                  {String(option || '')}
                                 </Option>
                               ))}
                             </Select>
@@ -2050,15 +2050,15 @@ const TableBody = ({
                                   if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
                                     // Use the configured protocol
                                     const protocol = column.urlConfig.protocol;
-                                    displayUrl = `${protocol}://${value}`;
+                                    displayUrl = `${protocol}://${String(value)}`;
                                     console.log('Using configured protocol:', protocol, '→', displayUrl);
                                   } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
                                     // Don't add protocol, keep original value
-                                    displayUrl = value;
+                                    displayUrl = String(value);
                                     console.log('Protocol is none, keeping original value:', displayUrl);
                                   } else if (!column.urlConfig) {
                                     // Fallback for old columns without urlConfig
-                                    displayUrl = `https://${value}`;
+                                    displayUrl = `https://${String(value)}`;
                                     console.log('Using fallback protocol: https →', displayUrl);
                                   }
                                 }
@@ -2292,7 +2292,7 @@ const TableBody = ({
                                         >
                                           {options.map((option, index) => (
                                             <Option key={index} value={option}>
-                                              {option}
+                                              {String(option || '')}
                                             </Option>
                                           ))}
                                         </Select>
@@ -2324,7 +2324,7 @@ const TableBody = ({
                                     })()
                                     : column.dataType === 'percent' && column.percentConfig?.displayAsProgress ? (
                                       <ProgressBar 
-                                        value={Number(value) || 0} 
+                                        value={Number(String(value)) || 0} 
                                         max={100}
                                         color="#1890ff"
                                         height="6px"
@@ -2373,7 +2373,7 @@ const TableBody = ({
                                             >
                                               {linkedValue.map((item, index) => (
                                                 <Tag key={index} color="blue" size="small">
-                                                  {item.label || item.data?.name || `Item ${index + 1}`}
+                                                  {String(item?.label || item?.data?.name || `Item ${index + 1}`)}
                                                 </Tag>
                                               ))}
                                               <Tag color="green" size="small">+</Tag>
@@ -2395,7 +2395,7 @@ const TableBody = ({
                                             })}
                                             >
                                               <LinkOutlined style={{ color: '#722ed1' }} />
-                                              <span>{singleItem?.label || singleItem?.data?.name || 'Linked Item'}</span>
+                                              <span>{String(singleItem?.label || singleItem?.data?.name || 'Linked Item')}</span>
                                             </div>
                                           );
                                         }
@@ -2435,11 +2435,11 @@ const TableBody = ({
                                           <div style={{ cursor: 'pointer' }}
                                           onClick={() => handleCellClick(record._id, column.name, value)}
                                           >
-                                            {value.label || 'Lookup Value'}
+                                            {String(value?.label || 'Lookup Value')}
                                           </div>
                                         );
                                       })()
-                                      : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' ? JSON.stringify(value) : (value || ''))
+                                      : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''))
                         }
                       </div>
                     )}

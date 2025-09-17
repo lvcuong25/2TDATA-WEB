@@ -670,7 +670,7 @@ export const getLinkedTableData = async (req, res) => {
       
       return {
         value: record._id,
-        label: label,
+        label: String(label),
         recordId: record._id,
         data: record.data
       };
@@ -856,7 +856,7 @@ export const getLookupData = async (req, res) => {
 
       return {
         value: record._id,
-        label: label,
+        label: String(label),
         data: record.data
       };
     });

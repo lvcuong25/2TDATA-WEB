@@ -1271,7 +1271,7 @@ const TableDetail = () => {
             <div className="flex justify-between items-center">
               <div>
                 <Text type="secondary">
-                  {table?.description}
+                  {String(table?.description || '')}
                 </Text>
               </div>
             </div>

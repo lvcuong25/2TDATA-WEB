@@ -55,16 +55,16 @@ const RecordDetailModal = ({
             // Multiple linked records
             return value.map(item => {
               if (typeof item === 'object' && item !== null) {
-                return item.label || item.name || item.title || item._id || 'Linked Record';
+                return String(item?.label || item?.name || item?.title || item?._id || 'Linked Record');
               }
               return String(item);
             }).join(', ');
           } else {
             // Single linked record
-            return value.label || value.name || value.title || value._id || 'Linked Record';
+            return String(value?.label || value?.name || value?.title || value?._id || 'Linked Record');
           }
         }
-        return String(value);
+        return String(value || '');
 
       case 'single_select':
       case 'multi_select':
@@ -72,12 +72,12 @@ const RecordDetailModal = ({
           return (
             <Space wrap>
               {value.map((item, index) => (
-                <Tag key={index} color="blue">{item}</Tag>
+                <Tag key={index} color="blue">{String(item || '')}</Tag>
               ))}
             </Space>
           );
         }
-        return <Tag color="blue">{String(value)}</Tag>;
+        return <Tag color="blue">{String(value || '')}</Tag>;
 
       case 'date':
       case 'datetime':
@@ -91,13 +91,13 @@ const RecordDetailModal = ({
             return value;
           }
         }
-        return String(value);
+        return String(value || '');
 
       case 'time':
         if (typeof value === 'string' && value) {
           return value; // Already in HH:mm format
         }
-        return String(value);
+        return String(value || '');
 
       case 'rating':
         const ratingValue = Number(value);
@@ -121,7 +121,7 @@ const RecordDetailModal = ({
         if (typeof value === 'number') {
           return value.toLocaleString('vi-VN');
         }
-        return String(value);
+        return String(value || '');
 
       case 'checkbox':
         return value ? (
@@ -145,10 +145,10 @@ const RecordDetailModal = ({
             </pre>
           );
         }
-        return String(value);
+        return String(value || '');
 
       default:
-        return String(value);
+        return String(value || '');
     }
   };
 
@@ -210,13 +210,13 @@ const RecordDetailModal = ({
                 const column = tableColumns?.data?.find(col => col.name === key);
                 const dataType = column?.dataType || 'text';
                 return (
-                  <div key={key} className="flex items-start">
+                  <div key={String(key)} className="flex items-start">
                   <div className="w-6 h-6 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
                     {getIconForDataType(dataType)}
                   </div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-gray-600 mb-1">
-                        {key}
+                        {String(key)}
                       </div>
                       <div className="text-sm text-gray-800">
                         {formatFieldValue(value, dataType)}
