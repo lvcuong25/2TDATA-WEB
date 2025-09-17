@@ -32,10 +32,12 @@ import {
 export const getDataTypeIcon = (dataType) => {
   switch (dataType) {
     case 'text': 
+    case 'long_text':
       return <FontSizeOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
     case 'number': 
       return <NumberOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
     case 'date': 
+    case 'datetime':
       return <CalendarOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
     case 'year': 
       return <ClockCircleOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
@@ -79,9 +81,13 @@ export const getDataTypeIcon = (dataType) => {
  */
 export const getDataTypeColor = (dataType) => {
   switch (dataType) {
-    case 'text': return '#1890ff';
+    case 'text': 
+    case 'long_text':
+      return '#1890ff';
     case 'number': return '#52c41a';
-    case 'date': return '#fa8c16';
+    case 'date': 
+    case 'datetime':
+      return '#fa8c16';
     case 'year': return '#fa8c16';
     case 'checkbox': return '#52c41a';
     case 'single_select': return '#1890ff';

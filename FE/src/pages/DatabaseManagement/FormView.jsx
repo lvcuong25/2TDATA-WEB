@@ -948,56 +948,65 @@ const FormView = () => {
                         </div>
                       )}
                       {column.dataType === 'rating' && (
-                        <div style={{ 
-                          padding: '16px 0',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '12px'
-                        }}>
-                          <Rate 
-                            count={column.ratingConfig?.maxStars || 5}
-                            defaultValue={column.ratingConfig?.defaultValue || 0}
-                            style={{ 
-                              fontSize: '36px',
-                              color: column.ratingConfig?.color || '#faad14',
-                              lineHeight: '1'
-                            }}
-                            character={column.ratingConfig?.icon === 'star' ? '★' : 
-                                     column.ratingConfig?.icon === 'heart' ? '♥' :
-                                     column.ratingConfig?.icon === 'like' ? '👍' :
-                                     column.ratingConfig?.icon === 'fire' ? '🔥' :
-                                     column.ratingConfig?.icon === 'trophy' ? '🏆' :
-                                     column.ratingConfig?.icon === 'thumbs' ? '👍' :
-                                     column.ratingConfig?.icon === 'smile' ? '😊' :
-                                     column.ratingConfig?.icon === 'check' ? '✓' :
-                                     column.ratingConfig?.icon === 'flag' ? '🚩' :
-                                     column.ratingConfig?.icon === 'diamond' ? '💎' :
-                                     column.ratingConfig?.icon === 'crown' ? '👑' :
-                                     column.ratingConfig?.icon === 'medal' ? '🏅' :
-                                     column.ratingConfig?.icon === 'gem' ? '💎' :
-                                     column.ratingConfig?.icon === 'coin' ? '🪙' :
-                                     column.ratingConfig?.icon === 'lightning' ? '⚡' :
-                                     column.ratingConfig?.icon === 'sun' ? '☀️' :
-                                     column.ratingConfig?.icon === 'moon' ? '🌙' :
-                                     column.ratingConfig?.icon === 'flower' ? '🌸' :
-                                     column.ratingConfig?.icon === 'leaf' ? '🍃' :
-                                     column.ratingConfig?.icon === 'paw' ? '🐾' :
-                                     column.ratingConfig?.icon === 'hand' ? '✋' :
-                                     '★'}
-                          />
-                          <div style={{
-                            fontSize: '12px',
-                            color: '#8c8c8c',
-                            textAlign: 'center',
-                            marginTop: '8px'
-                          }}>
-                            {column.ratingConfig?.maxStars ? 
-                              `Đánh giá từ 1 đến ${column.ratingConfig.maxStars}` : 
-                              'Đánh giá từ 1 đến 5'
-                            }
-                          </div>
-                        </div>
+                        // Custom RatingField component that works with Form.Item
+                        ((props) => {
+                          const RatingField = ({ value, onChange, ...otherProps }) => {
+                            return (
+                              <div style={{ 
+                                padding: '16px 0',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '12px'
+                              }}>
+                                <Rate 
+                                  count={column.ratingConfig?.maxStars || 5}
+                                  value={value || column.ratingConfig?.defaultValue || 0}
+                                  onChange={onChange}
+                                  style={{ 
+                                    fontSize: '36px',
+                                    color: column.ratingConfig?.color || '#faad14',
+                                    lineHeight: '1'
+                                  }}
+                                  character={column.ratingConfig?.icon === 'star' ? '★' : 
+                                           column.ratingConfig?.icon === 'heart' ? '♥' :
+                                           column.ratingConfig?.icon === 'like' ? '👍' :
+                                           column.ratingConfig?.icon === 'fire' ? '🔥' :
+                                           column.ratingConfig?.icon === 'trophy' ? '🏆' :
+                                           column.ratingConfig?.icon === 'thumbs' ? '👍' :
+                                           column.ratingConfig?.icon === 'smile' ? '😊' :
+                                           column.ratingConfig?.icon === 'check' ? '✓' :
+                                           column.ratingConfig?.icon === 'flag' ? '🚩' :
+                                           column.ratingConfig?.icon === 'diamond' ? '💎' :
+                                           column.ratingConfig?.icon === 'crown' ? '👑' :
+                                           column.ratingConfig?.icon === 'medal' ? '🏅' :
+                                           column.ratingConfig?.icon === 'gem' ? '💎' :
+                                           column.ratingConfig?.icon === 'coin' ? '🪙' :
+                                           column.ratingConfig?.icon === 'lightning' ? '⚡' :
+                                           column.ratingConfig?.icon === 'sun' ? '☀️' :
+                                           column.ratingConfig?.icon === 'moon' ? '🌙' :
+                                           column.ratingConfig?.icon === 'flower' ? '🌸' :
+                                           column.ratingConfig?.icon === 'leaf' ? '🍃' :
+                                           column.ratingConfig?.icon === 'paw' ? '🐾' :
+                                           column.ratingConfig?.icon === 'hand' ? '✋' :
+                                           '★'}
+                                />
+                                <div style={{
+                                  fontSize: '12px',
+                                  color: '#8c8c8c',
+                                  textAlign: 'center',
+                                  marginTop: '8px'
+                                }}>
+                                  {column.ratingConfig?.maxStars ? 
+                                    `Đánh giá từ 1 đến ${column.ratingConfig.maxStars}` : 
+                                    'Đánh giá từ 1 đến 5'
+                                  }
+                                </div>
+                              </div>
+                            );
+                          };
+                          return <RatingField />;
+                        })()
                       )}
                       {column.dataType === 'single_select' ? (
                         <Select 

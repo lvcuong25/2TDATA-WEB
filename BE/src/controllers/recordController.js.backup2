@@ -228,7 +228,7 @@ export const createRecord = async (req, res) => {
       }
 
       // Validate rating format for rating data type
-      if (column.dataType === 'rating' && value !== undefined && value !== null) {
+      if (column.dataType === 'rating' && value && value !== '') {
         // Rating validation - always supports half ratings
         const maxStars = column.ratingConfig?.maxStars || 5;
         const allowHalf = true; // Always allow half stars
@@ -653,7 +653,7 @@ export const updateRecord = async (req, res) => {
         }
 
         // Validate rating format for rating data type
-        if (column.dataType === 'rating' && value !== undefined && value !== null) {
+        if (column.dataType === 'rating' && value && value !== '') {
           // Rating validation - always supports half ratings
           const maxStars = column.ratingConfig?.maxStars || 5;
           const allowHalf = true; // Always allow half stars

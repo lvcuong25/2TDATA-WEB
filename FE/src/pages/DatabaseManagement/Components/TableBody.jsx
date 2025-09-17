@@ -2073,7 +2073,7 @@ const TableBody = ({
                                     value
                                     : column.dataType === 'rating' ?
                                       (() => {
-                                        const ratingValue = value && value !== '' ? Number(value) : 0;
+                                        const ratingValue = value !== undefined && value !== null && value !== '' ? Number(value) : 0;
                                         const maxStars = column.ratingConfig?.maxStars || 5;
                                         const icon = column.ratingConfig?.icon || 'star';
                                         const color = column.ratingConfig?.color || '#faad14';

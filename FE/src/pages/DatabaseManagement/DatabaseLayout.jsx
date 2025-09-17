@@ -669,7 +669,7 @@ const DatabaseLayout = () => {
 
   // Get breadcrumb path for form view
   const getBreadcrumbPath = () => {
-    if (location.pathname.includes('/view/') || location.pathname.includes('/kanban/')) {
+    if (location.pathname.includes('/view/') || location.pathname.includes('/kanban/') || location.pathname.includes('/calendar/')) {
       // Extract database ID, table ID, and view ID from path
       const pathParts = location.pathname.split('/');
       const databaseId = pathParts[2];
@@ -1063,7 +1063,8 @@ const DatabaseLayout = () => {
                                                 key={view._id}
                                                 className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ml-6 ${
                                                   location.pathname.includes(`/view/${view._id}`) || 
-                                                  location.pathname.includes(`/kanban/${view._id}`)
+                                                  location.pathname.includes(`/kanban/${view._id}`) ||
+                                                  location.pathname.includes(`/calendar/${view._id}`)
                                                     ? "bg-green-50 text-green-600"
                                                     : "text-gray-500 hover:bg-gray-50"
                                                 }`}
@@ -1073,8 +1074,10 @@ const DatabaseLayout = () => {
                                                     navigate(`/database/${database._id}/table/${table._id}/view/${view._id}`);
                                                   } else if (view.type === 'kanban') {
                                                     navigate(`/database/${database._id}/table/${table._id}/kanban/${view._id}`);
+                                                  } else if (view.type === 'calendar') {
+                                                    navigate(`/database/${database._id}/table/${table._id}/calendar/${view._id}`);
                                                   } else {
-                                                    // TODO: Handle other view types (grid, gallery, calendar)
+                                                    // TODO: Handle other view types (grid, gallery)
                                                     console.log("Navigate to view:", view._id, "type:", view.type);
                                                   }
                                                 }}
@@ -1160,7 +1163,7 @@ const DatabaseLayout = () => {
             position: 'sticky',
             top: 0,
             zIndex: 999,
-            minHeight: (location.pathname.includes('/view/') || location.pathname.includes('/kanban/')) ? '120px' : '64px',
+            minHeight: (location.pathname.includes('/view/') || location.pathname.includes('/kanban/') || location.pathname.includes('/calendar/')) ? '120px' : '64px',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
         >
@@ -1192,7 +1195,7 @@ const DatabaseLayout = () => {
           </div>
           
           {/* Tabs and Breadcrumb Section - Only show on form view pages */}
-          {(location.pathname.includes('/view/') || location.pathname.includes('/kanban/')) && (
+          {(location.pathname.includes('/view/') || location.pathname.includes('/kanban/') || location.pathname.includes('/calendar/')) && (
             <div className="flex items-center justify-between">
               <div className="flex items-center" style={{ gap: '36px' }}>
                 {/* Tabs */}

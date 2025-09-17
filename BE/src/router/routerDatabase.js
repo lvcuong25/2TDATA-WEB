@@ -76,6 +76,12 @@ import {
 } from "../controllers/kanbanController.js";
 
 import {
+  getCalendarData,
+  updateRecordDate,
+  getCalendarConfig
+} from "../controllers/calendarController.js";
+
+import {
   createViewValidation,
   updateViewValidation,
   copyViewValidation
@@ -156,5 +162,10 @@ router.get("/tables/:tableId/kanban/config", getKanbanConfig);
 router.get("/kanban/filter-operators/:fieldType", getFilterOperators);
 router.put("/records/:recordId/kanban", updateRecordColumn);
 router.post("/tables/:tableId/kanban/column", addKanbanColumn);
+
+// Calendar routes
+router.get("/tables/:tableId/calendar", getCalendarData);
+router.get("/tables/:tableId/calendar/config", getCalendarConfig);
+router.put("/records/:recordId/calendar", updateRecordDate);
 
 export default router;
