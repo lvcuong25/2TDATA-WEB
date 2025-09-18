@@ -247,10 +247,34 @@ const KanbanView = () => {
     const targetColumn = kanbanData.data.columns.find(col => col.id === targetColumnId);
     if (!targetColumn) return;
 
+    const currentValue = draggedCard.data?.[stackByField];
+    
+    let newValue;
+    if (targetColumnId === 'Uncategorized') {
+      // Xóa khỏi tất cả cột
+      newValue = null;
+    } else {
+      // Xử lý multi-select values
+      if (Array.isArray(currentValue)) {
+        // Nếu đã là array, thêm value mới nếu chưa có
+        if (!currentValue.includes(targetColumn.title)) {
+          newValue = [...currentValue, targetColumn.title];
+        } else {
+          // Đã có trong cột này rồi, không làm gì
+          setDraggedCard(null);
+          setDraggedFromColumn(null);
+          return;
+        }
+      } else {
+        // Chuyển từ single sang array
+        newValue = [targetColumn.title];
+      }
+    }
+
     // Update record column
     updateRecordColumnMutation.mutate({
       recordId: draggedCard._id,
-      newColumnValue: targetColumnId === 'Uncategorized' ? null : targetColumn.title,
+      newColumnValue: newValue,
       stackByField: stackByField
     });
 
@@ -573,6 +597,25 @@ const KanbanView = () => {
   const columns = kanbanData?.data?.columns || [];
   const allColumns = kanbanConfig?.allColumns || [];
 
+  // Debug logs để test multi-select
+  console.log('🔍 Multi-select Debug:');
+  console.log('Stack by field:', stackByField);
+  console.log('Columns from backend:', columns);
+  
+  // Debug chi tiết hơn
+  if (columns) {
+    columns.forEach((column, colIndex) => {
+      console.log(`Column ${colIndex}: ${column.title} (${column.count} records)`);
+      column.records.forEach((record, recordIndex) => {
+        const stackByValue = record.data?.[stackByField];
+        console.log(`  Record ${recordIndex}: ${record._id}`, {
+          stackByValue,
+          isArray: Array.isArray(stackByValue)
+        });
+      });
+    });
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <style dangerouslySetInnerHTML={{ __html: customScrollbarStyles }} />
@@ -810,7 +853,7 @@ const KanbanView = () => {
                           {/* Date at the top - if available */}
                           {(record.data?.['Ngày'] || record.data?.['Date'] || record.data?.['Ngày tạo']) && (
                             <div className="mb-3">
-                              <Text strong className="text-base text-gray-900 font-bold">
+                              <Text strong className="text-base text-gray-900 font-bold truncate block" title={record.data?.['Ngày'] || record.data?.['Date'] || record.data?.['Ngày tạo']}>
                                 {record.data?.['Ngày'] || record.data?.['Date'] || record.data?.['Ngày tạo']}
                               </Text>
                             </div>
@@ -819,7 +862,12 @@ const KanbanView = () => {
                           {/* Record ID/Title - if no date field */}
                           {!(record.data?.['Ngày'] || record.data?.['Date'] || record.data?.['Ngày tạo']) && (
                             <div className="mb-3 pb-2 border-b border-gray-100">
-                              <Text strong className="text-base text-gray-900 font-semibold">
+                              <Text strong className="text-base text-gray-900 font-semibold truncate block" title={(() => {
+                                const firstField = Object.entries(record.data || {})
+                                  .filter(([key]) => visibleFields[key])
+                                  .slice(0, 1)[0];
+                                return firstField ? formatFieldValue(firstField[1], tableColumns?.data?.find(col => col.name === firstField[0])?.dataType || 'text') : 'Record';
+                              })()}>
                                 {(() => {
                                   const firstField = Object.entries(record.data || {})
                                     .filter(([key]) => visibleFields[key])
@@ -847,7 +895,7 @@ const KanbanView = () => {
                                       <div className="text-xs text-gray-600 font-medium">
                                         {key}:
                                       </div>
-                                      <div className="text-sm text-gray-800 font-semibold">
+                                      <div className="text-sm text-gray-800 font-semibold truncate max-w-32" title={formatFieldValue(value, dataType)}>
                                         {dataType === 'checkbox' ? (
                                           <span className={`px-2 py-1 rounded text-xs ${
                                             value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
@@ -863,6 +911,23 @@ const KanbanView = () => {
                                 );
                               })}
                           </div>
+                          
+                          {/* Multi-select indicator */}
+                          {record._appearsInColumns && record._appearsInColumns.length > 1 && (
+                            <div className="mt-3 pt-2 border-t border-gray-100">
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-gray-500">Also in:</span>
+                                {record._appearsInColumns
+                                  .filter(col => col !== column.title)
+                                  .map(col => (
+                                    <Tag key={col} color="blue" className="text-xs">
+                                      {col}
+                                    </Tag>
+                                  ))
+                                }
+                              </div>
+                            </div>
+                          )}
                           
                           {/* Tags for specific values */}
                           {record.data?.['T Giai đoạn'] && (

@@ -286,12 +286,42 @@ export const getKanbanData = async (req, res) => {
       const recordData = record.toObject ? record.toObject() : record;
       const stackByValue = recordData.data?.[stackByColumn.name];
       
-      if (stackByValue && availableValues.includes(stackByValue)) {
-        kanbanColumns[stackByValue].records.push(recordData);
-        kanbanColumns[stackByValue].count++;
+      // Handle multi-select fields (array values)
+      if (Array.isArray(stackByValue)) {
+        // For multi-select, add record reference to each column that matches a value
+        stackByValue.forEach(value => {
+          if (value && availableValues.includes(value)) {
+            kanbanColumns[value].records.push({
+              ...recordData,
+              _appearsInColumns: stackByValue.filter(v => v && availableValues.includes(v))
+            });
+            kanbanColumns[value].count++;
+          }
+        });
+        
+        // If no valid values in array, add to uncategorized
+        if (!stackByValue.some(value => value && availableValues.includes(value))) {
+          kanbanColumns['Uncategorized'].records.push({
+            ...recordData,
+            _appearsInColumns: []
+          });
+          kanbanColumns['Uncategorized'].count++;
+        }
       } else {
-        kanbanColumns['Uncategorized'].records.push(recordData);
-        kanbanColumns['Uncategorized'].count++;
+        // Handle single-select fields
+        if (stackByValue && availableValues.includes(stackByValue)) {
+          kanbanColumns[stackByValue].records.push({
+            ...recordData,
+            _appearsInColumns: [stackByValue]
+          });
+          kanbanColumns[stackByValue].count++;
+        } else {
+          kanbanColumns['Uncategorized'].records.push({
+            ...recordData,
+            _appearsInColumns: []
+          });
+          kanbanColumns['Uncategorized'].count++;
+        }
       }
     });
 
