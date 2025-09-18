@@ -712,7 +712,14 @@ const KanbanView = () => {
       {/* Kanban Board */}
       <div className="p-6">
         <div className="flex gap-6 overflow-x-auto pb-4">
-          {columns.map((column) => (
+          {columns
+            .sort((a, b) => {
+              // Move "Uncategorized" to the front
+              if (a.title === 'Uncategorized') return -1;
+              if (b.title === 'Uncategorized') return 1;
+              return 0;
+            })
+            .map((column) => (
             <div
               key={column.id}
               className="min-w-80 bg-white rounded-lg shadow-sm border border-gray-200"
@@ -752,7 +759,7 @@ const KanbanView = () => {
               </div>
 
               {/* Column Cards */}
-              <div className="p-4 min-h-96">
+              <div className="p-4 min-h-96 max-h-[600px] overflow-y-auto">
                 {column.records.length === 0 ? (
                   <div className="text-center py-12 text-gray-400">
                     <div className="text-sm font-medium">Empty stack</div>
