@@ -46,7 +46,10 @@ const CreateRecordModal = ({
   tableColumns, 
   dateField, 
   selectedDate,
-  onSuccess 
+  onSuccess,
+  initialData = {},
+  stackByField,
+  availableOptions = []
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -55,14 +58,20 @@ const CreateRecordModal = ({
   useEffect(() => {
     if (open) {
       form.resetFields();
+      // Set initial data
+      const formData = { ...initialData };
+      
       // Set default date if provided
       if (selectedDate && dateField) {
-        form.setFieldsValue({
-          [dateField]: selectedDate
-        });
+        formData[dateField] = selectedDate;
+      }
+      
+      // Set form values
+      if (Object.keys(formData).length > 0) {
+        form.setFieldsValue(formData);
       }
     }
-  }, [open, selectedDate, dateField, form]);
+  }, [open, selectedDate, dateField, form, initialData]);
 
   // Create record mutation
   const createRecordMutation = useMutation({
@@ -236,7 +245,10 @@ const CreateRecordModal = ({
           </Checkbox>
         );
       case 'single_select':
-        const singleOptions = singleSelectConfig?.options || options || [];
+        // Use availableOptions if this is the stackByField, otherwise use column options
+        const singleOptions = (column.name === stackByField && availableOptions.length > 0) 
+          ? availableOptions 
+          : (singleSelectConfig?.options || options || []);
         return (
           <Select {...commonProps} allowClear>
             {singleOptions.map(option => (

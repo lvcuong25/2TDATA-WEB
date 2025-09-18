@@ -37,7 +37,8 @@ import {
   ClockCircleOutlined,
   LinkOutlined,
   ClearOutlined,
-  SortDescendingOutlined
+  SortDescendingOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDataTypeIcon, getDataTypeColor } from './Utils/dataTypeUtils';
@@ -45,6 +46,7 @@ import { getDataTypeIcon, getDataTypeColor } from './Utils/dataTypeUtils';
 // Import our new components
 import SortModal from '../../components/Kanban/SortModal';
 import FilterModal from '../../components/Kanban/FilterModal';
+import { CreateRecordModal, EditRecordModal } from './Modals';
 
 // Custom scrollbar styles for all scrollbars
 const customScrollbarStyles = `
@@ -103,6 +105,14 @@ const KanbanView = () => {
   const [currentSort, setCurrentSort] = useState(null);
   const [currentFilters, setCurrentFilters] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
+
+  // State for Record Modals
+  const [showCreateRecordModal, setShowCreateRecordModal] = useState(false);
+  const [showEditRecordModal, setShowEditRecordModal] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [selectedColumnForNewRecord, setSelectedColumnForNewRecord] = useState(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
 
   // Fetch table columns for edit cards modal
   const { data: tableColumns } = useQuery({
@@ -166,8 +176,7 @@ const KanbanView = () => {
   useEffect(() => {
     if (tableColumns?.data && Object.keys(visibleFields).length === 0) {
       const initialVisibleFields = {};
-      // Set default visible fields (first 3 fields)
-      tableColumns.data.slice(0, 3).forEach(column => {
+      tableColumns.data.slice(0, 6).forEach(column => {
         initialVisibleFields[column.name] = true;
       });
       setVisibleFields(initialVisibleFields);
@@ -445,6 +454,59 @@ const KanbanView = () => {
     return Object.keys(currentFilters).length + (searchQuery ? 1 : 0);
   };
 
+  // Delete record mutation
+  const deleteRecordMutation = useMutation({
+    mutationFn: async (recordId) => {
+      const response = await axiosInstance.delete(`/database/records/${recordId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      message.success('Record deleted successfully');
+      refetchKanbanData();
+    },
+    onError: (error) => {
+      console.error('Error deleting record:', error);
+      message.error(error.response?.data?.message || 'Failed to delete record');
+    },
+  });
+
+  // Handle record operations
+  const handleCreateRecord = (columnId = null) => {
+    setSelectedColumnForNewRecord(columnId);
+    setShowCreateRecordModal(true);
+  };
+
+  const handleEditRecord = (record) => {
+    setSelectedRecord(record);
+    setShowEditRecordModal(true);
+  };
+
+  const handleDeleteRecord = (record) => {
+    setRecordToDelete(record);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (recordToDelete) {
+      deleteRecordMutation.mutate(recordToDelete._id);
+      setShowDeleteConfirmModal(false);
+      setRecordToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirmModal(false);
+    setRecordToDelete(null);
+  };
+
+  const handleRecordSuccess = () => {
+    refetchKanbanData();
+    setShowCreateRecordModal(false);
+    setShowEditRecordModal(false);
+    setSelectedRecord(null);
+    setSelectedColumnForNewRecord(null);
+  };
+
   // Handle authentication errors
   if (configError || dataError) {
     const errorMessage = configErrorData?.response?.data?.message || dataErrorData?.response?.data?.message;
@@ -542,6 +604,7 @@ const KanbanView = () => {
               >
                 Edit Cards {getVisibleFieldsCount()}
               </Button>
+              
               
               <Badge count={getActiveFiltersCount()} size="small">
                 <Button 
@@ -700,40 +763,93 @@ const KanbanView = () => {
                 ) : (
                   <div className="space-y-3">
                     {column.records.map((record) => (
-                      <Card
-                        key={record._id}
-                        size="small"
-                        className="cursor-move hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 rounded-lg bg-white"
-                        bodyStyle={{ padding: '16px' }}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, record, column.id)}
-                      >
+                      <div className="relative">
+                        <Card
+                          key={record._id}
+                          size="small"
+                          className="cursor-move hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 rounded-lg bg-white group"
+                          bodyStyle={{ padding: '16px' }}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, record, column.id)}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            handleEditRecord(record);
+                          }}
+                        >
+                        {/* Delete button */}
+                        <Button
+                          type="text"
+                          danger
+                          icon={<CloseOutlined />}
+                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          style={{ 
+                            width: '20px', 
+                            height: '20px', 
+                            minWidth: 'unset', 
+                            padding: 0, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center' 
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteRecord(record);
+                          }}
+                          title="Delete record"
+                        />
+                        
                         <div>
-                          {/* Record ID/Title */}
-                          <div className="mb-3 pb-2 border-b border-gray-100">
-                            <Text strong className="text-base text-gray-900 font-semibold">
-                              {record.data?.['T CD'] || record.data?.['CD'] || record._id?.slice(-4) || 'Record'}
-                            </Text>
-                          </div>
+                          {/* Date at the top - if available */}
+                          {(record.data?.['Ngày'] || record.data?.['Date'] || record.data?.['Ngày tạo']) && (
+                            <div className="mb-3">
+                              <Text strong className="text-base text-gray-900 font-bold">
+                                {record.data?.['Ngày'] || record.data?.['Date'] || record.data?.['Ngày tạo']}
+                              </Text>
+                            </div>
+                          )}
+                          
+                          {/* Record ID/Title - if no date field */}
+                          {!(record.data?.['Ngày'] || record.data?.['Date'] || record.data?.['Ngày tạo']) && (
+                            <div className="mb-3 pb-2 border-b border-gray-100">
+                              <Text strong className="text-base text-gray-900 font-semibold">
+                                {(() => {
+                                  const firstField = Object.entries(record.data || {})
+                                    .filter(([key]) => visibleFields[key])
+                                    .slice(0, 1)[0];
+                                  return firstField ? formatFieldValue(firstField[1], tableColumns?.data?.find(col => col.name === firstField[0])?.dataType || 'text') : 'Record';
+                                })()}
+                              </Text>
+                            </div>
+                          )}
                           
                           {/* Record fields - only show visible fields */}
                           <div className="space-y-2">
                             {Object.entries(record.data || {})
-                              .filter(([key]) => visibleFields[key])
+                              .filter(([key]) => visibleFields[key] && key !== 'Ngày' && key !== 'Date' && key !== 'Ngày tạo')
+                              .slice(1, 7) // Skip first field (used as title), show next 6 fields
                               .map(([key, value]) => {
                                 const column = tableColumns?.data?.find(col => col.name === key);
                                 const dataType = column?.dataType || 'text';
                                 return (
-                                  <div key={key} className="flex items-start group hover:bg-gray-50 p-2 rounded-md transition-colors">
-                                    <div className="w-5 h-5 flex items-center justify-center mr-3 mt-0.5 flex-shrink-0">
+                                  <div key={key} className="flex items-center py-1">
+                                    <div className="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
                                       {getDataTypeIcon(dataType)}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="text-xs font-medium text-gray-600 mb-1">
-                                        {key}
+                                    <div className="flex-1 flex justify-between items-center">
+                                      <div className="text-xs text-gray-600 font-medium">
+                                        {key}:
                                       </div>
-                                      <div className="text-sm text-gray-800 break-words leading-relaxed">
-                                        {formatFieldValue(value, dataType)}
+                                      <div className="text-sm text-gray-800 font-semibold">
+                                        {dataType === 'checkbox' ? (
+                                          <span className={`px-2 py-1 rounded text-xs ${
+                                            value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                          }`}>
+                                            {value ? 'Yes' : 'No'}
+                                          </span>
+                                        ) : (
+                                          formatFieldValue(value, dataType)
+                                        )}
                                       </div>
                                     </div>
                                   </div>
@@ -753,7 +869,8 @@ const KanbanView = () => {
                             </div>
                           )}
                         </div>
-                      </Card>
+                        </Card>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -763,6 +880,7 @@ const KanbanView = () => {
                   type="dashed"
                   icon={<PlusOutlined />}
                   className="w-full mt-3 border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-500"
+                  onClick={() => handleCreateRecord(column.id)}
                 >
                   + New record
                 </Button>
@@ -934,6 +1052,53 @@ const KanbanView = () => {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Create Record Modal */}
+      <CreateRecordModal
+        open={showCreateRecordModal}
+        onCancel={() => {
+          setShowCreateRecordModal(false);
+          setSelectedColumnForNewRecord(null);
+        }}
+        tableId={tableId}
+        tableColumns={tableColumns}
+        onSuccess={handleRecordSuccess}
+        initialData={selectedColumnForNewRecord ? {
+          [stackByField]: selectedColumnForNewRecord === 'Uncategorized' ? null : columns.find(col => col.id === selectedColumnForNewRecord)?.title
+        } : {}}
+        stackByField={stackByField}
+        availableOptions={kanbanConfig?.eligibleColumns?.find(col => col.name === stackByField)?.options || []}
+      />
+
+      {/* Edit Record Modal */}
+      <EditRecordModal
+        open={showEditRecordModal}
+        onCancel={() => {
+          setShowEditRecordModal(false);
+          setSelectedRecord(null);
+        }}
+        record={selectedRecord}
+        tableId={tableId}
+        tableColumns={tableColumns}
+        onSuccess={handleRecordSuccess}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Xóa Record"
+        open={showDeleteConfirmModal}
+        onCancel={cancelDelete}
+        footer={[
+          <Button key="cancel" onClick={cancelDelete}>
+            Hủy
+          </Button>,
+          <Button key="delete" type="primary" danger onClick={confirmDelete}>
+            Xóa
+          </Button>,
+        ]}
+      >
+        <p>Bạn có chắc chắn muốn xóa record này không? Hành động này không thể hoàn tác.</p>
       </Modal>
     </div>
   );
