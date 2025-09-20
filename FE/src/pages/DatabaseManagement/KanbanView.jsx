@@ -41,7 +41,7 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDataTypeIcon, getDataTypeColor } from './Utils/dataTypeUtils';
+import { getDataTypeIcon, getDataTypeColor, getDataTypeLabel } from './Utils/dataTypeUtils';
 
 // Import our new components
 import SortModal from '../../components/Kanban/SortModal';
@@ -254,21 +254,8 @@ const KanbanView = () => {
       // Xóa khỏi tất cả cột
       newValue = null;
     } else {
-      // Xử lý multi-select values
-      if (Array.isArray(currentValue)) {
-        // Nếu đã là array, thêm value mới nếu chưa có
-        if (!currentValue.includes(targetColumn.title)) {
-          newValue = [...currentValue, targetColumn.title];
-        } else {
-          // Đã có trong cột này rồi, không làm gì
-          setDraggedCard(null);
-          setDraggedFromColumn(null);
-          return;
-        }
-      } else {
-        // Chuyển từ single sang array
-        newValue = [targetColumn.title];
-      }
+      // Chỉ xử lý Single Select - thay thế giá trị
+      newValue = targetColumn.title;
     }
 
     // Update record column
@@ -389,10 +376,6 @@ const KanbanView = () => {
         return String(value);
 
       case 'single_select':
-      case 'multi_select':
-        if (Array.isArray(value)) {
-          return value.join(', ');
-        }
         return String(value);
 
       case 'date':
@@ -632,11 +615,13 @@ const KanbanView = () => {
                   className="ml-3 w-64"
                   placeholder="Select field to stack by"
                 >
-                  {kanbanConfig.eligibleColumns.map(column => (
-                    <Option key={column.name} value={column.name}>
-                      {column.name}
-                    </Option>
-                  ))}
+                  {kanbanConfig.eligibleColumns
+                    .filter(column => column.dataType === 'single_select' || column.dataType === 'select')
+                    .map(column => (
+                      <Option key={column.name} value={column.name}>
+                        {column.name}
+                      </Option>
+                    ))}
                 </Select>
               </div>
               
@@ -912,22 +897,6 @@ const KanbanView = () => {
                               })}
                           </div>
                           
-                          {/* Multi-select indicator */}
-                          {record._appearsInColumns && record._appearsInColumns.length > 1 && (
-                            <div className="mt-3 pt-2 border-t border-gray-100">
-                              <div className="flex items-center gap-1">
-                                <span className="text-xs text-gray-500">Also in:</span>
-                                {record._appearsInColumns
-                                  .filter(col => col !== column.title)
-                                  .map(col => (
-                                    <Tag key={col} color="blue" className="text-xs">
-                                      {col}
-                                    </Tag>
-                                  ))
-                                }
-                              </div>
-                            </div>
-                          )}
                           
                           {/* Tags for specific values */}
                           {record.data?.['T Giai đoạn'] && (

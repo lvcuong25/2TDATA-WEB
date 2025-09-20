@@ -186,7 +186,7 @@ export const getKanbanData = async (req, res) => {
     
     // Find columns that can be used for Kanban (single_select, multi_select)
     const eligibleColumns = columns.filter(col => 
-      ['single_select', 'select', 'multi_select', 'multiselect'].includes(col.dataType)
+      ['single_select', 'select'].includes(col.dataType)
     );
     
     if (eligibleColumns.length === 0) {
@@ -281,47 +281,18 @@ export const getKanbanData = async (req, res) => {
       count: 0
     };
     
-    // Group records into columns
+    // Group records into columns (only single-select)
     records.forEach(record => {
       const recordData = record.toObject ? record.toObject() : record;
       const stackByValue = recordData.data?.[stackByColumn.name];
       
-      // Handle multi-select fields (array values)
-      if (Array.isArray(stackByValue)) {
-        // For multi-select, add record reference to each column that matches a value
-        stackByValue.forEach(value => {
-          if (value && availableValues.includes(value)) {
-            kanbanColumns[value].records.push({
-              ...recordData,
-              _appearsInColumns: stackByValue.filter(v => v && availableValues.includes(v))
-            });
-            kanbanColumns[value].count++;
-          }
-        });
-        
-        // If no valid values in array, add to uncategorized
-        if (!stackByValue.some(value => value && availableValues.includes(value))) {
-          kanbanColumns['Uncategorized'].records.push({
-            ...recordData,
-            _appearsInColumns: []
-          });
-          kanbanColumns['Uncategorized'].count++;
-        }
+      // Handle single-select fields only
+      if (stackByValue && availableValues.includes(stackByValue)) {
+        kanbanColumns[stackByValue].records.push(recordData);
+        kanbanColumns[stackByValue].count++;
       } else {
-        // Handle single-select fields
-        if (stackByValue && availableValues.includes(stackByValue)) {
-          kanbanColumns[stackByValue].records.push({
-            ...recordData,
-            _appearsInColumns: [stackByValue]
-          });
-          kanbanColumns[stackByValue].count++;
-        } else {
-          kanbanColumns['Uncategorized'].records.push({
-            ...recordData,
-            _appearsInColumns: []
-          });
-          kanbanColumns['Uncategorized'].count++;
-        }
+        kanbanColumns['Uncategorized'].records.push(recordData);
+        kanbanColumns['Uncategorized'].count++;
       }
     });
 
@@ -596,7 +567,7 @@ export const getKanbanConfig = async (req, res) => {
     
     // Find columns that can be used for Kanban (single_select, multi_select)
     const eligibleColumns = columns.filter(col => 
-      ['single_select', 'select', 'multi_select', 'multiselect'].includes(col.dataType)
+      ['single_select', 'select'].includes(col.dataType)
     );
     
     if (eligibleColumns.length === 0) {
