@@ -8,5 +8,13 @@ export const extractQueryListParams = (query) => {
 };
 
 export const toObjectId = (id) => {
-    return new mongoose.Types.ObjectId(id);
-}
+  return new mongoose.Types.ObjectId(id);
+};
+
+export const toJson = (doc) => {
+  try {
+    return doc ? JSON.parse(JSON.stringify(doc)) : null;
+  } catch (error) {
+    return null;
+  }
+};

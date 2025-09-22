@@ -21,7 +21,7 @@ import routerOrder from "./orderRouter.js";
 import routerCell from "./routerCell.js";
 import basesRouter from "./bases.routes.js";
 import membersRouter from "./members.routes.js";
-import rolesRouter from "./roles.routes.js";
+import baseRolesRouter from "./baseRoles.routes.js";
 import locksRouter from "./locks.routes.js";
 import rowsRouter from "./rows.routes.js";
 import columnsRouter from "./columns.routes.js";
@@ -84,7 +84,7 @@ router.use("/action", routerCell);
 
 router.use(basesRouter);
 router.use(membersRouter);
-router.use(rolesRouter);
+router.use(baseRolesRouter);
 router.use(locksRouter);
 router.use(rowsRouter);
 router.use(columnsRouter);

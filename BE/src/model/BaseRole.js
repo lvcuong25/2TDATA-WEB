@@ -35,5 +35,5 @@ const BaseRoleSchema = new mongoose.Schema(
   },
   { timestamps: true, versionKey: false }
 );
-BaseRoleSchema.index({ baseId: 1, name: 1 }, { unique: true });
+// BaseRoleSchema.index({ baseId: 1, name: 1 }, { unique: true });
 export default mongoose.model("BaseRole", BaseRoleSchema);
