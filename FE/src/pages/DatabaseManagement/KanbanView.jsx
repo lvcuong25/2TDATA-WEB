@@ -806,10 +806,7 @@ const KanbanView = () => {
                           bodyStyle={{ padding: '16px' }}
                           draggable
                           onDragStart={(e) => handleDragStart(e, record, column.id)}
-                          onContextMenu={(e) => {
-                            e.preventDefault();
-                            handleEditRecord(record);
-                          }}
+                          onDoubleClick={() => handleEditRecord(record)}
                         >
                         {/* Delete button */}
                         <Button
