@@ -51,7 +51,7 @@ export function canManageMembers() {
       }
 
       // 2. Lấy role và check quyền
-      const role = await BaseRole.findById(member.roleId).lean();
+      const role = await BaseRole.findById(member.baseRoleId).lean();
       if (!role) {
         return res.status(403).json({ ok: false, error: "role_not_found" });
       }
@@ -81,7 +81,7 @@ export function canCreateTable() {
       if (!member) {
         return res.status(403).json({ ok: false, error: "not_a_member" });
       }
-      const role = await BaseRole.findById(member.roleId).lean();
+      const role = await BaseRole.findById(member.baseRoleId).lean();
       if (!role) {
         return res.status(403).json({ ok: false, error: "role_not_found" });
       }

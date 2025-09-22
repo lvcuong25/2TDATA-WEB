@@ -61,16 +61,11 @@ app.use("/api", (req, res, next) => {
         return next();
     }
     
-    // Apply auth and site detection
-    // authAndSiteDetectionMiddleware(req, res, (err) => {
-    //     if (err) return next(err);
-    //     applySiteFilterMiddleware(req, res, next);
-    // });
-    authMiddleware(req, res, next);
-    //   authMiddleware(req, res, (err) => {
-    //     // if (err) return next(err);
-    //     // applySiteFilterMiddleware(req, res, next);
-    // });
+   // Apply auth and site detection
+    authAndSiteDetectionMiddleware(req, res, (err) => {
+        if (err) return next(err);
+        applySiteFilterMiddleware(req, res, next);
+    });
 });
 
 // Main router

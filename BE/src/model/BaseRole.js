@@ -29,13 +29,9 @@ const CellRuleLock = new mongoose.Schema(
 
 const BaseRoleSchema = new mongoose.Schema(
   {
-    baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true },
     name: { type: String, required: true },
     builtin: { type: Boolean, default: false },
-    tablePerms: [TablePerm], columnPerms: [ColumnPerm], rowPolicies: [RowPolicy], cellRuleLocks: [CellRuleLock],
-    canManageMembers: { type: Boolean, default: false }, 
-    canCreateTables: { type: Boolean, default: false },
-    canManagerSchema: { type: Boolean, default: false },
+    permissions: { type: Object }, 
   },
   { timestamps: true, versionKey: false }
 );

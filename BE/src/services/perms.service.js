@@ -24,7 +24,7 @@ export async function resolveEffectivePerms({ userId, orgId, baseId, tableId, ac
   if (!membership) return { allow: false, reason: "Not a base member" };
 
   // 2) Lấy role
-  const role = await BaseRole.findById(membership.roleId).lean();
+  const role = await BaseRole.findById(membership.baseRoleId).lean();
   if (!role) return { allow: false, reason: "Role not found" };
 
   // 3) Bật/tắt CRUD ở cấp Table

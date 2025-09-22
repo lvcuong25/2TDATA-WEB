@@ -26,7 +26,7 @@ async function addUserToBase(req, res, next) {
     const role = await BaseRole.findOne({ _id: roleId, baseId }).lean();
     if (!role) return res.status(400).json({ ok: false, error: "invalid_role" });
 
-    const created = await BaseMember.create({ baseId, userId, roleId });
+    const created = await BaseMember.create({ baseId, userId, baseRoleId: roleId });
     res.json({ ok: true, data: created });
   } catch (e) { console.error(e); res.status(500).json({ ok: false, error: "member_add_error" }); }
 }
@@ -38,7 +38,7 @@ async function changeMemberRole(req, res, next) {
     const { baseId, userId } = req.params; const { roleId } = req.body;
     const role = await BaseRole.findOne({ _id: roleId, baseId }).lean();
     if (!role) return res.status(400).json({ ok: false, error: "invalid_role" });
-    const updated = await BaseMember.findOneAndUpdate({ baseId, userId }, { roleId }, { new: true });
+    const updated = await BaseMember.findOneAndUpdate({ baseId, userId }, { baseRoleId: roleId }, { new: true });
     res.json({ ok: true, data: updated });
   } catch (e) { console.error(e); res.status(500).json({ ok: false, error: "member_update_error" }); }
 }
@@ -55,7 +55,7 @@ routerMembers.get("/bases/:baseId/members",canManageMembers(), async (req, res, 
       .lean();
  
     // join role + user (đơn giản, 2 query phụ)
-    const roleIds = [...new Set(members.map(m => String(m.roleId)))];
+    const roleIds = [...new Set(members.map(m => String(m.baseRoleId)))];
     const userIds = [...new Set(members.map(m => String(m.userId)))];
  
     const roles = await BaseRole.find({ _id: { $in: roleIds } }).lean();
@@ -69,7 +69,7 @@ routerMembers.get("/bases/:baseId/members",canManageMembers(), async (req, res, 
     const data = members.map(m => ({
       _id: m._id,
       user: userMap[String(m.userId)] || { _id: m.userId },
-      role: roleMap[String(m.roleId)] || { _id: m.roleId },
+      role: roleMap[String(m.baseRoleId)] || { _id: m.baseRoleId },
       //createdAt: m.createdAt,
     }));
  
@@ -84,7 +84,7 @@ routerMembers.get("/bases/:baseId/me", async (req, res, next) => {
     const userId = req.user?._id;
     const m = await BaseMember.findOne({ baseId, userId }).lean();
     if (!m) return res.status(200).json({ ok: true, isMember: false });
-    const role = await BaseRole.findById(m.roleId).lean();
+    const role = await BaseRole.findById(m.baseRoleId).lean();
     return res.json({
       ok: true,
       isMember: true,

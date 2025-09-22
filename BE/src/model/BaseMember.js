@@ -6,7 +6,7 @@ const BaseMemberSchema = new mongoose.Schema(
   {
     baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    roleId: { type: mongoose.Schema.Types.ObjectId, ref: "BaseRole", required: true }
+    baseRoleId: { type: mongoose.Schema.Types.ObjectId, ref: "BaseRole", required: true }
   },
   { timestamps: true, versionKey: false }
 );
