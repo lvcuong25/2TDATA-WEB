@@ -6,7 +6,14 @@ import SignIn from "../components/signin.jsx";
 import ResetPassword from "../components/ResetPassword.jsx";
 import ServiceBySlug from "./ServiceBySlug.jsx";
 import LayoutAdmin from "../components/Layout/Admin.jsx";
-import { LoginRoute, NoneLoginRoute, AdminRoute, IframeAdminRoute, PrivateRoute, SuperAdminRoute } from "./PrivateRoute";
+import {
+  LoginRoute,
+  NoneLoginRoute,
+  AdminRoute,
+  IframeAdminRoute,
+  PrivateRoute,
+  SuperAdminRoute,
+} from "./PrivateRoute";
 import BlogList from "../components/admin/Blog/BlogList.jsx";
 import BlogForm from "../components/admin/Blog/BlogForm.jsx";
 import BlogEdit from "../components/admin/Blog/BlogEdit.jsx";
@@ -46,7 +53,7 @@ import OrganizationList from "../components/admin/Organization/OrganizationList.
 import OrgStatusList from "../components/admin/Status/OrgStatusList.jsx";
 import UserOrganization from "../components/Organization/UserOrganization.jsx";
 import ServiceOrganization from "../components/Organization/ServiceOrganization.jsx";
-import ServerList from '../components/admin/Server/ServerList.jsx';
+import ServerList from "../components/admin/Server/ServerList.jsx";
 import TestAuth from "../components/TestAuth.jsx";
 // Database management imports
 import DatabaseLayout from "../pages/DatabaseManagement/DatabaseLayout.jsx";
@@ -57,6 +64,8 @@ import FormView from "../pages/DatabaseManagement/FormView.jsx";
 import KanbanView from "../pages/DatabaseManagement/KanbanView.jsx";
 import CalendarView from "../pages/DatabaseManagement/CalendarView.jsx";
 import GalleryView from "../pages/DatabaseManagement/GalleryView.jsx";
+import BaseList from "../components/Base/BaseList.jsx";
+import BaseDetail from "../components/Base/BaseDetail.jsx";
 
 const Router = () => {
   return (
@@ -83,19 +92,42 @@ const Router = () => {
           <Route path="blogs" element={<AllBlogPage />} />
           <Route path="thankyou" element={<ThankYou />} />
           <Route path="/blogs/:id" element={<DetailBlogPage />} />
+
           <Route path="/profile" element={<LayOutUser />}>
             <Route index element={<UserProfile />} />
             <Route path="change-password" element={<ChangePassword />} />
-            <Route path="organization" element={
-              <PrivateRoute>
-                <UserOrganization />
-              </PrivateRoute>
-            } />
-            <Route path="organization/services" element={
-              <PrivateRoute>
-                <ServiceOrganization orgId={null} />
-              </PrivateRoute>
-            } />
+            <Route
+              path="organization"
+              element={
+                <PrivateRoute>
+                  <UserOrganization />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="base"
+              element={
+                <PrivateRoute>
+                  <BaseList />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="base/:baseId"
+              element={
+                <PrivateRoute>
+                  <BaseDetail />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="organization/services"
+              element={
+                <PrivateRoute>
+                  <ServiceOrganization orgId={null} />
+                </PrivateRoute>
+              }
+            />
           </Route>
           <Route
             path="/policy/chinh-sach-thu-thap-va-xu-ly-du-lieu-ca-nhan-khach-hang"
@@ -112,19 +144,40 @@ const Router = () => {
           <Route path="/:domain" element={<Ifame />} />
           <Route path="/test-auth" element={<TestAuth />} />
           {/* Database Management Routes */}
-          <Route path="/database" element={
-            <PrivateRoute>
-              <DatabaseLayout />
-            </PrivateRoute>
-          }>
+          <Route
+            path="/database"
+            element={
+              <PrivateRoute>
+                <DatabaseLayout />
+              </PrivateRoute>
+            }
+          >
             <Route index element={<DatabaseList />} />
             <Route path=":databaseId/tables" element={<TableList />} />
-            <Route path=":databaseId/table/:tableId/view/:viewId" element={<FormView />} />
-            <Route path=":databaseId/table/:tableId/grid/:viewId" element={<TableDetail />} />
-            <Route path=":databaseId/table/:tableId/kanban/:viewId" element={<KanbanView />} />
-            <Route path=":databaseId/table/:tableId/calendar/:viewId" element={<CalendarView />} />
-            <Route path=":databaseId/table/:tableId/gallery/:viewId" element={<GalleryView />} />
-            <Route path=":databaseId/table/:tableId" element={<TableDetail />} />
+            <Route
+              path=":databaseId/table/:tableId/view/:viewId"
+              element={<FormView />}
+            />
+            <Route
+              path=":databaseId/table/:tableId/grid/:viewId"
+              element={<TableDetail />}
+            />
+            <Route
+              path=":databaseId/table/:tableId/kanban/:viewId"
+              element={<KanbanView />}
+            />
+            <Route
+              path=":databaseId/table/:tableId/calendar/:viewId"
+              element={<CalendarView />}
+            />
+            <Route
+              path=":databaseId/table/:tableId/gallery/:viewId"
+              element={<GalleryView />}
+            />
+            <Route
+              path=":databaseId/table/:tableId"
+              element={<TableDetail />}
+            />
           </Route>
         </Route>
 
@@ -147,21 +200,30 @@ const Router = () => {
             <Route path="edit/:id" element={<BlogEdit />} />
           </Route>
           <Route path="services">
-            <Route index element={
-              <SuperAdminRoute>
-                <ServiceList />
-              </SuperAdminRoute>
-            } />
-            <Route path="add" element={
-              <SuperAdminRoute>
-                <ServiceForm />
-              </SuperAdminRoute>
-            } />
-            <Route path="edit/:id" element={
-              <SuperAdminRoute>
-                <ServiceEdit />
-              </SuperAdminRoute>
-            } />
+            <Route
+              index
+              element={
+                <SuperAdminRoute>
+                  <ServiceList />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="add"
+              element={
+                <SuperAdminRoute>
+                  <ServiceForm />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="edit/:id"
+              element={
+                <SuperAdminRoute>
+                  <ServiceEdit />
+                </SuperAdminRoute>
+              }
+            />
           </Route>
           <Route path="status">
             <Route index element={<StatusList />} />
@@ -173,48 +235,69 @@ const Router = () => {
             <Route index element={<UserInfoList />} />
           </Route>
           <Route path="iframe">
-            <Route index element={
-              <IframeAdminRoute>
-                <IframeList />
-              </IframeAdminRoute>
-            } />
+            <Route
+              index
+              element={
+                <IframeAdminRoute>
+                  <IframeList />
+                </IframeAdminRoute>
+              }
+            />
           </Route>
           <Route path="sites">
-            <Route index element={
-              <SuperAdminRoute>
-                <SiteList />
-              </SuperAdminRoute>
-            } />
-            <Route path="add" element={
-              <SuperAdminRoute>
-                <SiteForm />
-              </SuperAdminRoute>
-            } />
-            <Route path="edit/:id" element={
-              <SuperAdminRoute>
-                <SiteForm />
-              </SuperAdminRoute>
-            } />
-            <Route path="detail/:id" element={
-              <SuperAdminRoute>
-                <SiteDetail />
-              </SuperAdminRoute>
-            } />
-            <Route path=":siteId/admins" element={
-              <SuperAdminRoute>
-                <SiteAdminList />
-              </SuperAdminRoute>
-            } />
+            <Route
+              index
+              element={
+                <SuperAdminRoute>
+                  <SiteList />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="add"
+              element={
+                <SuperAdminRoute>
+                  <SiteForm />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="edit/:id"
+              element={
+                <SuperAdminRoute>
+                  <SiteForm />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path="detail/:id"
+              element={
+                <SuperAdminRoute>
+                  <SiteDetail />
+                </SuperAdminRoute>
+              }
+            />
+            <Route
+              path=":siteId/admins"
+              element={
+                <SuperAdminRoute>
+                  <SiteAdminList />
+                </SuperAdminRoute>
+              }
+            />
           </Route>
           <Route path="organization">
             <Route index element={<OrganizationList />} />
           </Route>
           <Route path="servers">
-            <Route index element={
-              <SuperAdminRoute>
-                <ServerList />
-              </SuperAdminRoute>
-            } />
+            <Route
+              index
+              element={
+                <SuperAdminRoute>
+                  <ServerList />
+                </SuperAdminRoute>
+              }
+            />
           </Route>
         </Route>
       </Routes>

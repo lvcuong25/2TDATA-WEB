@@ -172,6 +172,22 @@ const DashboardUser = () => {
     });
   }
 
+  //
+      const changePasswordIdx = menuItems.findIndex(item => item.key === '/profile/change-password');
+    // Insert organization group before 'Đổi mật khẩu'
+    menuItems.splice(changePasswordIdx, 0, {
+      key: 'base-management',
+      icon: <TeamOutlined />,
+      label: 'Base',
+      children: [
+        {
+          key: '/profile/base',
+          icon: <UsergroupAddOutlined />,
+          label: <Link to="/profile/base">Quản lý base</Link>,
+        },
+      ],
+    });
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
