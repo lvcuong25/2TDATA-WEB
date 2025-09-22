@@ -570,18 +570,58 @@ const MyService = () => {
       ),
     },
     {
-      title: "Thao tác",
+      title: "Tiến độ / Thao tác",
       key: "action",
-      render: (_, record) => (
-        <Button
-          type="primary"
-          onClick={() => handleUpdateLinks(record)}
-          loading={updatingServiceId === record._id || record.autoUpdate?.isUpdating}
-          icon={updatingServiceId === record._id || record.autoUpdate?.isUpdating ? <LoadingOutlined /> : null}
-        >
-          {updatingServiceId === record._id || record.autoUpdate?.isUpdating ? "Đang cập nhật..." : "Cập nhật"}
-        </Button>
-      ),
+      render: (_, record) => {
+        const currentPercent = record.webhookData?.current_percent || record.autoUpdate?.current_percent || 0;
+        const isUpdating = updatingServiceId === record._id || record.autoUpdate?.isUpdating;
+        const canUpdate = currentPercent >= 100;
+        
+        return (
+          <div className="space-y-2">
+            {/* Hiển thị tiến độ */}
+            <div className="text-center">
+              <div className="text-sm text-gray-600 mb-1">Tiến độ</div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-16 bg-gray-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      currentPercent >= 100 ? 'bg-green-500' : 
+                      currentPercent >= 75 ? 'bg-blue-500' : 
+                      currentPercent >= 50 ? 'bg-yellow-500' : 
+                      currentPercent >= 25 ? 'bg-orange-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${Math.min(currentPercent, 100)}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm font-medium min-w-[3rem]">
+                  {currentPercent}%
+                </span>
+              </div>
+            </div>
+            
+            {/* Nút cập nhật - chỉ hiện khi đạt 100% */}
+            {canUpdate ? (
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => handleUpdateLinks(record)}
+                loading={isUpdating}
+                icon={isUpdating ? <LoadingOutlined /> : null}
+                className="w-full"
+              >
+                {isUpdating ? "Đang cập nhật..." : "Cập nhật"}
+              </Button>
+            ) : (
+              <div className="text-center">
+                <div className="text-xs text-gray-500">
+                  {currentPercent > 0 ? `Chờ đạt 100% để cập nhật` : 'Chưa có dữ liệu'}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   ];
 

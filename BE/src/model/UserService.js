@@ -123,6 +123,15 @@ const userServiceSchema = new mongoose.Schema(
         description: "Trạng thái đang cập nhật (true khi auto-update đang chạy)"
       }
     },
+    // Dữ liệu webhook
+    webhookData: {
+      type: mongoose.Schema.Types.Mixed,
+      description: "Dữ liệu từ webhook realtime"
+    },
+    lastWebhookAt: {
+      type: Date,
+      description: "Thời gian webhook cuối cùng"
+    }
   },
   { timestamps: true, versionKey: false }
 );

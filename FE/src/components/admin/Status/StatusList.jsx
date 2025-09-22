@@ -383,6 +383,16 @@ const StatusList = () => {
         <Form form={form} layout="vertical">
           {selectedService && selectedService.user && (
             <Descriptions title="Thông tin người dùng" bordered column={1} size="small" className="mb-4">
+              <Descriptions.Item label="User ID">
+                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded border">
+                  {selectedService.user?._id || 'N/A'}
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="UserService ID">
+                <span className="font-mono text-sm bg-blue-100 px-2 py-1 rounded border">
+                  {selectedService._id || 'N/A'}
+                </span>
+              </Descriptions.Item>
               <Descriptions.Item label="Tên">{selectedService.user?.name || 'N/A'}</Descriptions.Item>
               <Descriptions.Item label="Email">{selectedService.user?.email || 'N/A'}</Descriptions.Item>
               {selectedService.user?.phone && <Descriptions.Item label="Điện thoại">{selectedService.user.phone}</Descriptions.Item>}
