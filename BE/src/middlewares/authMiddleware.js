@@ -1,8 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../model/User.js";
 import OrgMember from "../model/OrgMember.js";
-import Role from "../model/Role.js";
-import Permission from '../model/Permission.js'
 
 export const authMiddleware = async (req, res, next) => {
   try {
@@ -12,6 +10,7 @@ export const authMiddleware = async (req, res, next) => {
     if (!token) return res.status(401).json({ ok: false, error: "no_token" });
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET || "secret");
+      console.log("🚀 ~ authMiddleware ~ payload:", payload)
       // payload nên chứa: { _id, orgId, email }
       req.user = payload;
      
