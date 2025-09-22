@@ -20,7 +20,10 @@ import {
   TrophyFilled,
   CloseOutlined,
   LinkOutlined,
-  EditOutlined
+  EditOutlined,
+  AppstoreOutlined,
+  ExpandOutlined,
+  ZoomInOutlined
 } from '@ant-design/icons';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
@@ -641,7 +644,7 @@ const TableBody = ({
                         <Button
                           type="text"
                           size="small"
-                          icon={<EditOutlined />}
+                          icon={<ExpandOutlined />}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRecordClick(record);
@@ -1650,7 +1653,7 @@ const TableBody = ({
                   <Button
                     type="text"
                     size="small"
-                    icon={<EditOutlined />}
+                    icon={<ExpandOutlined />}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRecordClick(record);
