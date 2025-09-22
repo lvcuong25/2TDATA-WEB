@@ -3,6 +3,7 @@ import Table from '../model/Table.js';
 import Column from '../model/Column.js';
 import Database from '../model/Database.js';
 import FilterPreference from '../model/FilterPreference.js';
+import Comment from '../model/Comment.js';
 import exprEvalEngine from '../utils/exprEvalEngine.js';
 
 
@@ -798,11 +799,15 @@ export const deleteRecord = async (req, res) => {
       return res.status(404).json({ message: 'Record not found' });
     }
 
+    // Delete all comments associated with this record
+    await Comment.deleteMany({ recordId: recordId });
+    
+    // Delete the record
     await Record.deleteOne({ _id: recordId });
 
     res.status(200).json({
       success: true,
-      message: 'Record deleted successfully'
+      message: 'Record and associated comments deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting record:', error);
@@ -854,6 +859,9 @@ export const deleteMultipleRecords = async (req, res) => {
       });
     }
 
+    // Delete all comments associated with these records
+    await Comment.deleteMany({ recordId: { $in: recordIds } });
+    
     // Delete all records
     const result = await Record.deleteMany({
       _id: { $in: recordIds },
@@ -863,7 +871,7 @@ export const deleteMultipleRecords = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `${result.deletedCount} records deleted successfully`,
+      message: `${result.deletedCount} records and associated comments deleted successfully`,
       deletedCount: result.deletedCount
     });
   } catch (error) {
@@ -910,6 +918,20 @@ export const deleteAllRecords = async (req, res) => {
       return res.status(404).json({ message: "Table not found" });
     }
 
+    // Get all record IDs in this table to delete their comments
+    const records = await Record.find({
+      tableId,
+      userId,
+      siteId
+    }).select('_id');
+    
+    const recordIds = records.map(record => record._id);
+    
+    // Delete all comments associated with records in this table
+    if (recordIds.length > 0) {
+      await Comment.deleteMany({ recordId: { $in: recordIds } });
+    }
+    
     // Delete all records in the table
     const result = await Record.deleteMany({
       tableId,
@@ -919,7 +941,7 @@ export const deleteAllRecords = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `All ${result.deletedCount} records deleted successfully`,
+      message: `All ${result.deletedCount} records and associated comments deleted successfully`,
       deletedCount: result.deletedCount
     });
   } catch (error) {

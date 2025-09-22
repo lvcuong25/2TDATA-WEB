@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axiosInstance from '../../../utils/axiosInstance-cookie-only';
 import { 
   Modal, 
   Form, 
@@ -14,7 +16,9 @@ import {
   message,
   Space,
   Typography,
-  Divider
+  Divider,
+  Tabs,
+  Dropdown
 } from 'antd';
 import { 
   EditOutlined, 
@@ -28,10 +32,18 @@ import {
   CheckSquareOutlined,
   FileTextOutlined,
   StarOutlined,
-  FieldTimeOutlined
+  FieldTimeOutlined,
+  SendOutlined,
+  BoldOutlined,
+  ItalicOutlined,
+  UnderlineOutlined,
+  StrikethroughOutlined,
+  MessageOutlined,
+  DeleteOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  MoreOutlined
 } from '@ant-design/icons';
-import { useMutation } from '@tanstack/react-query';
-import axiosInstance from '../../../utils/axiosInstance-cookie-only';
 import dayjs from 'dayjs';
 import { getDataTypeIcon } from '../Utils/dataTypeUtils';
 
@@ -49,16 +61,29 @@ const EditRecordModal = ({
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  
+  // Comment functionality state
+  const [activeTab, setActiveTab] = useState('comments');
+  const [comment, setComment] = useState('');
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
+
 
   // Reset form when modal opens/closes or record changes
   useEffect(() => {
     if (open && record) {
+      // Fetch comments when modal opens
+      fetchCommentsMutation.mutate();
       // Convert record data to form values
       const formValues = {};
       Object.entries(record.data || {}).forEach(([key, value]) => {
         // Convert date/time strings to dayjs objects
         if (value && typeof value === 'string') {
-          const column = tableColumns?.data?.find(col => col.name === key);
+          const columns = Array.isArray(tableColumns) ? tableColumns : (tableColumns?.data || Object.values(tableColumns || {}));
+          const column = columns.find(col => col.name === key);
           if (column?.dataType === 'date' || column?.dataType === 'datetime') {
             try {
               formValues[key] = dayjs(value);
@@ -101,7 +126,10 @@ const EditRecordModal = ({
     onSuccess: (data) => {
       message.success('Record updated successfully');
       form.resetFields();
+      // Invalidate and refetch table data
+      queryClient.invalidateQueries({ queryKey: ['tableRecords', tableId] });
       onSuccess?.(data);
+      onCancel();
     },
     onError: (error) => {
       console.error('Error updating record:', error);
@@ -109,14 +137,129 @@ const EditRecordModal = ({
     },
   });
 
+  // Comment mutation
+  const addCommentMutation = useMutation({
+    mutationFn: async (commentData) => {
+      const response = await axiosInstance.post(`/database/records/${record._id}/comments`, {
+        text: commentData.text,
+        recordId: record._id,
+        tableId: tableId
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setComments(prev => [...prev, data]);
+      setComment('');
+      message.success('Comment added successfully!');
+    },
+    onError: (error) => {
+      console.error('Error adding comment:', error);
+      message.error('Failed to add comment. Please try again.');
+    }
+  });
+
+  // Fetch comments mutation
+  const fetchCommentsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.get(`/database/records/${record._id}/comments`);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setComments(data || []);
+    },
+    onError: (error) => {
+      console.error('Error fetching comments:', error);
+      // Don't show error message for fetch, just log it
+    }
+  });
+
+  // Update comment mutation
+  const updateCommentMutation = useMutation({
+    mutationFn: async ({ commentId, text }) => {
+      const response = await axiosInstance.put(`/database/comments/${commentId}`, { text });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setComments(prev => prev.map(comment => 
+        comment._id === data._id ? data : comment
+      ));
+      setEditingComment(null);
+      setEditCommentText('');
+      message.success('Comment updated successfully!');
+    },
+    onError: (error) => {
+      console.error('Error updating comment:', error);
+      message.error('Failed to update comment. Please try again.');
+    }
+  });
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId) => {
+      const response = await axiosInstance.delete(`/database/comments/${commentId}`);
+      return response.data;
+    },
+    onSuccess: (data, commentId) => {
+      setComments(prev => prev.filter(comment => comment._id !== commentId));
+      message.success('Comment deleted successfully!');
+    },
+    onError: (error) => {
+      console.error('Error deleting comment:', error);
+      message.error('Failed to delete comment. Please try again.');
+    }
+  });
+
+  // Comment functions
+  const handleSendComment = () => {
+    if (comment.trim()) {
+      addCommentMutation.mutate({ text: comment });
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      handleSendComment();
+    }
+  };
+
+  // Edit comment functions
+  const handleEditComment = (comment) => {
+    // Cancel any existing edit first
+    if (editingComment && editingComment._id !== comment._id) {
+      setEditingComment(null);
+      setEditCommentText('');
+    }
+    setEditingComment(comment);
+    setEditCommentText(comment.text);
+  };
+
+  const handleSaveEdit = () => {
+    if (editCommentText.trim()) {
+      updateCommentMutation.mutate({
+        commentId: editingComment._id,
+        text: editCommentText
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setEditCommentText('');
+  };
+
+  const handleDeleteComment = (commentId) => {
+    // You can add a confirmation dialog here if needed
+    deleteCommentMutation.mutate(commentId);
+  };
+
   const handleSubmit = async (values) => {
-    setLoading(true);
     try {
       // Convert date/time values to appropriate format
       const processedValues = { ...values };
       Object.keys(processedValues).forEach(key => {
         if (dayjs.isDayjs(processedValues[key])) {
-          const column = tableColumns?.data?.find(col => col.name === key);
+          const columns = Array.isArray(tableColumns) ? tableColumns : (tableColumns?.data || Object.values(tableColumns || {}));
+          const column = columns.find(col => col.name === key);
           if (column?.dataType === 'time') {
             // For time field, save as HH:mm format
             processedValues[key] = processedValues[key].format('HH:mm');
@@ -127,9 +270,6 @@ const EditRecordModal = ({
         }
       });
 
-      // Debug: Log the processed values
-      console.log('Edit form values:', values);
-      console.log('Edit processed values:', processedValues);
 
       await updateRecordMutation.mutateAsync({
         recordId: record._id,
@@ -137,8 +277,7 @@ const EditRecordModal = ({
       });
     } catch (error) {
       // Error is handled by mutation
-    } finally {
-      setLoading(false);
+      console.error('Update failed:', error);
     }
   };
 
@@ -350,14 +489,258 @@ const EditRecordModal = ({
         }
         open={open}
         onCancel={onCancel}
-        footer={[
-          <Button key="cancel" onClick={onCancel}>
+        footer={null}
+        width={1200}
+        className="edit-record-modal"
+        destroyOnClose
+        closeIcon={<span style={{ color: '#8c8c8c', fontSize: '18px' }}>×</span>}
+      >
+
+        <div style={{ display: 'flex', height: '600px' }}>
+          {/* Left Column - Edit Form */}
+          <div style={{ flex: 1, paddingRight: '16px', overflowY: 'auto' }}>
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={handleSubmit}
+              className="space-y-4"
+            >
+               {(Array.isArray(tableColumns) ? tableColumns : (tableColumns?.data || Object.values(tableColumns || {})))
+                 ?.filter(column => {
+                   // Ẩn các field lookup và formula
+                   return !['lookup', 'linked_table', 'formula'].includes(column.dataType);
+                 })
+                 ?.map((column, index) => {
+                  const { name, dataType, isRequired, description } = column;
+                  
+                return (
+                  <div key={column._id || index} className="mb-6">
+                    {dataType !== 'checkbox' && (
+                      <div className="flex items-center gap-2 mb-2">
+                        {getIconForDataType(dataType)}
+                        <span className="text-sm font-medium text-gray-700">{name}</span>
+                        {isRequired && <span className="text-red-500 text-sm">*</span>}
+                      </div>
+                    )}
+                    
+                    <Form.Item
+                      name={name}
+                      {...(dataType === "checkbox" ? { valuePropName: "checked" } : {})}
+                      rules={[
+                        ...(isRequired ? [{ required: true, message: `${name} is required` }] : [])
+                      ]}
+                      className="mb-0"
+                    >
+                      {renderInputField(column)}
+                    </Form.Item>
+                    
+                    {description && (
+                      <Text type="secondary" className="text-xs mt-1 block">
+                        {description}
+                      </Text>
+                    )}
+                  </div>
+                );
+                })}
+            </Form>
+          </div>
+
+          {/* Right Column - Comments & Audits */}
+          <div style={{ flex: 1, paddingLeft: '16px', borderLeft: '1px solid #f0f0f0' }}>
+            <Tabs 
+              activeKey={activeTab} 
+              onChange={setActiveTab}
+              items={[
+                {
+                  key: 'comments',
+                  label: 'Comments',
+                  children: (
+                    <div style={{ height: '500px', display: 'flex', flexDirection: 'column' }}>
+                      {/* Comments List */}
+                      <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+                        {fetchCommentsMutation.isPending ? (
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            height: '100%',
+                            color: '#8c8c8c'
+                          }}>
+                            <Text type="secondary">Loading comments...</Text>
+                          </div>
+                        ) : comments.length === 0 ? (
+                          <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            height: '100%',
+                            color: '#8c8c8c'
+                          }}>
+                            <MessageOutlined style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }} />
+                            <Text type="secondary">Start commenting!</Text>
+                          </div>
+                        ) : (
+                          <div>
+                            {comments.map(comment => (
+                              <div key={comment._id || comment.id} style={{ 
+                                marginBottom: '16px', 
+                                padding: '12px', 
+                                backgroundColor: '#f9f9f9', 
+                                borderRadius: '8px' 
+                              }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                  <Text strong>{comment.author || comment.user?.name || 'Unknown User'}</Text>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                                      {new Date(comment.createdAt || comment.timestamp).toLocaleString()}
+                                    </Text>
+                                    <Dropdown
+                                      menu={{
+                                        items: [
+                                          {
+                                            key: 'edit',
+                                            label: 'Edit',
+                                            icon: <EditOutlined />,
+                                            onClick: () => handleEditComment(comment),
+                                            disabled: editingComment && editingComment._id !== comment._id
+                                          },
+                                          {
+                                            key: 'delete',
+                                            label: 'Delete',
+                                            icon: <DeleteOutlined />,
+                                            onClick: () => handleDeleteComment(comment._id || comment.id),
+                                            danger: true,
+                                            disabled: editingComment && editingComment._id !== comment._id
+                                          }
+                                        ]
+                                      }}
+                                      trigger={['click']}
+                                      placement="bottomRight"
+                                    >
+                                      <Button 
+                                        type="text" 
+                                        size="small" 
+                                        icon={<MoreOutlined />}
+                                        style={{ 
+                                          color: editingComment && editingComment._id !== comment._id ? '#d9d9d9' : '#8c8c8c'
+                                        }}
+                                        disabled={editingComment && editingComment._id !== comment._id}
+                                      />
+                                    </Dropdown>
+                                  </div>
+                                </div>
+                                
+                                {editingComment && editingComment._id === comment._id ? (
+                                  <div>
+                                    <Input.TextArea
+                                      value={editCommentText}
+                                      onChange={(e) => setEditCommentText(e.target.value)}
+                                      rows={3}
+                                      style={{ marginBottom: '8px' }}
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                      <Button 
+                                        size="small"
+                                        onClick={handleCancelEdit}
+                                        icon={<CloseOutlined />}
+                                      >
+                                        Cancel
+                                      </Button>
+                                      <Button 
+                                        type="primary" 
+                                        size="small"
+                                        onClick={handleSaveEdit}
+                                        icon={<CheckOutlined />}
+                                        loading={updateCommentMutation.isPending}
+                                        disabled={!editCommentText.trim()}
+                                      >
+                                        Save
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Text>{comment.text || comment.content}</Text>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Comment Input */}
+                      <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '16px' }}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Space>
+                            <Button type="text" size="small" icon={<BoldOutlined />} />
+                            <Button type="text" size="small" icon={<ItalicOutlined />} />
+                            <Button type="text" size="small" icon={<UnderlineOutlined />} />
+                            <Button type="text" size="small" icon={<StrikethroughOutlined />} />
+                            <Button type="text" size="small" icon={<LinkOutlined />} />
+                          </Space>
+                        </div>
+                        <Input.TextArea
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                          onKeyPress={handleKeyPress}
+                          placeholder={editingComment ? "Finish editing the comment above first..." : "Comment..."}
+                          rows={3}
+                          style={{ marginBottom: '8px' }}
+                          disabled={!!editingComment}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <Button 
+                            type="primary" 
+                            icon={<SendOutlined />}
+                            onClick={handleSendComment}
+                            disabled={!comment.trim() || !!editingComment}
+                            loading={addCommentMutation.isPending}
+                          >
+                            Send
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'audits',
+                  label: 'Audits',
+                  children: (
+                    <div style={{ 
+                      height: '500px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      color: '#8c8c8c'
+                    }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <ClockCircleOutlined style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.3 }} />
+                        <Text type="secondary">No audit history available</Text>
+                      </div>
+                    </div>
+                  )
+                }
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* Footer with Save/Cancel buttons */}
+        <div style={{ 
+          borderTop: '1px solid #f0f0f0', 
+          padding: '16px 0', 
+          marginTop: '16px',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '8px'
+        }}>
+          <Button onClick={onCancel}>
             Cancel
-          </Button>,
+          </Button>
           <Button 
-            key="save" 
             type="primary" 
-            loading={loading}
+            loading={updateRecordMutation.isPending}
             onClick={() => form.submit()}
             style={{
               backgroundColor: '#f5f5f5',
@@ -368,56 +751,7 @@ const EditRecordModal = ({
           >
             Save record
           </Button>
-        ]}
-        width={600}
-        className="edit-record-modal"
-        destroyOnClose
-        closeIcon={<span style={{ color: '#8c8c8c', fontSize: '18px' }}>×</span>}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          className="space-y-4"
-        >
-          {tableColumns?.data
-            ?.filter(column => {
-              // Ẩn các field lookup và formula
-              return !['lookup', 'linked_table', 'formula'].includes(column.dataType);
-            })
-            ?.map((column, index) => {
-              const { name, dataType, isRequired, description } = column;
-              
-            return (
-              <div key={column._id || index} className="mb-6">
-                {dataType !== 'checkbox' && (
-                  <div className="flex items-center gap-2 mb-2">
-                    {getIconForDataType(dataType)}
-                    <span className="text-sm font-medium text-gray-700">{name}</span>
-                    {isRequired && <span className="text-red-500 text-sm">*</span>}
-                  </div>
-                )}
-                
-                <Form.Item
-                  name={name}
-                  {...(dataType === "checkbox" ? { valuePropName: "checked" } : {})}
-                  rules={[
-                    ...(isRequired ? [{ required: true, message: `${name} is required` }] : [])
-                  ]}
-                  className="mb-0"
-                >
-                  {renderInputField(column)}
-                </Form.Item>
-                
-                {description && (
-                  <Text type="secondary" className="text-xs mt-1 block">
-                    {description}
-                  </Text>
-                )}
-              </div>
-            );
-            })}
-        </Form>
+        </div>
       </Modal>
     </>
   );

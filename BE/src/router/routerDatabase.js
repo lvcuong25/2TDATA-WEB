@@ -39,6 +39,14 @@ import {
 } from "../controllers/recordController.js";
 
 import {
+  getCommentsByRecord,
+  createComment,
+  updateComment,
+  deleteComment,
+  getCommentById
+} from "../controllers/commentController.js";
+
+import {
   getGroupPreference,
   saveGroupPreference,
   deleteGroupPreference,
@@ -126,6 +134,13 @@ router.delete("/tables/:tableId/records/all", deleteAllRecords);
 router.get("/records/:recordId", getRecordById);
 router.put("/records/:recordId", updateRecord);
 router.delete("/records/:recordId", deleteRecord);
+
+// Comment routes
+router.get("/records/:recordId/comments", getCommentsByRecord);
+router.post("/records/:recordId/comments", createComment);
+router.get("/comments/:commentId", getCommentById);
+router.put("/comments/:commentId", updateComment);
+router.delete("/comments/:commentId", deleteComment);
 
 // Table structure route
 router.get("/tables/:tableId/structure", getTableStructure);

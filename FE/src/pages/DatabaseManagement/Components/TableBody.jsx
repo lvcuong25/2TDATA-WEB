@@ -19,7 +19,8 @@ import {
   TrophyOutlined,
   TrophyFilled,
   CloseOutlined,
-  LinkOutlined
+  LinkOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
@@ -38,6 +39,7 @@ import {
 } from '../Utils/rowHeightUtils.jsx';
 import LinkedTableSelectModal from './LinkedTableSelectModal';
 import LookupDropdown from './LookupDropdown';
+import EditRecordModal from '../Modals/EditRecordModal';
 
 // Custom AddOptionInput component for dropdown
 const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
@@ -260,6 +262,12 @@ const TableBody = ({
     record: null
   });
 
+  // State for edit record modal
+  const [editRecordModal, setEditRecordModal] = useState({
+    visible: false,
+    record: null
+  });
+
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
     if (!dateString) return '';
@@ -322,6 +330,14 @@ const TableBody = ({
     updateColumnMutation.mutate({
       columnId: column._id,
       columnData: updatedColumnData
+    });
+  };
+
+  // Function to handle record click and open edit modal
+  const handleRecordClick = (record) => {
+    setEditRecordModal({
+      visible: true,
+      record: record
     });
   };
 
@@ -602,22 +618,44 @@ const TableBody = ({
                       borderRight: '1px solid #d9d9d9',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px',
+                      justifyContent: 'space-between',
+                      gap: '2px',
+                      padding: '4px 8px',
                       backgroundColor: '#fafafa'
                     }}>
-                      <Checkbox
-                        checked={selectedRowKeys.includes(record._id)}
-                        onChange={(e) => handleSelectRow(record._id, e.target.checked)}
-                      />
-                      <span style={{
-                        fontSize: '12px',
-                        color: '#666',
-                        fontWeight: 'bold',
-                        opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
-                      }}>
-                        {index + 1}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Checkbox
+                          checked={selectedRowKeys.includes(record._id)}
+                          onChange={(e) => handleSelectRow(record._id, e.target.checked)}
+                        />
+                        <span style={{
+                          fontSize: '12px',
+                          color: '#666',
+                          fontWeight: 'bold',
+                          opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
+                        }}>
+                          {index + 1}
+                        </span>
+                      </div>
+                      <Tooltip title="Chỉnh sửa bản ghi">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRecordClick(record);
+                          }}
+                          style={{
+                            color: '#1890ff',
+                            fontSize: '12px',
+                            padding: '2px',
+                            minWidth: 'auto',
+                            height: '20px',
+                            width: '20px'
+                          }}
+                        />
+                      </Tooltip>
                     </div>
 
                     {/* Data Cells */}
@@ -1590,21 +1628,43 @@ const TableBody = ({
                 borderRight: '1px solid #d9d9d9',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px'
+                justifyContent: 'space-between',
+                gap: '2px',
+                padding: '4px 8px'
               }}>
-                <Checkbox
-                  checked={selectedRowKeys.includes(record._id)}
-                  onChange={(e) => handleSelectRow(record._id, e.target.checked)}
-                />
-                <span style={{
-                  fontSize: '12px',
-                  color: '#666',
-                  fontWeight: 'bold',
-                  opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
-                }}>
-                  {index + 1}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Checkbox
+                    checked={selectedRowKeys.includes(record._id)}
+                    onChange={(e) => handleSelectRow(record._id, e.target.checked)}
+                  />
+                  <span style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    fontWeight: 'bold',
+                    opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
+                  }}>
+                    {index + 1}
+                  </span>
+                </div>
+                <Tooltip title="Chỉnh sửa bản ghi">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRecordClick(record);
+                    }}
+                    style={{
+                      color: '#1890ff',
+                      fontSize: '12px',
+                      padding: '2px',
+                      minWidth: 'auto',
+                      height: '20px',
+                      width: '20px'
+                    }}
+                  />
+                </Tooltip>
               </div>
 
               {/* Data Cells */}
@@ -2524,6 +2584,19 @@ const TableBody = ({
           </div>
         </div>
       </div>
+
+      {/* Edit Record Modal */}
+      <EditRecordModal
+        open={editRecordModal.visible}
+        onCancel={() => setEditRecordModal({ visible: false, record: null })}
+        record={editRecordModal.record}
+        tableId={tableId}
+        tableColumns={visibleColumns}
+        onSuccess={(data) => {
+          // Data will be automatically updated through React Query
+          // No need to refresh the page
+        }}
+      />
 
       {/* Linked Table Select Modal */}
       <LinkedTableSelectModal
