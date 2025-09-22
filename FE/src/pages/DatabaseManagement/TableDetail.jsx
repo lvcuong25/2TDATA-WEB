@@ -1270,9 +1270,7 @@ const TableDetail = () => {
           <div className="mb-6">
             <div className="flex justify-between items-center">
               <div>
-                <Text type="secondary">
-                  {String(table?.description || '')}
-                </Text>
+                {/* Description hidden for grid view */}
               </div>
             </div>
           </div>

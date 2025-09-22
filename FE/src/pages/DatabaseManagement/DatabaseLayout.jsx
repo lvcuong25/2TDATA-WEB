@@ -1,6 +1,6 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Typography, Avatar, Button, Input, Modal, Space, Row, Dropdown, Tabs } from 'antd';
+import { Layout, Menu, Typography, Avatar, Button, Input, Modal, Space, Row, Dropdown, Tabs, Card, List } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { AuthContext } from '../../components/core/Auth';
@@ -69,6 +69,24 @@ const customScrollbarStyles = `
 
 // View Type Dropdown Component
 const ViewTypeDropdown = ({ visible, position, onClose, onSelectViewType }) => {
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    if (visible) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [visible, onClose]);
+
   const viewTypes = [
     {
       key: 'grid',
@@ -111,70 +129,114 @@ const ViewTypeDropdown = ({ visible, position, onClose, onSelectViewType }) => {
 
   return (
     <div
-      className="view-type-dropdown"
+      ref={dropdownRef}
       style={{
         position: 'fixed',
         left: position.x,
         top: position.y,
         zIndex: 9999,
         background: 'white',
-        border: '1px solid #d9d9d9',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-        padding: '8px 0',
-        minWidth: '200px'
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+        border: '1px solid #f0f0f0',
+        padding: '16px',
+        width: 320,
+        minHeight: 'auto'
       }}
     >
-      {viewTypes.map((viewType) => (
-        <div
-          key={viewType.key}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '12px 16px',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#f5f5f5';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectViewType(viewType.key);
-            onClose();
-          }}
-        >
-          <div style={{ marginRight: '12px', fontSize: '18px' }}>
-            {viewType.icon}
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 500, color: '#262626' }}>
-              {viewType.label}
-            </div>
-            <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-              {viewType.description}
-            </div>
-          </div>
+      <div style={{ marginBottom: '12px' }}>
+        <Typography.Title level={5} style={{ margin: 0, color: '#262626' }}>
+          Tạo View mới
+        </Typography.Title>
+        <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+          Chọn loại view để tạo
+        </Typography.Text>
+      </div>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {viewTypes.map((viewType) => (
           <div
+            key={viewType.key}
             style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '4px',
-              background: '#f0f0f0',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px',
-              color: '#8c8c8c'
+              padding: '16px',
+              borderRadius: '8px',
+              border: '1px solid #f0f0f0',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              background: 'white'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = viewType.key === 'grid' ? '#1890ff' :
+                                                viewType.key === 'form' ? '#722ed1' :
+                                                viewType.key === 'gallery' ? '#eb2f96' :
+                                                viewType.key === 'kanban' ? '#fa8c16' :
+                                                '#f5222d';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#f0f0f0';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectViewType(viewType.key);
+              onClose();
             }}
           >
-            +
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '16px',
+                background: '#f8f9fa',
+                border: '1px solid #e9ecef'
+              }}
+            >
+              <span style={{ color: '#6c757d', fontSize: '20px' }}>
+                {viewType.icon}
+              </span>
+            </div>
+            
+            <div style={{ flex: 1 }}>
+              <div style={{ 
+                fontWeight: 600, 
+                fontSize: '16px',
+                color: '#262626',
+                marginBottom: '4px'
+              }}>
+                {viewType.label}
+              </div>
+              <div style={{ 
+                fontSize: '13px',
+                color: '#8c8c8c',
+                lineHeight: '1.4'
+              }}>
+                {viewType.description}
+              </div>
+            </div>
+            
+            <Button
+              type="text"
+              shape="circle"
+              size="small"
+              icon={<PlusOutlined />}
+              style={{
+                width: '32px',
+                height: '32px',
+                color: '#6c757d'
+              }}
+            />
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
@@ -269,6 +331,10 @@ const DatabaseLayout = () => {
   const [showViewTypeDropdown, setShowViewTypeDropdown] = useState(false);
   const [viewDropdownPosition, setViewDropdownPosition] = useState({ x: 0, y: 0 });
   const [selectedContext, setSelectedContext] = useState({ type: '', id: '', databaseId: '' });
+  const [showCreateViewModal, setShowCreateViewModal] = useState(false);
+  const [newView, setNewView] = useState({ name: '', description: '', type: '', tableId: '' });
+  const [showEditViewModal, setShowEditViewModal] = useState(false);
+  const [editingView, setEditingView] = useState({ _id: '', name: '', description: '', type: '' });
   
   // Header states
   const [activeTab, setActiveTab] = useState('data');
@@ -574,9 +640,10 @@ const DatabaseLayout = () => {
   // Handle view type selection
   const handleCreateViewClick = (context) => {
     console.log('handleCreateViewClick called with:', context);
-    // Get mouse position or use a default position
-    const x = window.innerWidth / 2 - 100; // Center horizontally
-    const y = window.innerHeight / 2 - 150; // Center vertically
+    
+    // Position popup in the top area, below the header
+    const x = 300; // Left margin to avoid sidebar
+    const y = 100; // Below header
     
     setViewDropdownPosition({ x, y });
     setSelectedContext(context);
@@ -586,46 +653,104 @@ const DatabaseLayout = () => {
     console.log('Context:', context);
   };
 
-  const handleSelectViewType = async (viewType) => {
-    try {
-      console.log('Creating view:', {
-        type: viewType,
-        context: selectedContext
-      });
+  const handleSelectViewType = (viewType) => {
+    console.log('Selected view type:', viewType, 'for context:', selectedContext);
 
-      // Create view data
-      const viewData = {
-        tableId: selectedContext.id,
-        name: `${viewType.charAt(0).toUpperCase() + viewType.slice(1)} View`,
-        type: viewType,
-        description: `Auto-generated ${viewType} view`,
-        config: {},
-        isDefault: false,
-        isPublic: false
-      };
+    // Get existing views for this table to generate unique name
+    const allViews = allViewsResponse || [];
+    const tableViews = allViews.find(item => item.tableId === selectedContext.id);
+    const existingViews = tableViews ? tableViews.views : [];
 
-      // Call API to create view
-      const response = await axiosInstance.post('/database/views', viewData);
-      
-      if (response.data.success) {
-        toast.success(`${viewType.charAt(0).toUpperCase() + viewType.slice(1)} view created successfully!`);
-        // Only invalidate views for the specific table
-        queryClient.invalidateQueries(['allViews']);
-        // Force refetch to ensure UI updates
-        queryClient.refetchQueries(['allViews']);
-        console.log('Refreshed views for table:', selectedContext.id);
-      } else {
-        toast.error(response.data.message || 'Failed to create view');
-      }
-    } catch (error) {
-      console.error('Error creating view:', error);
-      toast.error(error.response?.data?.message || 'Failed to create view');
-    }
+    // Count existing views of this type
+    const existingViewsOfType = existingViews.filter(view => view.type === viewType);
+    const viewNumber = existingViewsOfType.length + 1;
+
+    // Generate unique name
+    const baseName = viewType.charAt(0).toUpperCase() + viewType.slice(1);
+    const viewName = existingViewsOfType.length === 0
+      ? `${baseName} View`
+      : `${baseName} View ${viewNumber}`;
+
+    // Set up new view data and show modal
+    setNewView({
+      name: viewName,
+      description: `Auto-generated ${viewType} view`,
+      type: viewType,
+      tableId: selectedContext.id
+    });
+    setShowCreateViewModal(true);
   };
 
   const handleCloseViewDropdown = () => {
     setShowViewTypeDropdown(false);
     setSelectedContext({ type: '', id: '', databaseId: '' });
+  };
+
+  // Create view mutation
+  const createViewMutation = useMutation({
+    mutationFn: async (viewData) => {
+      const response = await axiosInstance.post('/database/views', {
+        tableId: viewData.tableId,
+        name: viewData.name,
+        type: viewData.type,
+        description: viewData.description,
+        config: {},
+        isDefault: false,
+        isPublic: false
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success(`"${newView.name}" created successfully!`);
+      setShowCreateViewModal(false);
+      setNewView({ name: '', description: '', type: '', tableId: '' });
+      queryClient.invalidateQueries(['allViews']);
+      queryClient.refetchQueries(['allViews']);
+    },
+    onError: (error) => {
+      console.error('Error creating view:', error);
+      toast.error(error.response?.data?.message || 'Failed to create view');
+    },
+  });
+
+  const handleCreateView = async (e) => {
+    e.preventDefault();
+    if (!newView.name.trim()) {
+      toast.error('View name is required');
+      return;
+    }
+    createViewMutation.mutate(newView);
+  };
+
+  // Edit view mutation
+  const editViewMutation = useMutation({
+    mutationFn: async (viewData) => {
+      const response = await axiosInstance.put(`/database/views/${viewData._id}`, {
+        name: viewData.name,
+        description: viewData.description
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success(`"${editingView.name}" updated successfully!`);
+      setShowEditViewModal(false);
+      setEditingView({ _id: '', name: '', description: '', type: '' });
+      queryClient.invalidateQueries(['allViews']);
+      queryClient.refetchQueries(['allViews']);
+    },
+    onError: (error) => {
+      console.error('Error updating view:', error);
+      toast.error(error.response?.data?.message || 'Failed to update view');
+    },
+  });
+
+  const handleEditView = async (e) => {
+    e.preventDefault();
+    if (!editingView.name.trim()) {
+      toast.error('View name is required');
+      return;
+    }
+    editViewMutation.mutate(editingView);
   };
 
   // Close dropdown when clicking outside
@@ -669,7 +794,7 @@ const DatabaseLayout = () => {
 
   // Get breadcrumb path for form view
   const getBreadcrumbPath = () => {
-    if (location.pathname.includes('/view/') || location.pathname.includes('/kanban/') || location.pathname.includes('/calendar/') || location.pathname.includes('/gallery/')) {
+    if (location.pathname.includes('/view/') || location.pathname.includes('/grid/') || location.pathname.includes('/kanban/') || location.pathname.includes('/calendar/') || location.pathname.includes('/gallery/')) {
       // Extract database ID, table ID, and view ID from path
       const pathParts = location.pathname.split('/');
       const databaseId = pathParts[2];
@@ -1063,6 +1188,7 @@ const DatabaseLayout = () => {
                                                 key={view._id}
                                                 className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ml-6 ${
                                                   location.pathname.includes(`/view/${view._id}`) || 
+                                                  location.pathname.includes(`/grid/${view._id}`) ||
                                                   location.pathname.includes(`/kanban/${view._id}`) ||
                                                   location.pathname.includes(`/calendar/${view._id}`) ||
                                                   location.pathname.includes(`/gallery/${view._id}`)
@@ -1073,6 +1199,8 @@ const DatabaseLayout = () => {
                                                   e.stopPropagation();
                                                   if (view.type === 'form') {
                                                     navigate(`/database/${database._id}/table/${table._id}/view/${view._id}`);
+                                                  } else if (view.type === 'grid') {
+                                                    navigate(`/database/${database._id}/table/${table._id}/grid/${view._id}`);
                                                   } else if (view.type === 'kanban') {
                                                     navigate(`/database/${database._id}/table/${table._id}/kanban/${view._id}`);
                                                   } else if (view.type === 'calendar') {
@@ -1080,7 +1208,6 @@ const DatabaseLayout = () => {
                                                   } else if (view.type === 'gallery') {
                                                     navigate(`/database/${database._id}/table/${table._id}/gallery/${view._id}`);
                                                   } else {
-                                                    // TODO: Handle other view types (grid)
                                                     console.log("Navigate to view:", view._id, "type:", view.type);
                                                   }
                                                 }}
@@ -1093,20 +1220,38 @@ const DatabaseLayout = () => {
                                                   {view.type === "calendar" && <CalendarOutlined style={{ color: "#f5222d" }} />}
                                                 </div>
                                                 <span className="truncate flex-1">{view.name}</span>
-                                                <button
-                                                  className="ml-2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (window.confirm(`Bạn có chắc muốn xóa view "${view.name}"?`)) {
-                                                      deleteViewMutation.mutate(view._id);
-                                                    }
-                                                  }}
-                                                  title="Xóa view"
-                                                >
-                                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                                    <path d="M11.354 4.646a.5.5 0 0 0-.708 0L8 7.293 5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0 0-.708z"/>
-                                                  </svg>
-                                                </button>
+                                                <div className="flex items-center">
+                                                  <button
+                                                    className="ml-2 p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setEditingView({
+                                                        _id: view._id,
+                                                        name: view.name,
+                                                        description: view.description || '',
+                                                        type: view.type
+                                                      });
+                                                      setShowEditViewModal(true);
+                                                    }}
+                                                    title="Sửa tên view"
+                                                  >
+                                                    <EditOutlined style={{ fontSize: '12px' }} />
+                                                  </button>
+                                                  <button
+                                                    className="ml-1 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (window.confirm(`Bạn có chắc muốn xóa view "${view.name}"?`)) {
+                                                        deleteViewMutation.mutate(view._id);
+                                                      }
+                                                    }}
+                                                    title="Xóa view"
+                                                  >
+                                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                                      <path d="M11.354 4.646a.5.5 0 0 0-.708 0L8 7.293 5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0 0-.708z"/>
+                                                    </svg>
+                                                  </button>
+                                                </div>
                                               </div>
                                             ))
                                           ) : (
@@ -1166,7 +1311,7 @@ const DatabaseLayout = () => {
             position: 'sticky',
             top: 0,
             zIndex: 999,
-            minHeight: (location.pathname.includes('/view/') || location.pathname.includes('/kanban/') || location.pathname.includes('/calendar/') || location.pathname.includes('/gallery/')) ? '120px' : '64px',
+            minHeight: (location.pathname.includes('/view/') || location.pathname.includes('/grid/') || location.pathname.includes('/kanban/') || location.pathname.includes('/calendar/') || location.pathname.includes('/gallery/')) ? '120px' : '64px',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
         >
@@ -1239,6 +1384,87 @@ const DatabaseLayout = () => {
                   tabBarGutter={28}
                 />
                 
+                {/* Breadcrumb */}
+                <div style={{ 
+                  fontSize: '13px',
+                  color: '#5f6368',
+                  fontWeight: 400,
+                  letterSpacing: '0.2px'
+                }}>
+                  {getBreadcrumbPath()}
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center" style={{ gap: '6px' }}>
+                <Button
+                  icon={<ReloadOutlined />}
+                  type="text"
+                  style={{ 
+                    color: '#5f6368',
+                    height: '32px',
+                    width: '32px',
+                    borderRadius: '6px',
+                    border: '1px solid #e8eaed',
+                    background: '#fff'
+                  }}
+                />
+                <Button
+                  type="primary"
+                  icon={<ShareAltOutlined />}
+                  style={{ 
+                    backgroundColor: '#1890ff', 
+                    borderColor: '#1890ff',
+                    height: '32px',
+                    borderRadius: '6px',
+                    fontWeight: 500,
+                    fontSize: '13px',
+                    boxShadow: '0 1px 3px rgba(24, 144, 255, 0.3)'
+                  }}
+                >
+                  Chia sẻ
+                </Button>
+                <Button
+                  icon={<EyeOutlined />}
+                  style={{ 
+                    backgroundColor: '#fff', 
+                    borderColor: '#e8eaed',
+                    color: '#5f6368',
+                    height: '32px',
+                    borderRadius: '6px',
+                    fontWeight: 500,
+                    fontSize: '13px'
+                  }}
+                  onClick={() => {
+                    // Extract database ID and table ID from current path
+                    const pathParts = location.pathname.split('/');
+                    const databaseId = pathParts[2];
+                    const tableId = pathParts[4];
+                    navigate(`/database/${databaseId}/table/${tableId}`);
+                  }}
+                >
+                  Xem dữ liệu
+                </Button>
+                <Button
+                  icon={<LockOutlined />}
+                  type="text"
+                  style={{ 
+                    color: '#5f6368',
+                    height: '32px',
+                    width: '32px',
+                    borderRadius: '6px',
+                    border: '1px solid #e8eaed',
+                    background: '#fff'
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Grid View Header - Simple breadcrumb only */}
+          {location.pathname.includes('/grid/') && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
                 {/* Breadcrumb */}
                 <div style={{ 
                   fontSize: '13px',
@@ -1622,6 +1848,160 @@ const DatabaseLayout = () => {
                   style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
                 >
                   Sao chép
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Edit View Modal */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {editingView.type === 'grid' && <AppstoreOutlined style={{ color: '#1890ff' }} />}
+            {editingView.type === 'form' && <FormOutlined style={{ color: '#722ed1' }} />}
+            {editingView.type === 'gallery' && <PictureOutlined style={{ color: '#eb2f96' }} />}
+            {editingView.type === 'kanban' && <BarsOutlined style={{ color: '#fa8c16' }} />}
+            {editingView.type === 'calendar' && <CalendarOutlined style={{ color: '#f5222d' }} />}
+            <span>Edit {editingView.type ? editingView.type.charAt(0).toUpperCase() + editingView.type.slice(1) : ''} View</span>
+          </div>
+        }
+        open={showEditViewModal}
+        onCancel={() => setShowEditViewModal(false)}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleEditView}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>View Name *</Typography.Text>
+              <Input
+                value={editingView.name}
+                onChange={(e) => setEditingView({ ...editingView, name: e.target.value })}
+                placeholder="Enter view name"
+                required
+                size="large"
+              />
+            </div>
+            <div>
+              <Button
+                type="text"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  // Toggle description field
+                  if (editingView.description) {
+                    setEditingView({ ...editingView, description: '' });
+                  } else {
+                    setEditingView({ ...editingView, description: `Auto-generated ${editingView.type} view` });
+                  }
+                }}
+                style={{ 
+                  padding: '4px 8px',
+                  height: 'auto',
+                  color: '#1890ff'
+                }}
+              >
+                Add description
+              </Button>
+              {editingView.description && (
+                <Input.TextArea
+                  value={editingView.description}
+                  onChange={(e) => setEditingView({ ...editingView, description: e.target.value })}
+                  placeholder="Enter view description"
+                  rows={3}
+                  style={{ marginTop: '8px' }}
+                />
+              )}
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowEditViewModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={editViewMutation.isPending}
+                >
+                  Update view
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Create View Modal */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {newView.type === 'grid' && <AppstoreOutlined style={{ color: '#1890ff' }} />}
+            {newView.type === 'form' && <FormOutlined style={{ color: '#722ed1' }} />}
+            {newView.type === 'gallery' && <PictureOutlined style={{ color: '#eb2f96' }} />}
+            {newView.type === 'kanban' && <BarsOutlined style={{ color: '#fa8c16' }} />}
+            {newView.type === 'calendar' && <CalendarOutlined style={{ color: '#f5222d' }} />}
+            <span>Create {newView.type ? newView.type.charAt(0).toUpperCase() + newView.type.slice(1) : ''} View</span>
+          </div>
+        }
+        open={showCreateViewModal}
+        onCancel={() => setShowCreateViewModal(false)}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleCreateView}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>View Name *</Typography.Text>
+              <Input
+                value={newView.name}
+                onChange={(e) => setNewView({ ...newView, name: e.target.value })}
+                placeholder="Enter view name"
+                required
+                size="large"
+              />
+            </div>
+            <div>
+              <Button
+                type="text"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  // Toggle description field
+                  if (newView.description) {
+                    setNewView({ ...newView, description: '' });
+                  } else {
+                    setNewView({ ...newView, description: `Auto-generated ${newView.type} view` });
+                  }
+                }}
+                style={{ 
+                  padding: '4px 8px',
+                  height: 'auto',
+                  color: '#1890ff'
+                }}
+              >
+                Add description
+              </Button>
+              {newView.description && (
+                <Input.TextArea
+                  value={newView.description}
+                  onChange={(e) => setNewView({ ...newView, description: e.target.value })}
+                  placeholder="Enter view description"
+                  rows={3}
+                  style={{ marginTop: '8px' }}
+                />
+              )}
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowCreateViewModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={createViewMutation.isPending}
+                >
+                  Create view
                 </Button>
               </Space>
             </Row>

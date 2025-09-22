@@ -120,6 +120,7 @@ const Router = () => {
             <Route index element={<DatabaseList />} />
             <Route path=":databaseId/tables" element={<TableList />} />
             <Route path=":databaseId/table/:tableId/view/:viewId" element={<FormView />} />
+            <Route path=":databaseId/table/:tableId/grid/:viewId" element={<TableDetail />} />
             <Route path=":databaseId/table/:tableId/kanban/:viewId" element={<KanbanView />} />
             <Route path=":databaseId/table/:tableId/calendar/:viewId" element={<CalendarView />} />
             <Route path=":databaseId/table/:tableId/gallery/:viewId" element={<GalleryView />} />
