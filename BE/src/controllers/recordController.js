@@ -53,6 +53,93 @@ const calculateFormulaColumns = async (records, tableId) => {
   }
 };
 
+
+// Calculate lookup column values
+const calculateLookupColumns = async (records, tableId) => {
+  try {
+    // Get all columns for this table
+    const columns = await Column.find({ tableId });
+    const lookupColumns = columns.filter(col => col.dataType === 'lookup' && col.lookupConfig);
+    
+    if (lookupColumns.length === 0) {
+      return records; // No lookup columns, return as is
+    }
+    
+    // Calculate lookup values for each record
+    const enhancedRecords = await Promise.all(records.map(async record => {
+      const enhancedRecord = record.toObject ? record.toObject() : record;
+      
+      // Calculate each lookup column
+      for (const lookupColumn of lookupColumns) {
+        try {
+          const { lookupConfig } = lookupColumn;
+          
+          // Find the linked_table column that this lookup depends on
+          const linkedColumn = columns.find(col => 
+            col.dataType === 'linked_table' && 
+            col.linkedTableConfig?.linkedTableId?.toString() === lookupConfig.linkedTableId?.toString()
+          );
+          
+          if (!linkedColumn) {
+            console.warn(`No linked table column found for lookup ${lookupColumn.name}`);
+            continue;
+          }
+          
+          // Get the linked record ID from the linked_table column
+          const linkedTableValue = enhancedRecord.data?.[linkedColumn.name];
+          if (!linkedTableValue || !linkedTableValue.recordId) {
+            continue; // No linked record
+          }
+          
+          // Get the linked record
+          const linkedRecord = await Record.findById(linkedTableValue.recordId);
+          if (!linkedRecord) {
+            continue;
+          }
+          
+          // Get the lookup column from the linked table
+          const lookupColumnInLinkedTable = await Column.findById(lookupConfig.lookupColumnId);
+          if (!lookupColumnInLinkedTable) {
+            continue;
+          }
+          
+          // Extract the value from the linked record
+          const lookupValue = linkedRecord.data?.[lookupColumnInLinkedTable.name];
+          
+          // Create proper lookup display value
+          let displayValue = null;
+          if (lookupValue && String(lookupValue).trim()) {
+            displayValue = {
+              value: linkedRecord._id,
+              label: String(lookupValue),
+              sourceField: lookupColumnInLinkedTable.name,
+              sourceData: linkedRecord.data
+            };
+          }
+          
+          // Add calculated value to record data
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[lookupColumn.name] = displayValue;
+          
+        } catch (error) {
+          console.error(`Error calculating lookup for column ${lookupColumn.name}:`, error);
+          // Set null for failed calculations
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[lookupColumn.name] = null;
+        }
+      }
+      
+      return enhancedRecord;
+    }));
+    
+    return enhancedRecords;
+    
+  } catch (error) {
+    console.error('Error calculating lookup columns:', error);
+    return records; // Return original records if calculation fails
+  }
+};
+
 // Record Controllers
 export const createRecord = async (req, res) => {
   try {
@@ -141,7 +228,7 @@ export const createRecord = async (req, res) => {
       }
 
       // Validate rating format for rating data type
-      if (column.dataType === 'rating' && value && value !== '') {
+      if (column.dataType === 'rating' && value !== undefined && value !== null) {
         // Rating validation - always supports half ratings
         const maxStars = column.ratingConfig?.maxStars || 5;
         const allowHalf = true; // Always allow half stars
@@ -278,6 +365,11 @@ export const getRecords = async (req, res) => {
   try {
     const { tableId } = req.params;
     const { page = 1, limit = 50, sortRules, forceAscending, filterRules } = req.query;
+    
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -424,8 +516,9 @@ export const getRecords = async (req, res) => {
 
     const totalRecords = await Record.countDocuments(filterQuery);
 
-    // Calculate formula columns
-    const enhancedRecords = await calculateFormulaColumns(records, tableId);
+    // Calculate formula and lookup columns
+    const formulaEnhanced = await calculateFormulaColumns(records, tableId);
+    const enhancedRecords = await calculateLookupColumns(formulaEnhanced, tableId);
 
     res.status(200).json({
       success: true,
@@ -461,8 +554,9 @@ export const getRecordById = async (req, res) => {
       return res.status(404).json({ message: 'Record not found' });
     }
 
-    // Calculate formula columns for single record
-    const enhancedRecord = await calculateFormulaColumns([record], tableId);
+    // Calculate formula and lookup columns for single record
+    const formulaEnhanced = await calculateFormulaColumns([record], tableId);
+    const enhancedRecord = await calculateLookupColumns(formulaEnhanced, tableId);
     const finalRecord = enhancedRecord[0] || record;
 
     res.status(200).json({
@@ -559,7 +653,7 @@ export const updateRecord = async (req, res) => {
         }
 
         // Validate rating format for rating data type
-        if (column.dataType === 'rating' && value && value !== '') {
+        if (column.dataType === 'rating' && value !== undefined && value !== null) {
           // Rating validation - always supports half ratings
           const maxStars = column.ratingConfig?.maxStars || 5;
           const allowHalf = true; // Always allow half stars

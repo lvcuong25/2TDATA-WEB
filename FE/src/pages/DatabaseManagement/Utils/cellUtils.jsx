@@ -313,6 +313,31 @@ export const formatCellValueForDisplay = (value, column) => {
     case 'checkbox':
       return value ? '✓' : '';
 
+    case 'rating':
+      if (value !== null && value !== undefined && value !== '') {
+        const numValue = Number(value);
+        if (!isNaN(numValue)) {
+          const maxStars = column.ratingConfig?.maxStars || 5;
+          const starIcon = '★';
+          const emptyStarIcon = '☆';
+          
+          // Create visual star representation
+          let stars = '';
+          for (let i = 1; i <= maxStars; i++) {
+            if (i <= Math.floor(numValue)) {
+              stars += starIcon;
+            } else if (i - 0.5 <= numValue) {
+              stars += '★'; // Half star (for now, use full star)
+            } else {
+              stars += emptyStarIcon;
+            }
+          }
+          
+          return `${stars} (${numValue})`;
+        }
+      }
+      return '';
+
     case 'multi_select':
       if (Array.isArray(value) && value.length > 0) {
         return value.join(', ');
@@ -346,6 +371,22 @@ export const formatCellValueForDisplay = (value, column) => {
         return displayUrl; // Return URL with protocol for display
       }
       return '';
+    case 'formula':
+      // Formula columns display their calculated results
+      if (value !== null && value !== undefined) {
+        // Format the calculated result based on its type
+        if (typeof value === 'number') {
+          return value.toLocaleString();
+        } else if (typeof value === 'boolean') {
+          return value ? '✓' : '✗';
+        } else if (value instanceof Date) {
+          return value.toLocaleString();
+        } else {
+          return String(value);
+        }
+      }
+      return 'No result';
+
 
     default:
       return value || '';

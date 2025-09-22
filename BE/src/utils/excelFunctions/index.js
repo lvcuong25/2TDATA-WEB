@@ -31,7 +31,7 @@ export const functionCategories = {
   },
   'Text': {
     functions: [
-      'CONCAT', 'UPPER', 'LOWER', 'PROPER', 'LEN',
+      'CONCAT', 'CONCATENATE', 'UPPER', 'LOWER', 'PROPER', 'LEN',
       'LEFT', 'RIGHT', 'MID', 'FIND', 'SEARCH',
       'SUBSTITUTE', 'REPLACE', 'TRIM', 'CLEAN',
       'TEXT', 'VALUE', 'REPT', 'EXACT', 'CHAR', 'CODE'

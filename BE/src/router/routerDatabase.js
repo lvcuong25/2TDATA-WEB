@@ -4,7 +4,8 @@ import {
   getDatabases,
   getDatabaseById,
   updateDatabase,
-  deleteDatabase
+  deleteDatabase,
+  copyDatabase
 } from "../controllers/databaseController.js";
 
 import {
@@ -12,7 +13,8 @@ import {
   getTables,
   getTableById,
   updateTable,
-  deleteTable
+  deleteTable,
+  copyTable
 } from "../controllers/tableController.js";
 
 import {
@@ -20,7 +22,9 @@ import {
   getColumns,
   getColumnById,
   updateColumn,
-  deleteColumn
+  deleteColumn,
+  getLinkedTableData,
+  getLookupData
 } from "../controllers/columnController.js";
 
 import {
@@ -55,6 +59,34 @@ import {
   deleteFieldPreference
 } from "../controllers/fieldPreferenceController.js";
 
+import {
+  createView,
+  getViews,
+  getViewById,
+  updateView,
+  deleteView,
+  copyView
+} from "../controllers/viewController.js";
+import {
+  getKanbanData,
+  updateRecordColumn,
+  addKanbanColumn,
+  getKanbanConfig,
+  getFilterOperators
+} from "../controllers/kanbanController.js";
+
+import {
+  getCalendarData,
+  updateRecordDate,
+  getCalendarConfig
+} from "../controllers/calendarController.js";
+
+import {
+  createViewValidation,
+  updateViewValidation,
+  copyViewValidation
+} from "../validations/viewValidation.js";
+
 const router = Router();
 
 // Database routes
@@ -63,6 +95,7 @@ router.get("/databases", getDatabases);
 router.get("/databases/:databaseId", getDatabaseById);
 router.put("/databases/:databaseId", updateDatabase);
 router.delete("/databases/:databaseId", deleteDatabase);
+router.post("/databases/:databaseId/copy", copyDatabase);
 
 // Table routes
 router.post("/tables", createTable);
@@ -70,11 +103,14 @@ router.get("/databases/:databaseId/tables", getTables);
 router.get("/tables/:tableId", getTableById);
 router.put("/tables/:tableId", updateTable);
 router.delete("/tables/:tableId", deleteTable);
+router.post("/tables/:tableId/copy", copyTable);
 
 // Column routes
 router.post("/columns", createColumn);
 router.get("/tables/:tableId/columns", getColumns);
 router.get("/columns/:columnId", getColumnById);
+router.get("/columns/:columnId/linked-data", getLinkedTableData);
+router.get("/columns/:columnId/lookup-data", getLookupData);
 router.put("/columns/:columnId", updateColumn);
 router.delete("/columns/:columnId", deleteColumn);
 
@@ -111,5 +147,25 @@ router.get("/filter-preferences", getAllFilterPreferences);
 router.get("/tables/:tableId/field-preference", getFieldPreference);
 router.post("/tables/:tableId/field-preference", saveFieldPreference);
 router.delete("/tables/:tableId/field-preference", deleteFieldPreference);
+
+// View routes
+router.post("/views", createViewValidation, createView);
+router.get("/tables/:tableId/views", getViews);
+router.get("/views/:viewId", getViewById);
+router.put("/views/:viewId", updateViewValidation, updateView);
+router.delete("/views/:viewId", deleteView);
+router.post("/views/:viewId/copy", copyViewValidation, copyView);
+
+// Kanban routes
+router.get("/tables/:tableId/kanban", getKanbanData);
+router.get("/tables/:tableId/kanban/config", getKanbanConfig);
+router.get("/kanban/filter-operators/:fieldType", getFilterOperators);
+router.put("/records/:recordId/kanban", updateRecordColumn);
+router.post("/tables/:tableId/kanban/column", addKanbanColumn);
+
+// Calendar routes
+router.get("/tables/:tableId/calendar", getCalendarData);
+router.get("/tables/:tableId/calendar/config", getCalendarConfig);
+router.put("/records/:recordId/calendar", updateRecordDate);
 
 export default router;

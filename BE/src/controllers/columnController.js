@@ -6,7 +6,7 @@ import Record from '../model/Record.js';
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
-    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig } = req.body;
+    const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig, lookupConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -26,7 +26,9 @@ export const createColumn = async (req, res) => {
       urlConfig,
       phoneConfig,
       timeConfig,
-      ratingConfig
+      ratingConfig,
+      linkedTableConfig,
+      lookupConfig
     });
 
     if (!name || name.trim() === '') {
@@ -210,6 +212,41 @@ export const createColumn = async (req, res) => {
       });
     }
 
+    // Only add linkedTableConfig if dataType is linked_table and linkedTableConfig is provided
+    if (dataType === 'linked_table' && linkedTableConfig) {
+      // Ensure linkedTableConfig has all required fields with defaults
+      columnData.linkedTableConfig = {
+        linkedTableId: linkedTableConfig.linkedTableId,
+        allowMultiple: linkedTableConfig.allowMultiple || false,
+        defaultValue: linkedTableConfig.defaultValue || null,
+        filterRules: linkedTableConfig.filterRules || []
+      };
+      console.log('Backend: Creating linked_table column:', {
+        dataType,
+        name,
+        hasLinkedTableConfig: !!linkedTableConfig,
+        linkedTableConfig: columnData.linkedTableConfig
+      });
+    }
+
+    // Only add lookupConfig if dataType is lookup and lookupConfig is provided
+    if (dataType === 'lookup' && lookupConfig) {
+      // Ensure lookupConfig has all required fields with defaults
+      columnData.lookupConfig = {
+        linkedTableId: lookupConfig.linkedTableId,
+        lookupColumnId: lookupConfig.lookupColumnId,
+        linkedTableName: lookupConfig.linkedTableName || '',
+        lookupColumnName: lookupConfig.lookupColumnName || '',
+        defaultValue: lookupConfig.defaultValue || null
+      };
+      console.log('Backend: Creating lookup column:', {
+        dataType,
+        name,
+        hasLookupConfig: !!lookupConfig,
+        lookupConfig: columnData.lookupConfig
+      });
+    }
+
     // Set default value for currency column if not provided
     if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
       columnData.defaultValue = 0;
@@ -307,7 +344,7 @@ export const getColumnById = async (req, res) => {
 export const updateColumn = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig } = req.body;
+    const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
@@ -492,6 +529,18 @@ export const updateColumn = async (req, res) => {
       });
     }
 
+    // Linked table data type configuration
+    if (dataType === 'linked_table' && linkedTableConfig !== undefined) {
+      column.linkedTableConfig = linkedTableConfig;
+      console.log('Backend: Updating linked_table column:', {
+        dataType,
+        name,
+        hasLinkedTableConfig: !!linkedTableConfig,
+        linkedTableConfig
+      });
+    } else if (dataType !== 'linked_table') {
+      column.linkedTableConfig = undefined;
+    }
 
     // Set default value for currency column if not provided
     if (dataType === 'currency' && defaultValue === undefined && column.defaultValue === undefined) {
@@ -508,6 +557,159 @@ export const updateColumn = async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating column:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+export const getLinkedTableData = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { search, limit = 50, page = 1 } = req.query;
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    // Find the column
+    const column = await Column.findOne({
+      _id: columnId,
+      userId,
+      siteId
+    });
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    if (column.dataType !== 'linked_table') {
+      return res.status(400).json({ message: 'Column is not a linked table type' });
+    }
+
+    if (!column.linkedTableConfig || !column.linkedTableConfig.linkedTableId) {
+      return res.status(400).json({ message: 'Linked table configuration not found' });
+    }
+
+    const linkedTableId = column.linkedTableConfig.linkedTableId;
+
+    // Build query for records
+    let query = { tableId: linkedTableId };
+    
+    // Add search functionality if search term provided
+    if (search && search.trim()) {
+      query.$or = [
+        { 'data.name': { $regex: search.trim(), $options: 'i' } },
+        { 'data.title': { $regex: search.trim(), $options: 'i' } },
+        { 'data.email': { $regex: search.trim(), $options: 'i' } }
+      ];
+    }
+
+    // Calculate pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get records from linked table
+    const records = await Record.find(query)
+      .skip(skip)
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
+
+    // Get total count for pagination
+    const totalCount = await Record.countDocuments(query);
+
+    console.log('🔍 Backend: Query and Records:', {
+      query: query,
+      recordsCount: records.length,
+      totalCount: totalCount,
+      firstRecord: records[0] ? {
+        _id: records[0]._id,
+        tableId: records[0].tableId,
+        data: records[0].data,
+        dataKeys: Object.keys(records[0].data || {})
+      } : null
+    });
+
+    // Get linked table info
+    const linkedTable = await Table.findOne({ _id: linkedTableId });
+
+    // Get columns of the linked table
+    const linkedTableColumns = await Column.find({
+      tableId: linkedTableId,
+      userId,
+      siteId
+    }).sort({ order: 1 });
+
+    console.log('🔍 getLinkedTableData Debug:', {
+      columnId,
+      linkedTableId,
+      query,
+      recordsCount: records.length,
+      totalCount,
+      linkedTable: linkedTable ? { _id: linkedTable._id, name: linkedTable.name } : null,
+      linkedTableColumns: linkedTableColumns.map(col => ({ _id: col._id, name: col.name })),
+      firstRecord: records[0] ? { _id: records[0]._id, data: records[0].data } : null,
+      allRecordsData: records.map(r => ({ _id: r._id, dataKeys: Object.keys(r.data || {}) }))
+    });
+
+    // Transform records to options format
+    const options = records.map((record, index) => {
+      // Try to get the first column with data as label
+      let label = `Record ${index + 1}`;
+      if (record.data && Object.keys(record.data).length > 0) {
+        // Get the first column that has data
+        const firstColumn = linkedTableColumns[0];
+        if (firstColumn && record.data[firstColumn.name]) {
+          label = String(record.data[firstColumn.name]);
+        } else {
+          // Fallback to any available data
+          const dataKeys = Object.keys(record.data);
+          const firstDataKey = dataKeys.find(key => record.data[key] && String(record.data[key]).trim());
+          if (firstDataKey) {
+            label = String(record.data[firstDataKey]);
+          }
+        }
+      }
+      
+      return {
+        value: record._id,
+        label: String(label),
+        recordId: record._id,
+        data: record.data
+      };
+    });
+
+    console.log('🔍 Backend: All records data:', records.map(record => ({
+      _id: record._id,
+      tableId: record.tableId,
+      data: record.data,
+      dataKeys: Object.keys(record.data || {}),
+      dataEntries: Object.entries(record.data || {}).map(([key, val]) => ({ key, value: val }))
+    })));
+
+    console.log('🔍 Backend: Transformed options:', options.map(option => ({
+      value: option.value,
+      label: option.label,
+      data: option.data,
+      dataKeys: Object.keys(option.data || {})
+    })));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        options,
+        totalCount,
+        linkedTable: linkedTable ? {
+          _id: linkedTable._id,
+          name: linkedTable.name
+        } : null,
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          _id: col._id,
+          name: col.name,
+          dataType: col.dataType,
+          order: col.order
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching linked table data:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
@@ -552,6 +754,140 @@ export const deleteColumn = async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting column:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Get lookup data for a lookup column
+export const getLookupData = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { search = '', page = 1, limit = 10 } = req.query;
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    console.log('🔍 getLookupData called:', { columnId, search, page, limit });
+
+    // Get the column
+    const column = await Column.findOne({
+      _id: columnId,
+      userId,
+      siteId
+    });
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    // Check if it's a lookup column
+    if (column.dataType !== 'lookup') {
+      return res.status(400).json({ message: 'Column is not a lookup type' });
+    }
+
+    const lookupConfig = column.lookupConfig;
+    if (!lookupConfig || !lookupConfig.linkedTableId || !lookupConfig.lookupColumnId) {
+      return res.status(400).json({ message: 'Lookup configuration not found' });
+    }
+
+    console.log('🔍 Lookup config:', lookupConfig);
+
+    // Get the linked table
+    const linkedTable = await Table.findById(lookupConfig.linkedTableId);
+    if (!linkedTable) {
+      return res.status(404).json({ message: 'Linked table not found' });
+    }
+
+    // Get the lookup column
+    const lookupColumn = await Column.findById(lookupConfig.lookupColumnId);
+    if (!lookupColumn) {
+      return res.status(404).json({ message: 'Lookup column not found' });
+    }
+
+    console.log('🔍 Linked table:', linkedTable.name);
+    console.log('🔍 Lookup column:', lookupColumn.name);
+
+    // Build search query - search in all text fields
+    let query = { tableId: lookupConfig.linkedTableId };
+    
+    if (search && search.trim()) {
+      // Search in the specific lookup column
+      const searchRegex = new RegExp(search.trim(), 'i');
+      query[`data.${lookupColumn.name}`] = searchRegex;
+    }
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Fetch records with pagination
+    const records = await Record.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Get total count
+    const totalCount = await Record.countDocuments(query);
+
+    // Get columns of the linked table for display
+    const linkedTableColumns = await Column.find({
+      tableId: lookupConfig.linkedTableId
+    }).sort({ order: 1 });
+
+    // Transform records into options
+    const options = records.map((record, index) => {
+      // Create a display label from the specific lookup column
+      let label = `Record ${index + 1}`;
+      
+      // Try lookup column first
+      const lookupValue = record.data?.[lookupColumn.name];
+      if (lookupValue && String(lookupValue).trim()) {
+        label = String(lookupValue);
+      } else {
+        // Fallback: create meaningful label
+        const data = record.data || {};
+        const priorityFields = ["Tên giao dịch", "Loại giao dịch", "chiến dịch", "Text 1"];
+        
+        for (const field of priorityFields) {
+          if (data[field] && String(data[field]).trim()) {
+            label = `${field}: ${String(data[field])}`;
+            break;
+          }
+        }
+      }
+
+      return {
+        value: record._id,
+        label: String(label),
+        data: record.data
+      };
+    });
+
+    console.log('🔍 Lookup data result:', {
+      totalCount,
+      optionsCount: options.length,
+      linkedTable: linkedTable.name,
+      linkedTableColumns: linkedTableColumns.length
+    });
+
+    res.json({
+      success: true,
+      data: {
+        options,
+        totalCount,
+        linkedTable: {
+          _id: linkedTable._id,
+          name: linkedTable.name
+        },
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          _id: col._id,
+          name: col.name,
+          dataType: col.dataType,
+          order: col.order
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting lookup data:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

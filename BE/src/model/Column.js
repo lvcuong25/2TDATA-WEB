@@ -32,7 +32,7 @@ const columnSchema = new mongoose.Schema({
   dataType: {
     type: String,
     required: true,
-        enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency', 'percent', 'phone', 'time', 'rating']
+        enum: ['string', 'number', 'date', 'year', 'text', 'email', 'url', 'json', 'checkbox', 'single_select', 'multi_select', 'formula', 'currency', 'percent', 'phone', 'time', 'rating', 'linked_table', 'lookup']
   },
   isRequired: {
     type: Boolean,
@@ -222,6 +222,59 @@ const columnSchema = new mongoose.Schema({
         type: Number,
         min: 0,
         default: 0
+      }
+    },
+    default: undefined
+  },
+  linkedTableConfig: {
+    type: {
+      linkedTableId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Table',
+        required: true
+      },
+      allowMultiple: {
+        type: Boolean,
+        default: false
+      },
+      defaultValue: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+      },
+      filterRules: {
+        type: [{
+          field: String,
+          operator: String,
+          value: mongoose.Schema.Types.Mixed
+        }],
+        default: []
+      }
+    },
+    default: undefined
+  },
+  lookupConfig: {
+    type: {
+      linkedTableId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Table',
+        required: true
+      },
+      lookupColumnId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Column',
+        required: true
+      },
+      linkedTableName: {
+        type: String,
+        default: ''
+      },
+      lookupColumnName: {
+        type: String,
+        default: ''
+      },
+      defaultValue: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
       }
     },
     default: undefined

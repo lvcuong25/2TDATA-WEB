@@ -18,7 +18,8 @@ import {
   FireFilled,
   TrophyOutlined,
   TrophyFilled,
-  CloseOutlined
+  CloseOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
@@ -29,6 +30,14 @@ import {
 import {
   getDataTypeIcon
 } from '../Utils/dataTypeUtils.jsx';
+import {
+  getRowHeight,
+  getRowHeightStyle,
+  getRowContentStyle,
+  getCellContentStyle
+} from '../Utils/rowHeightUtils.jsx';
+import LinkedTableSelectModal from './LinkedTableSelectModal';
+import LookupDropdown from './LookupDropdown';
 
 // Custom AddOptionInput component for dropdown
 const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
@@ -189,7 +198,7 @@ const SingleSelectPill = ({ value, options, onChange, onAddNewOption, isActive =
       >
         {options.map((option, index) => (
           <Option key={index} value={option}>
-            {option}
+            {String(option || '')}
           </Option>
         ))}
       </Select>
@@ -239,8 +248,18 @@ const TableBody = ({
   setShowAddColumn,
 
   // Utility functions
-  formatCellValueForDisplay
+  formatCellValueForDisplay,
+  // Row height props
+  tableId,
+  rowHeightSettings
 }) => {
+  // State for linked table modal
+  const [linkedTableModal, setLinkedTableModal] = useState({
+    visible: false,
+    column: null,
+    record: null
+  });
+
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
     if (!dateString) return '';
@@ -261,6 +280,12 @@ const TableBody = ({
   const isCellSelected = (recordId, columnName) => {
     return selectedCell?.recordId === recordId && selectedCell?.columnName === columnName;
   };
+
+  // Get row height for current table
+  const currentRowHeight = getRowHeight(rowHeightSettings, tableId);
+  const rowHeightStyle = getRowHeightStyle(currentRowHeight);
+  const rowContentStyle = getRowContentStyle(currentRowHeight);
+  const cellContentStyle = getCellContentStyle(currentRowHeight);
 
   // Function to add new option to single select or multi select column
   const handleAddNewOption = (column, newOption) => {
@@ -526,11 +551,11 @@ const TableBody = ({
                       {group.rules[0].field}
                     </span>
                     <span style={{ fontSize: '12px', color: '#666' }}>
-                      {group.values[0] || '(empty)'}
+                      {String(group.values[0] || '(empty)')}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Tooltip title={`Add record to ${group.rules[0].field}: ${group.values[0] || '(empty)'}`}>
+                    <Tooltip title={`Add record to ${group.rules[0].field}: ${String(group.values[0] || '(empty)')}`}>
                       <Button
                         type="text"
                         size="small"
@@ -564,7 +589,8 @@ const TableBody = ({
                   <div key={record._id} style={{
                     display: 'flex',
                     borderBottom: '1px solid #f0f0f0',
-                    backgroundColor: 'white'
+                    backgroundColor: 'white',
+                    ...rowHeightStyle
                   }}
                     onContextMenu={(e) => handleContextMenu(e, record._id)}
                   >
@@ -572,7 +598,7 @@ const TableBody = ({
                     <div style={{
                       width: '60px',
                       minWidth: '60px',
-                      padding: '8px',
+                      ...rowContentStyle,
                       borderRight: '1px solid #d9d9d9',
                       display: 'flex',
                       alignItems: 'center',
@@ -655,7 +681,7 @@ const TableBody = ({
                           padding: '0',
                           borderRight: '1px solid #d9d9d9',
                           position: 'relative',
-                          minHeight: '40px',
+                          ...cellContentStyle,
                           boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : 'none'
                         }}>
                           {isEditing ? (
@@ -1028,7 +1054,7 @@ const TableBody = ({
                                   <Select
                                     value={cellValue}
                                     onChange={(value) => {
-                                      setCellValue(value || '');
+                                      setCellValue(typeof value === 'object' ? JSON.stringify(value) : (value || ''));
                                       handleCellSave();
                                     }}
                                     autoFocus
@@ -1106,7 +1132,7 @@ const TableBody = ({
                                   >
                                     {options.map((option, index) => (
                                       <Option key={index} value={option}>
-                                        {option}
+                                        {String(option || '')}
                                       </Option>
                                     ))}
                                   </Select>
@@ -1146,7 +1172,7 @@ const TableBody = ({
                             <div
                               style={{
                                 cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? 'default' : 'pointer',
-                                padding: '8px',
+                                ...cellContentStyle,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
@@ -1159,7 +1185,7 @@ const TableBody = ({
                                 color: column.isSystem ? '#666' : '#333',
                                 fontStyle: column.isSystem ? 'italic' : 'normal'
                               }}
-                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' ? undefined : () => handleCellClick(record._id, column.name, value)}
                               onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                               onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
@@ -1316,7 +1342,7 @@ const TableBody = ({
                                           >
                                             {options.map((option, index) => (
                                               <Option key={index} value={option}>
-                                                {option}
+                                                {String(option || '')}
                                               </Option>
                                             ))}
                                           </Select>
@@ -1325,15 +1351,13 @@ const TableBody = ({
                                     : column.dataType === 'currency' && value !== null && value !== undefined ?
                                       (() => {
                                         const config = column.currencyConfig || {
-                                          currency: 'USD',
-                                          symbol: '$',
                                           position: 'before',
                                           decimalPlaces: 2,
                                           thousandsSeparator: ',',
                                           decimalSeparator: '.'
                                         };
 
-                                        const numValue = parseFloat(value);
+                                        const numValue = parseFloat(typeof value === 'object' && value.amount !== undefined ? value.amount : value);
                                         if (isNaN(numValue)) return value;
 
                                         const formatted = numValue.toLocaleString('en-US', {
@@ -1345,12 +1369,122 @@ const TableBody = ({
                                       })()
                                       : column.dataType === 'percent' && column.percentConfig?.displayAsProgress ? (
                                         <ProgressBar 
-                                          value={Number(value) || 0} 
+                                          value={Number(String(value)) || 0} 
                                           max={100}
                                           color="#1890ff"
                                           height="6px"
                                         />
-                                      ) : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
+                                      ) : column.dataType === 'linked_table' ?
+                                        (() => {
+                                          const linkedValue = value;
+                                          const isMultiple = column.linkedTableConfig?.allowMultiple;
+                                          
+                                          if (!linkedValue) {
+                                            return (
+                                              <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                color: '#bfbfbf',
+                                                fontStyle: 'italic',
+                                                cursor: 'pointer'
+                                              }}
+                                              onClick={() => setLinkedTableModal({
+                                                visible: true,
+                                                column: column,
+                                                record: record
+                                              })}
+                                              >
+                                                <LinkOutlined />
+                                                <span>Chọn dữ liệu</span>
+                                              </div>
+                                            );
+                                          }
+
+                                          if (isMultiple && Array.isArray(linkedValue)) {
+                                            return (
+                                              <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                flexWrap: 'wrap',
+                                                cursor: 'pointer'
+                                              }}
+                                              onClick={() => setLinkedTableModal({
+                                                visible: true,
+                                                column: column,
+                                                record: record
+                                              })}
+                                              >
+                                                {linkedValue.map((item, index) => (
+                                                  <Tag key={index} color="blue" size="small">
+                                                    {String(item?.label || item?.data?.name || `Item ${index + 1}`)}
+                                                  </Tag>
+                                                ))}
+                                                <Tag color="green" size="small">+</Tag>
+                                              </div>
+                                            );
+                                          } else {
+                                            const singleItem = isMultiple ? linkedValue[0] : linkedValue;
+                                            return (
+                                              <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                cursor: 'pointer'
+                                              }}
+                                              onClick={() => setLinkedTableModal({
+                                                visible: true,
+                                                column: column,
+                                                record: record
+                                              })}
+                                              >
+                                                <LinkOutlined style={{ color: '#722ed1' }} />
+                                                <span>{String(singleItem?.label || singleItem?.data?.name || 'Linked Item')}</span>
+                                              </div>
+                                            );
+                                          }
+                                        })()
+                                      : column.dataType === 'lookup' ? 
+                                        (() => {
+                                          if (isEditing && editingCell.columnName === column.name) {
+                                            return (
+                                              <LookupDropdown
+                                                column={column}
+                                                value={value}
+                                                onChange={(selectedOption) => {
+                                                  handleCellSave(record._id, column.name, selectedOption);
+                                                }}
+                                                placeholder={`Select from ${column.lookupConfig?.linkedTableName || 'table'}...`}
+                                              />
+                                            );
+                                          }
+                                          
+                                          // Hiển thị giá trị đã được pull từ bảng liên kết
+                                          if (!value) {
+                                            return (
+                                              <div style={{
+                                                color: '#bfbfbf',
+                                                fontStyle: 'italic',
+                                                cursor: 'pointer'
+                                              }}
+                                              onClick={() => handleCellClick(record._id, column.name, value)}
+                                              >
+                                                Select value...
+                                              </div>
+                                            );
+                                          }
+                                          
+                                          // Hiển thị label đã được pull từ bảng liên kết
+                                          return (
+                                            <div style={{ cursor: 'pointer' }}
+                                            onClick={() => handleCellClick(record._id, column.name, value)}
+                                            >
+                                              {String(value?.label || 'Lookup Value')}
+                                            </div>
+                                          );
+                                        })()
+                                        : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''))
                               }
                             </div>
                           )}
@@ -1394,7 +1528,7 @@ const TableBody = ({
                     cursor: 'pointer',
                     transition: 'background-color 0.2s'
                   }}
-                    onClick={() => handleAddRowToGroup(group.values, group.rules)}
+                    onClick={() => handleAddRowToGroup(String(group.values), group.rules)}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
                   >
@@ -1443,7 +1577,8 @@ const TableBody = ({
           {groupedData.ungroupedRecords.map((record, index) => (
             <div key={record._id} style={{
               display: 'flex',
-              borderBottom: '1px solid #f0f0f0'
+              borderBottom: '1px solid #f0f0f0',
+              ...rowHeightStyle
             }}
               onContextMenu={(e) => handleContextMenu(e, record._id)}
             >
@@ -1451,7 +1586,7 @@ const TableBody = ({
               <div style={{
                 width: '60px',
                 minWidth: '60px',
-                padding: '8px',
+                ...rowContentStyle,
                 borderRight: '1px solid #d9d9d9',
                 display: 'flex',
                 alignItems: 'center',
@@ -1533,7 +1668,7 @@ const TableBody = ({
                     padding: '0',
                     borderRight: '1px solid #d9d9d9',
                     position: 'relative',
-                    minHeight: '40px',
+                    ...cellContentStyle,
                     boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : 'none'
                   }}>
                     {isEditing ? (
@@ -1748,7 +1883,7 @@ const TableBody = ({
                             <Select
                               value={cellValue}
                               onChange={(value) => {
-                                setCellValue(value || '');
+                                setCellValue(typeof value === 'object' ? JSON.stringify(value) : (value || ''));
                                 handleCellSave();
                               }}
                               autoFocus
@@ -1826,7 +1961,7 @@ const TableBody = ({
                             >
                               {options.map((option, index) => (
                                 <Option key={index} value={option}>
-                                  {option}
+                                  {String(option || '')}
                                 </Option>
                               ))}
                             </Select>
@@ -1866,7 +2001,7 @@ const TableBody = ({
                       <div
                         style={{
                           cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? 'default' : 'pointer',
-                          padding: '8px',
+                          ...cellContentStyle,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -1879,7 +2014,7 @@ const TableBody = ({
                           color: column.isSystem ? '#666' : '#333',
                           fontStyle: column.isSystem ? 'italic' : 'normal'
                         }}
-                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' ? undefined : () => handleCellClick(record._id, column.name, value)}
                         onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                         onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
@@ -1915,15 +2050,15 @@ const TableBody = ({
                                   if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
                                     // Use the configured protocol
                                     const protocol = column.urlConfig.protocol;
-                                    displayUrl = `${protocol}://${value}`;
+                                    displayUrl = `${protocol}://${String(value)}`;
                                     console.log('Using configured protocol:', protocol, '→', displayUrl);
                                   } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
                                     // Don't add protocol, keep original value
-                                    displayUrl = value;
+                                    displayUrl = String(value);
                                     console.log('Protocol is none, keeping original value:', displayUrl);
                                   } else if (!column.urlConfig) {
                                     // Fallback for old columns without urlConfig
-                                    displayUrl = `https://${value}`;
+                                    displayUrl = `https://${String(value)}`;
                                     console.log('Using fallback protocol: https →', displayUrl);
                                   }
                                 }
@@ -1938,7 +2073,7 @@ const TableBody = ({
                                     value
                                     : column.dataType === 'rating' ?
                                       (() => {
-                                        const ratingValue = value && value !== '' ? Number(value) : 0;
+                                        const ratingValue = value !== undefined && value !== null && value !== '' ? Number(value) : 0;
                                         const maxStars = column.ratingConfig?.maxStars || 5;
                                         const icon = column.ratingConfig?.icon || 'star';
                                         const color = column.ratingConfig?.color || '#faad14';
@@ -2157,7 +2292,7 @@ const TableBody = ({
                                         >
                                           {options.map((option, index) => (
                                             <Option key={index} value={option}>
-                                              {option}
+                                              {String(option || '')}
                                             </Option>
                                           ))}
                                         </Select>
@@ -2166,6 +2301,9 @@ const TableBody = ({
                                   : column.dataType === 'currency' && value !== null && value !== undefined ?
                                     (() => {
                                       const config = column.currencyConfig || {
+                                          
+                                          currency: (typeof value === 'object' && value.currency) || column.currencyConfig?.currency || 'USD',
+                                          symbol: (typeof value === 'object' && value.currency === 'VND') ? '₫' : column.currencyConfig?.symbol || '$',
                                         currency: 'USD',
                                         symbol: '$',
                                         position: 'before',
@@ -2174,7 +2312,7 @@ const TableBody = ({
                                         decimalSeparator: '.'
                                       };
 
-                                      const numValue = parseFloat(value);
+                                      const numValue = parseFloat(typeof value === 'object' && value.amount !== undefined ? value.amount : value);
                                       if (isNaN(numValue)) return value;
 
                                       const formatted = numValue.toLocaleString('en-US', {
@@ -2186,12 +2324,122 @@ const TableBody = ({
                                     })()
                                     : column.dataType === 'percent' && column.percentConfig?.displayAsProgress ? (
                                       <ProgressBar 
-                                        value={Number(value) || 0} 
+                                        value={Number(String(value)) || 0} 
                                         max={100}
                                         color="#1890ff"
                                         height="6px"
                                       />
-                                    ) : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (value || '')
+                                    ) : column.dataType === 'linked_table' ?
+                                      (() => {
+                                        const linkedValue = value;
+                                        const isMultiple = column.linkedTableConfig?.allowMultiple;
+                                        
+                                        if (!linkedValue) {
+                                          return (
+                                            <div style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '8px',
+                                              color: '#bfbfbf',
+                                              fontStyle: 'italic',
+                                              cursor: 'pointer'
+                                            }}
+                                            onClick={() => setLinkedTableModal({
+                                              visible: true,
+                                              column: column,
+                                              record: record
+                                            })}
+                                            >
+                                              <LinkOutlined />
+                                              <span>Chọn dữ liệu</span>
+                                            </div>
+                                          );
+                                        }
+
+                                        if (isMultiple && Array.isArray(linkedValue)) {
+                                          return (
+                                            <div style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
+                                              flexWrap: 'wrap',
+                                              cursor: 'pointer'
+                                            }}
+                                            onClick={() => setLinkedTableModal({
+                                              visible: true,
+                                              column: column,
+                                              record: record
+                                            })}
+                                            >
+                                              {linkedValue.map((item, index) => (
+                                                <Tag key={index} color="blue" size="small">
+                                                  {String(item?.label || item?.data?.name || `Item ${index + 1}`)}
+                                                </Tag>
+                                              ))}
+                                              <Tag color="green" size="small">+</Tag>
+                                            </div>
+                                          );
+                                        } else {
+                                          const singleItem = isMultiple ? linkedValue[0] : linkedValue;
+                                          return (
+                                            <div style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '8px',
+                                              cursor: 'pointer'
+                                            }}
+                                            onClick={() => setLinkedTableModal({
+                                              visible: true,
+                                              column: column,
+                                              record: record
+                                            })}
+                                            >
+                                              <LinkOutlined style={{ color: '#722ed1' }} />
+                                              <span>{String(singleItem?.label || singleItem?.data?.name || 'Linked Item')}</span>
+                                            </div>
+                                          );
+                                        }
+                                      })()
+                                    : column.dataType === 'lookup' ? 
+                                      (() => {
+                                        if (isEditing && editingCell.columnName === column.name) {
+                                          return (
+                                            <LookupDropdown
+                                              column={column}
+                                              value={value}
+                                              onChange={(selectedOption) => {
+                                                handleCellSave(record._id, column.name, selectedOption);
+                                              }}
+                                              placeholder={`Select from ${column.lookupConfig?.linkedTableName || 'table'}...`}
+                                            />
+                                          );
+                                        }
+                                        
+                                        // Hiển thị giá trị đã được pull từ bảng liên kết
+                                        if (!value) {
+                                          return (
+                                            <div style={{
+                                              color: '#bfbfbf',
+                                              fontStyle: 'italic',
+                                              cursor: 'pointer'
+                                            }}
+                                            onClick={() => handleCellClick(record._id, column.name, value)}
+                                            >
+                                              Select value...
+                                            </div>
+                                          );
+                                        }
+                                        
+                                        // Hiển thị label đã được pull từ bảng liên kết
+                                        return (
+                                          <div style={{ cursor: 'pointer' }}
+                                          onClick={() => handleCellClick(record._id, column.name, value)}
+                                          >
+                                            {String(value?.label || 'Lookup Value')}
+                                          </div>
+                                        );
+                                      })()
+                                      : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''))
                         }
                       </div>
                     )}
@@ -2276,6 +2524,18 @@ const TableBody = ({
           </div>
         </div>
       </div>
+
+      {/* Linked Table Select Modal */}
+      <LinkedTableSelectModal
+        visible={linkedTableModal.visible}
+        onCancel={() => setLinkedTableModal({ visible: false, column: null, record: null })}
+        onSelect={(selectedData) => {
+          console.log('Selected linked table data:', selectedData);
+        }}
+        column={linkedTableModal.column}
+        record={linkedTableModal.record}
+        updateRecordMutation={updateRecordMutation}
+      />
     </div>
   );
 };

@@ -27,7 +27,8 @@ import {
   PercentageOutlined,
   PhoneOutlined,
   FieldTimeOutlined,
-  StarOutlined
+  StarOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
@@ -38,6 +39,8 @@ import PercentConfig from '../Config/PercentConfig';
 import UrlConfig from '../Config/UrlConfig';
 import TimeConfig from '../Config/TimeConfig';
 import RatingConfig from '../Config/RatingConfig';
+import LinkedTableConfig from '../Config/LinkedTableConfig';
+import LookupConfig from '../Config/LookupConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -49,7 +52,9 @@ const AddColumnModal = ({
   newColumn,
   setNewColumn,
   columns,
-  loading
+  loading,
+  currentTableId = null,
+  currentDatabaseId = null
 }) => {
   const handleDataTypeChange = (value) => {
     setNewColumn({ 
@@ -180,10 +185,24 @@ const AddColumnModal = ({
                 </div>
               </Option>
               
+              <Option value="linked_table">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <LinkOutlined style={{ color: '#722ed1' }} />
+                  <span>Linked Table</span>
+                </div>
+              </Option>
+              
               <Option value="json">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <CodeOutlined style={{ color: '#722ed1' }} />
                   <span>JSON</span>
+                </div>
+              </Option>
+              
+              <Option value="lookup">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <SearchOutlined style={{ color: '#13c2c2' }} />
+                  <span>Lookup</span>
                 </div>
               </Option>
             </Select>
@@ -433,6 +452,32 @@ const AddColumnModal = ({
             <RatingConfig
               ratingConfig={newColumn.ratingConfig}
               setRatingConfig={(ratingConfig) => setNewColumn({ ...newColumn, ratingConfig })}
+            />
+          )}
+
+          {/* Linked Table Configuration */}
+          {newColumn.dataType === 'linked_table' && (
+            <LinkedTableConfig
+              config={newColumn.linkedTableConfig}
+              onChange={(config) => setNewColumn({
+                ...newColumn,
+                linkedTableConfig: config
+              })}
+              currentTableId={currentTableId}
+              currentDatabaseId={currentDatabaseId}
+            />
+          )}
+
+          {/* Lookup Configuration */}
+          {newColumn.dataType === 'lookup' && (
+            <LookupConfig
+              config={newColumn.lookupConfig}
+              onChange={(config) => setNewColumn({
+                ...newColumn,
+                lookupConfig: config
+              })}
+              currentTableId={currentTableId}
+              currentDatabaseId={currentDatabaseId}
             />
           )}
 

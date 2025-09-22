@@ -40,20 +40,39 @@ class ExprEvalEngine {
         return null;
       }
 
-      // Convert {columnName} references to variables
+      // Convert {columnName} and [columnName] references to variables
       let processedFormula = formula;
       const variables = {};
       
-      // Find all column references (e.g., {columnName})
-      const columnRefs = formula.match(/\{([^}]+)\}/g) || [];
-      console.log('🔗 Found column references:', columnRefs);
+      // Find all column references (both {columnName} and [columnName])
+      const curlyRefs = formula.match(/\{([^}]+)\}/g) || [];
+      const squareRefs = formula.match(/\[([^\]]+)\]/g) || [];
+      const allRefs = [...curlyRefs, ...squareRefs];
       
-      for (const ref of columnRefs) {
-        const columnName = ref.slice(1, -1); // Remove { and }
+      console.log('🔗 Found column references:', allRefs);
+      
+      for (const ref of allRefs) {
+        let columnName;
+        let variableName;
+        
+        if (ref.startsWith('{') && ref.endsWith('}')) {
+          columnName = ref.slice(1, -1); // Remove { and }
+          variableName = columnName.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+        } else if (ref.startsWith('[') && ref.endsWith(']')) {
+          columnName = ref.slice(1, -1); // Remove [ and ]
+          // Convert column name to valid variable name by removing spaces and special characters
+          variableName = columnName.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+        }
+        
         const column = columns.find(col => col.name === columnName);
         
         if (column && recordData[columnName] !== undefined && recordData[columnName] !== null) {
           let value = recordData[columnName];
+          
+          // Handle lookup/linked record values
+          if (value && typeof value === 'object' && value.label !== undefined) {
+            value = value.label; // Extract label from lookup object
+          }
           
           // Convert value based on column data type
           switch (column.dataType) {
@@ -76,15 +95,15 @@ class ExprEvalEngine {
               value = value;
           }
           
-          variables[columnName] = value;
-          processedFormula = processedFormula.replace(ref, columnName);
+          variables[variableName] = value;
+          processedFormula = processedFormula.replace(new RegExp(ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), variableName);
           
-          console.log(`📝 Replacing ${ref} with ${value} (type: ${typeof value})`);
+          console.log(`📝 Replacing ${ref} with ${variableName}=${value} (type: ${typeof value})`);
         } else {
           // Column not found or no value, use default based on context
           console.log(`⚠️ Column ${columnName} not found or no value, using default`);
-          variables[columnName] = 0; // Default to 0 for numbers
-          processedFormula = processedFormula.replace(ref, columnName);
+          variables[variableName] = 0; // Default to 0 for numbers
+          processedFormula = processedFormula.replace(new RegExp(ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), variableName);
         }
       }
       
@@ -113,11 +132,21 @@ class ExprEvalEngine {
    */
   extractDependencies(formula) {
     const dependencies = [];
-    const columnRefs = formula.match(/\{([^}]+)\}/g) || [];
     
-    for (const ref of columnRefs) {
-      const columnName = ref.slice(1, -1);
-      if (!dependencies.includes(columnName)) {
+    // Find all column references (both {columnName} and [columnName])
+    const curlyRefs = formula.match(/\{([^}]+)\}/g) || [];
+    const squareRefs = formula.match(/\[([^\]]+)\]/g) || [];
+    const allRefs = [...curlyRefs, ...squareRefs];
+    
+    for (const ref of allRefs) {
+      let columnName;
+      if (ref.startsWith('{') && ref.endsWith('}')) {
+        columnName = ref.slice(1, -1);
+      } else if (ref.startsWith('[') && ref.endsWith(']')) {
+        columnName = ref.slice(1, -1);
+      }
+      
+      if (columnName && !dependencies.includes(columnName)) {
         dependencies.push(columnName);
       }
     }
@@ -141,24 +170,39 @@ class ExprEvalEngine {
     
     try {
       // Test if formula can be parsed
-      const testFormula = formula.replace(/\{[^}]+\}/g, '0'); // Replace column refs with 0
+      const testFormula = formula.replace(/\{[^}]+\}/g, '0').replace(/\[([^\]]+)\]/g, '0'); // Replace column refs with 0
       this.parser.parse(testFormula);
     } catch (error) {
       errors.push(`Syntax error: ${error.message}`);
     }
     
     // Check for balanced braces
-    const openBraces = (formula.match(/\{/g) || []).length;
-    const closeBraces = (formula.match(/\}/g) || []).length;
+    const openCurly = (formula.match(/\{/g) || []).length;
+    const closeCurly = (formula.match(/\}/g) || []).length;
+    const openSquare = (formula.match(/\[/g) || []).length;
+    const closeSquare = (formula.match(/\]/g) || []).length;
     
-    if (openBraces !== closeBraces) {
-      errors.push('Unbalanced braces in formula');
+    if (openCurly !== closeCurly) {
+      errors.push('Unbalanced curly braces in formula');
     }
     
-    // Check for valid column references
-    const columnRefs = formula.match(/\{([^}]+)\}/g) || [];
-    for (const ref of columnRefs) {
-      const columnName = ref.slice(1, -1);
+    if (openSquare !== closeSquare) {
+      errors.push('Unbalanced square brackets in formula');
+    }
+    
+    // Check for valid column references (both {columnName} and [columnName])
+    const curlyRefs = formula.match(/\{([^}]+)\}/g) || [];
+    const squareRefs = formula.match(/\[([^\]]+)\]/g) || [];
+    const allRefs = [...curlyRefs, ...squareRefs];
+    
+    for (const ref of allRefs) {
+      let columnName;
+      if (ref.startsWith('{') && ref.endsWith('}')) {
+        columnName = ref.slice(1, -1);
+      } else if (ref.startsWith('[') && ref.endsWith(']')) {
+        columnName = ref.slice(1, -1);
+      }
+      
       const column = columns.find(col => col.name === columnName);
       
       if (!column) {
@@ -205,10 +249,28 @@ class ExprEvalEngine {
    */
   testFormula(formula, sampleData = {}) {
     try {
-      const testFormula = formula.replace(/\{[^}]+\}/g, (match) => {
-        const columnName = match.slice(1, -1);
-        return sampleData[columnName] !== undefined ? sampleData[columnName] : '0';
-      });
+      let testFormula = formula;
+      
+      // Handle both {columnName} and [columnName] references
+      const curlyRefs = formula.match(/\{([^}]+)\}/g) || [];
+      const squareRefs = formula.match(/\[([^\]]+)\]/g) || [];
+      const allRefs = [...curlyRefs, ...squareRefs];
+      
+      for (const ref of allRefs) {
+        let columnName;
+        let variableName;
+        
+        if (ref.startsWith('{') && ref.endsWith('}')) {
+          columnName = ref.slice(1, -1);
+          variableName = columnName.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+        } else if (ref.startsWith('[') && ref.endsWith(']')) {
+          columnName = ref.slice(1, -1);
+          variableName = columnName.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+        }
+        
+        const value = sampleData[columnName] !== undefined ? sampleData[columnName] : '0';
+        testFormula = testFormula.replace(new RegExp(ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+      }
       
       const expr = this.parser.parse(testFormula);
       const result = expr.evaluate(sampleData);

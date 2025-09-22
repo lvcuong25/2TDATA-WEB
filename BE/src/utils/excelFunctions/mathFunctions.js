@@ -85,6 +85,10 @@ export const mathFunctions = {
     return Math.ceil(Number(number) || 0);
   },
 
+
+  CEILING: (number) => {
+    return Math.ceil(Number(number) || 0);
+  },
   FLOOR: (number) => {
     return Math.floor(Number(number) || 0);
   },

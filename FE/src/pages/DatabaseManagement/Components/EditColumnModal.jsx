@@ -38,6 +38,7 @@ import PercentConfig from '../Config/PercentConfig';
 import UrlConfig from '../Config/UrlConfig';
 import TimeConfig from '../Config/TimeConfig';
 import RatingConfig from '../Config/RatingConfig';
+import LinkedTableConfig from '../Config/LinkedTableConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -49,7 +50,9 @@ const EditColumnModal = ({
   editingColumn,
   setEditingColumn,
   columns,
-  loading
+  loading,
+  currentTableId = null,
+  currentDatabaseId = null
 }) => {
   if (!editingColumn) return null;
 
@@ -170,6 +173,13 @@ const EditColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LinkOutlined style={{ color: '#1890ff' }} />
                   <span>URL</span>
+                </div>
+              </Option>
+              
+              <Option value="linked_table">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <LinkOutlined style={{ color: '#722ed1' }} />
+                  <span>Linked Table</span>
                 </div>
               </Option>
               
@@ -409,6 +419,19 @@ const EditColumnModal = ({
             <RatingConfig
               ratingConfig={editingColumn.ratingConfig || { maxStars: 5, icon: 'star', color: '#faad14', defaultValue: 0 }}
               setRatingConfig={(ratingConfig) => setEditingColumn({ ...editingColumn, ratingConfig })}
+            />
+          )}
+
+          {/* Linked Table Configuration */}
+          {editingColumn.dataType === 'linked_table' && (
+            <LinkedTableConfig
+              config={editingColumn.linkedTableConfig}
+              onChange={(config) => setEditingColumn({
+                ...editingColumn,
+                linkedTableConfig: config
+              })}
+              currentTableId={currentTableId}
+              currentDatabaseId={currentDatabaseId}
             />
           )}
 

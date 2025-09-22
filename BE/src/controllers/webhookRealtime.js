@@ -177,4 +177,68 @@ export const checkAndAssignUserToServer = async (req, res, next) => {
       message: 'Lỗi server: ' + error.message
     });
   }
+};
+
+// ===== WEBHOOK REALTIME ĐƠN GIẢN =====
+
+// Webhook realtime - nhận dữ liệu và lưu vào UserService
+export const webhookRealtimeNew = async (req, res, next) => {
+  try {
+    const { userId, userServiceId, service_id, user_id, ...otherData } = req.body;
+    
+    // Sử dụng service_id và user_id nếu có, nếu không thì dùng userId và userServiceId
+    const finalUserId = user_id || userId;
+    const finalServiceId = service_id || userServiceId;
+    
+    let updateResult = null;
+    
+    // Nếu có service_id, cập nhật UserService
+    if (finalServiceId) {
+      try {
+        updateResult = await UserService.findByIdAndUpdate(
+          finalServiceId,
+          { 
+            // Lưu tất cả dữ liệu webhook
+            webhookData: {
+              ...otherData,
+              current_percent: req.body.current_percent,
+              timestamp: new Date()
+            },
+            lastWebhookAt: new Date(),
+            // Cập nhật current_percent nếu có
+            ...(req.body.current_percent && { 
+              'autoUpdate.current_percent': req.body.current_percent 
+            })
+          },
+          { new: true }
+        );
+      } catch (updateError) {
+        console.error('Error updating UserService:', updateError);
+      }
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Webhook realtime - nhận được dữ liệu và lưu thành công',
+      received: {
+        timestamp: new Date().toISOString(),
+        userId: finalUserId,
+        userServiceId: finalServiceId,
+        data: otherData
+      },
+      saved: {
+        userServiceUpdated: !!updateResult,
+        userServiceId: finalServiceId,
+        updateResult: updateResult ? {
+          id: updateResult._id,
+          name: updateResult.user?.name || 'N/A',
+          current_percent: req.body.current_percent || 'N/A'
+        } : null
+      }
+    });
+    
+  } catch (error) {
+    console.error('Webhook error:', error);
+    next(error);
+  }
 }; 

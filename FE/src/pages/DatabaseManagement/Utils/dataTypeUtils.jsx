@@ -20,7 +20,8 @@ import {
   PercentageOutlined,
   PhoneOutlined,
   FieldTimeOutlined,
-  StarOutlined
+  StarOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 
 /**
@@ -31,10 +32,12 @@ import {
 export const getDataTypeIcon = (dataType) => {
   switch (dataType) {
     case 'text': 
+    case 'long_text':
       return <FontSizeOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
     case 'number': 
       return <NumberOutlined style={{ color: '#52c41a', fontSize: '16px' }} />;
     case 'date': 
+    case 'datetime':
       return <CalendarOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
     case 'year': 
       return <ClockCircleOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
@@ -62,6 +65,10 @@ export const getDataTypeIcon = (dataType) => {
       return <FieldTimeOutlined style={{ color: '#fa8c16', fontSize: '16px' }} />;
     case 'rating': 
       return <StarOutlined style={{ color: '#faad14', fontSize: '16px' }} />;
+    case 'linked_table': 
+      return <LinkOutlined style={{ color: '#722ed1', fontSize: '16px' }} />;
+    case 'lookup': 
+      return <SearchOutlined style={{ color: '#13c2c2', fontSize: '16px' }} />;
     default: 
       return <FontSizeOutlined style={{ color: '#1890ff', fontSize: '16px' }} />;
   }
@@ -74,9 +81,13 @@ export const getDataTypeIcon = (dataType) => {
  */
 export const getDataTypeColor = (dataType) => {
   switch (dataType) {
-    case 'text': return '#1890ff';
+    case 'text': 
+    case 'long_text':
+      return '#1890ff';
     case 'number': return '#52c41a';
-    case 'date': return '#fa8c16';
+    case 'date': 
+    case 'datetime':
+      return '#fa8c16';
     case 'year': return '#fa8c16';
     case 'checkbox': return '#52c41a';
     case 'single_select': return '#1890ff';
@@ -90,6 +101,8 @@ export const getDataTypeColor = (dataType) => {
     case 'phone': return '#13c2c2';
     case 'time': return '#fa8c16';
     case 'rating': return '#faad14';
+    case 'linked_table': return '#722ed1';
+    case 'lookup': return '#13c2c2';
     default: return '#1890ff';
   }
 };
@@ -116,7 +129,9 @@ export const getDataTypeTag = (dataType) => {
     percent: 'orange',
     phone: 'cyan',
     time: 'orange',
-    rating: 'gold'
+    rating: 'gold',
+    linked_table: 'purple',
+    lookup: 'cyan'
   };
   return <Tag color={colorMap[dataType] || 'blue'}>{dataType.toUpperCase()}</Tag>;
 };
@@ -138,6 +153,8 @@ export const getTypeLetter = (dataType) => {
     case 'time': return '⏰';
     case 'rating': return '⭐';
     case 'datetime': return '📅';
+    case 'linked_table': return '🔗';
+    case 'lookup': return '🔍';
     default: return 'T';
   }
 };
@@ -163,7 +180,9 @@ export const getSupportedDataTypes = () => {
     { value: 'rating', label: 'Rating', icon: '⭐', color: '#faad14' },
     { value: 'email', label: 'Email', icon: '@', color: '#1890ff' },
     { value: 'url', label: 'URL', icon: '🔗', color: '#1890ff' },
-    { value: 'json', label: 'JSON', icon: '{}', color: '#722ed1' }
+    { value: 'json', label: 'JSON', icon: '{}', color: '#722ed1' },
+    { value: 'linked_table', label: 'Linked Table', icon: '🔗', color: '#722ed1' },
+    { value: 'lookup', label: 'Lookup', icon: '🔍', color: '#13c2c2' }
   ];
 };
 

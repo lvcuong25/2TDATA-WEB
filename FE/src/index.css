@@ -5519,3 +5519,63 @@ body.lazyload .ladi-spin-lucky-screen,
 body.lazyload .ladi-spin-lucky-start {
   background-image: none !important;
 }
+/* Global Custom Scrollbar Styles - Applied to all views */
+/* Webkit browsers (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #e9ecef;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #dee2e6;
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e9ecef #f8f9fa;
+}
+
+/* Ensure consistent scrollbar appearance across all components */
+.ant-layout,
+.ant-layout-content,
+.ant-layout-sider,
+.ant-menu,
+.ant-table-body,
+.kanban-column,
+.form-container {
+  scrollbar-width: thin;
+  scrollbar-color: #e9ecef #f8f9fa;
+}
+
+.ant-layout::-webkit-scrollbar,
+.ant-layout-content::-webkit-scrollbar,
+.ant-layout-sider::-webkit-scrollbar,
+.ant-menu::-webkit-scrollbar,
+.ant-table-body::-webkit-scrollbar,
+.kanban-column::-webkit-scrollbar,
+.form-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ant-layout::-webkit-scrollbar-thumb,
+.ant-layout-content::-webkit-scrollbar-thumb,
+.ant-layout-sider::-webkit-scrollbar-thumb,
+.ant-menu::-webkit-scrollbar-thumb,
+.ant-table-body::-webkit-scrollbar-thumb,
+.kanban-column::-webkit-scrollbar-thumb,
+.form-container::-webkit-scrollbar-thumb {
+  background: #e9ecef;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
