@@ -31,20 +31,16 @@ const MyService = () => {
   const [selectedService, setSelectedService] = useState(null);
   const [autoUpdateSettings, setAutoUpdateSettings] = useState({
     enabled: false,
-    interval: 30,
-    timeType: 'preset', // 'preset', 'custom', hoặc 'schedule'
-    customValue: 30,
-    customUnit: 'minutes', // 'minutes', 'hours', 'days'
     scheduleType: 'daily', // 'daily', 'weekly', 'monthly', 'once'
     scheduleTime: null, // moment object cho thời gian
     scheduleDate: null, // moment object cho ngày (nếu chọn 'once')
     scheduleDays: [], // array các ngày trong tuần (nếu chọn 'weekly')
   });
 
-  // State cho date range picker modal
+  // State cho date picker modal
   const [dateRangeModalVisible, setDateRangeModalVisible] = useState(false);
   const [selectedServiceForDateRange, setSelectedServiceForDateRange] = useState(null);
-  const [dateRange, setDateRange] = useState(null); // [startDate, endDate]
+  const [startDate, setStartDate] = useState(null); // Chỉ lưu ngày bắt đầu
 
   useEffect(() => {
     console.log('Current user:', currentUser);
@@ -105,10 +101,10 @@ const MyService = () => {
     }
   }
 
-  // Hàm mở modal chọn khoảng thời gian
+  // Hàm mở modal chọn ngày bắt đầu
   const handleServiceClickWithDateRange = (service) => {
     setSelectedServiceForDateRange(service);
-    setDateRange(null); // Reset date range
+    setStartDate(null); // Reset start date
     setDateRangeModalVisible(true);
   };
 
@@ -141,14 +137,15 @@ const MyService = () => {
         // Continue with redirect even if webhook fails
       }
 
-      // Tạo state object với dateRange nếu có
+      // Tạo state object với dateRange (từ ngày chọn đến hiện tại)
       let dateRangeData = null;
-      if (dateRange && dateRange.length === 2) {
+      if (startDate) {
+        const endDate = dayjs(); // Tự động lấy thời gian hiện tại
         dateRangeData = {
-          startDate: dateRange[0].format('YYYY-MM-DD'),
-          endDate: dateRange[1].format('YYYY-MM-DD'),
-          startDateISO: dateRange[0].toISOString(),
-          endDateISO: dateRange[1].toISOString()
+          startDate: startDate.format('YYYY-MM-DD'),
+          endDate: endDate.format('YYYY-MM-DD'),
+          startDateISO: startDate.toISOString(),
+          endDateISO: endDate.toISOString()
         };
       }
 
@@ -262,26 +259,9 @@ const MyService = () => {
 
   const handleOpenAutoUpdateModal = (service) => {
     setSelectedService(service);
-    const currentInterval = service.autoUpdate?.interval || 30;
-    
-    // Xác định loại thời gian (custom hoặc schedule)
-    // Kiểm tra xem có phải schedule không (dựa vào scheduleType)
-    const hasScheduleType = service.autoUpdate?.scheduleType;
-    
-    // Xác định timeType: ưu tiên schedule trước, mặc định là custom
-    let timeType = 'custom'; // default
-    if (hasScheduleType) {
-      timeType = 'schedule';
-    } else {
-      timeType = 'custom';
-    }
     
     setAutoUpdateSettings({
       enabled: service.autoUpdate?.enabled || false,
-      interval: currentInterval,
-      timeType: timeType,
-      customValue: currentInterval >= 1440 ? Math.floor(currentInterval / 1440) : currentInterval >= 60 ? Math.floor(currentInterval / 60) : currentInterval,
-      customUnit: currentInterval >= 1440 ? 'days' : currentInterval >= 60 ? 'hours' : 'minutes',
       scheduleType: service.autoUpdate?.scheduleType || 'daily',
       scheduleTime: service.autoUpdate?.scheduleTime ? dayjs(`2000-01-01 ${service.autoUpdate.scheduleTime}`) : null,
       scheduleDate: service.autoUpdate?.scheduleDate ? dayjs(service.autoUpdate.scheduleDate) : null,
@@ -298,8 +278,8 @@ const MyService = () => {
         enabled: autoUpdateSettings.enabled
       };
 
-      if (autoUpdateSettings.timeType === 'schedule') {
-        // Xử lý schedule
+      // Chỉ xử lý schedule
+      if (autoUpdateSettings.enabled) {
         if (!autoUpdateSettings.scheduleTime) {
           message.error('Vui lòng chọn thời gian cập nhật');
           return;
@@ -329,30 +309,18 @@ const MyService = () => {
         // Tính nextUpdateAt dựa trên schedule
         requestData.nextUpdateAt = calculateNextUpdateTime();
         
-        // Xóa thông tin interval cũ khi chuyển sang schedule
+        // Xóa thông tin interval cũ
         requestData.clearInterval = true;
         requestData.interval = null;
       } else {
-        // Xử lý interval (chỉ custom)
-        const { customValue, customUnit } = autoUpdateSettings;
-        let finalInterval;
-        
-        if (customUnit === 'days') {
-          finalInterval = customValue * 1440; // 1 ngày = 1440 phút
-        } else if (customUnit === 'hours') {
-          finalInterval = customValue * 60; // 1 giờ = 60 phút
-        } else {
-          finalInterval = customValue; // phút
-        }
-        
-        requestData.interval = finalInterval;
-        
-        // Xóa thông tin schedule cũ khi chuyển sang interval
+        // Khi tắt, xóa tất cả thông tin
         requestData.clearSchedule = true;
+        requestData.clearInterval = true;
         requestData.scheduleType = null;
         requestData.scheduleTime = null;
         requestData.scheduleDate = null;
         requestData.scheduleDays = null;
+        requestData.interval = null;
       }
 
       console.log('🚀 SENDING REQUEST:', requestData);
@@ -906,163 +874,89 @@ const MyService = () => {
             {autoUpdateSettings.enabled && (
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Chọn khoảng thời gian cập nhật
+                  Cài đặt lịch trình cập nhật
                 </label>
                 
-                <Radio.Group
-                  value={autoUpdateSettings.timeType}
-                  onChange={(e) => {
-                    const newTimeType = e.target.value;
-                    console.log('Changing timeType from', autoUpdateSettings.timeType, 'to', newTimeType);
-                    
-                    // Xóa dữ liệu cũ khi chuyển đổi loại
-                    if (newTimeType === 'schedule') {
-                      // Chuyển sang schedule -> xóa interval data
-                      setAutoUpdateSettings(prev => ({
-                        ...prev,
-                        timeType: newTimeType,
-                        interval: null,
-                        customValue: 30,
-                        customUnit: 'minutes'
-                      }));
-                    } else if (newTimeType === 'custom') {
-                      // Chuyển sang interval -> xóa schedule data
-                      setAutoUpdateSettings(prev => ({
-                        ...prev,
-                        timeType: newTimeType,
-                        scheduleType: null,
-                        scheduleTime: null,
-                        scheduleDate: null,
-                        scheduleDays: []
-                      }));
-                    } else {
-                      setAutoUpdateSettings(prev => ({ ...prev, timeType: newTimeType }));
-                    }
-                  }}
-                  className="mb-3"
-                >
-                  <Radio value="custom">Thời gian tùy chỉnh</Radio>
-                  <Radio value="schedule">Lịch trình cố định</Radio>
-                </Radio.Group>
-
-
-                {autoUpdateSettings.timeType === 'custom' && (
-                  <div className="flex gap-2 items-center">
-                    <InputNumber
-                      min={1}
-                      max={999}
-                      value={autoUpdateSettings.customValue}
-                      onChange={(value) => setAutoUpdateSettings(prev => ({ ...prev, customValue: value || 1 }))}
-                      style={{ width: 120 }}
-                      placeholder="Nhập số"
-                    />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Loại lịch trình
+                    </label>
                     <Select
-                      value={autoUpdateSettings.customUnit}
-                      onChange={(value) => setAutoUpdateSettings(prev => ({ ...prev, customUnit: value }))}
-                      style={{ width: 100 }}
+                      value={autoUpdateSettings.scheduleType}
+                      onChange={(value) => setAutoUpdateSettings(prev => ({ ...prev, scheduleType: value }))}
+                      style={{ width: '100%' }}
                       options={[
-                        { value: 'minutes', label: 'phút' },
-                        { value: 'hours', label: 'giờ' },
-                        { value: 'days', label: 'ngày' }
+                        { value: 'daily', label: 'Hàng ngày' },
+                        { value: 'weekly', label: 'Hàng tuần' },
+                        { value: 'monthly', label: 'Hàng tháng' },
+                        { value: 'once', label: 'Một lần duy nhất' }
                       ]}
                     />
                   </div>
-                )}
 
-                {autoUpdateSettings.timeType === 'custom' && (
-                  <div className="mt-2 text-sm text-gray-500">
-                    Tổng thời gian: {formatIntervalDisplay(
-                      autoUpdateSettings.customUnit === 'days' 
-                        ? autoUpdateSettings.customValue * 1440
-                        : autoUpdateSettings.customUnit === 'hours'
-                        ? autoUpdateSettings.customValue * 60
-                        : autoUpdateSettings.customValue
-                    )}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Thời gian cập nhật
+                    </label>
+                    <TimePicker
+                      value={autoUpdateSettings.scheduleTime}
+                      onChange={(time) => setAutoUpdateSettings(prev => ({ ...prev, scheduleTime: time }))}
+                      format="HH:mm"
+                      style={{ width: '100%' }}
+                      placeholder="Chọn thời gian"
+                    />
                   </div>
-                )}
 
-                {autoUpdateSettings.timeType === 'schedule' && (
-                  <div className="space-y-4">
+                  {autoUpdateSettings.scheduleType === 'once' && (
                     <div>
                       <label className="block text-sm font-medium mb-2">
-                        Loại lịch trình
+                        Ngày cập nhật
+                      </label>
+                      <DatePicker
+                        value={autoUpdateSettings.scheduleDate}
+                        onChange={(date) => setAutoUpdateSettings(prev => ({ ...prev, scheduleDate: date }))}
+                        style={{ width: '100%' }}
+                        placeholder="Chọn ngày"
+                        disabledDate={(current) => current && current > dayjs().endOf('day')}
+                      />
+                    </div>
+                  )}
+
+                  {autoUpdateSettings.scheduleType === 'weekly' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Chọn ngày trong tuần
                       </label>
                       <Select
-                        value={autoUpdateSettings.scheduleType}
-                        onChange={(value) => setAutoUpdateSettings(prev => ({ ...prev, scheduleType: value }))}
+                        mode="multiple"
+                        value={autoUpdateSettings.scheduleDays}
+                        onChange={(values) => setAutoUpdateSettings(prev => ({ ...prev, scheduleDays: values }))}
                         style={{ width: '100%' }}
+                        placeholder="Chọn các ngày"
                         options={[
-                          { value: 'daily', label: 'Hàng ngày' },
-                          { value: 'weekly', label: 'Hàng tuần' },
-                          { value: 'monthly', label: 'Hàng tháng' },
-                          { value: 'once', label: 'Một lần duy nhất' }
+                          { value: 1, label: 'Thứ 2' },
+                          { value: 2, label: 'Thứ 3' },
+                          { value: 3, label: 'Thứ 4' },
+                          { value: 4, label: 'Thứ 5' },
+                          { value: 5, label: 'Thứ 6' },
+                          { value: 6, label: 'Thứ 7' },
+                          { value: 0, label: 'Chủ nhật' }
                         ]}
                       />
                     </div>
+                  )}
 
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Thời gian cập nhật
-                      </label>
-                      <TimePicker
-                        value={autoUpdateSettings.scheduleTime}
-                        onChange={(time) => setAutoUpdateSettings(prev => ({ ...prev, scheduleTime: time }))}
-                        format="HH:mm"
-                        style={{ width: '100%' }}
-                        placeholder="Chọn thời gian"
-                      />
+                  {autoUpdateSettings.scheduleTime && (
+                    <div className="mt-2 text-sm text-gray-500">
+                      Lịch trình: {formatIntervalDisplay(
+                        null, 
+                        autoUpdateSettings.scheduleType, 
+                        autoUpdateSettings.scheduleTime.format('HH:mm')
+                      )}
                     </div>
-
-                    {autoUpdateSettings.scheduleType === 'once' && (
-                      <div>
-                        <label className="block text-sm font-medium mb-2">
-                          Ngày cập nhật
-                        </label>
-                        <DatePicker
-                          value={autoUpdateSettings.scheduleDate}
-                          onChange={(date) => setAutoUpdateSettings(prev => ({ ...prev, scheduleDate: date }))}
-                          style={{ width: '100%' }}
-                          placeholder="Chọn ngày"
-                          disabledDate={(current) => current && current < dayjs().startOf('day')}
-                        />
-                      </div>
-                    )}
-
-                    {autoUpdateSettings.scheduleType === 'weekly' && (
-                      <div>
-                        <label className="block text-sm font-medium mb-2">
-                          Chọn ngày trong tuần
-                        </label>
-                        <Select
-                          mode="multiple"
-                          value={autoUpdateSettings.scheduleDays}
-                          onChange={(values) => setAutoUpdateSettings(prev => ({ ...prev, scheduleDays: values }))}
-                          style={{ width: '100%' }}
-                          placeholder="Chọn các ngày"
-                          options={[
-                            { value: 1, label: 'Thứ 2' },
-                            { value: 2, label: 'Thứ 3' },
-                            { value: 3, label: 'Thứ 4' },
-                            { value: 4, label: 'Thứ 5' },
-                            { value: 5, label: 'Thứ 6' },
-                            { value: 6, label: 'Thứ 7' },
-                            { value: 0, label: 'Chủ nhật' }
-                          ]}
-                        />
-                      </div>
-                    )}
-
-                    {autoUpdateSettings.scheduleTime && (
-                      <div className="mt-2 text-sm text-gray-500">
-                        Lịch trình: {formatIntervalDisplay(
-                          null, 
-                          autoUpdateSettings.scheduleType, 
-                          autoUpdateSettings.scheduleTime.format('HH:mm')
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
@@ -1072,44 +966,12 @@ const MyService = () => {
                 <div className="text-sm space-y-1">
                   <div>Trạng thái: <Tag color="green">Đang bật</Tag></div>
                   <div>
-                    {(() => {
-                      console.log('Current info display - autoUpdateSettings:', {
-                        timeType: autoUpdateSettings.timeType,
-                        interval: autoUpdateSettings.interval,
-                        scheduleType: autoUpdateSettings.scheduleType,
-                        scheduleTime: autoUpdateSettings.scheduleTime,
-                        customValue: autoUpdateSettings.customValue,
-                        customUnit: autoUpdateSettings.customUnit
-                      });
-                      // Kiểm tra xem có dữ liệu schedule hợp lệ không
-                      const hasValidSchedule = autoUpdateSettings.timeType === 'schedule' && 
-                        autoUpdateSettings.scheduleType && 
-                        autoUpdateSettings.scheduleTime;
-                      
-                      return hasValidSchedule ? (
-                      <>
-                        Loại: <Tag color="blue">Lịch trình cố định</Tag><br/>
-                        Lịch trình: {formatIntervalDisplay(
-                          null,
-                          autoUpdateSettings.scheduleType,
-                          autoUpdateSettings.scheduleTime ? autoUpdateSettings.scheduleTime.format('HH:mm') : null
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        Loại: <Tag color="orange">Khoảng thời gian</Tag><br/>
-                        Khoảng thời gian: {formatIntervalDisplay(
-                          autoUpdateSettings.customUnit === 'days' 
-                            ? autoUpdateSettings.customValue * 1440
-                            : autoUpdateSettings.customUnit === 'hours'
-                            ? autoUpdateSettings.customValue * 60
-                            : autoUpdateSettings.customValue,
-                          null,
-                          null
-                        )}
-                      </>
-                    );
-                    })()}
+                    Loại: <Tag color="blue">Lịch trình cố định</Tag><br/>
+                    Lịch trình: {formatIntervalDisplay(
+                      null,
+                      autoUpdateSettings.scheduleType,
+                      autoUpdateSettings.scheduleTime ? autoUpdateSettings.scheduleTime.format('HH:mm') : null
+                    )}
                   </div>
                   {selectedService.autoUpdate?.lastUpdateAt && (
                     <div>Cập nhật cuối: {new Date(selectedService.autoUpdate.lastUpdateAt).toLocaleString('vi-VN')}</div>
@@ -1124,24 +986,26 @@ const MyService = () => {
             <div className="text-xs text-gray-500">
               <p>• Hệ thống sẽ tự động gọi các link cập nhật theo lịch trình đã chọn</p>
               <p>• Chỉ áp dụng cho các dịch vụ có link cập nhật</p>
-              <p>• <strong>Thời gian tùy chỉnh:</strong> Nhập số + chọn đơn vị (phút/giờ/ngày)</p>
               <p>• <strong>Lịch trình cố định:</strong> Cập nhật vào thời gian cụ thể mỗi ngày/tuần/tháng</p>
+              <p>• <strong>Hàng ngày:</strong> Cập nhật vào thời gian đã chọn mỗi ngày</p>
+              <p>• <strong>Hàng tuần:</strong> Cập nhật vào thời gian đã chọn vào các ngày được chọn trong tuần</p>
+              <p>• <strong>Một lần:</strong> Cập nhật một lần duy nhất vào ngày và thời gian đã chọn</p>
               <p>• Bạn có thể tắt bất kỳ lúc nào</p>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Modal chọn khoảng thời gian */}
+      {/* Modal chọn ngày bắt đầu */}
       <Modal
-        title="Chọn khoảng thời gian (Tùy chọn)"
+        title="Chọn ngày bắt đầu (Tùy chọn)"
         open={dateRangeModalVisible}
         onOk={handleConnectWithDateRange}
         onCancel={() => {
           setDateRangeModalVisible(false);
-          setDateRange(null);
+          setStartDate(null);
         }}
-        okText={dateRange && dateRange.length === 2 ? "Kết nối với thời gian đã chọn" : "Kết nối không có thời gian"}
+        okText={startDate ? "Kết nối từ ngày đã chọn đến hiện tại" : "Kết nối không có thời gian"}
         cancelText="Hủy"
         width={500}
       >
@@ -1161,46 +1025,48 @@ const MyService = () => {
                 {selectedServiceForDateRange.service?.name}
               </h4>
               <p className="text-sm text-gray-600">
-                <strong className="text-blue-600">Tùy chọn:</strong> Chọn khoảng thời gian để lọc dữ liệu khi kết nối dịch vụ
+                <strong className="text-blue-600">Tùy chọn:</strong> Chọn ngày bắt đầu, thời gian hiện tại sẽ tự động được lấy làm ngày kết thúc
               </p>
             </div>
             
             <div>
               <label className="block text-sm font-medium mb-2">
                 <CalendarOutlined className="mr-2" />
-                Chọn từ ngày - đến ngày <span className="text-gray-400">(tùy chọn)</span>
+                Chọn ngày bắt đầu <span className="text-gray-400">(tùy chọn)</span>
               </label>
-              <RangePicker
-                value={dateRange}
-                onChange={(dates) => setDateRange(dates)}
+              <DatePicker
+                value={startDate}
+                onChange={(date) => setStartDate(date)}
                 style={{ width: '100%' }}
-                placeholder={['Từ ngày', 'Đến ngày']}
+                placeholder="Chọn ngày bắt đầu"
                 format="DD/MM/YYYY"
                 allowClear
+                disabledDate={(current) => current && current > dayjs().endOf('day')}
               />
-              {(!dateRange || dateRange.length !== 2) && (
+              {!startDate && (
                 <div className="text-gray-500 text-xs mt-1">
                   Để trống nếu không muốn lọc theo thời gian
                 </div>
               )}
             </div>
 
-            {dateRange && dateRange.length === 2 && (
+            {startDate && (
               <div className="bg-green-50 p-3 rounded">
                 <h5 className="font-medium text-green-700 mb-1">Thông tin đã chọn:</h5>
                 <div className="text-sm text-green-600">
-                  <div>Từ ngày: <strong>{dateRange[0].format('DD/MM/YYYY')}</strong></div>
-                  <div>Đến ngày: <strong>{dateRange[1].format('DD/MM/YYYY')}</strong></div>
-                  <div>Tổng số ngày: <strong>{dateRange[1].diff(dateRange[0], 'days') + 1} ngày</strong></div>
+                  <div>Từ ngày: <strong>{startDate.format('DD/MM/YYYY')}</strong></div>
+                  <div>Đến ngày: <strong>{dayjs().format('DD/MM/YYYY')}</strong> (hiện tại)</div>
+                  <div>Tổng số ngày: <strong>{dayjs().diff(startDate, 'days') + 1} ngày</strong></div>
                 </div>
               </div>
             )}
 
             <div className="bg-blue-50 border border-blue-200 p-3 rounded">
               <div className="text-xs text-blue-700 space-y-1">
-                <p>• <strong>Tùy chọn:</strong> Bạn có thể chọn hoặc không chọn thời gian</p>
-                <p>• <strong>Nếu chọn:</strong> Thông tin thời gian sẽ được gửi đến dịch vụ để lọc dữ liệu</p>
+                <p>• <strong>Tùy chọn:</strong> Bạn có thể chọn hoặc không chọn ngày bắt đầu</p>
+                <p>• <strong>Nếu chọn:</strong> Dữ liệu sẽ được lọc từ ngày đã chọn đến hiện tại</p>
                 <p>• <strong>Nếu không chọn:</strong> Sẽ kết nối dịch vụ với toàn bộ dữ liệu</p>
+                <p>• <strong>Tự động:</strong> Thời gian hiện tại sẽ tự động được lấy làm ngày kết thúc</p>
               </div>
             </div>
           </div>
