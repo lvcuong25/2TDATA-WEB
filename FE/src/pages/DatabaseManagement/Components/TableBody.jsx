@@ -45,7 +45,7 @@ import LookupDropdown from './LookupDropdown';
 import EditRecordModal from '../Modals/EditRecordModal';
 
 // Custom AddOptionInput component for dropdown
-const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
+const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => { v
   const [newOptionInput, setNewOptionInput] = useState('');
   const [isAddingOption, setIsAddingOption] = useState(false);
 
@@ -375,8 +375,8 @@ const TableBody = ({
         }}>
           {/* Checkbox and Index Column */}
           <div style={{
-            width: '60px',
-            minWidth: '60px',
+            width: '80px',
+            minWidth: '80px',
             padding: '8px',
             borderRight: '1px solid #d9d9d9',
             display: 'flex',
@@ -451,8 +451,18 @@ const TableBody = ({
                     {
                       key: 'edit',
                       label: 'Chỉnh sửa cột',
-                      icon: <MoreOutlined />,
                       onClick: () => handleEditColumn(column),
+                    },
+                    {
+                      type: 'divider',
+                    },
+                    {
+                      key: 'permissions',
+                      label: 'Phân quyền',
+                      onClick: () => {
+                        // TODO: Implement permission management
+                        console.log('Phân quyền cho cột:', column.name);
+                      },
                     },
                     {
                       type: 'divider',
@@ -460,7 +470,6 @@ const TableBody = ({
                     {
                       key: 'delete',
                       label: 'Delete Column',
-                      icon: <MoreOutlined />,
                       danger: true,
                       onClick: () => handleDeleteColumn(column._id, column.name),
                     }
@@ -614,29 +623,62 @@ const TableBody = ({
                     onContextMenu={(e) => handleContextMenu(e, record._id)}
                   >
                     {/* Checkbox and Index */}
-                    <div style={{
-                      width: '60px',
-                      minWidth: '60px',
-                      ...rowContentStyle,
-                      borderRight: '1px solid #d9d9d9',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '2px',
-                      padding: '4px 8px',
-                      backgroundColor: '#fafafa'
-                    }}>
+                    <div 
+                      style={{
+                        width: '80px',
+                        minWidth: '80px',
+                        ...rowContentStyle,
+                        borderRight: '1px solid #d9d9d9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '2px',
+                        padding: '4px 8px',
+                        backgroundColor: '#fafafa',
+                        position: 'relative'
+                      }}
+                      onMouseEnter={(e) => {
+                        const checkbox = e.currentTarget.querySelector('.hover-checkbox');
+                        const number = e.currentTarget.querySelector('.index-number');
+                        const editBtn = e.currentTarget.querySelector('.edit-button');
+                        if (checkbox) checkbox.style.opacity = '1';
+                        if (number) number.style.marginLeft = '20px';
+                        if (editBtn) editBtn.style.opacity = '1';
+                      }}
+                      onMouseLeave={(e) => {
+                        const checkbox = e.currentTarget.querySelector('.hover-checkbox');
+                        const number = e.currentTarget.querySelector('.index-number');
+                        const editBtn = e.currentTarget.querySelector('.edit-button');
+                        const isSelected = selectedRowKeys.includes(record._id);
+                        if (checkbox) checkbox.style.opacity = isSelected ? '1' : '0';
+                        if (number) number.style.marginLeft = isSelected ? '20px' : '0px';
+                        if (editBtn) editBtn.style.opacity = '0';
+                      }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Checkbox
-                          checked={selectedRowKeys.includes(record._id)}
-                          onChange={(e) => handleSelectRow(record._id, e.target.checked)}
-                        />
+                        <div style={{
+                          opacity: selectedRowKeys.includes(record._id) ? 1 : 0,
+                          transition: 'opacity 0.2s ease',
+                          position: 'absolute',
+                          left: '4px'
+                        }}
+                          className="hover-checkbox"
+                        >
+                          <Checkbox
+                            checked={selectedRowKeys.includes(record._id)}
+                            onChange={(e) => handleSelectRow(record._id, e.target.checked)}
+                          />
+                        </div>
                         <span style={{
                           fontSize: '12px',
                           color: '#666',
                           fontWeight: 'bold',
-                          opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
-                        }}>
+                          opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1,
+                          transition: 'margin-left 0.2s ease',
+                          marginLeft: selectedRowKeys.includes(record._id) ? '20px' : '0px'
+                        }}
+                          className="index-number"
+                        >
                           {index + 1}
                         </span>
                       </div>
@@ -645,17 +687,20 @@ const TableBody = ({
                           type="text"
                           size="small"
                           icon={<ExpandOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRecordClick(record);
-                          }}
+                          className="edit-button"
                           style={{
+                            opacity: 0,
+                            transition: 'opacity 0.2s ease',
                             color: '#1890ff',
                             fontSize: '12px',
                             padding: '2px',
                             minWidth: 'auto',
                             height: '20px',
                             width: '20px'
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRecordClick(record);
                           }}
                         />
                       </Tooltip>
@@ -1575,8 +1620,8 @@ const TableBody = ({
                   >
                     {/* Checkbox and Index Column */}
                     <div style={{
-                      width: '60px',
-                      minWidth: '60px',
+                      width: '80px',
+                      minWidth: '80px',
                       padding: '8px',
                       borderRight: '1px solid #d9d9d9',
                       display: 'flex',
@@ -1624,28 +1669,61 @@ const TableBody = ({
               onContextMenu={(e) => handleContextMenu(e, record._id)}
             >
               {/* Checkbox and Index */}
-              <div style={{
-                width: '60px',
-                minWidth: '60px',
-                ...rowContentStyle,
-                borderRight: '1px solid #d9d9d9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '2px',
-                padding: '4px 8px'
-              }}>
+              <div 
+                style={{
+                  width: '80px',
+                  minWidth: '80px',
+                  ...rowContentStyle,
+                  borderRight: '1px solid #d9d9d9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '2px',
+                  padding: '4px 8px',
+                  position: 'relative'
+                }}
+                onMouseEnter={(e) => {
+                  const checkbox = e.currentTarget.querySelector('.hover-checkbox');
+                  const number = e.currentTarget.querySelector('.index-number');
+                  const editBtn = e.currentTarget.querySelector('.edit-button');
+                  if (checkbox) checkbox.style.opacity = '1';
+                  if (number) number.style.marginLeft = '20px';
+                  if (editBtn) editBtn.style.opacity = '1';
+                }}
+                onMouseLeave={(e) => {
+                  const checkbox = e.currentTarget.querySelector('.hover-checkbox');
+                  const number = e.currentTarget.querySelector('.index-number');
+                  const editBtn = e.currentTarget.querySelector('.edit-button');
+                  const isSelected = selectedRowKeys.includes(record._id);
+                  if (checkbox) checkbox.style.opacity = isSelected ? '1' : '0';
+                  if (number) number.style.marginLeft = isSelected ? '20px' : '0px';
+                  if (editBtn) editBtn.style.opacity = '0';
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Checkbox
-                    checked={selectedRowKeys.includes(record._id)}
-                    onChange={(e) => handleSelectRow(record._id, e.target.checked)}
-                  />
+                  <div style={{
+                    opacity: selectedRowKeys.includes(record._id) ? 1 : 0,
+                    transition: 'opacity 0.2s ease',
+                    position: 'absolute',
+                    left: '4px'
+                  }}
+                    className="hover-checkbox"
+                  >
+                    <Checkbox
+                      checked={selectedRowKeys.includes(record._id)}
+                      onChange={(e) => handleSelectRow(record._id, e.target.checked)}
+                    />
+                  </div>
                   <span style={{
                     fontSize: '12px',
                     color: '#666',
                     fontWeight: 'bold',
-                    opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1
-                  }}>
+                    opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1,
+                    transition: 'margin-left 0.2s ease',
+                    marginLeft: selectedRowKeys.includes(record._id) ? '20px' : '0px'
+                  }}
+                    className="index-number"
+                  >
                     {index + 1}
                   </span>
                 </div>
@@ -1654,11 +1732,14 @@ const TableBody = ({
                     type="text"
                     size="small"
                     icon={<ExpandOutlined />}
+                    className="edit-button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRecordClick(record);
                     }}
                     style={{
+                      opacity: 0,
+                      transition: 'opacity 0.2s ease',
                       color: '#1890ff',
                       fontSize: '12px',
                       padding: '2px',
@@ -2551,8 +2632,8 @@ const TableBody = ({
           >
             {/* Checkbox and Index Column */}
             <div style={{
-              width: '60px',
-              minWidth: '60px',
+              width: '80px',
+              minWidth: '80px',
               padding: '8px',
               borderRight: '1px solid #d9d9d9',
               display: 'flex',

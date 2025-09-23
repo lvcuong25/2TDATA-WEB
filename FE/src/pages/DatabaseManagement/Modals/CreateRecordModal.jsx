@@ -28,7 +28,19 @@ import {
   CheckSquareOutlined,
   FileTextOutlined,
   StarOutlined,
-  FieldTimeOutlined
+  FieldTimeOutlined,
+  HeartOutlined,
+  LikeOutlined,
+  FireOutlined,
+  TrophyOutlined,
+  SmileOutlined,
+  CheckCircleOutlined,
+  FlagOutlined,
+  CrownOutlined,
+  ThunderboltOutlined,
+  SunOutlined,
+  MoonOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import axiosInstance from '../../../utils/axiosInstance-cookie-only';
@@ -199,28 +211,28 @@ const CreateRecordModal = ({
                   color: column.ratingConfig?.color || '#faad14',
                   lineHeight: '1'
                 }}
-                character={column.ratingConfig?.icon === 'star' ? '★' : 
-                         column.ratingConfig?.icon === 'heart' ? '♥' :
-                         column.ratingConfig?.icon === 'like' ? '👍' :
-                         column.ratingConfig?.icon === 'fire' ? '🔥' :
-                         column.ratingConfig?.icon === 'trophy' ? '🏆' :
-                         column.ratingConfig?.icon === 'thumbs' ? '👍' :
-                         column.ratingConfig?.icon === 'smile' ? '😊' :
-                         column.ratingConfig?.icon === 'check' ? '✓' :
-                         column.ratingConfig?.icon === 'flag' ? '🚩' :
-                         column.ratingConfig?.icon === 'diamond' ? '💎' :
-                         column.ratingConfig?.icon === 'crown' ? '👑' :
-                         column.ratingConfig?.icon === 'medal' ? '🏅' :
-                         column.ratingConfig?.icon === 'gem' ? '💎' :
-                         column.ratingConfig?.icon === 'coin' ? '🪙' :
-                         column.ratingConfig?.icon === 'lightning' ? '⚡' :
-                         column.ratingConfig?.icon === 'sun' ? '☀️' :
-                         column.ratingConfig?.icon === 'moon' ? '🌙' :
-                         column.ratingConfig?.icon === 'flower' ? '🌸' :
-                         column.ratingConfig?.icon === 'leaf' ? '🍃' :
-                         column.ratingConfig?.icon === 'paw' ? '🐾' :
-                         column.ratingConfig?.icon === 'hand' ? '✋' :
-                         '★'}
+                character={column.ratingConfig?.icon === 'star' ? <StarOutlined /> : 
+                         column.ratingConfig?.icon === 'heart' ? <HeartOutlined /> :
+                         column.ratingConfig?.icon === 'like' ? <LikeOutlined /> :
+                         column.ratingConfig?.icon === 'fire' ? <FireOutlined /> :
+                         column.ratingConfig?.icon === 'trophy' ? <TrophyOutlined /> :
+                         column.ratingConfig?.icon === 'thumbs' ? <LikeOutlined /> :
+                         column.ratingConfig?.icon === 'smile' ? <SmileOutlined /> :
+                         column.ratingConfig?.icon === 'check' ? <CheckCircleOutlined /> :
+                         column.ratingConfig?.icon === 'flag' ? <FlagOutlined /> :
+                         column.ratingConfig?.icon === 'diamond' ? <CrownOutlined /> :
+                         column.ratingConfig?.icon === 'crown' ? <CrownOutlined /> :
+                         column.ratingConfig?.icon === 'medal' ? <TrophyOutlined /> :
+                         column.ratingConfig?.icon === 'gem' ? <CrownOutlined /> :
+                         column.ratingConfig?.icon === 'coin' ? <CrownOutlined /> :
+                         column.ratingConfig?.icon === 'lightning' ? <ThunderboltOutlined /> :
+                         column.ratingConfig?.icon === 'sun' ? <SunOutlined /> :
+                         column.ratingConfig?.icon === 'moon' ? <MoonOutlined /> :
+                         column.ratingConfig?.icon === 'flower' ? <EnvironmentOutlined /> :
+                             column.ratingConfig?.icon === 'leaf' ? <EnvironmentOutlined /> :
+                         column.ratingConfig?.icon === 'paw' ? <EnvironmentOutlined /> :
+                         column.ratingConfig?.icon === 'hand' ? <LikeOutlined /> :
+                         <StarOutlined />}
               />
               <div style={{
                 fontSize: '12px',

@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Typography, Avatar, Button, Input, Modal, Space, Row, Dropdown, Tabs, Card, List } from 'antd';
+import { Layout, Menu, Typography, Avatar, Button, Input, Modal, Space, Row, Dropdown, Tabs, Card, List, Select, Tooltip, Checkbox } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { AuthContext } from '../../components/core/Auth';
@@ -31,7 +31,10 @@ import {
   ShareAltOutlined,
   EyeOutlined,
   LockOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  QuestionCircleOutlined,
+  GlobalOutlined,
+  MailOutlined
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -338,6 +341,10 @@ const DatabaseLayout = () => {
   
   // Header states
   const [activeTab, setActiveTab] = useState('data');
+  
+  // Share modal states
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareTarget, setShareTarget] = useState({ type: '', name: '', id: '' });
 
   // Fetch databases for sidebar
   const { data: databasesResponse } = useQuery({
@@ -1041,6 +1048,19 @@ const DatabaseLayout = () => {
                                 }
                               },
                               {
+                                key: 'share',
+                                icon: <ShareAltOutlined />,
+                                label: 'Chia sẻ',
+                                onClick: () => {
+                                  setShareTarget({
+                                    type: 'database',
+                                    name: database.name,
+                                    id: database._id
+                                  });
+                                  setShowShareModal(true);
+                                }
+                              },
+                              {
                                 key: 'delete',
                                 icon: <DeleteOutlined />,
                                 label: 'Xóa database',
@@ -1118,6 +1138,19 @@ const DatabaseLayout = () => {
                                               targetDatabaseId: database._id
                                             });
                                             setShowCopyTableModal(true);
+                                          }
+                                        },
+                                        {
+                                              key: "share",
+                                          icon: <ShareAltOutlined />,
+                                              label: "Chia sẻ",
+                                          onClick: () => {
+                                            setShareTarget({
+                                              type: 'table',
+                                              name: table.name,
+                                              id: table._id
+                                            });
+                                            setShowShareModal(true);
                                           }
                                         },
                                         {
@@ -1337,7 +1370,7 @@ const DatabaseLayout = () => {
                 {getPageTitle()}
               </Title>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center" style={{ gap: '8px' }}>
               <TableHeaderActions />
             </div>
           </div>
@@ -1410,21 +1443,6 @@ const DatabaseLayout = () => {
                   }}
                 />
                 <Button
-                  type="primary"
-                  icon={<ShareAltOutlined />}
-                  style={{ 
-                    backgroundColor: '#1890ff', 
-                    borderColor: '#1890ff',
-                    height: '32px',
-                    borderRadius: '6px',
-                    fontWeight: 500,
-                    fontSize: '13px',
-                    boxShadow: '0 1px 3px rgba(24, 144, 255, 0.3)'
-                  }}
-                >
-                  Chia sẻ
-                </Button>
-                <Button
                   icon={<EyeOutlined />}
                   style={{ 
                     backgroundColor: '#fff', 
@@ -1490,21 +1508,6 @@ const DatabaseLayout = () => {
                     background: '#fff'
                   }}
                 />
-                <Button
-                  type="primary"
-                  icon={<ShareAltOutlined />}
-                  style={{ 
-                    backgroundColor: '#1890ff', 
-                    borderColor: '#1890ff',
-                    height: '32px',
-                    borderRadius: '6px',
-                    fontWeight: 500,
-                    fontSize: '13px',
-                    boxShadow: '0 1px 3px rgba(24, 144, 255, 0.3)'
-                  }}
-                >
-                  Chia sẻ
-                </Button>
                 <Button
                   icon={<EyeOutlined />}
                   style={{ 
@@ -2016,6 +2019,202 @@ const DatabaseLayout = () => {
         onClose={handleCloseViewDropdown}
         onSelectViewType={handleSelectViewType}
       />
+
+      {/* Share Modal - Google Docs Style */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: '30px' }}>
+            <span style={{ fontSize: '18px', fontWeight: 500 }}>
+              Chia sẻ "{shareTarget.name || getPageTitle()}"
+            </span>
+            <Tooltip title="Trợ giúp">
+              <QuestionCircleOutlined style={{ color: '#8c8c8c', fontSize: '16px' }} />
+            </Tooltip>
+          </div>
+        }
+        open={showShareModal}
+        onCancel={() => {
+          setShowShareModal(false);
+          setShareTarget({ type: '', name: '', id: '' });
+        }}
+        footer={null}
+        width={600}
+        style={{ top: 50 }}
+        className="share-modal"
+      >
+        <div style={{ padding: '0' }}>
+          {/* Add People Section */}
+          <div style={{ marginBottom: '24px' }}>
+            <Input
+              placeholder="Thêm người, nhóm và sự kiện trên lịch"
+              style={{
+                height: '40px',
+                fontSize: '14px',
+                borderRadius: '6px'
+              }}
+            />
+          </div>
+
+          {/* People with Access Section */}
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              marginBottom: '12px'
+            }}>
+              <Text strong style={{ fontSize: '14px' }}>Những người có quyền truy cập</Text>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Tooltip title="Sao chép">
+                  <Button type="text" icon={<CopyOutlined />} size="small" />
+                </Tooltip>
+                <Tooltip title="Gửi email">
+                  <Button type="text" icon={<MailOutlined />} size="small" />
+                </Tooltip>
+              </div>
+            </div>
+            
+            {/* User Entry */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px 12px',
+              border: '1px solid #f0f0f0',
+              borderRadius: '6px',
+              backgroundColor: '#fafafa'
+            }}>
+              <Avatar 
+                size={32} 
+                icon={<UserOutlined />}
+                style={{ backgroundColor: '#1890ff', marginRight: '12px' }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '14px', fontWeight: 500, color: '#262626' }}>
+                  {currentUser?.email || 'trunglqhe170149@fpt.edu.vn'}
+                </div>
+                <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                  {currentUser?.email || 'trunglqhe170149@fpt.edu.vn'}
+                </div>
+              </div>
+              <Text style={{ fontSize: '12px', color: '#8c8c8c' }}>Chủ sở hữu</Text>
+            </div>
+          </div>
+
+          {/* General Access Section */}
+          <div style={{ marginBottom: '24px' }}>
+            <Text strong style={{ fontSize: '14px', marginBottom: '12px', display: 'block' }}>
+              Quyền truy cập chung
+            </Text>
+            
+          <div style={{
+            padding: '12px',
+            border: '1px solid #d9d9d9',
+            borderRadius: '6px',
+            backgroundColor: '#fff'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '16px',
+              marginBottom: '12px'
+            }}>
+              <GlobalOutlined style={{ color: '#52c41a', fontSize: '16px', marginTop: '6px', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Select
+                  defaultValue="anyone"
+                  style={{ width: '100%', marginBottom: '8px' }}
+                  options={[
+                    { value: 'anyone', label: 'Bất kỳ ai có đường liên kết' },
+                    { value: 'specific', label: 'Những người cụ thể' }
+                  ]}
+                />
+                <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                  Bất kỳ ai có kết nối Internet và có đường liên kết này đều có thể chỉnh sửa
+                </div>
+              </div>
+            </div>
+            
+            {/* Permissions Section */}
+            <div style={{ marginTop: '16px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '12px', color: '#262626' }}>
+                Quyền hạn chi tiết
+              </div>
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'row', 
+                flexWrap: 'wrap', 
+                gap: '16px 24px',
+                alignItems: 'flex-start'
+              }}>
+                <Checkbox defaultChecked>
+                  Xem dữ liệu
+                </Checkbox>
+                <Checkbox defaultChecked>
+                  Chỉnh sửa dữ liệu
+                </Checkbox>
+                <Checkbox>
+                  Thêm bản ghi mới
+                </Checkbox>
+                <Checkbox>
+                  Xóa bản ghi
+                </Checkbox>
+                <Checkbox>
+                  Chỉnh sửa cấu trúc
+                </Checkbox>
+                <Checkbox>
+                  Quản lý quyền
+                </Checkbox>
+                <Checkbox>
+                  Xuất dữ liệu
+                </Checkbox>
+                <Checkbox>
+                  Tạo view mới
+                </Checkbox>
+              </div>
+            </div>
+          </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            paddingTop: '16px',
+            borderTop: '1px solid #f0f0f0'
+          }}>
+            <Button
+              icon={<CopyOutlined />}
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}${location.pathname}`);
+                toast.success('Đường liên kết đã được sao chép!');
+              }}
+              style={{
+                borderColor: '#1890ff',
+                color: '#1890ff',
+                backgroundColor: '#f6ffed'
+              }}
+            >
+              Sao chép đường liên kết
+            </Button>
+            
+            <Button
+              type="primary"
+              onClick={() => {
+                toast.success('Cài đặt chia sẻ đã được lưu!');
+                setShowShareModal(false);
+                setShareTarget({ type: '', name: '', id: '' });
+              }}
+              style={{
+                backgroundColor: '#1890ff',
+                borderColor: '#1890ff'
+              }}
+            >
+              Xong
+            </Button>
+          </div>
+        </div>
+      </Modal>
       </Layout>
     </TableProvider>
   );
