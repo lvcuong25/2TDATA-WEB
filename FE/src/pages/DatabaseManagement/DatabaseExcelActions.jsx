@@ -10,7 +10,6 @@ const DatabaseExcelActions = ({
 }) => {
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [tableName, setTableName] = useState('');
@@ -48,37 +47,6 @@ const DatabaseExcelActions = ({
     }
   };
 
-  // Download Excel template
-  const handleDownloadTemplate = async () => {
-    if (!databaseId) {
-      toast.error('Database ID is required for template download');
-      return;
-    }
-
-    try {
-      setIsDownloadingTemplate(true);
-      const response = await axiosInstance.get(`/database/databases/${databaseId}/template/excel`, {
-        responseType: 'blob'
-      });
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${databaseName}_template.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      toast.success('Excel template downloaded successfully!');
-    } catch (error) {
-      console.error('Template download error:', error);
-      toast.error(error.response?.data?.message || 'Failed to download template');
-    } finally {
-      setIsDownloadingTemplate(false);
-    }
-  };
 
   // Handle file selection
   const handleFileSelect = (event) => {
@@ -229,22 +197,6 @@ const DatabaseExcelActions = ({
           Import Excel
         </button>
 
-        {/* Download Template Button */}
-        <button
-          onClick={handleDownloadTemplate}
-          disabled={isDownloadingTemplate}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Download Excel template"
-        >
-          {isDownloadingTemplate ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          )}
-          Template
-        </button>
       </div>
 
       {/* Import Modal */}

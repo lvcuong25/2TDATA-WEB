@@ -91,8 +91,7 @@ import {
 
 import {
   exportDatabaseToExcel,
-  importExcelToDatabase,
-  getDatabaseExcelTemplate
+  importExcelToDatabase
 } from "../controllers/excelController.js";
 
 import {
@@ -194,6 +193,5 @@ router.put("/records/:recordId/calendar", updateRecordDate);
 // Excel routes for database level
 router.get("/databases/:databaseId/export/excel", exportDatabaseToExcel);
 router.post("/databases/:databaseId/import/excel", uploadExcel, importExcelToDatabase);
-router.get("/databases/:databaseId/template/excel", getDatabaseExcelTemplate);
 
 export default router;
