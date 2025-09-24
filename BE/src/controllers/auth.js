@@ -6,6 +6,8 @@ import jwt from "jsonwebtoken";
 import Service from "../model/Service.js";
 import UserSession from '../model/UserSession.js';
 import Site from '../model/Site.js';
+import BaseMember from "../model/BaseMember.js";
+import Organization from "../model/Organization.js";
 
 const hashPassword = (password) => hashSync(password, 10);
 const comparePassword = (password, hashPassword) => compareSync(password, hashPassword);
@@ -99,7 +101,7 @@ export const signUp = async (req, res, next) => {
 export const signIn = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const userExist = await User.findOne({ email }).populate('site_id');
+        const userExist = await User.findOne({ email }).populate('site_id').lean();
         if (!userExist) {
             return res.status(400).json({
                 message: "Email không tồn tại",
@@ -119,7 +121,9 @@ export const signIn = async (req, res, next) => {
 
         // Check site access permissions
         const currentSiteId = req.site?._id?.toString();
+        console.log("🚀 ~ signIn ~ currentSiteId:", currentSiteId)
         const userSiteId = userExist.site_id?._id?.toString() || userExist.site_id?.toString();
+        console.log("🚀 ~ signIn ~ userSiteId:", userSiteId)
         
         // Super admin can login to any site
         if (userExist.role !== 'super_admin') {

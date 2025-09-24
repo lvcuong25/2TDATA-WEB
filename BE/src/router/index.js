@@ -17,6 +17,16 @@ import adminRouter from "./adminRouter.js";
 
 import routerOrganization from "./routerOrganization.js";
 import routerDatabase from "./routerDatabase.js";
+import routerOrder from "./orderRouter.js";
+import routerCell from "./routerCell.js";
+import basesRouter from "./bases.routes.js";
+import membersRouter from "./members.routes.js";
+import baseRolesRouter from "./baseRoles.routes.js";
+import locksRouter from "./locks.routes.js";
+import columnsReadRouter from "./columns.read.routes.js";
+import tableRouter from "./table.routes.js";
+import columnPermsRouter from "./column-perms.routes.js";
+import rolesPermsRouter from "./roles-perms.routes.js";
 
 const router = Router();
 
@@ -28,7 +38,7 @@ router.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     version: "1.0.0",
     database: "connected",
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
@@ -46,9 +56,9 @@ router.get("/", (req, res) => {
       sites: "/api/sites",
       server: "/api/server",
       iframe: "/api/iframe",
-      "iframe_n8n": "/api/iframe/n8n/upsert",
-      database: "/api/database"
-    }
+      iframe_n8n: "/api/iframe/n8n/upsert",
+      database: "/api/database",
+    },
   });
 });
 
@@ -66,7 +76,17 @@ router.use("/view", routerViewUpload);
 router.use("/sites", routerSite);
 router.use("/site-admins", siteAdminRoutes);
 router.use("/assets", routerAsset);
+router.use("/orders", routerOrder);
+router.use("/action", routerCell);
 
+router.use(basesRouter);
+router.use(membersRouter);
+router.use(baseRolesRouter);
+router.use(locksRouter);
+router.use(columnsReadRouter);
+router.use("/tables", tableRouter);
+router.use(columnPermsRouter);
+router.use(rolesPermsRouter);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 

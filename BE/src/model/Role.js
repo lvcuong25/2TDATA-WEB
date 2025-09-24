@@ -1,46 +1,9 @@
 import mongoose from "mongoose";
 
-const roleSchema = new mongoose.Schema(
-    {
-        name: {
-            type: String,
-            required: true,
-            unique: true,
-        },
-        get_user: {
-            type: Boolean,
-            default: true,
-        },
-        create_user: {
-            type: Boolean,
-            default: true,
-        },
-        update_user: {
-            type: Boolean,
-            default: true,
-        },
-        delete_user: {
-            type: Boolean,
-            default: true,
-        },
-        restore_user: {
-            type: Boolean,
-            default: true,
-        },
-        create_role: {
-            type: Boolean,
-            default: true,
-        },
-        update_role: {
-            type: Boolean,
-            default: true,
-        },
-        delete_role: {
-            type: Boolean,
-            default: true,
-        },
-    },
-    { timestamps: true, versionKey: false }
-);
+const RoleSchema = new mongoose.Schema({
+  org: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
+  name: { type: String, required: true, enum: ["Owner", "Admin", "Editor", "Viewer", "Custom"] },
+  permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Permission" }]
+}, { timestamps: true });
 
-export default mongoose.model("Role", roleSchema);
+export default mongoose.model("Role", RoleSchema);

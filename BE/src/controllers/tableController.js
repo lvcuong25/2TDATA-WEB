@@ -43,7 +43,8 @@ export const createTable = async (req, res) => {
       description: description || '',
       databaseId,
       userId,
-      siteId
+      siteId,
+      baseId: database.baseId
     });
 
     await table.save();

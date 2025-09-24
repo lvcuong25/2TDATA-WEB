@@ -25,7 +25,7 @@ export const authAndSiteDetectionMiddleware = async (req, res, next) => {
     if (token) {
       try {
         const payload = jwt.verify(token, process.env.JWT_SECRET || process.env.SECRET_KEY);
-        req.user = await User.findById(payload._id).select('-password').populate('service').populate('site_id');
+        req.user = await User.findById(payload._id).select('-password').populate('service').populate('site_id').lean();
         
         if (!req.user) {
           return res.status(401).json({ message: 'Authentication invalid' });
