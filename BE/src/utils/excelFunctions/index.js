@@ -25,7 +25,7 @@ export const functionCategories = {
     functions: [
       'SUM', 'AVG', 'MIN', 'MAX', 'COUNT', 'MEDIAN', 'STDEV', 'VAR',
       'ROUND', 'ROUNDUP', 'ROUNDDOWN', 'CEIL', 'FLOOR', 'TRUNC',
-      'ABS', 'SQRT', 'POWER', 'EXP', 'LN', 'LOG', 'RAND', 'RANDBETWEEN', 'MOD', 'SIGN'
+      'ABS', 'SQRT', 'POWER', 'POW', 'EXP', 'LN', 'LOG', 'RAND', 'RANDBETWEEN', 'MOD', 'SIGN'
     ],
     description: 'Mathematical and statistical calculations'
   },

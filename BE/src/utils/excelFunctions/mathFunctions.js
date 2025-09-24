@@ -112,6 +112,11 @@ export const mathFunctions = {
     return Math.pow(Number(number) || 0, Number(power) || 0);
   },
 
+  // Alias for POWER function
+  POW: (number, power) => {
+    return Math.pow(Number(number) || 0, Number(power) || 0);
+  },
+
   EXP: (number) => {
     return Math.exp(Number(number) || 0);
   },

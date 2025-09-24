@@ -45,7 +45,7 @@ import LookupDropdown from './LookupDropdown';
 import EditRecordModal from '../Modals/EditRecordModal';
 
 // Custom AddOptionInput component for dropdown
-const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => { v
+const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
   const [newOptionInput, setNewOptionInput] = useState('');
   const [isAddingOption, setIsAddingOption] = useState(false);
 

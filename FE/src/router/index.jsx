@@ -60,6 +60,7 @@ import DatabaseLayout from "../pages/DatabaseManagement/DatabaseLayout.jsx";
 import DatabaseList from "../pages/DatabaseManagement/DatabaseList.jsx";
 import TableList from "../pages/DatabaseManagement/TableList.jsx";
 import TableDetail from "../pages/DatabaseManagement/TableDetail.jsx";
+import GridView from "../pages/DatabaseManagement/GridView.jsx";
 import FormView from "../pages/DatabaseManagement/FormView.jsx";
 import KanbanView from "../pages/DatabaseManagement/KanbanView.jsx";
 import CalendarView from "../pages/DatabaseManagement/CalendarView.jsx";
@@ -160,7 +161,7 @@ const Router = () => {
             />
             <Route
               path=":databaseId/table/:tableId/grid/:viewId"
-              element={<TableDetail />}
+              element={<GridView />}
             />
             <Route
               path=":databaseId/table/:tableId/kanban/:viewId"
