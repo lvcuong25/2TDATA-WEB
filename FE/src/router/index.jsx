@@ -67,6 +67,8 @@ import CalendarView from "../pages/DatabaseManagement/CalendarView.jsx";
 import GalleryView from "../pages/DatabaseManagement/GalleryView.jsx";
 import BaseList from "../components/Base/BaseList.jsx";
 import BaseDetail from "../components/Base/BaseDetail.jsx";
+import BaseManagement from "../components/Base/BaseManagement.jsx";
+import TestBaseManagement from "../pages/TestBaseManagement.jsx";
 
 const Router = () => {
   return (
@@ -114,10 +116,18 @@ const Router = () => {
               }
             />
             <Route
-              path="base/:baseId"
+              path="base/:databaseId"
               element={
                 <PrivateRoute>
                   <BaseDetail />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="base/:databaseId/management"
+              element={
+                <PrivateRoute>
+                  <BaseManagement />
                 </PrivateRoute>
               }
             />
@@ -144,6 +154,7 @@ const Router = () => {
           />
           <Route path="/:domain" element={<Ifame />} />
           <Route path="/test-auth" element={<TestAuth />} />
+          <Route path="/test-base-management" element={<TestBaseManagement />} />
           {/* Database Management Routes */}
           <Route
             path="/database"
@@ -180,6 +191,16 @@ const Router = () => {
               element={<TableDetail />}
             />
           </Route>
+          
+          {/* Base Management Routes */}
+          <Route
+            path="/base-management/:databaseId"
+            element={
+              <PrivateRoute>
+                <BaseManagement />
+              </PrivateRoute>
+            }
+          />
         </Route>
 
         <Route

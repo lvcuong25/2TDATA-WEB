@@ -4,6 +4,8 @@ import Column from '../model/Column.js';
 import Database from '../model/Database.js';
 import FilterPreference from '../model/FilterPreference.js';
 import Comment from '../model/Comment.js';
+import Organization from '../model/Organization.js';
+import BaseMember from '../model/BaseMember.js';
 import exprEvalEngine from '../utils/exprEvalEngine.js';
 
 
@@ -156,16 +158,58 @@ export const createRecord = async (req, res) => {
       return res.status(400).json({ message: 'Data is required and must be an object' });
     }
 
-    // Verify table exists and belongs to user
+    // Verify table exists and user has access
     const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+      _id: tableId
+    }).populate('databaseId');
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
+
+    // Check if user is a member of the database
+    const baseMember = await BaseMember.findOne({
+      databaseId: table.databaseId._id,
+      userId
+    });
+
+    if (!baseMember) {
+      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+    }
+
+    // Check if user has permission to create records
+    if (baseMember.role === 'member') {
+      // For members, check table permissions
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      
+      const tablePermissions = await TablePermission.find({
+        tableId: tableId,
+        $or: [
+          { targetType: 'all_members' },
+          { targetType: 'specific_user', userId: userId },
+          { targetType: 'specific_role', role: baseMember.role }
+        ]
+      });
+
+      let canEditData = false;
+      let canAddData = false;
+      
+      tablePermissions.forEach(perm => {
+        if (perm.permissions) {
+          if (perm.permissions.canEditData) {
+            canEditData = true;
+          }
+          if (perm.permissions.canAddData) {
+            canAddData = true;
+          }
+        }
+      });
+
+      if (!canEditData && !canAddData) {
+        return res.status(403).json({ message: 'Access denied - you do not have permission to create records in this table' });
+      }
+    }
+    // Owners and managers can always create records
 
     // Get table columns for validation
     const columns = await Column.find({ tableId }).sort({ order: 1 });
@@ -341,7 +385,6 @@ export const createRecord = async (req, res) => {
 
     const record = new Record({
       tableId,
-      databaseId: table.databaseId,
       userId,
       siteId,
       data: validatedData
@@ -372,17 +415,33 @@ export const getRecords = async (req, res) => {
     }
     
     const userId = req.user._id;
-    const siteId = req.siteId;
 
-    // Verify table exists and belongs to user
+    if (!tableId) {
+      return res.status(400).json({ message: "Table ID is required" });
+    }
+
+    // Verify table exists and get its database info
     const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+      _id: tableId
+    }).populate('databaseId');
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if table's database belongs to the organization
+    if (!table.databaseId || !table.databaseId.orgId) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Verify user is a member of the organization that owns this table's database
+    const organization = await Organization.findOne({ 
+      _id: table.databaseId.orgId,
+      'members.user': userId 
+    });
+    
+    if (!organization) {
+      return res.status(403).json({ message: "Access denied - user is not a member of this database" });
     }
 
     const skip = (page - 1) * limit;
@@ -414,7 +473,7 @@ export const getRecords = async (req, res) => {
       const filterPreference = await FilterPreference.findOne({
         tableId,
         userId,
-        siteId
+        siteId: req.user?.site_id
       });
       
       if (filterPreference && filterPreference.isActive && filterPreference.filterRules.length > 0) {
@@ -589,17 +648,52 @@ export const updateRecord = async (req, res) => {
     }
 
     const record = await Record.findOne({
-      _id: recordId,
-      userId,
-      siteId
-    });
+      _id: recordId
+    }).populate('tableId');
 
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
 
+    // Check if user is a member of the database
+    const baseMember = await BaseMember.findOne({
+      databaseId: record.tableId.databaseId,
+      userId
+    });
+
+    if (!baseMember) {
+      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+    }
+
+    // Check if user has permission to edit records
+    if (baseMember.role === 'member') {
+      // For members, check table permissions
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      
+      const tablePermissions = await TablePermission.find({
+        tableId: record.tableId._id,
+        $or: [
+          { targetType: 'all_members' },
+          { targetType: 'specific_user', userId: userId },
+          { targetType: 'specific_role', role: baseMember.role }
+        ]
+      });
+
+      let canEditData = false;
+      tablePermissions.forEach(perm => {
+        if (perm.permissions && perm.permissions.canEditData) {
+          canEditData = true;
+        }
+      });
+
+      if (!canEditData) {
+        return res.status(403).json({ message: 'Access denied - you do not have permission to edit records in this table' });
+      }
+    }
+    // Owners and managers can always edit records
+
     // Get table columns for validation
-    const columns = await Column.find({ tableId: record.tableId }).sort({ order: 1 });
+    const columns = await Column.find({ tableId: record.tableId._id }).sort({ order: 1 });
     
     // Validate data against column definitions
     const validatedData = { ...record.data };
@@ -790,14 +884,49 @@ export const deleteRecord = async (req, res) => {
     const siteId = req.siteId;
 
     const record = await Record.findOne({
-      _id: recordId,
-      userId,
-      siteId
-    });
+      _id: recordId
+    }).populate('tableId');
 
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
+
+    // Check if user is a member of the database
+    const baseMember = await BaseMember.findOne({
+      databaseId: record.tableId.databaseId,
+      userId
+    });
+
+    if (!baseMember) {
+      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+    }
+
+    // Check if user has permission to delete records
+    if (baseMember.role === 'member') {
+      // For members, check table permissions
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      
+      const tablePermissions = await TablePermission.find({
+        tableId: record.tableId._id,
+        $or: [
+          { targetType: 'all_members' },
+          { targetType: 'specific_user', userId: userId },
+          { targetType: 'specific_role', role: baseMember.role }
+        ]
+      });
+
+      let canEditData = false;
+      tablePermissions.forEach(perm => {
+        if (perm.permissions && perm.permissions.canEditData) {
+          canEditData = true;
+        }
+      });
+
+      if (!canEditData) {
+        return res.status(403).json({ message: 'Access denied - you do not have permission to delete records in this table' });
+      }
+    }
+    // Owners and managers can always delete records
 
     // Delete all comments associated with this record
     await Comment.deleteMany({ recordId: recordId });
@@ -846,17 +975,59 @@ export const deleteMultipleRecords = async (req, res) => {
       return res.status(400).json({ message: "Record IDs array is required" });
     }
 
-    // Verify all records exist and belong to user
+    // Verify all records exist and get their table info
     const records = await Record.find({
-      _id: { $in: recordIds },
-      userId,
-      siteId
-    });
+      _id: { $in: recordIds }
+    }).populate('tableId');
 
     if (records.length !== recordIds.length) {
       return res.status(404).json({ 
-        message: "Some records not found or do not belong to user" 
+        message: "Some records not found" 
       });
+    }
+
+    // Check if user is a member of the database for all records
+    const tableIds = [...new Set(records.map(r => r.tableId._id))];
+    const tables = await Table.find({ _id: { $in: tableIds } }).populate('databaseId');
+    
+    for (const table of tables) {
+      const baseMember = await BaseMember.findOne({
+        databaseId: table.databaseId._id,
+        userId
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ 
+          message: "Access denied - you are not a member of this database" 
+        });
+      }
+
+      // Check if user has permission to delete records
+      if (baseMember.role === 'member') {
+        const TablePermission = (await import('../model/TablePermission.js')).default;
+        
+        const tablePermissions = await TablePermission.find({
+          tableId: table._id,
+          $or: [
+            { targetType: 'all_members' },
+            { targetType: 'specific_user', userId: userId },
+            { targetType: 'specific_role', role: baseMember.role }
+          ]
+        });
+
+        let canEditData = false;
+        tablePermissions.forEach(perm => {
+          if (perm.permissions && perm.permissions.canEditData) {
+            canEditData = true;
+          }
+        });
+
+        if (!canEditData) {
+          return res.status(403).json({ 
+            message: "Access denied - you do not have permission to delete records in this table" 
+          });
+        }
+      }
     }
 
     // Delete all comments associated with these records
@@ -864,9 +1035,7 @@ export const deleteMultipleRecords = async (req, res) => {
     
     // Delete all records
     const result = await Record.deleteMany({
-      _id: { $in: recordIds },
-      userId,
-      siteId
+      _id: { $in: recordIds }
     });
 
     res.status(200).json({
@@ -907,22 +1076,57 @@ export const deleteAllRecords = async (req, res) => {
       });
     }
 
-    // Verify table exists and belongs to user
+    // Verify table exists and get its database info
     const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+      _id: tableId
+    }).populate('databaseId');
 
     if (!table) {
       return res.status(404).json({ message: "Table not found" });
     }
 
+    // Check if user is a member of the database
+    const baseMember = await BaseMember.findOne({
+      databaseId: table.databaseId._id,
+      userId
+    });
+
+    if (!baseMember) {
+      return res.status(403).json({ 
+        message: "Access denied - you are not a member of this database" 
+      });
+    }
+
+    // Check if user has permission to delete records
+    if (baseMember.role === 'member') {
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      
+      const tablePermissions = await TablePermission.find({
+        tableId: tableId,
+        $or: [
+          { targetType: 'all_members' },
+          { targetType: 'specific_user', userId: userId },
+          { targetType: 'specific_role', role: baseMember.role }
+        ]
+      });
+
+      let canEditData = false;
+      tablePermissions.forEach(perm => {
+        if (perm.permissions && perm.permissions.canEditData) {
+          canEditData = true;
+        }
+      });
+
+      if (!canEditData) {
+        return res.status(403).json({ 
+          message: "Access denied - you do not have permission to delete records in this table" 
+        });
+      }
+    }
+
     // Get all record IDs in this table to delete their comments
     const records = await Record.find({
-      tableId,
-      userId,
-      siteId
+      tableId
     }).select('_id');
     
     const recordIds = records.map(record => record._id);
@@ -934,9 +1138,7 @@ export const deleteAllRecords = async (req, res) => {
     
     // Delete all records in the table
     const result = await Record.deleteMany({
-      tableId,
-      userId,
-      siteId
+      tableId
     });
 
     res.status(200).json({
@@ -954,17 +1156,33 @@ export const getTableStructure = async (req, res) => {
   try {
     const { tableId } = req.params;
     const userId = req.user._id;
-    const siteId = req.siteId;
 
-    // Verify table exists and belongs to user
+    if (!tableId) {
+      return res.status(400).json({ message: "Table ID is required" });
+    }
+
+    // Verify table exists and get its database info
     const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+      _id: tableId
+    }).populate('databaseId');
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if table's database belongs to the organization
+    if (!table.databaseId || !table.databaseId.orgId) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Verify user is a member of the organization that owns this table's database
+    const organization = await Organization.findOne({ 
+      _id: table.databaseId.orgId,
+      'members.user': userId 
+    });
+    
+    if (!organization) {
+      return res.status(403).json({ message: "Access denied - user is not a member of this database" });
     }
 
     const columns = await Column.find({ tableId }).sort({ order: 1 });

@@ -18,11 +18,12 @@ import {
   Modal,
   Popconfirm,
   Row,
+  Space,
   Table,
   Typography,
 } from "antd";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import instance from "../../utils/axiosInstance-cookie-only";
 import { useAuth } from "../core/Auth";
@@ -30,6 +31,7 @@ import { useAuth } from "../core/Auth";
 const BaseList = () => {
   const { currentUser, currentOrganization, roleForOrg } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [form] = Form.useForm();
   const [memberPage, setMemberPage] = useState(1);
   const [memberPageSize, setMemberPageSize] = useState(5);
@@ -41,28 +43,46 @@ const BaseList = () => {
     isLoading,
     refetch: refetchBaseData,
   } = useQuery({
-    queryKey: ["bases", currentOrganization?._id],
+    queryKey: ["databases"],
     queryFn: async () => {
-      if (!currentOrganization?._id) return null;
-      const res = await instance.get(`orgs/${currentOrganization?._id}/bases`);
+      const res = await instance.get(`/database/databases`);
       return res;
     },
-    enabled: !!currentOrganization?._id,
     retry: false,
   });
 
-  const baseData = _baseData?.data?.data;
+  const baseData = _baseData?.data?.data || [];
   // Mutations
 
   const addBaseMutation = useMutation({
-    mutationFn: (values) => {
-      return instance.post(`/orgs/${currentOrganization?._id}/bases`, values);
+    mutationFn: async (values) => {
+      const response = await instance.post(`/database/databases`, values);
+      return response.data;
     },
     onSuccess: () => {
       form.resetFields();
       refetchBaseData();
-      toast.success("Thêm base thành công!");
+      toast.success("Tạo database thành công!");
     },
+    onError: (error) => {
+      console.error("Error creating database:", error);
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.error || 
+                          "Không thể tạo database. Vui lòng thử lại!";
+      toast.error(errorMessage);
+    },
+  });
+
+  const deleteDatabaseMutation = useMutation({
+    mutationFn: (databaseId) => {
+      return instance.delete(`/database/databases/${databaseId}`);
+    },
+    onSuccess: () => {
+      refetchBaseData();
+      toast.success("Xóa database thành công!");
+    },
+    onError: (err) =>
+      toast.error(err?.response?.data?.message || "Xóa database thất bại!"),
   });
 
   const updateOrgMutation = useMutation({
@@ -106,23 +126,46 @@ const BaseList = () => {
 
   const baseColumns = [
     {
-      title: "Tên base",
+      title: "Tên database",
       key: "name",
       render: (_, record) => (
         <Link to={`/profile/base/${record._id}`}>{record.name}</Link>
       ),
     },
     {
+      title: "Mô tả",
+      key: "description",
+      render: (_, record) => record.description || "Không có mô tả",
+    },
+    {
       title: "Thao tác",
       key: "action",
-      render: (_, record) => {
-        if (record.role === "owner" || !isOwnerOrManager) return null;
-        return (
-          <Popconfirm title="Xóa thành viên này?" okText="Xóa" cancelText="Hủy">
-            <Button danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        );
-      },
+      render: (_, record) => (
+        <Space>
+          <Button 
+            type="primary" 
+            size="small"
+            onClick={() => navigate(`/profile/base/${record._id}/management`)}
+          >
+            Quản lý
+          </Button>
+          {isOwnerOrManager && (
+            <Popconfirm 
+              title="Xóa database này?" 
+              okText="Xóa" 
+              cancelText="Hủy"
+              onConfirm={() => deleteDatabaseMutation.mutate(record._id)}
+            >
+              <Button 
+                danger 
+                size="small" 
+                icon={<DeleteOutlined />}
+                loading={deleteDatabaseMutation.isLoading}
+              />
+            </Popconfirm>
+          )}
+        </Space>
+      ),
     },
   ];
 
@@ -133,36 +176,68 @@ const BaseList = () => {
   return (
     <Card className="shadow-sm mb-6">
       {isOwnerOrManager && (
-        <Form
-          form={form}
-          onFinish={handleAddMember}
-          layout="inline"
+        <Card 
+          title="Tạo Database mới" 
           style={{ marginBottom: 16 }}
           className="mt-10"
         >
-          <Form.Item name="name">
-            <Input placeholder="Nhập tên base" />
-          </Form.Item>
-          <Form.Item>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={addBaseMutation.isLoading}
-            >
-              Thêm
-            </Button>
-          </Form.Item>
-        </Form>
+          <Form
+            form={form}
+            onFinish={handleAddMember}
+            layout="vertical"
+            className="max-w-2xl"
+          >
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  name="name"
+                  label="Tên Database"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập tên database!" },
+                    { min: 2, message: "Tên database phải có ít nhất 2 ký tự!" }
+                  ]}
+                >
+                  <Input 
+                    placeholder="Ví dụ: ShopDB, InventoryDB" 
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  name="description"
+                  label="Mô tả (tùy chọn)"
+                >
+                  <Input 
+                    placeholder="Mô tả về database này..." 
+                    size="large"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={addBaseMutation.isLoading}
+                size="large"
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {addBaseMutation.isLoading ? 'Đang tạo...' : 'Tạo Database'}
+              </Button>
+            </Form.Item>
+          </Form>
+        </Card>
       )}
       <Table
         className="pt-5"
         columns={baseColumns}
-        dataSource={baseData?.items}
+        dataSource={baseData}
         rowKey={(record) => record?._id}
         pagination={{
           current: memberPage,
           pageSize: memberPageSize,
-          total: baseData.metadata?.total || 0,
+          total: baseData?.length || 0,
           showSizeChanger: true,
           pageSizeOptions: [5, 10, 15, 20, 50, 100],
           onChange: (page, pageSize) => {

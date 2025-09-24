@@ -95,6 +95,8 @@ import {
   copyViewValidation
 } from "../validations/viewValidation.js";
 
+import { requireAuthWithCookie } from "../middlewares/requireAuthWithCookie.js";
+
 const router = Router();
 
 // Database routes
@@ -106,7 +108,7 @@ router.delete("/databases/:databaseId", deleteDatabase);
 router.post("/databases/:databaseId/copy", copyDatabase);
 
 // Table routes
-router.post("/tables", createTable);
+router.post("/tables", requireAuthWithCookie, createTable);
 router.get("/databases/:databaseId/tables", getTables);
 router.get("/tables/:tableId", getTableById);
 router.put("/tables/:tableId", updateTable);

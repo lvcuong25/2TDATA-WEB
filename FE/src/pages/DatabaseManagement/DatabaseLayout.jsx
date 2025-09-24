@@ -6,6 +6,7 @@ import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { AuthContext } from '../../components/core/Auth';
 import { toast } from 'react-toastify';
 import { TableProvider, useTableContext } from '../../contexts/TableContext';
+import PermissionModal from '../../components/Table/PermissionModal';
 import {
   DatabaseOutlined,
   TableOutlined,
@@ -329,6 +330,10 @@ const DatabaseLayout = () => {
   const [copyingDatabase, setCopyingDatabase] = useState({ _id: '', name: '', description: '' });
   const [showCopyTableModal, setShowCopyTableModal] = useState(false);
   const [copyingTable, setCopyingTable] = useState({ _id: '', name: '', description: '', targetDatabaseId: '' });
+  
+  // Permission states
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [selectedTableForPermission, setSelectedTableForPermission] = useState(null);
   
   // View states
   const [showViewTypeDropdown, setShowViewTypeDropdown] = useState(false);
@@ -1145,12 +1150,13 @@ const DatabaseLayout = () => {
                                           icon: <ShareAltOutlined />,
                                               label: "Chia sẻ",
                                           onClick: () => {
-                                            setShareTarget({
-                                              type: 'table',
+                                            setSelectedTableForPermission({
+                                              tableId: table._id,
                                               name: table.name,
-                                              id: table._id
+                                              description: table.description || '',
+                                              databaseId: database._id
                                             });
-                                            setShowShareModal(true);
+                                            setShowPermissionModal(true);
                                           }
                                         },
                                         {
@@ -2215,6 +2221,19 @@ const DatabaseLayout = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Permission Modal */}
+      {showPermissionModal && selectedTableForPermission && (
+        <PermissionModal
+          visible={showPermissionModal}
+          onCancel={() => {
+            setShowPermissionModal(false);
+            setSelectedTableForPermission(null);
+          }}
+          tableId={selectedTableForPermission.tableId}
+          databaseId={selectedTableForPermission.databaseId}
+        />
+      )}
       </Layout>
     </TableProvider>
   );

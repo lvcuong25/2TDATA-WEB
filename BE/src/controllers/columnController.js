@@ -2,13 +2,14 @@ import Column from '../model/Column.js';
 import Table from '../model/Table.js';
 import Database from '../model/Database.js';
 import Record from '../model/Record.js';
+import Organization from '../model/Organization.js';
+import BaseMember from '../model/BaseMember.js';
 
 // Column Controllers
 export const createColumn = async (req, res) => {
   try {
     const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig, lookupConfig } = req.body;
     const userId = req.user._id;
-    const siteId = req.siteId;
 
     console.log('Creating column with data:', {
       tableId,
@@ -45,14 +46,49 @@ export const createColumn = async (req, res) => {
 
     // Verify table exists and belongs to user
     const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+      _id: tableId
+    }).populate('databaseId');
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
+
+    // Check if user is a member of the database
+    const baseMember = await BaseMember.findOne({
+      databaseId: table.databaseId._id,
+      userId
+    });
+
+    if (!baseMember) {
+      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+    }
+
+    // Check if user has permission to edit table structure
+    if (baseMember.role === 'member') {
+      // For members, check table permissions
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      
+      const tablePermissions = await TablePermission.find({
+        tableId: tableId,
+        $or: [
+          { targetType: 'all_members' },
+          { targetType: 'specific_user', userId: userId },
+          { targetType: 'specific_role', role: baseMember.role }
+        ]
+      });
+
+      let canEditStructure = false;
+      tablePermissions.forEach(perm => {
+        if (perm.permissions && perm.permissions.canEditStructure) {
+          canEditStructure = true;
+        }
+      });
+
+      if (!canEditStructure) {
+        return res.status(403).json({ message: 'Access denied - you do not have permission to edit table structure' });
+      }
+    }
+    // Owners and managers can always edit table structure
 
     const existingColumn = await Column.findOne({
       name: name.trim(),
@@ -70,15 +106,15 @@ export const createColumn = async (req, res) => {
     // Prepare column data
     const columnData = {
       name: name.trim(),
+      key: name.trim().toLowerCase().replace(/\s+/g, '_'),
       dataType,
       isRequired: isRequired || false,
       isUnique: isUnique || false,
       defaultValue,
       order: nextOrder,
       tableId,
-      databaseId: table.databaseId,
       userId,
-      siteId
+      siteId: req.user?.site_id
     };
 
     // Only add checkboxConfig if dataType is checkbox and checkboxConfig is provided
@@ -289,17 +325,33 @@ export const getColumns = async (req, res) => {
   try {
     const { tableId } = req.params;
     const userId = req.user._id;
-    const siteId = req.siteId;
 
-    // Verify table exists and belongs to user
+    if (!tableId) {
+      return res.status(400).json({ message: "Table ID is required" });
+    }
+
+    // Verify table exists and get its database info
     const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+      _id: tableId
+    }).populate('baseId');
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if table's database belongs to the organization
+    if (!table.baseId || !table.baseId.orgId) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Verify user is a member of the organization that owns this table's database
+    const organization = await Organization.findOne({ 
+      _id: table.databaseId.orgId,
+      'members.user': userId 
+    });
+    
+    if (!organization) {
+      return res.status(403).json({ message: "Access denied - user is not a member of this database" });
     }
 
     const columns = await Column.find({ tableId })

@@ -6,29 +6,54 @@ import { toObjectId } from "../utils/helper.js";
 import { checkExistIfFail } from "../services/validation.service.js";
 import BaseRole from "../model/BaseRole.js";
 import Base from "../model/Base.js";
+import BaseMember from "../model/BaseMember.js";
+import Organization from "../model/Organization.js";
 
-// Database Controllers
+// Database Controllers - Now working with Base directly
 export const createDatabase = async (req, res, next) => {
   try {
-    const { name, description, baseId } = req.body;
+    console.log("createDatabase - req.user:", req.user);
+    console.log("createDatabase - req.body:", req.body);
+    
+    const { name, description } = req.body;
     const userId = req.user._id;
-    const siteId = req.siteId;
+    const siteId = req.user.site_id;
 
-    checkExistIfFail(Base, { _id: toObjectId(baseId) }, next, "Base not found");
+    console.log("createDatabase - userId:", userId);
+    console.log("createDatabase - siteId:", siteId);
 
     if (!name || name.trim() === "") {
       return res.status(400).json({ message: "Database name is required" });
     }
 
-    if (!baseId) {
-      return res.status(400).json({ message: "Base is required" });
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
     }
 
+    // Find organization where user is a member and check role
+    const organization = await Organization.findOne({ 
+      'members.user': userId 
+    });
+    
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found or user is not a member" });
+    }
+
+    // Check if user is owner or manager (only they can create databases)
+    const userMember = organization.members.find(member => 
+      member.user.toString() === userId.toString()
+    );
+    
+    if (!userMember || (userMember.role !== 'owner' && userMember.role !== 'manager')) {
+      return res.status(403).json({ 
+        message: "Access denied - only organization owners and managers can create databases" 
+      });
+    }
+
+    // Check if database with this name already exists for this organization
     const existingDatabase = await Database.findOne({
       name: name.trim(),
-      userId,
-      siteId,
-      baseId: toObjectId(baseId),
+      orgId: organization._id,
     });
 
     if (existingDatabase) {
@@ -37,15 +62,52 @@ export const createDatabase = async (req, res, next) => {
         .json({ message: "Database with this name already exists" });
     }
 
+    // Create new database (which is actually a Base)
     const database = new Database({
       name: name.trim(),
       description: description || "",
-      userId,
-      siteId,
-      baseId: toObjectId(baseId),
+      ownerId: userId,
+      orgId: organization._id,
     });
 
+    console.log("createDatabase - saving database:", database);
     await database.save();
+    console.log("createDatabase - database saved successfully");
+
+    // Automatically add the creator as owner of the database
+    try {
+      // Check if there's already an owner for this database
+      const existingOwner = await BaseMember.findOne({
+        baseId: database._id,
+        role: 'owner'
+      });
+
+      if (existingOwner) {
+        console.log("createDatabase - owner already exists, demoting to manager");
+        // If there's already an owner, demote them to manager
+        await BaseMember.findOneAndUpdate(
+          { baseId: database._id, role: 'owner' },
+          { role: 'manager' }
+        );
+      }
+
+      const baseMember = new BaseMember({
+        baseId: database._id,
+        userId: userId,
+        role: 'owner'
+      });
+
+      console.log("createDatabase - creating base member:", baseMember);
+      await baseMember.save();
+      console.log("createDatabase - base member created successfully");
+    } catch (baseMemberError) {
+      console.error("Error creating base member:", baseMemberError);
+      // If base member creation fails, delete the database to maintain consistency
+      await Database.deleteOne({ _id: database._id });
+      return res.status(500).json({ 
+        message: "Database created but failed to add user as owner. Database has been deleted." 
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -60,13 +122,57 @@ export const createDatabase = async (req, res, next) => {
 
 export const getDatabases = async (req, res) => {
   try {
+    console.log("getDatabases - req.user:", req.user);
+    console.log("getDatabases - req.user._id:", req.user?._id);
+    console.log("getDatabases - req.user.site_id:", req.user?.site_id);
+    
     const userId = req.user._id;
-    const siteId = req.siteId;
-    const baseId = req.query.baseId;
 
-    const databases = await Database.find({ userId, siteId, baseId }).sort({
-      createdAt: -1,
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Find organization where user is a member
+    const organization = await Organization.findOne({ 
+      'members.user': userId 
     });
+    
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found or user is not a member" });
+    }
+
+    console.log("getDatabases - found organization:", organization.name, organization._id);
+
+    // Check user role in organization
+    const userMember = organization.members.find(member => 
+      member.user.toString() === userId.toString()
+    );
+    
+    let databases;
+    
+    if (userMember && (userMember.role === 'owner' || userMember.role === 'manager')) {
+      // Owner/Manager: can see all databases in the organization
+      databases = await Database.find({ 
+        orgId: organization._id
+      }).sort({
+        createdAt: -1,
+      });
+      console.log("getDatabases - owner/manager found databases:", databases.length);
+    } else {
+      // Member: can only see databases they are added to
+      const baseMembers = await BaseMember.find({ userId }).select('databaseId');
+      const baseIds = baseMembers.map(bm => bm.databaseId);
+      console.log("getDatabases - member baseIds:", baseIds);
+      
+      databases = await Database.find({ 
+        _id: { $in: baseIds }
+      }).sort({
+        createdAt: -1,
+      });
+      console.log("getDatabases - member found databases:", databases.length);
+    }
+
+    console.log("getDatabases - found databases:", databases.length);
 
     res.status(200).json({
       success: true,
@@ -82,12 +188,24 @@ export const getDatabaseById = async (req, res) => {
   try {
     const { databaseId } = req.params;
     const userId = req.user._id;
-    const siteId = req.siteId;
 
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Find organization where user is a member
+    const organization = await Organization.findOne({ 
+      'members.user': userId 
+    });
+    
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found or user is not a member" });
+    }
+
+    // Find database by ID and organization
     const database = await Database.findOne({
       _id: databaseId,
-      userId,
-      siteId,
+      orgId: organization._id,
     });
 
     if (!database) {
@@ -159,22 +277,49 @@ export const deleteDatabase = async (req, res) => {
   try {
     const { databaseId } = req.params;
     const userId = req.user._id;
-    const siteId = req.siteId;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Find organization where user is a member
+    const organization = await Organization.findOne({ 
+      'members.user': userId 
+    });
+    
+    if (!organization) {
+      return res.status(404).json({ message: "Organization not found or user is not a member" });
+    }
 
     const database = await Database.findOne({
       _id: databaseId,
-      userId,
-      siteId,
+      orgId: organization._id,
     });
 
     if (!database) {
       return res.status(404).json({ message: "Database not found" });
     }
 
-    // Delete all related data (tables, columns, records)
-    await Table.deleteMany({ databaseId });
-    await Column.deleteMany({ databaseId });
-    await Record.deleteMany({ databaseId });
+    // Check if user has permission to delete this database (must be owner or manager)
+    const baseMember = await BaseMember.findOne({ 
+      baseId: databaseId, 
+      userId 
+    });
+
+    if (!baseMember) {
+      return res.status(403).json({ message: "Access denied - you are not a member of this database" });
+    }
+
+    // Only owner can delete database
+    if (baseMember.role !== 'owner') {
+      return res.status(403).json({ message: "Access denied - only database owners can delete databases" });
+    }
+
+    // Delete all related data (tables, columns, records, base members)
+    await Table.deleteMany({ baseId: databaseId });
+    await Column.deleteMany({ tableId: { $in: await Table.find({ baseId: databaseId }).distinct('_id') } });
+    await Record.deleteMany({ tableId: { $in: await Table.find({ baseId: databaseId }).distinct('_id') } });
+    await BaseMember.deleteMany({ baseId: databaseId });
     await Database.deleteOne({ _id: databaseId });
 
     res.status(200).json({

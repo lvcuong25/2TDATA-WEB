@@ -31,12 +31,12 @@ export async function createBase(req, res, next) {
     // Tạo base và seed 4 role built-in (Owner/Admin/Editor/Viewer)
     const base = await Base.create({ orgId, name, ownerId: userId });
     const [ownerRole] = await BaseRole.insertMany([
-      { baseId: base._id, name: "Owner", builtin: true },
+      { databaseId: base._id, name: "Owner", builtin: true },
     ]);
 
     // Người tạo base -> Owner của base đó
     await BaseMember.create({
-      baseId: base._id,
+      databaseId: base._id,
       userId,
       baseRoleId: ownerRole._id,
     });
@@ -84,7 +84,7 @@ export async function detailBase(req, res, next) {
         $lookup: {
           from: "basemembers", // collection name (lowercased + plural usually)
           localField: "_id",
-          foreignField: "baseId",
+          foreignField: "databaseId",
           as: "members",
         },
       },

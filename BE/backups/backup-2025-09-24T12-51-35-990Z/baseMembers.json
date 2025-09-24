@@ -1,0 +1,578 @@
+[
+  {
+    "_id": "68d3b41ab5a52b22b1ecfd60",
+    "baseId": "68d3b41ab5a52b22b1ecfd55",
+    "userId": "68341e4d3f86f9c7ae46e962",
+    "baseRoleId": "68d3b41ab5a52b22b1ecfd57",
+    "createdAt": "2025-09-24T09:04:26.033Z",
+    "updatedAt": "2025-09-24T09:04:26.033Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04ae6",
+    "baseId": "68d3b44eb4370caaf5f04adb",
+    "userId": "6834274f228beecc9aee68dd",
+    "baseRoleId": "68d3b44eb4370caaf5f04add",
+    "createdAt": "2025-09-24T09:05:18.732Z",
+    "updatedAt": "2025-09-24T09:05:18.732Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04afa",
+    "baseId": "68d3b44eb4370caaf5f04aef",
+    "userId": "683c681e94a974c92873ffb8",
+    "baseRoleId": "68d3b44eb4370caaf5f04af1",
+    "createdAt": "2025-09-24T09:05:18.774Z",
+    "updatedAt": "2025-09-24T09:05:18.774Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04b0e",
+    "baseId": "68d3b44eb4370caaf5f04b03",
+    "userId": "683d479594a974c92874001b",
+    "baseRoleId": "68d3b44eb4370caaf5f04b05",
+    "createdAt": "2025-09-24T09:05:18.810Z",
+    "updatedAt": "2025-09-24T09:05:18.810Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04b22",
+    "baseId": "68d3b44eb4370caaf5f04b17",
+    "userId": "683d4ca494a974c92874014e",
+    "baseRoleId": "68d3b44eb4370caaf5f04b19",
+    "createdAt": "2025-09-24T09:05:18.845Z",
+    "updatedAt": "2025-09-24T09:05:18.845Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04b36",
+    "baseId": "68d3b44eb4370caaf5f04b2b",
+    "userId": "683d826bbd6f8b712e09e2fd",
+    "baseRoleId": "68d3b44eb4370caaf5f04b2d",
+    "createdAt": "2025-09-24T09:05:18.888Z",
+    "updatedAt": "2025-09-24T09:05:18.888Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04b4a",
+    "baseId": "68d3b44eb4370caaf5f04b3f",
+    "userId": "683dccfafc41d7f76acb966a",
+    "baseRoleId": "68d3b44eb4370caaf5f04b41",
+    "createdAt": "2025-09-24T09:05:18.930Z",
+    "updatedAt": "2025-09-24T09:05:18.930Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef468e",
+    "baseId": "68d3b461cadcbd368fef4683",
+    "userId": "683e5d4bfc41d7f76acb96a0",
+    "baseRoleId": "68d3b461cadcbd368fef4685",
+    "createdAt": "2025-09-24T09:05:37.703Z",
+    "updatedAt": "2025-09-24T09:05:37.703Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46a2",
+    "baseId": "68d3b461cadcbd368fef4697",
+    "userId": "68429a8f21674ec81c765225",
+    "baseRoleId": "68d3b461cadcbd368fef4699",
+    "createdAt": "2025-09-24T09:05:37.747Z",
+    "updatedAt": "2025-09-24T09:05:37.747Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46b6",
+    "baseId": "68d3b461cadcbd368fef46ab",
+    "userId": "6847ee9321674ec81c766a3a",
+    "baseRoleId": "68d3b461cadcbd368fef46ad",
+    "createdAt": "2025-09-24T09:05:37.796Z",
+    "updatedAt": "2025-09-24T09:05:37.796Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46ca",
+    "baseId": "68d3b461cadcbd368fef46bf",
+    "userId": "684aa9389104581b3e28c32c",
+    "baseRoleId": "68d3b461cadcbd368fef46c1",
+    "createdAt": "2025-09-24T09:05:37.843Z",
+    "updatedAt": "2025-09-24T09:05:37.843Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46de",
+    "baseId": "68d3b461cadcbd368fef46d3",
+    "userId": "684cfcde4543b4acb407bf2d",
+    "baseRoleId": "68d3b461cadcbd368fef46d5",
+    "createdAt": "2025-09-24T09:05:37.884Z",
+    "updatedAt": "2025-09-24T09:05:37.884Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46f2",
+    "baseId": "68d3b461cadcbd368fef46e7",
+    "userId": "6850f3144543b4acb407c5d0",
+    "baseRoleId": "68d3b461cadcbd368fef46e9",
+    "createdAt": "2025-09-24T09:05:37.927Z",
+    "updatedAt": "2025-09-24T09:05:37.927Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef4706",
+    "baseId": "68d3b461cadcbd368fef46fb",
+    "userId": "685146504543b4acb407d8c5",
+    "baseRoleId": "68d3b461cadcbd368fef46fd",
+    "createdAt": "2025-09-24T09:05:37.965Z",
+    "updatedAt": "2025-09-24T09:05:37.965Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef471a",
+    "baseId": "68d3b462cadcbd368fef470f",
+    "userId": "685282374543b4acb407fe40",
+    "baseRoleId": "68d3b462cadcbd368fef4711",
+    "createdAt": "2025-09-24T09:05:38.045Z",
+    "updatedAt": "2025-09-24T09:05:38.045Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef472e",
+    "baseId": "68d3b462cadcbd368fef4723",
+    "userId": "6853df464543b4acb4081353",
+    "baseRoleId": "68d3b462cadcbd368fef4725",
+    "createdAt": "2025-09-24T09:05:38.117Z",
+    "updatedAt": "2025-09-24T09:05:38.117Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef4742",
+    "baseId": "68d3b462cadcbd368fef4737",
+    "userId": "68566ce64543b4acb4083d40",
+    "baseRoleId": "68d3b462cadcbd368fef4739",
+    "createdAt": "2025-09-24T09:05:38.174Z",
+    "updatedAt": "2025-09-24T09:05:38.174Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef4756",
+    "baseId": "68d3b462cadcbd368fef474b",
+    "userId": "6858d16fbfe0fea76b8749a3",
+    "baseRoleId": "68d3b462cadcbd368fef474d",
+    "createdAt": "2025-09-24T09:05:38.210Z",
+    "updatedAt": "2025-09-24T09:05:38.210Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef476a",
+    "baseId": "68d3b462cadcbd368fef475f",
+    "userId": "6863a9309eeab67b5f1f27a1",
+    "baseRoleId": "68d3b462cadcbd368fef4761",
+    "createdAt": "2025-09-24T09:05:38.257Z",
+    "updatedAt": "2025-09-24T09:05:38.257Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef477e",
+    "baseId": "68d3b462cadcbd368fef4773",
+    "userId": "6868a8779eeab67b5f1f708f",
+    "baseRoleId": "68d3b462cadcbd368fef4775",
+    "createdAt": "2025-09-24T09:05:38.300Z",
+    "updatedAt": "2025-09-24T09:05:38.300Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef4792",
+    "baseId": "68d3b462cadcbd368fef4787",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "baseRoleId": "68d3b462cadcbd368fef4789",
+    "createdAt": "2025-09-24T09:05:38.335Z",
+    "updatedAt": "2025-09-24T09:05:38.335Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef47a6",
+    "baseId": "68d3b462cadcbd368fef479b",
+    "userId": "686e1b3a047b5b9d9e3a96b6",
+    "baseRoleId": "68d3b462cadcbd368fef479d",
+    "createdAt": "2025-09-24T09:05:38.370Z",
+    "updatedAt": "2025-09-24T09:05:38.370Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251522",
+    "baseId": "68d3b4d2108634a3e7251517",
+    "userId": "686e1e4d047b5b9d9e3a9f66",
+    "baseRoleId": "68d3b4d2108634a3e7251519",
+    "createdAt": "2025-09-24T09:07:30.592Z",
+    "updatedAt": "2025-09-24T09:07:30.592Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251536",
+    "baseId": "68d3b4d2108634a3e725152b",
+    "userId": "68712ad5529d2368eb9bb19e",
+    "baseRoleId": "68d3b4d2108634a3e725152d",
+    "createdAt": "2025-09-24T09:07:30.629Z",
+    "updatedAt": "2025-09-24T09:07:30.629Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e725154a",
+    "baseId": "68d3b4d2108634a3e725153f",
+    "userId": "687131cb38c20e102e42538d",
+    "baseRoleId": "68d3b4d2108634a3e7251541",
+    "createdAt": "2025-09-24T09:07:30.665Z",
+    "updatedAt": "2025-09-24T09:07:30.665Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e725155e",
+    "baseId": "68d3b4d2108634a3e7251553",
+    "userId": "6871c8a95fe76125db9a2a7d",
+    "baseRoleId": "68d3b4d2108634a3e7251555",
+    "createdAt": "2025-09-24T09:07:30.700Z",
+    "updatedAt": "2025-09-24T09:07:30.700Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251572",
+    "baseId": "68d3b4d2108634a3e7251567",
+    "userId": "6874ee45feee144cb2c5ff94",
+    "baseRoleId": "68d3b4d2108634a3e7251569",
+    "createdAt": "2025-09-24T09:07:30.737Z",
+    "updatedAt": "2025-09-24T09:07:30.737Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251586",
+    "baseId": "68d3b4d2108634a3e725157b",
+    "userId": "6874fb18267e647e9aee2bcb",
+    "baseRoleId": "68d3b4d2108634a3e725157d",
+    "createdAt": "2025-09-24T09:07:30.771Z",
+    "updatedAt": "2025-09-24T09:07:30.771Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e725159a",
+    "baseId": "68d3b4d2108634a3e725158f",
+    "userId": "6875e088267e647e9aee64ee",
+    "baseRoleId": "68d3b4d2108634a3e7251591",
+    "createdAt": "2025-09-24T09:07:30.809Z",
+    "updatedAt": "2025-09-24T09:07:30.809Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515ae",
+    "baseId": "68d3b4d2108634a3e72515a3",
+    "userId": "68773d518a5234f8117ddbed",
+    "baseRoleId": "68d3b4d2108634a3e72515a5",
+    "createdAt": "2025-09-24T09:07:30.848Z",
+    "updatedAt": "2025-09-24T09:07:30.848Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515c2",
+    "baseId": "68d3b4d2108634a3e72515b7",
+    "userId": "6878a4e1bccfdd20d9b54fad",
+    "baseRoleId": "68d3b4d2108634a3e72515b9",
+    "createdAt": "2025-09-24T09:07:30.886Z",
+    "updatedAt": "2025-09-24T09:07:30.886Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515d6",
+    "baseId": "68d3b4d2108634a3e72515cb",
+    "userId": "687d08e2b354baffe842b60c",
+    "baseRoleId": "68d3b4d2108634a3e72515cd",
+    "createdAt": "2025-09-24T09:07:30.917Z",
+    "updatedAt": "2025-09-24T09:07:30.917Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515ea",
+    "baseId": "68d3b4d2108634a3e72515df",
+    "userId": "688097a553713a002d1566c3",
+    "baseRoleId": "68d3b4d2108634a3e72515e1",
+    "createdAt": "2025-09-24T09:07:30.948Z",
+    "updatedAt": "2025-09-24T09:07:30.948Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515fe",
+    "baseId": "68d3b4d2108634a3e72515f3",
+    "userId": "6880b2fce9274de9ae0925da",
+    "baseRoleId": "68d3b4d2108634a3e72515f5",
+    "createdAt": "2025-09-24T09:07:30.983Z",
+    "updatedAt": "2025-09-24T09:07:30.983Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251612",
+    "baseId": "68d3b4d2108634a3e7251607",
+    "userId": "6880bb0453713a002d1632fe",
+    "baseRoleId": "68d3b4d3108634a3e7251609",
+    "createdAt": "2025-09-24T09:07:31.016Z",
+    "updatedAt": "2025-09-24T09:07:31.016Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251626",
+    "baseId": "68d3b4d3108634a3e725161b",
+    "userId": "6886f86650d49c5d27862bb2",
+    "baseRoleId": "68d3b4d3108634a3e725161d",
+    "createdAt": "2025-09-24T09:07:31.050Z",
+    "updatedAt": "2025-09-24T09:07:31.050Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725163a",
+    "baseId": "68d3b4d3108634a3e725162f",
+    "userId": "68873c7948e6108bc297dce0",
+    "baseRoleId": "68d3b4d3108634a3e7251631",
+    "createdAt": "2025-09-24T09:07:31.078Z",
+    "updatedAt": "2025-09-24T09:07:31.078Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725164e",
+    "baseId": "68d3b4d3108634a3e7251643",
+    "userId": "6889884748e6108bc2996ce3",
+    "baseRoleId": "68d3b4d3108634a3e7251645",
+    "createdAt": "2025-09-24T09:07:31.134Z",
+    "updatedAt": "2025-09-24T09:07:31.134Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251662",
+    "baseId": "68d3b4d3108634a3e7251657",
+    "userId": "6889ca8748e6108bc299c895",
+    "baseRoleId": "68d3b4d3108634a3e7251659",
+    "createdAt": "2025-09-24T09:07:31.171Z",
+    "updatedAt": "2025-09-24T09:07:31.171Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251676",
+    "baseId": "68d3b4d3108634a3e725166b",
+    "userId": "688c487448e6108bc29bd961",
+    "baseRoleId": "68d3b4d3108634a3e725166d",
+    "createdAt": "2025-09-24T09:07:31.206Z",
+    "updatedAt": "2025-09-24T09:07:31.206Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725168a",
+    "baseId": "68d3b4d3108634a3e725167f",
+    "userId": "68999e4390d69a19d2072c29",
+    "baseRoleId": "68d3b4d3108634a3e7251681",
+    "createdAt": "2025-09-24T09:07:31.242Z",
+    "updatedAt": "2025-09-24T09:07:31.242Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725169e",
+    "baseId": "68d3b4d3108634a3e7251693",
+    "userId": "689ac21a90d69a19d208728e",
+    "baseRoleId": "68d3b4d3108634a3e7251695",
+    "createdAt": "2025-09-24T09:07:31.276Z",
+    "updatedAt": "2025-09-24T09:07:31.276Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516b2",
+    "baseId": "68d3b4d3108634a3e72516a7",
+    "userId": "689c4dc85f3f3a13ad66326c",
+    "baseRoleId": "68d3b4d3108634a3e72516a9",
+    "createdAt": "2025-09-24T09:07:31.313Z",
+    "updatedAt": "2025-09-24T09:07:31.313Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516c6",
+    "baseId": "68d3b4d3108634a3e72516bb",
+    "userId": "689c4dc85f3f3a13ad66326f",
+    "baseRoleId": "68d3b4d3108634a3e72516bd",
+    "createdAt": "2025-09-24T09:07:31.351Z",
+    "updatedAt": "2025-09-24T09:07:31.351Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516da",
+    "baseId": "68d3b4d3108634a3e72516cf",
+    "userId": "689c4dc85f3f3a13ad663272",
+    "baseRoleId": "68d3b4d3108634a3e72516d1",
+    "createdAt": "2025-09-24T09:07:31.386Z",
+    "updatedAt": "2025-09-24T09:07:31.386Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516ee",
+    "baseId": "68d3b4d3108634a3e72516e3",
+    "userId": "689c4dc85f3f3a13ad663275",
+    "baseRoleId": "68d3b4d3108634a3e72516e5",
+    "createdAt": "2025-09-24T09:07:31.428Z",
+    "updatedAt": "2025-09-24T09:07:31.428Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251702",
+    "baseId": "68d3b4d3108634a3e72516f7",
+    "userId": "689c4dc85f3f3a13ad663278",
+    "baseRoleId": "68d3b4d3108634a3e72516f9",
+    "createdAt": "2025-09-24T09:07:31.469Z",
+    "updatedAt": "2025-09-24T09:07:31.469Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251716",
+    "baseId": "68d3b4d3108634a3e725170b",
+    "userId": "689c4dc85f3f3a13ad66327b",
+    "baseRoleId": "68d3b4d3108634a3e725170d",
+    "createdAt": "2025-09-24T09:07:31.509Z",
+    "updatedAt": "2025-09-24T09:07:31.509Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725172a",
+    "baseId": "68d3b4d3108634a3e725171f",
+    "userId": "689c4dc85f3f3a13ad66327e",
+    "baseRoleId": "68d3b4d3108634a3e7251721",
+    "createdAt": "2025-09-24T09:07:31.553Z",
+    "updatedAt": "2025-09-24T09:07:31.553Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725173e",
+    "baseId": "68d3b4d3108634a3e7251733",
+    "userId": "689c4dc85f3f3a13ad663281",
+    "baseRoleId": "68d3b4d3108634a3e7251735",
+    "createdAt": "2025-09-24T09:07:31.592Z",
+    "updatedAt": "2025-09-24T09:07:31.592Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251752",
+    "baseId": "68d3b4d3108634a3e7251747",
+    "userId": "689c4dc95f3f3a13ad663284",
+    "baseRoleId": "68d3b4d3108634a3e7251749",
+    "createdAt": "2025-09-24T09:07:31.628Z",
+    "updatedAt": "2025-09-24T09:07:31.628Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251766",
+    "baseId": "68d3b4d3108634a3e725175b",
+    "userId": "689c4dc95f3f3a13ad663287",
+    "baseRoleId": "68d3b4d3108634a3e725175d",
+    "createdAt": "2025-09-24T09:07:31.677Z",
+    "updatedAt": "2025-09-24T09:07:31.677Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725177a",
+    "baseId": "68d3b4d3108634a3e725176f",
+    "userId": "689c4dc95f3f3a13ad66328a",
+    "baseRoleId": "68d3b4d3108634a3e7251771",
+    "createdAt": "2025-09-24T09:07:31.727Z",
+    "updatedAt": "2025-09-24T09:07:31.727Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725178e",
+    "baseId": "68d3b4d3108634a3e7251783",
+    "userId": "689c4dc95f3f3a13ad66328d",
+    "baseRoleId": "68d3b4d3108634a3e7251785",
+    "createdAt": "2025-09-24T09:07:31.784Z",
+    "updatedAt": "2025-09-24T09:07:31.784Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517a2",
+    "baseId": "68d3b4d3108634a3e7251797",
+    "userId": "689c4dc95f3f3a13ad663290",
+    "baseRoleId": "68d3b4d3108634a3e7251799",
+    "createdAt": "2025-09-24T09:07:31.823Z",
+    "updatedAt": "2025-09-24T09:07:31.823Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517b6",
+    "baseId": "68d3b4d3108634a3e72517ab",
+    "userId": "689c4dc95f3f3a13ad663293",
+    "baseRoleId": "68d3b4d3108634a3e72517ad",
+    "createdAt": "2025-09-24T09:07:31.859Z",
+    "updatedAt": "2025-09-24T09:07:31.859Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517ca",
+    "baseId": "68d3b4d3108634a3e72517bf",
+    "userId": "689c4dc95f3f3a13ad663296",
+    "baseRoleId": "68d3b4d3108634a3e72517c1",
+    "createdAt": "2025-09-24T09:07:31.897Z",
+    "updatedAt": "2025-09-24T09:07:31.897Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517de",
+    "baseId": "68d3b4d3108634a3e72517d3",
+    "userId": "689c4dc95f3f3a13ad663299",
+    "baseRoleId": "68d3b4d3108634a3e72517d5",
+    "createdAt": "2025-09-24T09:07:31.927Z",
+    "updatedAt": "2025-09-24T09:07:31.927Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517f2",
+    "baseId": "68d3b4d3108634a3e72517e7",
+    "userId": "689c4dc95f3f3a13ad66329c",
+    "baseRoleId": "68d3b4d3108634a3e72517e9",
+    "createdAt": "2025-09-24T09:07:31.960Z",
+    "updatedAt": "2025-09-24T09:07:31.960Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251806",
+    "baseId": "68d3b4d3108634a3e72517fb",
+    "userId": "689c4dc95f3f3a13ad66329f",
+    "baseRoleId": "68d3b4d3108634a3e72517fd",
+    "createdAt": "2025-09-24T09:07:31.993Z",
+    "updatedAt": "2025-09-24T09:07:31.993Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e725181a",
+    "baseId": "68d3b4d4108634a3e725180f",
+    "userId": "689c4dca5f3f3a13ad6632a2",
+    "baseRoleId": "68d3b4d4108634a3e7251811",
+    "createdAt": "2025-09-24T09:07:32.023Z",
+    "updatedAt": "2025-09-24T09:07:32.023Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e725182e",
+    "baseId": "68d3b4d4108634a3e7251823",
+    "userId": "689c4dca5f3f3a13ad6632a5",
+    "baseRoleId": "68d3b4d4108634a3e7251825",
+    "createdAt": "2025-09-24T09:07:32.058Z",
+    "updatedAt": "2025-09-24T09:07:32.058Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e7251842",
+    "baseId": "68d3b4d4108634a3e7251837",
+    "userId": "689ea51c90d69a19d20e689f",
+    "baseRoleId": "68d3b4d4108634a3e7251839",
+    "createdAt": "2025-09-24T09:07:32.094Z",
+    "updatedAt": "2025-09-24T09:07:32.094Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e7251856",
+    "baseId": "68d3b4d4108634a3e725184b",
+    "userId": "689ed23390d69a19d20ef6da",
+    "baseRoleId": "68d3b4d4108634a3e725184d",
+    "createdAt": "2025-09-24T09:07:32.127Z",
+    "updatedAt": "2025-09-24T09:07:32.127Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e725186a",
+    "baseId": "68d3b4d4108634a3e725185f",
+    "userId": "689f0af2e0baeb5b8fad31f0",
+    "baseRoleId": "68d3b4d4108634a3e7251861",
+    "createdAt": "2025-09-24T09:07:32.157Z",
+    "updatedAt": "2025-09-24T09:07:32.157Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e725187e",
+    "baseId": "68d3b4d4108634a3e7251873",
+    "userId": "689f0c198a34389d33a92f9e",
+    "baseRoleId": "68d3b4d4108634a3e7251875",
+    "createdAt": "2025-09-24T09:07:32.185Z",
+    "updatedAt": "2025-09-24T09:07:32.185Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e7251892",
+    "baseId": "68d3b4d4108634a3e7251887",
+    "userId": "68a2957fae017015879dc94e",
+    "baseRoleId": "68d3b4d4108634a3e7251889",
+    "createdAt": "2025-09-24T09:07:32.216Z",
+    "updatedAt": "2025-09-24T09:07:32.216Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e72518a6",
+    "baseId": "68d3b4d4108634a3e725189b",
+    "userId": "68a3f617654371caf93e0adf",
+    "baseRoleId": "68d3b4d4108634a3e725189d",
+    "createdAt": "2025-09-24T09:07:32.245Z",
+    "updatedAt": "2025-09-24T09:07:32.245Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e72518ba",
+    "baseId": "68d3b4d4108634a3e72518af",
+    "userId": "68b069a96530c93a801cde80",
+    "baseRoleId": "68d3b4d4108634a3e72518b1",
+    "createdAt": "2025-09-24T09:07:32.274Z",
+    "updatedAt": "2025-09-24T09:07:32.274Z"
+  },
+  {
+    "_id": "68d3c9efe1955f20dd7d2253",
+    "baseId": "68d3c9efe1955f20dd7d224f",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "baseRoleId": "68d3c9efe1955f20dd7d2251",
+    "createdAt": "2025-09-24T10:37:35.688Z",
+    "updatedAt": "2025-09-24T10:37:35.688Z"
+  },
+  {
+    "_id": "68d3ccd9c91ad7fd1a8ff89e",
+    "baseId": "68d3c571d26bac81d94eef99",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "role": "owner",
+    "createdAt": "2025-09-24T10:50:01.965Z",
+    "updatedAt": "2025-09-24T10:50:01.965Z"
+  },
+  {
+    "_id": "68d3e3d59414f43a154595ef",
+    "baseId": "68d3c571d26bac81d94eef99",
+    "userId": "68b069a96530c93a801cde80",
+    "role": "member",
+    "createdAt": "2025-09-24T12:28:05.163Z",
+    "updatedAt": "2025-09-24T12:28:05.163Z"
+  }
+]

@@ -7,6 +7,7 @@ import {
   NumberOutlined,
   PhoneOutlined,
   PictureOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,16 +25,18 @@ import {
   Tag,
 } from "antd";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useSite } from "../../context/SiteContext";
 import instance from "../../utils/axiosInstance-cookie-only";
 import { useAuth } from "../core/Auth";
+import BaseNavigation from "./BaseNavigation";
 
 const BaseDetail = () => {
   const { currentUser, currentOrganization, roleForOrg } = useAuth();
   const { currentSite } = useSite();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [form] = Form.useForm();
   const [pendingRoleChange, setPendingRoleChange] = useState({
     userId: null,
@@ -43,15 +46,13 @@ const BaseDetail = () => {
   const [memberPageSize, setMemberPageSize] = useState(5);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editForm] = Form.useForm();
-  const baseId = useParams().baseId;
+  const databaseId = useParams().databaseId;
 
   const { data: _baseDetailData, isLoading } = useQuery({
-    queryKey: ["baseDetail", baseId, currentOrganization?._id],
+    queryKey: ["baseDetail", databaseId],
     queryFn: async () => {
-      if (!currentUser?._id || !currentOrganization?._id) return null;
-      const res = await instance.get(
-        `orgs/${currentOrganization?._id}/bases/${baseId}`
-      );
+      if (!databaseId) return null;
+      const res = await instance.get(`/database/databases/${databaseId}`);
       return res;
     },
     retry: false,
@@ -250,7 +251,23 @@ const BaseDetail = () => {
   };
 
   return (
-    <Card className="shadow-sm mb-6">
+    <div>
+      <BaseNavigation />
+      <Card 
+        className="shadow-sm mb-6"
+        title={
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Base Information</span>
+            <Button 
+              type="primary" 
+              icon={<SettingOutlined />}
+              onClick={() => navigate(`/profile/base/${databaseId}/management`)}
+            >
+              Manage Base
+            </Button>
+          </div>
+        }
+      >
       <Descriptions title="Thông tin base" bordered column={1} className="mt-6">
         <Descriptions.Item
           label={
@@ -508,6 +525,7 @@ const BaseDetail = () => {
         </Form>
       </Modal>
     </Card>
+    </div>
   );
 };
 
