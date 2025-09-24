@@ -90,10 +90,18 @@ import {
 } from "../controllers/calendarController.js";
 
 import {
+  exportDatabaseToExcel,
+  importExcelToDatabase,
+  getDatabaseExcelTemplate
+} from "../controllers/excelController.js";
+
+import {
   createViewValidation,
   updateViewValidation,
   copyViewValidation
 } from "../validations/viewValidation.js";
+
+import { uploadExcel } from "../middlewares/upload.js";
 
 const router = Router();
 
@@ -182,5 +190,10 @@ router.post("/tables/:tableId/kanban/column", addKanbanColumn);
 router.get("/tables/:tableId/calendar", getCalendarData);
 router.get("/tables/:tableId/calendar/config", getCalendarConfig);
 router.put("/records/:recordId/calendar", updateRecordDate);
+
+// Excel routes for database level
+router.get("/databases/:databaseId/export/excel", exportDatabaseToExcel);
+router.post("/databases/:databaseId/import/excel", uploadExcel, importExcelToDatabase);
+router.get("/databases/:databaseId/template/excel", getDatabaseExcelTemplate);
 
 export default router;

@@ -1,22 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 
 /**
  * Hook để quản lý việc đồng bộ giữa các tab
  * Giúp tránh race condition và đảm bảo trạng thái auth đồng nhất
+ * Simplified version for React 19 compatibility
  */
 export const useTabSync = (onAuthChange) => {
-  const isInitialized = useRef(false);
-  const lastUpdateTime = useRef(0);
   
   useEffect(() => {
-    if (isInitialized.current) {
-      return;
-    }
-    isInitialized.current = true;
-    
     // Tạo unique ID cho tab này
     const tabId = Math.random().toString(36).substr(2, 9);
     console.log(`[Tab ${tabId}] Initializing tab sync...`);
+    
+    let lastUpdateTime = 0;
     
     // Lắng nghe storage events từ các tab khác
     const handleStorageChange = (event) => {
@@ -25,10 +21,10 @@ export const useTabSync = (onAuthChange) => {
         const now = Date.now();
         
         // Tránh xử lý quá nhiều events trong thời gian ngắn
-        if (now - lastUpdateTime.current < 100) {
+        if (now - lastUpdateTime < 100) {
           return;
         }
-        lastUpdateTime.current = now;
+        lastUpdateTime = now;
         
         console.log(`[Tab ${tabId}] Storage change detected:`, event.key);
         
@@ -44,10 +40,10 @@ export const useTabSync = (onAuthChange) => {
     // Lắng nghe custom auth events
     const handleAuthUpdate = (event) => {
       const now = Date.now();
-      if (now - lastUpdateTime.current < 100) {
+      if (now - lastUpdateTime < 100) {
         return;
       }
-      lastUpdateTime.current = now;
+      lastUpdateTime = now;
       
       console.log(`[Tab ${tabId}] Auth update event detected`);
       
@@ -100,9 +96,8 @@ export const useTabSync = (onAuthChange) => {
   }, [onAuthChange]);
   
   // Function để thông báo thay đổi auth cho các tab khác
-  const notifyAuthChange = (userData) => {
+  const notifyAuthChange = useCallback((userData) => {
     const now = Date.now();
-    lastUpdateTime.current = now;
     
     // Cập nhật timestamp
     localStorage.setItem('auth_timestamp', now.toString());
@@ -120,7 +115,7 @@ export const useTabSync = (onAuthChange) => {
       oldValue: localStorage.getItem('user'),
       url: window.location.href
     }));
-  };
+  }, []);
   
   return { notifyAuthChange };
 };

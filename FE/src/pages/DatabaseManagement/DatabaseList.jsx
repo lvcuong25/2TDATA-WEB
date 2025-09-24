@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
 import { SearchOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
+import DatabaseExcelActions from './DatabaseExcelActions';
 
 const DatabaseList = () => {
   const navigate = useNavigate();
@@ -309,6 +310,7 @@ const DatabaseList = () => {
             </div>
           </div>
         </div>
+
       </div>
 
       {/* Database Grid */}
@@ -417,6 +419,19 @@ const DatabaseList = () => {
                       <span>Tạo: {formatDate(database.createdAt)}</span>
                       <span>Cập nhật: {formatDate(database.updatedAt)}</span>
                     </div>
+                    
+                    {/* Excel Actions for this database */}
+                    <div 
+                      className="mt-4 pt-3 border-t border-gray-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DatabaseExcelActions
+                        databaseId={database._id}
+                        databaseName={database.name}
+                        onImportSuccess={() => queryClient.invalidateQueries(['databases'])}
+                        className="justify-center"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -449,11 +464,11 @@ const DatabaseList = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredAndSortedDatabases.map((database) => (
-                      <tr 
-                        key={database._id}
-                        className="hover:bg-gray-50 cursor-pointer"
-                        onClick={() => navigate(`/database/${database._id}/tables`)}
-                      >
+                      <React.Fragment key={database._id}>
+                        <tr 
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => navigate(`/database/${database._id}/tables`)}
+                        >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
@@ -530,6 +545,19 @@ const DatabaseList = () => {
                           </div>
                         </td>
                       </tr>
+                      <tr>
+                        <td colSpan="5" className="px-6 py-3 bg-gray-50">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <DatabaseExcelActions
+                              databaseId={database._id}
+                              databaseName={database.name}
+                              onImportSuccess={() => queryClient.invalidateQueries(['databases'])}
+                              className="justify-start"
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
