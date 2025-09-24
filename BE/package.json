@@ -26,7 +26,10 @@
     "db:setup-initial": "node db-management/setup-initial-data.js",
     "setup:production": "npm run db:setup-auth && npm run db:setup-initial",
     "auto-update": "node src/scripts/autoUpdateService.js",
-    "test:auto-update": "node test-auto-update.js"
+    "test:auto-update": "node test-auto-update.js",
+    "seed:demo": "node src/seeds/seed.demo.js",
+    "seed:test": "node src/seeds/seedTestData.js",
+    "seed:grades": "node src/seeds/seed.grades.js"
   },
   "keywords": [],
   "author": "",

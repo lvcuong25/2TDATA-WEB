@@ -49,7 +49,7 @@ export const getUser = async (req, res, next) => {
         }
 
         // Tìm user từ decoded token
-        const user = await User.findById(decoded._id).populate('service').populate('site_id');
+        const user = await User.findById(decoded._id).populate('service').populate('site_id').lean();
         
         if (!user) {
             return res.status(403).json({

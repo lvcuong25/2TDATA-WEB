@@ -48,7 +48,7 @@ export const checkPermission = (permission) => {
                 throw error;
             }
 
-            const user = await User.findById(decoded._id).populate('service').populate('site_id');
+            const user = await User.findById(decoded._id).populate('service').populate('site_id').lean();
             if (!user) {
                 return res.status(403).json({
                     message: "User does not exist",

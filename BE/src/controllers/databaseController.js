@@ -1,46 +1,60 @@
-import Database from '../model/Database.js';
-import Table from '../model/Table.js';
-import Column from '../model/Column.js';
-import Record from '../model/Record.js';
+import Database from "../model/Database.js";
+import Table from "../model/Table.js";
+import Column from "../model/Column.js";
+import Record from "../model/Record.js";
+import { toObjectId } from "../utils/helper.js";
+import { checkExistIfFail } from "../services/validation.service.js";
+import BaseRole from "../model/BaseRole.js";
+import Base from "../model/Base.js";
 
 // Database Controllers
-export const createDatabase = async (req, res) => {
+export const createDatabase = async (req, res, next) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, baseId } = req.body;
     const userId = req.user._id;
     const siteId = req.siteId;
 
-    if (!name || name.trim() === '') {
-      return res.status(400).json({ message: 'Database name is required' });
+    checkExistIfFail(Base, { _id: toObjectId(baseId) }, next, "Base not found");
+
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ message: "Database name is required" });
+    }
+
+    if (!baseId) {
+      return res.status(400).json({ message: "Base is required" });
     }
 
     const existingDatabase = await Database.findOne({
       name: name.trim(),
       userId,
-      siteId
+      siteId,
+      baseId: toObjectId(baseId),
     });
 
     if (existingDatabase) {
-      return res.status(400).json({ message: 'Database with this name already exists' });
+      return res
+        .status(400)
+        .json({ message: "Database with this name already exists" });
     }
 
     const database = new Database({
       name: name.trim(),
-      description: description || '',
+      description: description || "",
       userId,
-      siteId
+      siteId,
+      baseId: toObjectId(baseId),
     });
 
     await database.save();
 
     res.status(201).json({
       success: true,
-      message: 'Database created successfully',
-      data: database
+      message: "Database created successfully",
+      data: database,
     });
   } catch (error) {
-    console.error('Error creating database:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error creating database:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -48,17 +62,19 @@ export const getDatabases = async (req, res) => {
   try {
     const userId = req.user._id;
     const siteId = req.siteId;
+    const baseId = req.query.baseId;
 
-    const databases = await Database.find({ userId, siteId })
-      .sort({ createdAt: -1 });
+    const databases = await Database.find({ userId, siteId, baseId }).sort({
+      createdAt: -1,
+    });
 
     res.status(200).json({
       success: true,
-      data: databases
+      data: databases,
     });
   } catch (error) {
-    console.error('Error fetching databases:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error fetching databases:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -71,20 +87,20 @@ export const getDatabaseById = async (req, res) => {
     const database = await Database.findOne({
       _id: databaseId,
       userId,
-      siteId
+      siteId,
     });
 
     if (!database) {
-      return res.status(404).json({ message: 'Database not found' });
+      return res.status(404).json({ message: "Database not found" });
     }
 
     res.status(200).json({
       success: true,
-      data: database
+      data: database,
     });
   } catch (error) {
-    console.error('Error fetching database:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error fetching database:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -98,23 +114,25 @@ export const updateDatabase = async (req, res) => {
     const database = await Database.findOne({
       _id: databaseId,
       userId,
-      siteId
+      siteId,
     });
 
     if (!database) {
-      return res.status(404).json({ message: 'Database not found' });
+      return res.status(404).json({ message: "Database not found" });
     }
 
-    if (name && name.trim() !== '') {
+    if (name && name.trim() !== "") {
       const existingDatabase = await Database.findOne({
         name: name.trim(),
         userId,
         siteId,
-        _id: { $ne: databaseId }
+        _id: { $ne: databaseId },
       });
 
       if (existingDatabase) {
-        return res.status(400).json({ message: 'Database with this name already exists' });
+        return res
+          .status(400)
+          .json({ message: "Database with this name already exists" });
       }
 
       database.name = name.trim();
@@ -128,12 +146,12 @@ export const updateDatabase = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Database updated successfully',
-      data: database
+      message: "Database updated successfully",
+      data: database,
     });
   } catch (error) {
-    console.error('Error updating database:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error updating database:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -146,11 +164,11 @@ export const deleteDatabase = async (req, res) => {
     const database = await Database.findOne({
       _id: databaseId,
       userId,
-      siteId
+      siteId,
     });
 
     if (!database) {
-      return res.status(404).json({ message: 'Database not found' });
+      return res.status(404).json({ message: "Database not found" });
     }
 
     // Delete all related data (tables, columns, records)
@@ -161,11 +179,11 @@ export const deleteDatabase = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Database and all its data deleted successfully'
+      message: "Database and all its data deleted successfully",
     });
   } catch (error) {
-    console.error('Error deleting database:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error deleting database:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -176,38 +194,40 @@ export const copyDatabase = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.siteId;
 
-    if (!name || name.trim() === '') {
-      return res.status(400).json({ message: 'Database name is required' });
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ message: "Database name is required" });
     }
 
     // Find the original database
     const originalDatabase = await Database.findOne({
       _id: databaseId,
       userId,
-      siteId
+      siteId,
     });
 
     if (!originalDatabase) {
-      return res.status(404).json({ message: 'Database not found' });
+      return res.status(404).json({ message: "Database not found" });
     }
 
     // Check if database with new name already exists
     const existingDatabase = await Database.findOne({
       name: name.trim(),
       userId,
-      siteId
+      siteId,
     });
 
     if (existingDatabase) {
-      return res.status(400).json({ message: 'Database with this name already exists' });
+      return res
+        .status(400)
+        .json({ message: "Database with this name already exists" });
     }
 
     // Create new database
     const newDatabase = new Database({
       name: name.trim(),
-      description: description || originalDatabase.description || '',
+      description: description || originalDatabase.description || "",
       userId,
-      siteId
+      siteId,
     });
 
     await newDatabase.save();
@@ -220,10 +240,10 @@ export const copyDatabase = async (req, res) => {
       // Create new table
       const newTable = new Table({
         name: originalTable.name,
-        description: originalTable.description || '',
+        description: originalTable.description || "",
         databaseId: newDatabase._id,
         userId,
-        siteId
+        siteId,
       });
 
       await newTable.save();
@@ -238,7 +258,7 @@ export const copyDatabase = async (req, res) => {
           dataType: originalColumn.dataType,
           isRequired: originalColumn.isRequired,
           defaultValue: originalColumn.defaultValue,
-          description: originalColumn.description || '',
+          description: originalColumn.description || "",
           tableId: newTable._id,
           databaseId: newDatabase._id,
           userId,
@@ -263,7 +283,7 @@ export const copyDatabase = async (req, res) => {
           max: originalColumn.max,
           step: originalColumn.step,
           width: originalColumn.width,
-          order: originalColumn.order
+          order: originalColumn.order,
         });
 
         await newColumn.save();
@@ -279,7 +299,7 @@ export const copyDatabase = async (req, res) => {
           tableId: newTable._id,
           databaseId: newDatabase._id,
           userId,
-          siteId
+          siteId,
         });
 
         await newRecord.save();
@@ -288,11 +308,12 @@ export const copyDatabase = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Database copied successfully with all tables, columns and formulas',
-      data: newDatabase
+      message:
+        "Database copied successfully with all tables, columns and formulas",
+      data: newDatabase,
     });
   } catch (error) {
-    console.error('Error copying database:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error("Error copying database:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
