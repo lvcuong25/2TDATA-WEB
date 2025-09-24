@@ -7,8 +7,7 @@ import cookieParser from 'cookie-parser';
 import logger from './utils/logger.js';
 import { authAndSiteDetectionMiddleware } from './middlewares/authAndSiteDetection.js';
 import { applySiteFilterMiddleware } from './middlewares/siteDetection.js';
-import {authMiddleware} from './middlewares/authMiddleware.js';
-import {listEndpoints} from './utils/listEndpoints.js'
+
 // Load environment variables
 dotenv.config();
 
@@ -61,7 +60,7 @@ app.use("/api", (req, res, next) => {
         return next();
     }
     
-   // Apply auth and site detection
+    // Apply auth and site detection
     authAndSiteDetectionMiddleware(req, res, (err) => {
         if (err) return next(err);
         applySiteFilterMiddleware(req, res, next);
@@ -70,7 +69,7 @@ app.use("/api", (req, res, next) => {
 
 // Main router
 app.use("/api", router);
-// listEndpoints(app)
+
 
 // 404 handler
 app.use((req, res, next) => {
@@ -81,10 +80,7 @@ app.use((req, res, next) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-      if (res.headersSent) {
-        return;
-      }
-     res.status(err.status || 500).json({
+    return res.status(err.status || 500).json({
       name: err.name,
       message: err.message,
     });

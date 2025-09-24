@@ -2,49 +2,126 @@
 // src/routes/columns.routes.js — Xoá cột (check deletable)
 // ─────────────────────────────────────────────────────────────────────────────
 import express from "express";
-import BaseRole from "../model/BaseRole.js";
 import Table from "../model/Table.js";
-import { canCreateTable } from "../middlewares/can.js";
 
 const routerTable = express.Router({ mergeParams: true });
 
-
-async function createTable(req, res, next) {
+const updateTableAccess = async (req, res, next) => {
   try {
-    const { baseId } = req.params;
-    const { name, description, dataBaseId, siteId } = req.body;
+    const { tableId } = req.params;
+    const { userIds, allUsers, access } = req.body;
 
-    // Create table logic here
-    const table = await Table.create({ baseId, name, description, dataBaseId, siteId });
-
-    //Update tablePerms cho Owner/Admin của base
-
-    await BaseRole.updateMany(
-      { baseId, name: { $in: ["Owner", "Admin"] } },
+    const table = await Table.findByIdAndUpdate(
+      tableId,
       {
-        $addToSet: {
-          tablePerms: {
-            tableId: table._id,
-            creatable: true,
-            readable: true,
-            updatable: true,
-            deletable: true
-          }
-        }
-      }
-    )
-    return res.status(200).json({ ok: true, data: table });
-  } catch (e) {
+        $set: {
+          "tableAccessRule.userIds": userIds,
+          "tableAccessRule.allUsers": allUsers,
+          "tableAccessRule.access": access,
+        },
+      },
+      { new: true }
+    );
 
-    if (e.code === 11000) {
-      return res.status(400).json({ ok: false, error: "table_name_duplicate" });
-    }
-    return next(e);
+    if (!table) return res.status(404).json({ message: "Table not found" });
 
+    res.json({
+      message: "Table access updated",
+      tableAccessRule: table.tableAccessRule,
+    });
+  } catch (err) {
+    next(err);
   }
-}
+};
 
-routerTable.post("/bases/:baseId/tables", canCreateTable(), createTable);
+const updateColumnAccess = async (req, res, next) => {
+  try {
+    const { tableId, columnId } = req.params;
+    const { userIds, allUsers, access } = req.body;
 
+    const table = await Table.findById(tableId);
+    if (!table) return res.status(404).json({ message: "Table not found" });
+    if (!table.columnAccessRules) {
+      table.columnAccessRules = [];
+    }
+    table.columnAccessRules.push({
+      columnId,
+      userIds,
+      allUsers,
+      access,
+      createdBy: req.user?._id, // optional if you have auth
+    });
+
+    await table.save();
+    res.json({
+      message: "Column access rule added",
+      columnAccessRules: table.columnAccessRules,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateRecordAccess = async (req, res, next) => {
+  try {
+    const { tableId, recordId } = req.params;
+    const { userIds, allUsers, access } = req.body;
+
+    const table = await Table.findById(tableId);
+    if (!table) return res.status(404).json({ message: "Table not found" });
+    if (!table.recordAccessRules) {
+      table.recordAccessRules = [];
+    }
+    table.recordAccessRules.push({
+      recordId,
+      userIds,
+      allUsers,
+      access,
+      createdBy: req.user?._id,
+    });
+
+    await table.save();
+    res.json({
+      message: "Record access rule added",
+      recordAccessRules: table.recordAccessRules,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateCellAccess = async (req, res, next) => {
+  try {
+    const { tableId } = req.params;
+    const { userIds, allUsers, access, columnId, recordId } = req.body;
+
+    const table = await Table.findById(tableId);
+    if (!table) return res.status(404).json({ message: "Table not found" });
+    if (!table.cellAccessRules) {
+      table.cellAccessRules = [];
+    }
+    table.cellAccessRules.push({
+      recordId,
+      columnId,
+      userIds,
+      allUsers,
+      access,
+      createdBy: req.user?._id,
+    });
+
+    await table.save();
+    res.json({
+      message: "Cell access rule added",
+      cellAccessRules: table.cellAccessRules,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+routerTable.post("/:tableId/access", updateTableAccess);
+routerTable.post("/:tableId/columns/:columnId/access", updateColumnAccess);
+routerTable.post("/:tableId/records/:recordId/access", updateRecordAccess);
+routerTable.post("/:tableId/cell/access", updateCellAccess);
 
 export default routerTable;

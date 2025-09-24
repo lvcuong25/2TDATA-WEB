@@ -11,6 +11,7 @@ const databaseSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true },
   siteId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Site',
