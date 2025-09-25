@@ -4,7 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
 import { SearchOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
+
 import { useAuth } from '../../components/core/Auth';
+
+import DatabaseExcelActions from './DatabaseExcelActions';
+
 
 const DatabaseList = () => {
   const navigate = useNavigate();
@@ -17,6 +21,12 @@ const DatabaseList = () => {
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copyingDatabase, setCopyingDatabase] = useState({ _id: '', name: '', description: '' });
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [showListImportModal, setShowListImportModal] = useState(false);
+  const [selectedDatabaseForImport, setSelectedDatabaseForImport] = useState(null);
+  const [listImportFile, setListImportFile] = useState(null);
+  const [listImportTableName, setListImportTableName] = useState('');
+  const [listImportOverwrite, setListImportOverwrite] = useState(false);
+  const [isListImporting, setIsListImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name'); // 'name', 'createdAt', 'updatedAt'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
@@ -335,6 +345,7 @@ const DatabaseList = () => {
             </div>
           </div>
         </div>
+
       </div>
 
       {/* Database Grid */}
@@ -370,10 +381,10 @@ const DatabaseList = () => {
               {filteredAndSortedDatabases.map((database) => (
                 <div
                   key={database._id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer h-64 flex flex-col"
                   onClick={() => navigate(`/database/${database._id}/tables`)}
                 >
-                  <div className="p-6">
+                  <div className="p-6 flex flex-col h-full">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center">
                         <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -437,13 +448,28 @@ const DatabaseList = () => {
                       </div>
                     </div>
                     
-                    {database.description && (
-                      <p className="text-sm text-gray-600 mb-4">{database.description}</p>
-                    )}
-                    
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>Tạo: {formatDate(database.createdAt)}</span>
-                      <span>Cập nhật: {formatDate(database.updatedAt)}</span>
+                    <div className="flex flex-col flex-grow">
+                      {database.description && (
+                        <p className="text-sm text-gray-600 mb-4">{database.description}</p>
+                      )}
+                      
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                        <span>Tạo: {formatDate(database.createdAt)}</span>
+                        <span>Cập nhật: {formatDate(database.updatedAt)}</span>
+                      </div>
+                      
+                      {/* Excel Actions for this database */}
+                      <div 
+                        className="pt-3 border-t border-gray-100 mt-auto"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <DatabaseExcelActions
+                          databaseId={database._id}
+                          databaseName={database.name}
+                          onImportSuccess={() => queryClient.invalidateQueries(['databases'])}
+                          className="justify-end"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -555,6 +581,55 @@ const DatabaseList = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             </button>
+                            
+                            {/* Excel Actions - Icon only */}
+                            <div onClick={(e) => e.stopPropagation()} className="flex items-center space-x-1 ml-2 pl-2 border-l border-gray-200">
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!database._id) {
+                                    toast.error('Database ID is required for export');
+                                    return;
+                                  }
+                                  try {
+                                    const response = await axiosInstance.get(`/database/databases/${database._id}/export/excel`, {
+                                      responseType: 'blob'
+                                    });
+                                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.setAttribute('download', `${database.name}_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.remove();
+                                    window.URL.revokeObjectURL(url);
+                                    toast.success('Database exported to Excel successfully!');
+                                  } catch (error) {
+                                    console.error('Export error:', error);
+                                    toast.error(error.response?.data?.message || 'Failed to export database');
+                                  }
+                                }}
+                                className="text-blue-600 hover:text-blue-800 p-1"
+                                title="Export Database"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDatabaseForImport(database);
+                                  setShowListImportModal(true);
+                                }}
+                                className="text-green-600 hover:text-green-800 p-1"
+                                title="Import Excel"
+                              >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -733,6 +808,212 @@ const DatabaseList = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* List Import Modal */}
+      {showListImportModal && selectedDatabaseForImport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Import Excel & Create Table</h2>
+              <button
+                onClick={() => {
+                  setShowListImportModal(false);
+                  setSelectedDatabaseForImport(null);
+                  setListImportFile(null);
+                  setListImportTableName('');
+                  setListImportOverwrite(false);
+                }}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Excel File *
+              </label>
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    // Validate file type
+                    const allowedTypes = [
+                      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                      'application/vnd.ms-excel',
+                      'text/csv'
+                    ];
+                    
+                    if (!allowedTypes.includes(file.type)) {
+                      toast.error('Please select a valid Excel file (.xlsx, .xls) or CSV file');
+                      setListImportFile(null);
+                      return;
+                    }
+
+                    // Validate file size (20MB limit)
+                    if (file.size > 20 * 1024 * 1024) {
+                      toast.error('File size must be less than 20MB');
+                      setListImportFile(null);
+                      return;
+                    }
+
+                    setListImportFile(file);
+                    
+                    // Auto-generate table name from filename
+                    const fileName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+                    setListImportTableName(fileName);
+                  } else {
+                    setListImportFile(null);
+                    setListImportTableName('');
+                  }
+                }}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {listImportFile && (
+                <p className="mt-2 text-sm text-gray-600">
+                  Selected: {listImportFile.name} ({(listImportFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Table Name *
+              </label>
+              <input
+                type="text"
+                value={listImportTableName}
+                onChange={(e) => setListImportTableName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter table name"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={listImportOverwrite}
+                  onChange={(e) => setListImportOverwrite(e.target.checked)}
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">
+                  Overwrite if table exists
+                </span>
+              </label>
+            </div>
+
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>How it works:</strong>
+              </p>
+              <ul className="mt-1 text-xs text-blue-700 list-disc list-inside">
+                <li>Creates a new table for each sheet in your Excel file</li>
+                <li>Auto-detects column types from your data</li>
+                <li>Imports all data from the Excel file</li>
+                <li>Supports .xlsx, .xls, and .csv formats</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowListImportModal(false);
+                  setSelectedDatabaseForImport(null);
+                  setListImportFile(null);
+                  setListImportTableName('');
+                  setListImportOverwrite(false);
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                disabled={isListImporting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!selectedDatabaseForImport._id) {
+                    toast.error('Database ID is required for import');
+                    return;
+                  }
+
+                  if (!listImportFile) {
+                    toast.error('Please select an Excel file to import');
+                    return;
+                  }
+
+                  if (!listImportTableName.trim()) {
+                    toast.error('Please enter a table name');
+                    return;
+                  }
+
+                  try {
+                    setIsListImporting(true);
+                    const formData = new FormData();
+                    formData.append('excelFile', listImportFile);
+                    formData.append('tableName', listImportTableName.trim());
+                    formData.append('overwrite', listImportOverwrite);
+
+                    const response = await axiosInstance.post(`/database/databases/${selectedDatabaseForImport._id}/import/excel`, formData, {
+                      headers: {
+                        'Content-Type': 'multipart/form-data'
+                      },
+                      timeout: 120000 // 2 minutes timeout for large Excel files
+                    });
+
+                    const { data } = response.data;
+                    
+                    // Show import results
+                    if (data.errors && data.errors.length > 0) {
+                      toast.warn(`Import completed with ${data.errors.length} errors. ${data.totalImported} records imported successfully.`);
+                      data.errors.forEach(error => toast.error(error));
+                    } else {
+                      toast.success(`Excel import completed: ${data.totalTables} tables created, ${data.totalImported} records imported.`);
+                    }
+
+                    setShowListImportModal(false);
+                    setSelectedDatabaseForImport(null);
+                    setListImportFile(null);
+                    setListImportTableName('');
+                    setListImportOverwrite(false);
+                    
+                    // Trigger refresh
+                    queryClient.invalidateQueries(['databases']);
+                  } catch (error) {
+                    console.error('Import error:', error);
+                    
+                    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                      toast.error('Import timeout. File may be too large or server is busy. Please try again with a smaller file.');
+                    } else if (error.response?.status === 413) {
+                      toast.error('File too large. Please use a file smaller than 20MB.');
+                    } else if (error.response?.data?.message) {
+                      toast.error(`Import failed: ${error.response.data.message}`);
+                    } else {
+                      toast.error('Failed to import Excel file. Please check your file and try again.');
+                    }
+                  } finally {
+                    setIsListImporting(false);
+                  }
+                }}
+                disabled={!listImportFile || !listImportTableName.trim() || isListImporting}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isListImporting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Creating Table...
+                  </div>
+                ) : (
+                  'Create Table(s) & Import'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

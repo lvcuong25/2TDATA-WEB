@@ -72,21 +72,60 @@ export const uploadLogoToBase64 = multer({
   },
 }).single('logo');
 
+// File filter for Excel files
+const excelFileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    'application/vnd.ms-excel', // .xls
+    'text/csv' // .csv
+  ];
+  
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only Excel files (.xlsx, .xls) and CSV files are allowed.'), false);
+  }
+};
+
+// Create multer instance for Excel file upload
+export const uploadExcel = multer({
+  storage: memoryStorage,
+  fileFilter: excelFileFilter,
+  limits: {
+    fileSize: 20 * 1024 * 1024, // 20MB limit for Excel files
+  },
+}).single('excelFile');
+
 // Middleware to handle upload errors
 export const handleUploadErrors = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     console.error('❌ Multer Error:', err.code, err.message);
     
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
-        success: false,
-        message: 'Logo file size too large. Maximum size is 5MB.',
-        error: 'FILE_TOO_LARGE',
-        details: {
-          maxSize: '5MB',
-          received: req.file ? `${(req.file.size / 1024 / 1024).toFixed(2)}MB` : 'unknown'
-        }
-      });
+      // Check if this is an Excel upload based on the field name
+      const isExcelUpload = req.body && (req.body.excelFile || req.file?.fieldname === 'excelFile');
+      
+      if (isExcelUpload) {
+        return res.status(413).json({
+          success: false,
+          message: 'File size too large. Maximum size is 20MB.',
+          error: 'FILE_TOO_LARGE',
+          details: {
+            maxSize: '20MB',
+            received: req.file ? `${(req.file.size / 1024 / 1024).toFixed(2)}MB` : 'unknown'
+          }
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Logo file size too large. Maximum size is 5MB.',
+          error: 'FILE_TOO_LARGE',
+          details: {
+            maxSize: '5MB',
+            received: req.file ? `${(req.file.size / 1024 / 1024).toFixed(2)}MB` : 'unknown'
+          }
+        });
+      }
     }
     
     if (err.code === 'LIMIT_FILE_COUNT') {
