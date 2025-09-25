@@ -1,10 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormatter.js';
 import AddColumnModal from './Components/AddColumnModal';
 import EditColumnModal from './Components/EditColumnModal';
 import TableHeader from './Components/TableHeader';
 import TableBody from './Components/TableBody';
 import ContextMenu from './Components/ContextMenu';
+import RowColumnCellPermissionModal from '../../components/Table/RowColumnCellPermissionModal';
 import {
   addSortRule,
   removeSortRule,
@@ -81,6 +83,12 @@ import {
   getFieldVisibilityButtonStyle
 } from './Utils/fieldVisibilityUtils.jsx';
 import {
+  filterColumnsByPermission,
+  filterRecordsByPermission,
+  getUserDatabaseRole,
+  canEditCell
+} from './Utils/permissionUtils.jsx';
+import {
   loadRowHeightSettings,
   saveRowHeightSettings,
   getRowHeight,
@@ -102,24 +110,28 @@ const { Text } = Typography;
 const TableDetail = () => {
   const { databaseId, tableId } = useParams();
   
+  // CRITICAL DEBUG LOG - This should always show
+  // console.log('🚨🚨🚨 TABLEDETAIL COMPONENT LOADED 🚨🚨🚨');
+  // console.log('🚨🚨🚨 DATABASEID:', databaseId, 'TABLEID:', tableId);
+  
   // Safe console.log helper
-  const safeLog = (...args) => {
-    if (typeof console !== 'undefined' && console.log) {
-      console.log(...args);
-    }
-  };
+  // const safeLog = (...args) => {
+  //   if (typeof console !== 'undefined' && console.log) {
+  //     console.log(...args);
+  //   }
+  // };
   
   // Debug logging
-  safeLog('🔍 TableDetail Debug:', {
-    databaseId,
-    tableId,
-    fromUseParams: { databaseId, tableId }
-  });
+  // safeLog('🔍 TableDetail Debug:', {
+  //   databaseId,
+  //   tableId,
+  //   fromUseParams: { databaseId, tableId }
+  // });
 
   // Reset editingColumn when tableId changes
   useEffect(() => {
     if (editingColumn) {
-      safeLog('🔄 Table changed, resetting editingColumn state');
+      // safeLog('🔄 Table changed, resetting editingColumn state');
       setEditingColumn(null);
       setShowEditColumn(false);
     }
@@ -194,6 +206,57 @@ const TableDetail = () => {
   const [showAddColumn, setShowAddColumn] = useState(false);
   const [showEditColumn, setShowEditColumn] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
+  const [showColumnPermissionModal, setShowColumnPermissionModal] = useState(false);
+  const [selectedColumnForPermission, setSelectedColumnForPermission] = useState(null);
+  
+  // Cell permission modal
+  const [showCellPermissionModal, setShowCellPermissionModal] = useState(false);
+  const [selectedCellForPermission, setSelectedCellForPermission] = useState(null);
+  
+  // const [showDebugPanel, setShowDebugPanel] = useState(false);
+  // const [debugLogs, setDebugLogs] = useState([]);
+  
+  const queryClient = useQueryClient();
+  
+  // Debug function with ref to prevent infinite loops
+  // const debugLogsRef = useRef([]);
+  // const addDebugLog = useCallback((message) => {
+  //   const timestamp = new Date().toLocaleTimeString();
+  //   const logEntry = `[${timestamp}] ${message}`;
+  //   debugLogsRef.current = [...debugLogsRef.current.slice(-19), logEntry]; // Keep last 20 logs
+  //   // Only update state if debug panel is visible to prevent unnecessary re-renders
+  //   if (showDebugPanel) {
+  //     setDebugLogs(debugLogsRef.current);
+  //   }
+  //   // console.log('🚨 DEBUG:', message);
+  // }, [showDebugPanel]);
+
+  // Debug state changes
+  useEffect(() => {
+    // console.log('🚨 showColumnPermissionModal changed:', showColumnPermissionModal);
+  }, [showColumnPermissionModal]);
+  
+  // Sync debug logs when debug panel is opened
+  // useEffect(() => {
+  //   if (showDebugPanel) {
+  //     setDebugLogs(debugLogsRef.current);
+  //   }
+  // }, [showDebugPanel]);
+  
+  // Function to manually add debug log (for testing)
+  // const addDebugLogManually = (message) => {
+  //   const timestamp = new Date().toLocaleTimeString();
+  //   const logEntry = `[${timestamp}] ${message}`;
+  //   debugLogsRef.current = [...debugLogsRef.current.slice(-19), logEntry];
+  //   if (showDebugPanel) {
+  //     setDebugLogs(debugLogsRef.current);
+  //   }
+  //   // console.log('🚨 DEBUG:', message);
+  // };
+  
+  useEffect(() => {
+    // console.log('🚨 selectedColumnForPermission changed:', selectedColumnForPermission);
+  }, [selectedColumnForPermission]);
   const [editingCell, setEditingCell] = useState(null);
   const [selectedCell, setSelectedCell] = useState(null);
   const [cellValue, setCellValue] = useState('');
@@ -298,6 +361,10 @@ const TableDetail = () => {
     fieldPreferenceResponse,
     tableStructureResponse,
     recordsResponse,
+    columnPermissionsResponse,
+    recordPermissionsResponse,
+    cellPermissionsResponse,
+    databaseMembersResponse,
     isLoading,
     error,
     saveGroupPreferenceMutation,
@@ -537,10 +604,18 @@ const TableDetail = () => {
     };
   }, [editingCell, selectedCell, columns]);
 
-  // Apply filters to records
+  // Apply filters and permissions to records
   const records = useMemo(() => {
-    return applyFilterRules(allRecords, filterRules, isFilterActive);
-  }, [allRecords, filterRules, isFilterActive]);
+    // First apply filters
+    const filteredRecords = applyFilterRules(allRecords, filterRules, isFilterActive);
+    
+    // Then apply permission filtering
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
+    const recordPermissions = recordPermissionsResponse?.data || [];
+    
+    return filterRecordsByPermission(filteredRecords, recordPermissions, currentUser, userRole);
+  }, [allRecords, filterRules, isFilterActive, recordPermissionsResponse, databaseMembersResponse]);
 
   const handleAddColumn = (e) => {
     e.preventDefault();
@@ -660,83 +735,85 @@ const TableDetail = () => {
     // Add percent configuration if data type is percent
     if (newColumn.dataType === 'percent') {
       columnData.percentConfig = newColumn.percentConfig;
-      safeLog('Frontend: Sending percent config:', {
-        newColumn: newColumn,
-        percentConfig: newColumn.percentConfig,
-        columnData: columnData
-      });
+      // safeLog('Frontend: Sending percent config:', {
+      //   newColumn: newColumn,
+      //   percentConfig: newColumn.percentConfig,
+      //   columnData: columnData
+      // });
     }
     
     // Add URL configuration if data type is url
     if (newColumn.dataType === 'url') {
       columnData.urlConfig = newColumn.urlConfig;
-      safeLog('Frontend: Sending URL config:', {
-        newColumn: newColumn,
-        urlConfig: newColumn.urlConfig,
-        columnData: columnData
-      });
+      // safeLog('Frontend: Sending URL config:', {
+      //   newColumn: newColumn,
+      //   urlConfig: newColumn.urlConfig,
+      //   columnData: columnData
+      // });
     }
     
     // Phone data type doesn't need special config
     if (newColumn.dataType === 'phone') {
-      safeLog('Frontend: Sending phone column:', {
-        newColumn: newColumn,
-        columnData: columnData
-      });
+      // safeLog('Frontend: Sending phone column:', {
+      //   newColumn: newColumn,
+      //   columnData: columnData
+      // });
     }
     
     // Time data type doesn't need special config
     if (newColumn.dataType === 'time') {
       columnData.timeConfig = newColumn.timeConfig;
-      safeLog('Frontend: Sending time column:', {
-        newColumn: newColumn,
-        columnData: columnData
-      });
+      // safeLog('Frontend: Sending time column:', {
+      //   newColumn: newColumn,
+      //   columnData: columnData
+      // });
     }
     
     // Rating data type doesn't need special config
     if (newColumn.dataType === 'rating') {
       columnData.ratingConfig = newColumn.ratingConfig;
-      safeLog('Frontend: Sending rating column:', {
-        newColumn: newColumn,
-        columnData: columnData,
-        ratingConfig: newColumn.ratingConfig
-      });
+      // safeLog('Frontend: Sending rating column:', {
+      //   newColumn: newColumn,
+      //   columnData: columnData,
+      //   ratingConfig: newColumn.ratingConfig
+      // });
     }
     
     // Add linked table configuration if data type is linked_table
     if (newColumn.dataType === 'linked_table') {
       columnData.linkedTableConfig = newColumn.linkedTableConfig;
-      safeLog('Frontend: Sending linked_table column:', {
-        newColumn: newColumn,
-        columnData: columnData,
-        linkedTableConfig: newColumn.linkedTableConfig
-      });
+      // safeLog('Frontend: Sending linked_table column:', {
+      //   newColumn: newColumn,
+      //   columnData: columnData,
+      //   linkedTableConfig: newColumn.linkedTableConfig
+      // });
     }
     
     // Add lookup configuration if data type is lookup
     if (newColumn.dataType === 'lookup') {
       columnData.lookupConfig = newColumn.lookupConfig;
-      safeLog('Frontend: Sending lookup column:', {
-        newColumn: newColumn,
-        columnData: columnData,
-        lookupConfig: newColumn.lookupConfig
-      });
+      // safeLog('Frontend: Sending lookup column:', {
+      //   newColumn: newColumn,
+      //   columnData: columnData,
+      //   lookupConfig: newColumn.lookupConfig
+      // });
     }
     
     
-    safeLog('Frontend: Final columnData:', columnData);
+    // safeLog('Frontend: Final columnData:', columnData);
     addColumnMutation.mutate(columnData);
   };
 
   const handleAddRow = () => {
-    if (!visibleColumns || visibleColumns.length === 0) {
+    if (!columns || columns.length === 0) {
       // toast.error('No columns available. Please add a column first.');
       return;
     }
     
+    // console.log('🔍 Adding new record with columns:', columns.map(c => ({ id: c._id, name: c.name })));
+    
     const emptyData = {};
-    visibleColumns.forEach(column => {
+    columns.forEach(column => {
       if (column.dataType === 'checkbox') {
         // Use default value from checkbox configuration
         const config = column.checkboxConfig || { defaultValue: false };
@@ -899,6 +976,21 @@ const TableDetail = () => {
     setShowEditColumn(true);
   };
 
+  const handleColumnPermission = (column) => {
+    // console.log('🚨 OPENING COLUMN PERMISSION MODAL for:', column.name);
+    // console.log('🚨 Column object:', column);
+    setSelectedColumnForPermission(column);
+    setShowColumnPermissionModal(true);
+    // console.log('🚨 Modal should be visible now');
+  };
+
+  const handleCellPermission = (recordId, columnId, columnName) => {
+    // console.log('🚨 OPENING CELL PERMISSION MODAL for:', { recordId, columnId, columnName });
+    setSelectedCellForPermission({ recordId, columnId, columnName });
+    setShowCellPermissionModal(true);
+    // console.log('🚨 Cell Permission Modal should be visible now');
+  };
+
   const handleEditColumnSubmit = (e) => {
     e.preventDefault();
     if (!editingColumn || !editingColumn.name.trim()) {
@@ -949,11 +1041,11 @@ const TableDetail = () => {
     // Add percent configuration if data type is percent
     if (editingColumn.dataType === 'percent') {
       columnData.percentConfig = editingColumn.percentConfig;
-      safeLog('Frontend: Sending percent config for edit:', {
-        editingColumn: editingColumn,
-        percentConfig: editingColumn.percentConfig,
-        columnData: columnData
-      });
+      // safeLog('Frontend: Sending percent config for edit:', {
+      //   editingColumn: editingColumn,
+      //   percentConfig: editingColumn.percentConfig,
+      //   columnData: columnData
+      // });
     }
     
     // Add URL configuration if data type is url
@@ -963,39 +1055,39 @@ const TableDetail = () => {
     
     // Phone data type doesn't need special config
     if (editingColumn.dataType === 'phone') {
-      safeLog('Frontend: Editing phone column:', {
-        editingColumn: editingColumn,
-        columnData: columnData
-      });
+      // safeLog('Frontend: Editing phone column:', {
+      //   editingColumn: editingColumn,
+      //   columnData: columnData
+      // });
     }
     
     // Time data type doesn't need special config
     if (editingColumn.dataType === 'time') {
       columnData.timeConfig = editingColumn.timeConfig;
-      safeLog('Frontend: Editing time column:', {
-        editingColumn: editingColumn,
-        columnData: columnData
-      });
+      // safeLog('Frontend: Editing time column:', {
+      //   editingColumn: editingColumn,
+      //   columnData: columnData
+      // });
     }
     
     // Rating data type doesn't need special config
     if (editingColumn.dataType === 'rating') {
       columnData.ratingConfig = editingColumn.ratingConfig;
-      safeLog('Frontend: Editing rating column:', {
-        editingColumn: editingColumn,
-        columnData: columnData,
-        ratingConfig: editingColumn.ratingConfig
-      });
+      // safeLog('Frontend: Editing rating column:', {
+      //   editingColumn: editingColumn,
+      //   columnData: columnData,
+      //   ratingConfig: editingColumn.ratingConfig
+      // });
     }
     
     // Add linked table configuration if data type is linked_table
     if (editingColumn.dataType === 'linked_table') {
       columnData.linkedTableConfig = editingColumn.linkedTableConfig;
-      safeLog('Frontend: Editing linked_table column:', {
-        editingColumn: editingColumn,
-        columnData: columnData,
-        linkedTableConfig: editingColumn.linkedTableConfig
-      });
+      // safeLog('Frontend: Editing linked_table column:', {
+      //   editingColumn: editingColumn,
+      //   columnData: columnData,
+      //   linkedTableConfig: editingColumn.linkedTableConfig
+      // });
     }
     
     
@@ -1010,16 +1102,66 @@ const TableDetail = () => {
   };
 
   const handleCellClick = (recordId, columnName, currentValue) => {
+    // console.log('🔍 CELL CLICKED!', { recordId, columnName, currentValue });
+    
+    // If clicking on the same cell that's already being edited, ignore
+    if (editingCell && editingCell.recordId === recordId && editingCell.columnName === columnName) {
+      // console.log('🔍 Clicking on the same cell that is already being edited, ignoring');
+      return;
+    }
+    
+    // If clicking on a different cell, clear the current editing state first
+    if (editingCell) {
+      // console.log('🔍 Switching to different cell, clearing current editing state');
+      setEditingCell(null);
+      setCellValue('');
+    }
+    
     const column = columns.find(col => col.name === columnName);
+    
+    // Check cell edit permission
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
+    
+    // console.log('🔍 Cell click debug:', {
+    //   recordId,
+    //   columnId: column?._id,
+    //   columnName,
+    //   currentValue,
+    //   userRole,
+    //   cellPermissionsCount: cellPermissionsResponse?.data?.length || 0,
+    //   columnFound: !!column
+    // });
     
     // Set selected cell
     setSelectedCell({ recordId, columnName });
+    const cellPermissions = cellPermissionsResponse?.data || [];
     
-    // Only start editing if it's not a system field or checkbox
-    if (!column.isSystem && column.dataType !== 'checkbox') {
+    // Use canEditCell function (imported at top of file)
+    const canEdit = canEditCell(cellPermissions, recordId, column._id, currentUser, userRole);
+    
+    // console.log('🔍 Permission check result:', {
+    //   canEdit,
+    //   cellPermissions: cellPermissions?.filter(p => 
+    //     p.recordId === recordId && p.columnId === column._id
+    //   ),
+    //   userRole,
+    //   currentUser: currentUser?._id
+    // });
+    
+    // Only start editing if user has permission and it's not a system field or checkbox
+    if (canEdit && !column.isSystem && column.dataType !== 'checkbox') {
+      // console.log('🔍 Starting cell editing...');
       const { editingCell: newEditingCell, cellValue: newCellValue } = initializeCellEditing(recordId, columnName, currentValue, column);
       setEditingCell(newEditingCell);
       setCellValue(newCellValue);
+    } else {
+      // console.log('🔍 Cell editing blocked:', {
+      //   canEdit,
+      //   isSystem: column.isSystem,
+      //   dataType: column.dataType,
+      //   reason: !canEdit ? 'No permission' : column.isSystem ? 'System field' : 'Checkbox field'
+      // });
     }
   };
 
@@ -1221,10 +1363,104 @@ const TableDetail = () => {
       });
   };
 
-  // Get visible columns based on visibility settings
+  // Get visible columns based on visibility settings and permissions
   const visibleColumns = useMemo(() => {
-    return getVisibleColumns(columns, fieldVisibility, showSystemFields);
-  }, [columns, fieldVisibility, showSystemFields]);
+    // Get current user from context or localStorage
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
+    const columnPermissions = columnPermissionsResponse?.data || [];
+    
+    const result = getVisibleColumns(
+      columns, 
+      fieldVisibility, 
+      showSystemFields, 
+      columnPermissions, 
+      currentUser, 
+      userRole
+    );
+    
+    return result;
+  }, [columns, fieldVisibility, showSystemFields, columnPermissionsResponse, databaseMembersResponse]);
+
+  // Debug effect for visible columns
+  useEffect(() => {
+    if (false) {
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
+      const columnPermissions = columnPermissionsResponse?.data || [];
+      
+      // addDebugLog(`=== VISIBLE COLUMNS CALCULATION ===`);
+      // addDebugLog(`Database ID: ${databaseId}`);
+      // addDebugLog(`Current User: ${currentUser._id} (${currentUser.name || 'No name'})`);
+      // addDebugLog(`Current User Email: ${currentUser.email || 'No email'}`);
+      // addDebugLog(`Current User Role: ${currentUser.role || 'No role'}`);
+      // addDebugLog(`Is Super Admin: ${currentUser.role === 'super_admin'}`);
+      // addDebugLog(`User Role: ${userRole} (type: ${typeof userRole}) ${userRole === 'manager' || userRole === 'owner' ? '(CAN MANAGE PERMISSIONS)' : '(CANNOT MANAGE PERMISSIONS)'}`);
+      // addDebugLog(`User Role Check: userRole === 'manager': ${userRole === 'manager'}, userRole === 'owner': ${userRole === 'owner'}`);
+      
+      // Check if current user matches any database member
+      const currentUserInMembers = databaseMembersResponse?.data?.find(member => 
+        member.user?._id === currentUser._id || member.userId?._id === currentUser._id
+      );
+      // addDebugLog(`Current User in Database Members: ${JSON.stringify(currentUserInMembers)}`);
+      // addDebugLog(`Database Members Response: ${JSON.stringify(databaseMembersResponse)}`);
+      // addDebugLog(`Database Members Count: ${databaseMembersResponse?.data?.length || 0}`);
+      // addDebugLog(`Database Members: ${JSON.stringify(databaseMembersResponse?.data?.map(m => ({ userId: m.userId?._id, role: m.role })) || [])}`);
+      // addDebugLog(`Column Permissions Response: ${JSON.stringify(columnPermissionsResponse)}`);
+      // addDebugLog(`Column Permissions Count: ${columnPermissions.length}`);
+      // addDebugLog(`Total Columns: ${columns.length}`);
+      
+      if (columnPermissions.length > 0) {
+        // addDebugLog(`Column Permissions:`);
+        // columnPermissions.forEach((perm, index) => {
+        //   addDebugLog(`  ${index + 1}. Column: ${perm.columnId}, Type: ${perm.targetType}, CanView: ${perm.canView}, CanEdit: ${perm.canEdit}, User: ${perm.userId?._id}, Role: ${perm.role}`);
+        // });
+      } else {
+        // addDebugLog(`No column permissions found. Try creating a permission first.`);
+        // addDebugLog(`Column Permissions Response Data: ${JSON.stringify(columnPermissionsResponse?.data)}`);
+      }
+      
+      // addDebugLog(`Visible Columns Count: ${visibleColumns.length}`);
+      // addDebugLog(`Visible Columns: ${visibleColumns.map(c => c.name).join(', ')}`);
+      // addDebugLog(`=== END VISIBLE COLUMNS ===`);
+    }
+  }, [visibleColumns, databaseMembersResponse, columnPermissionsResponse, columns, databaseId]);
+
+  // Test API call directly
+  useEffect(() => {
+    if (databaseId) {
+      const testApiCall = async () => {
+        try {
+          // addDebugLog(`Testing API call directly...`);
+          const response = await fetch(`/api/database/databases/${databaseId}/members`, {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          const data = await response.json();
+          // addDebugLog(`Direct API call result: ${JSON.stringify(data)}`);
+          
+          // If no_manage_permission error, try test route
+          if (data.error === 'no_manage_permission') {
+            // addDebugLog(`User lacks manage permission. Trying test route...`);
+            
+            const testResponse = await fetch(`/api/database/databases/${databaseId}/members-test`, {
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            const testData = await testResponse.json();
+            // addDebugLog(`Test API call result: ${JSON.stringify(testData)}`);
+          }
+        } catch (error) {
+          // addDebugLog(`Direct API call error: ${error.message}`);
+        }
+      };
+      testApiCall();
+    }
+  }, [databaseId]);
 
   // Get all columns including system fields
   const allColumnsWithSystem = useMemo(() => {
@@ -1351,8 +1587,11 @@ const TableDetail = () => {
             handleRemoveSortRule={handleRemoveSortRule}
             // Row height props
             tableId={tableId}
+            databaseId={databaseId}
             rowHeightSettings={rowHeightSettings}
             onRowHeightChange={handleRowHeightChange}
+            // Column actions
+            handleEditColumn={handleEditColumn}
           />
           {/* Table Body Component */}
           <TableBody
@@ -1381,6 +1620,8 @@ const TableDetail = () => {
             selectAll={selectAll}
             setShowAddColumn={setShowAddColumn}
             handleEditColumn={handleEditColumn}
+            handleColumnPermission={handleColumnPermission}
+            handleCellPermission={handleCellPermission}
             handleDeleteColumn={handleDeleteColumn}
             updateRecordMutation={updateRecordMutation}
             updateColumnMutation={updateColumnMutation}
@@ -1413,7 +1654,15 @@ const TableDetail = () => {
             sortGroups={sortGroups}
             // Row height props
             tableId={tableId}
+            databaseId={databaseId}
             rowHeightSettings={rowHeightSettings}
+            // Permission props
+            cellPermissions={cellPermissionsResponse?.data || []}
+            currentUser={JSON.parse(localStorage.getItem('user') || '{}')}
+            userRole={getUserDatabaseRole(databaseMembersResponse?.data || [], JSON.parse(localStorage.getItem('user') || '{}'))}
+            // Debug props
+            cellPermissionsResponse={cellPermissionsResponse}
+            // addDebugLog={addDebugLog}
           />
           {/* Context Menu Component */}
           <ContextMenu
@@ -1450,6 +1699,335 @@ const TableDetail = () => {
             currentTableId={tableId}
             currentDatabaseId={databaseId}
           />
+
+          {/* Column Permission Modal */}
+          <RowColumnCellPermissionModal
+            visible={showColumnPermissionModal}
+            onCancel={() => {
+              // console.log('🚨 CLOSING COLUMN PERMISSION MODAL');
+              setShowColumnPermissionModal(false);
+              setSelectedColumnForPermission(null);
+              // Clear any editing cell state
+              setEditingCell(null);
+              setCellValue('');
+            }}
+            type="column"
+            columnId={selectedColumnForPermission?._id}
+            tableId={tableId}
+            databaseId={databaseId}
+          />
+
+          {/* Cell Permission Modal */}
+          <RowColumnCellPermissionModal
+            visible={showCellPermissionModal}
+            onCancel={() => {
+              // console.log('🚨 CLOSING CELL PERMISSION MODAL');
+              setShowCellPermissionModal(false);
+              setSelectedCellForPermission(null);
+              // Clear any editing cell state
+              setEditingCell(null);
+              setCellValue('');
+            }}
+            type="cell"
+            recordId={selectedCellForPermission?.recordId}
+            columnId={selectedCellForPermission?.columnId}
+            tableId={tableId}
+            databaseId={databaseId}
+          />
+
+          {/* Debug logs for column permission modal - Commented out */}
+          {/* {showColumnPermissionModal && (
+            <div style={{ position: 'fixed', top: 0, left: 0, background: 'red', color: 'white', padding: '10px', zIndex: 9999 }}>
+              <div>🚨 COLUMN PERMISSION MODAL DEBUG:</div>
+              <div>showColumnPermissionModal: {showColumnPermissionModal.toString()}</div>
+              <div>selectedColumnForPermission: {JSON.stringify(selectedColumnForPermission)}</div>
+              <div>columnId: {selectedColumnForPermission?._id}</div>
+              <div>tableId: {tableId}</div>
+              <div>databaseId: {databaseId}</div>
+            </div>
+          )} */}
+
+          {/* Debug Panel - Commented out */}
+          {/* {showDebugPanel && (
+            <div style={{
+              position: 'fixed',
+              bottom: '20px',
+              right: '20px',
+              width: '400px',
+              maxHeight: '300px',
+              backgroundColor: '#f0f0f0',
+              border: '1px solid #ccc',
+              borderRadius: '8px',
+              padding: '10px',
+              zIndex: 9999,
+              overflow: 'auto',
+              fontSize: '12px',
+              fontFamily: 'monospace'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h4 style={{ margin: 0, color: '#333' }}>🔍 Debug Panel</h4>
+                <button 
+                  onClick={() => setShowDebugPanel(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}
+                >
+                  ✕
+                </button>
+              </div>
+              <div style={{ marginBottom: '10px' }}>
+                <button 
+                  onClick={() => setDebugLogs([])}
+                  style={{ 
+                    marginRight: '8px', 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    background: '#1890ff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Clear Logs
+                </button>
+                <button 
+                  // onClick={() => addDebugLogManually('Test debug log from button')}
+                  style={{ 
+                    marginRight: '8px', 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    background: '#52c41a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Test Debug
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                      // addDebugLog(`Attempting to update role for user: ${currentUser._id} in database: ${databaseId}`);
+                      
+                      const requestBody = {
+                        databaseId: databaseId,
+                        userId: currentUser._id,
+                        newRole: 'manager'
+                      };
+                      
+                      // addDebugLog(`Request body: ${JSON.stringify(requestBody)}`);
+                      
+                      const response = await fetch(`/api/database/databases/${databaseId}/update-role-test`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                          userId: currentUser._id,
+                          newRole: 'manager'
+                        })
+                      });
+                      
+                      // addDebugLog(`Response status: ${response.status}`);
+                      // addDebugLog(`Response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+                      
+                      const data = await response.json();
+                      // addDebugLog(`Update role result: ${JSON.stringify(data)}`);
+                      
+                      if (data.success) {
+                        // addDebugLog(`User role updated to manager. Please refresh to see changes.`);
+                      } else {
+                        // addDebugLog(`Failed to update role: ${data.message || 'Unknown error'}`);
+                      }
+                    } catch (error) {
+                      // addDebugLog(`Update role error: ${error.message}`);
+                      // addDebugLog(`Error stack: ${error.stack}`);
+                    }
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    background: '#52c41a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Make Me Manager
+                </button>
+                <button 
+                  onClick={() => {
+                    // Invalidate and refetch column permissions
+                    queryClient.invalidateQueries(['columnPermissions', tableId]);
+                    // addDebugLog(`Refreshing column permissions...`);
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    background: '#fa8c16',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Refresh Permissions
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      // addDebugLog(`Testing column permissions for tableId: ${tableId}`);
+                      const response = await fetch(`/api/database/databases/${databaseId}/tables/${tableId}/columns-permissions-test`);
+                      const result = await response.json();
+                      // console.log('Test column permissions result:', result);
+                      // addDebugLog(`Test column permissions result: ${JSON.stringify(result)}`);
+                    } catch (error) {
+                      console.error('Test column permissions error:', error);
+                      // addDebugLog(`Test column permissions error: ${error.message}`);
+                    }
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    background: '#722ed1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Test Column Perms
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      // addDebugLog(`Testing record permissions for tableId: ${tableId}`);
+                      const response = await fetch(`/api/database/databases/${databaseId}/tables/${tableId}/records-permissions-test`);
+                      const result = await response.json();
+                      // console.log('Test record permissions result:', result);
+                      // addDebugLog(`Test record permissions result: ${JSON.stringify(result)}`);
+                    } catch (error) {
+                      console.error('Test record permissions error:', error);
+                      // addDebugLog(`Test record permissions error: ${error.message}`);
+                    }
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    background: '#eb2f96',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Test Record Perms
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      // addDebugLog(`Testing cell permissions for tableId: ${tableId}`);
+                      const response = await fetch(`/api/database/databases/${databaseId}/tables/${tableId}/cells-permissions-test`);
+                      const result = await response.json();
+                      // console.log('Test cell permissions result:', result);
+                      // addDebugLog(`Test cell permissions result: ${JSON.stringify(result)}`);
+                    } catch (error) {
+                      console.error('Test cell permissions error:', error);
+                      // addDebugLog(`Test cell permissions error: ${error.message}`);
+                    }
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    background: '#13c2c2',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Test Cell Perms
+                </button>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                      // addDebugLog(`Creating default cell permissions for tableId: ${tableId}`);
+                      const response = await fetch(`/api/database/databases/${databaseId}/tables/${tableId}/create-default-cell-permissions`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          createdBy: currentUser?._id || '683c681e94a974c92873ffb8' // Fallback user ID
+                        })
+                      });
+                      const result = await response.json();
+                      // console.log('Create cell permissions result:', result);
+                      // addDebugLog(`Create cell permissions result: ${JSON.stringify(result)}`);
+                      
+                      // Refresh permissions after creating
+                      if (result.success) {
+                        // addDebugLog(`✅ Created ${result.data.createdPermissions} cell permissions! Now try editing cells.`);
+                      }
+                    } catch (error) {
+                      console.error('Create cell permissions error:', error);
+                      // addDebugLog(`Create cell permissions error: ${error.message}`);
+                    }
+                  }}
+                  style={{ 
+                    padding: '4px 8px', 
+                    fontSize: '12px',
+                    background: '#52c41a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Create Cell Perms
+                </button>
+              </div>
+              <div style={{ maxHeight: '250px', overflow: 'auto' }}>
+                {debugLogs.map((log, index) => (
+                  <div key={index} style={{ 
+                    marginBottom: '2px', 
+                    padding: '2px',
+                    backgroundColor: index % 2 === 0 ? '#fff' : '#f8f8f8',
+                    borderRadius: '2px'
+                  }}>
+                    {log}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )} */}
+
+          {/* Debug Toggle Button - Commented out */}
+          {/* <button
+            onClick={() => setShowDebugPanel(!showDebugPanel)}
+            style={{
+              position: 'fixed',
+              bottom: '20px',
+              right: '20px',
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              backgroundColor: showDebugPanel ? '#ff4d4f' : '#1890ff',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '20px',
+              zIndex: 9998,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            }}
+            title="Toggle Debug Panel"
+          >
+            🔍
+          </button> */}
         </div>
       );
     };

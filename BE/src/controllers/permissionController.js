@@ -31,9 +31,9 @@ export const createTablePermission = async (req, res) => {
     const { targetType, userId, role, permissions, viewPermissions, note } = req.body;
     const currentUserId = req.user._id;
 
-    console.log('createTablePermission - tableId from params:', tableId);
-    console.log('createTablePermission - req.body:', req.body);
-    console.log('createTablePermission - currentUserId:', currentUserId);
+    // console.log('createTablePermission - tableId from params:', tableId);
+    // console.log('createTablePermission - req.body:', req.body);
+    // console.log('createTablePermission - currentUserId:', currentUserId);
 
     if (!tableId) {
       return res.status(400).json({ message: 'Table ID is required' });
@@ -76,11 +76,15 @@ export const createTablePermission = async (req, res) => {
       }
     }
 
+    // Tạo tên mặc định cho permission
+    const defaultName = table.name;
+
     // Tạo permission object
     const permissionData = {
       tableId,
       databaseId: table.databaseId._id,
       targetType,
+      name: req.body.name || defaultName,
       permissions: permissions || {},
       viewPermissions: viewPermissions || {},
       createdBy: currentUserId,
@@ -165,7 +169,7 @@ export const getTablePermissions = async (req, res) => {
 export const updateTablePermission = async (req, res) => {
   try {
     const { permissionId } = req.params;
-    const { permissions, viewPermissions, note } = req.body;
+    const { name, permissions, viewPermissions, note } = req.body;
     const currentUserId = req.user._id;
 
     if (!permissionId) {
@@ -190,6 +194,9 @@ export const updateTablePermission = async (req, res) => {
     }
 
     // Cập nhật permission
+    if (name !== undefined) {
+      permission.name = name;
+    }
     if (permissions) {
       permission.permissions = { ...permission.permissions, ...permissions };
     }
@@ -226,8 +233,8 @@ export const deleteTablePermission = async (req, res) => {
     const { permissionId } = req.params;
     const currentUserId = req.user._id;
 
-    console.log('deleteTablePermission - permissionId:', permissionId);
-    console.log('deleteTablePermission - currentUserId:', currentUserId);
+    // console.log('deleteTablePermission - permissionId:', permissionId);
+    // console.log('deleteTablePermission - currentUserId:', currentUserId);
 
     if (!permissionId) {
       return res.status(400).json({ message: 'Permission ID is required' });
@@ -238,7 +245,7 @@ export const deleteTablePermission = async (req, res) => {
       .populate('tableId')
       .populate('databaseId');
     
-    console.log('deleteTablePermission - permission found:', permission);
+    // console.log('deleteTablePermission - permission found:', permission);
     
     if (!permission) {
       return res.status(404).json({ message: 'Permission not found' });
@@ -253,8 +260,8 @@ export const deleteTablePermission = async (req, res) => {
 
     // Kiểm tra user có quyền xóa không
     const hasPermission = await isManagerOrOwner(currentUserId, permission.databaseId._id);
-    console.log('deleteTablePermission - hasPermission:', hasPermission);
-    console.log('deleteTablePermission - databaseId:', permission.databaseId._id);
+    // console.log('deleteTablePermission - hasPermission:', hasPermission);
+    // console.log('deleteTablePermission - databaseId:', permission.databaseId._id);
     
     if (!hasPermission) {
       return res.status(403).json({ 

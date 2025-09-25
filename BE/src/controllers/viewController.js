@@ -83,6 +83,14 @@ export const createView = async (req, res) => {
         return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
       });
       
+      console.log('ViewController - createView - sorted permissions:', sortedPermissions.map(p => ({
+        id: p._id,
+        targetType: p.targetType,
+        userId: p.userId,
+        role: p.role,
+        canAddView: p.viewPermissions?.canAddView
+      })));
+      
       // Check permissions in priority order
       for (const perm of sortedPermissions) {
         console.log('ViewController - createView - checking permission:', {

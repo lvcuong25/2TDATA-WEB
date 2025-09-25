@@ -5,6 +5,7 @@ import Database from '../model/Database.js';
 import Base from '../model/Base.js';
 import BaseMember from '../model/BaseMember.js';
 import Organization from '../model/Organization.js';
+import { isSuperAdmin, getUserDatabaseRole } from '../utils/permissionUtils.js';
 
 // Table Controllers
 export const createTable = async (req, res) => {
@@ -31,20 +32,23 @@ export const createTable = async (req, res) => {
     }
 
     // Check if user is a member of this database and has permission to create tables
-    const baseMember = await BaseMember.findOne({ 
-      databaseId: actualBaseId, 
-      userId 
-    });
-
-    if (!baseMember) {
-      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
-    }
-
-    // Only owner and manager can create tables
-    if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
-      return res.status(403).json({ 
-        message: 'Access denied - only database owners and managers can create tables' 
+    // Super admin có quyền tạo table trong mọi database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: actualBaseId, 
+        userId 
       });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+
+      // Only owner and manager can create tables
+      if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
+        return res.status(403).json({ 
+          message: 'Access denied - only database owners and managers can create tables' 
+        });
+      }
     }
 
     const existingTable = await Table.findOne({
@@ -66,27 +70,34 @@ export const createTable = async (req, res) => {
     await table.save();
 
     // Tạo default permissions cho tất cả members
-    const TablePermission = (await import('../model/TablePermission.js')).default;
-    const defaultPermission = new TablePermission({
-      tableId: table._id,
-      databaseId: actualBaseId,
-      targetType: 'all_members',
-      permissions: {
-        canView: true,
-        canEditStructure: true,
-        canEditData: true,
-        canAddData: true
-      },
-      viewPermissions: {
-        canView: true,
-        canAddView: true,
-        canEditView: true
-      },
-      createdBy: userId,
-      isDefault: true // Đánh dấu là permission mặc định
-    });
+    try {
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      const defaultPermission = new TablePermission({
+        tableId: table._id,
+        databaseId: actualBaseId,
+        targetType: 'all_members',
+        name: table.name, // Thêm field name required
+        permissions: {
+          canView: true,
+          canEditStructure: true,
+          canEditData: true,
+          canAddData: true
+        },
+        viewPermissions: {
+          canView: true,
+          canAddView: true,
+          canEditView: true
+        },
+        createdBy: userId,
+        isDefault: true // Đánh dấu là permission mặc định
+      });
 
-    await defaultPermission.save();
+      await defaultPermission.save();
+      // console.log('Default table permission created successfully');
+    } catch (permissionError) {
+      console.error('Error creating default table permission:', permissionError);
+      // Không throw error để không ảnh hưởng đến việc tạo table
+    }
 
     res.status(201).json({
       success: true,
@@ -115,21 +126,24 @@ export const getTables = async (req, res) => {
       return res.status(404).json({ message: 'Database not found' });
     }
 
-    // Check if user is a member of this database (either through organization or direct database membership)
-    const baseMember = await BaseMember.findOne({ 
-      databaseId: databaseId, 
-      userId 
-    });
-
-    if (!baseMember) {
-      // If not a direct database member, check if user is organization member
-      const organization = await Organization.findOne({ 
-        _id: database.orgId,
-        'members.user': userId 
+    // Super admin có quyền truy cập tất cả database
+    if (!isSuperAdmin(req.user)) {
+      // Check if user is a member of this database (either through organization or direct database membership)
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: databaseId, 
+        userId 
       });
-      
-      if (!organization) {
-        return res.status(403).json({ message: "Access denied - user is not a member of this database" });
+
+      if (!baseMember) {
+        // If not a direct database member, check if user is organization member
+        const organization = await Organization.findOne({ 
+          _id: database.orgId,
+          'members.user': userId 
+        });
+        
+        if (!organization) {
+          return res.status(403).json({ message: "Access denied - user is not a member of this database" });
+        }
       }
     }
 
@@ -139,7 +153,16 @@ export const getTables = async (req, res) => {
     // Filter tables based on user permissions
     let visibleTables = tables;
     
-    if (baseMember && baseMember.role === 'member') {
+    // Super admin có quyền xem tất cả table, không cần filter
+    if (!isSuperAdmin(req.user)) {
+      // Get baseMember for permission checking
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: databaseId, 
+        userId 
+      });
+      
+      // Only apply permission filtering for members
+      if (baseMember && baseMember.role === 'member') {
       // For members, check table permissions
       const TablePermission = (await import('../model/TablePermission.js')).default;
       
@@ -152,35 +175,65 @@ export const getTables = async (req, res) => {
         ]
       });
 
-      // Create a map of table permissions
-      const tablePermissionMap = {};
-      tablePermissions.forEach(perm => {
-        if (!tablePermissionMap[perm.tableId]) {
-          tablePermissionMap[perm.tableId] = {
-            canView: false,
-            isHidden: true
-          };
-        }
+      // If no table permissions are set, show all tables to members
+      if (tablePermissions.length === 0) {
+        visibleTables = tables;
+      } else {
+        // Create a map of table permissions
+        const tablePermissionMap = {};
         
-        // Apply permissions based on priority: specific_user > specific_role > all_members
-        if (perm.permissions) {
-          tablePermissionMap[perm.tableId].canView = tablePermissionMap[perm.tableId].canView || perm.permissions.canView;
-          if (perm.permissions.isHidden === false) {
-            tablePermissionMap[perm.tableId].isHidden = false;
+        // Group permissions by tableId
+        const permissionsByTable = {};
+        tablePermissions.forEach(perm => {
+          if (!permissionsByTable[perm.tableId]) {
+            permissionsByTable[perm.tableId] = [];
           }
-        }
-      });
+          permissionsByTable[perm.tableId].push(perm);
+        });
+        
+        // Process each table's permissions with priority order
+        Object.keys(permissionsByTable).forEach(tableId => {
+          const perms = permissionsByTable[tableId];
+          
+          // Sort permissions by priority: specific_user > specific_role > all_members
+          const sortedPermissions = perms.sort((a, b) => {
+            const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+            return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
+          });
+          
+          // Initialize with default values (show by default)
+          tablePermissionMap[tableId] = {
+            canView: true,
+            isHidden: false
+          };
+          
+          // Check permissions in priority order
+          for (const perm of sortedPermissions) {
+            if (perm.permissions) {
+              if (perm.permissions.canView !== undefined) {
+                tablePermissionMap[tableId].canView = perm.permissions.canView;
+              }
+              if (perm.permissions.isHidden !== undefined) {
+                tablePermissionMap[tableId].isHidden = perm.permissions.isHidden;
+              }
+              // Stop at first permission found (highest priority)
+              break;
+            }
+          }
+        });
 
-      // Filter tables - only show tables that user can view and are not hidden
-      visibleTables = tables.filter(table => {
-        const permissions = tablePermissionMap[table._id];
-        if (!permissions) {
-          // No permissions set, hide by default for members
-          return false;
-        }
-        return permissions.canView && !permissions.isHidden;
-      });
+        // Filter tables - only hide tables that are explicitly hidden or cannot be viewed
+        visibleTables = tables.filter(table => {
+          const permissions = tablePermissionMap[table._id];
+          if (!permissions) {
+            // No permissions set, show by default
+            return true;
+          }
+          return permissions.canView && !permissions.isHidden;
+        });
+      }
     }
+    } // End of super admin check
     // For owners and managers, show all tables
 
     res.status(200).json({
@@ -234,20 +287,23 @@ export const updateTable = async (req, res) => {
     }
 
     // Check if user is a member of this database and has permission to update tables
-    const baseMember = await BaseMember.findOne({ 
-      databaseId: table.databaseId._id, 
-      userId 
-    });
-
-    if (!baseMember) {
-      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
-    }
-
-    // Only owner and manager can update tables
-    if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
-      return res.status(403).json({ 
-        message: 'Access denied - only database owners and managers can update tables' 
+    // Super admin có quyền update table trong mọi database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.databaseId._id, 
+        userId 
       });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+
+      // Only owner and manager can update tables
+      if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
+        return res.status(403).json({ 
+          message: 'Access denied - only database owners and managers can update tables' 
+        });
+      }
     }
 
     if (name && name.trim() !== '') {
@@ -295,20 +351,23 @@ export const deleteTable = async (req, res) => {
     }
 
     // Check if user is a member of this database and has permission to delete tables
-    const baseMember = await BaseMember.findOne({ 
-      databaseId: table.databaseId._id, 
-      userId 
-    });
-
-    if (!baseMember) {
-      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
-    }
-
-    // Only owner and manager can delete tables
-    if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
-      return res.status(403).json({ 
-        message: 'Access denied - only database owners and managers can delete tables' 
+    // Super admin có quyền delete table trong mọi database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.databaseId._id, 
+        userId 
       });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+
+      // Only owner and manager can delete tables
+      if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
+        return res.status(403).json({ 
+          message: 'Access denied - only database owners and managers can delete tables' 
+        });
+      }
     }
 
     // Delete all related data (columns, records)
@@ -350,37 +409,47 @@ export const copyTable = async (req, res) => {
     }
 
     // Check if user is a member of the original database and has permission to copy tables
-    const baseMember = await BaseMember.findOne({ 
-      databaseId: originalTable.databaseId._id, 
-      userId 
-    });
-
-    if (!baseMember) {
-      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
-    }
-
-    // Only owner and manager can copy tables
-    if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
-      return res.status(403).json({ 
-        message: 'Access denied - only database owners and managers can copy tables' 
+    // Super admin có quyền copy table trong mọi database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: originalTable.databaseId._id, 
+        userId 
       });
-    }
 
-    // Verify target database exists and user has access to it
-    const targetDatabase = await Database.findById(targetDatabaseId);
-    
-    if (!targetDatabase) {
-      return res.status(404).json({ message: 'Target database not found' });
-    }
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
 
-    // Check if user is a member of the target database
-    const targetBaseMember = await BaseMember.findOne({ 
-      databaseId: targetDatabaseId, 
-      userId 
-    });
+      // Only owner and manager can copy tables
+      if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
+        return res.status(403).json({ 
+          message: 'Access denied - only database owners and managers can copy tables' 
+        });
+      }
 
-    if (!targetBaseMember) {
-      return res.status(403).json({ message: 'Access denied - you are not a member of the target database' });
+      // Verify target database exists and user has access to it
+      const targetDatabase = await Database.findById(targetDatabaseId);
+      
+      if (!targetDatabase) {
+        return res.status(404).json({ message: 'Target database not found' });
+      }
+
+      // Check if user is a member of the target database
+      const targetBaseMember = await BaseMember.findOne({ 
+        databaseId: targetDatabaseId, 
+        userId 
+      });
+
+      if (!targetBaseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of the target database' });
+      }
+    } else {
+      // For super admin, just verify target database exists
+      const targetDatabase = await Database.findById(targetDatabaseId);
+      
+      if (!targetDatabase) {
+        return res.status(404).json({ message: 'Target database not found' });
+      }
     }
 
     // Check if table with new name already exists in target database
@@ -462,6 +531,36 @@ export const copyTable = async (req, res) => {
       });
 
       await newRecord.save();
+    }
+
+    // Tạo default permissions cho table mới
+    try {
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      const defaultPermission = new TablePermission({
+        tableId: newTable._id,
+        databaseId: targetDatabaseId,
+        targetType: 'all_members',
+        name: newTable.name, // Thêm field name required
+        permissions: {
+          canView: true,
+          canEditStructure: true,
+          canEditData: true,
+          canAddData: true
+        },
+        viewPermissions: {
+          canView: true,
+          canAddView: true,
+          canEditView: true
+        },
+        createdBy: userId,
+        isDefault: true
+      });
+
+      await defaultPermission.save();
+      // console.log('Default table permission created successfully for copied table');
+    } catch (permissionError) {
+      console.error('Error creating default table permission for copied table:', permissionError);
+      // Không throw error để không ảnh hưởng đến việc copy table
     }
 
     res.status(201).json({
