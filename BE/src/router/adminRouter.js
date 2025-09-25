@@ -31,8 +31,19 @@ const verifyAdminAccess = (req, res, next) => {
     });
   }
   
+  // Debug log để kiểm tra user object
+  // console.log('🔍 Admin access check - User object:', {
+  //   id: req.user._id,
+  //   email: req.user.email,
+  //   role: req.user.role,
+  //   roleType: typeof req.user.role,
+  //   hasRole: 'role' in req.user,
+  //   allKeys: Object.keys(req.user)
+  // });
+  
   // Super admin has access to everything
   if (req.user.role === 'super_admin') {
+    // console.log('✅ Super admin access granted');
     req.isAdmin = true;
     req.canManageAllSites = true;
     return next();
@@ -105,6 +116,20 @@ router.get('/debug/permissions', (req, res) => {
       canManageAllSites: req.canManageAllSites,
       siteFilter: req.siteFilter
     }
+  });
+});
+
+// Test endpoint để kiểm tra admin access
+router.get('/test', (req, res) => {
+  res.json({
+    message: 'Admin access test successful',
+    user: req.user ? {
+      id: req.user._id,
+      email: req.user.email,
+      role: req.user.role
+    } : null,
+    isAdmin: req.isAdmin,
+    canManageAllSites: req.canManageAllSites
   });
 });
 

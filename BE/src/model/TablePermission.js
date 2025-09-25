@@ -75,6 +75,12 @@ const tablePermissionSchema = new mongoose.Schema({
     ref: "User",
     required: true
   },
+  // Tên permission
+  name: {
+    type: String,
+    required: true
+  },
+  
   // Ghi chú
   note: {
     type: String,

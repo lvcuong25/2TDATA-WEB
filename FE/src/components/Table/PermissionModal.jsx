@@ -39,21 +39,24 @@ const PermissionModal = ({
 }) => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState('table');
-  const [targetType, setTargetType] = useState('all_members');
+  const [targetType, setTargetType] = useState('specific_user');
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRole, setSelectedRole] = useState(null);
   const [permissionsData, setPermissionsData] = useState([]);
   const queryClient = useQueryClient();
 
   // Lấy danh sách thành viên database
-  const { data: members, isLoading: membersLoading } = useQuery({
+  const { data: membersResponse, isLoading: membersLoading } = useQuery({
     queryKey: ['database-members', databaseId],
     queryFn: async () => {
       const response = await axiosConfig.get(`/permissions/databases/${databaseId}/members`);
-      return response.data.data;
+      return response.data;
     },
     enabled: !!databaseId && visible
   });
+  
+  // Extract members array from response
+  const members = membersResponse?.data || [];
 
   // Lấy danh sách quyền hiện tại
   const { data: permissions, isLoading: permissionsLoading } = useQuery({
@@ -103,7 +106,7 @@ const PermissionModal = ({
       queryClient.invalidateQueries(['allViews']);
       queryClient.invalidateQueries(['views', tableId]);
       form.resetFields();
-      setTargetType('all_members');
+      setTargetType('specific_user');
       setSelectedUser(null);
       setSelectedRole(null);
     },
@@ -133,6 +136,9 @@ const PermissionModal = ({
               permissions: { ...permission.permissions },
               viewPermissions: { ...permission.viewPermissions }
             };
+            if (variables.data.name !== undefined) {
+              updatedPermission.name = variables.data.name;
+            }
             if (variables.data.permissions) {
               updatedPermission.permissions = { ...updatedPermission.permissions, ...variables.data.permissions };
             }
@@ -180,6 +186,7 @@ const PermissionModal = ({
   const handleSubmit = (values) => {
     const permissionData = {
       targetType,
+      name: values.name || '',
       permissions: values.tablePermissions || {},
       viewPermissions: values.viewPermissions || {},
       note: values.note
@@ -312,6 +319,24 @@ const PermissionModal = ({
             onFinish={handleSubmit}
           >
             <Form.Item
+              name="name"
+              label="Tên quyền"
+              rules={[{ required: true, message: 'Vui lòng nhập tên quyền' }]}
+            >
+              <input 
+                type="text" 
+                placeholder="Nhập tên quyền (để trống sẽ dùng tên mặc định)"
+                style={{ 
+                  width: '100%', 
+                  padding: '8px 12px', 
+                  border: '1px solid #d9d9d9', 
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
               name="targetType"
               label="Phân quyền cho"
               rules={[{ required: true, message: 'Vui lòng chọn đối tượng phân quyền' }]}
@@ -321,12 +346,6 @@ const PermissionModal = ({
                 onChange={setTargetType}
                 placeholder="Chọn đối tượng phân quyền"
               >
-                <Option value="all_members">
-                  <Space>
-                    <TeamOutlined />
-                    <span>Tất cả thành viên</span>
-                  </Space>
-                </Option>
                 <Option value="specific_user">
                   <Space>
                     <UserOutlined />
@@ -354,18 +373,24 @@ const PermissionModal = ({
                   placeholder="Chọn thành viên"
                   loading={membersLoading}
                 >
-                  {members?.map(member => (
-                    <Option key={member.userId._id} value={member.userId._id}>
-                      <Space>
-                        <UserOutlined />
-                        <span>{member.userId.name || member.userId.email}</span>
-                        <span style={{ color: '#999' }}>
-                          ({member.role === 'owner' ? 'Chủ sở hữu' : 
-                            member.role === 'manager' ? 'Quản lý' : 'Thành viên'})
-                        </span>
-                      </Space>
-                    </Option>
-                  ))}
+                  {members?.map(member => {
+                    // Skip if member or userId is undefined
+                    if (!member || !member.userId) {
+                      return null;
+                    }
+                    return (
+                      <Option key={member.userId._id} value={member.userId._id}>
+                        <Space>
+                          <UserOutlined />
+                          <span>{member.userId.name || member.userId.email || 'Unknown User'}</span>
+                          <span style={{ color: '#999' }}>
+                            ({member.role === 'owner' ? 'Chủ sở hữu' : 
+                             member.role === 'manager' ? 'Quản lý' : 'Thành viên'})
+                          </span>
+                        </Space>
+                      </Option>
+                    );
+                  })}
                 </Select>
               </Form.Item>
             )}
@@ -517,6 +542,35 @@ const PermissionModal = ({
                 <Card key={permission._id} size="small">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: 4, color: '#1890ff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input
+                          type="text"
+                          value={permission.name || ''}
+                          onChange={(e) => {
+                            const newName = e.target.value;
+                            handleUpdatePermission(permission._id, { name: newName });
+                          }}
+                          onBlur={(e) => {
+                            // Trigger save when user finishes editing
+                            const newName = e.target.value;
+                            if (newName !== permission.name) {
+                              handleUpdatePermission(permission._id, { name: newName });
+                            }
+                          }}
+                          placeholder="Nhập tên quyền"
+                          style={{
+                            border: 'none',
+                            outline: 'none',
+                            background: 'transparent',
+                            fontWeight: 'bold',
+                            color: '#1890ff',
+                            fontSize: '14px',
+                            width: '200px',
+                            padding: '2px 4px',
+                            borderBottom: '1px dashed #d9d9d9'
+                          }}
+                        />
+                      </div>
                       <div style={{ marginBottom: 8 }}>
                         {getTargetDisplay(permission)}
                       </div>

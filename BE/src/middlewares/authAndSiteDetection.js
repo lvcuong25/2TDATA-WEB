@@ -25,7 +25,15 @@ export const authAndSiteDetectionMiddleware = async (req, res, next) => {
     if (token) {
       try {
         const payload = jwt.verify(token, process.env.JWT_SECRET || process.env.SECRET_KEY);
-        req.user = await User.findById(payload._id).select('-password').populate('service').populate('site_id').lean();
+        // console.log('🔍 JWT payload:', payload);
+        
+        if (!payload._id) {
+          console.error('❌ JWT payload missing _id:', payload);
+          return res.status(401).json({ message: 'Invalid token - missing user ID' });
+        }
+        
+        req.user = await User.findById(payload._id).select('+role').populate('service').populate('site_id').lean();
+        // console.log('🔍 User found:', req.user ? { id: req.user._id, email: req.user.email, role: req.user.role } : 'null');
         
         if (!req.user) {
           return res.status(401).json({ message: 'Authentication invalid' });
@@ -39,7 +47,7 @@ export const authAndSiteDetectionMiddleware = async (req, res, next) => {
         }
       } catch (error) {
         // Token không hợp lệ, tiếp tục như anonymous user
-        console.log('Invalid token:', error.message);
+        // console.log('Invalid token:', error.message);
         req.user = null; // Đảm bảo req.user là null khi token không hợp lệ
       }
     } else {
@@ -176,10 +184,12 @@ export const authAndSiteDetectionMiddleware = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth and site detection error:', error);
+    console.error('Error stack:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Internal server error',
-      error: 'AUTH_SITE_DETECTION_ERROR'
+      error: 'AUTH_SITE_DETECTION_ERROR',
+      details: error.message
     });
   }
 };

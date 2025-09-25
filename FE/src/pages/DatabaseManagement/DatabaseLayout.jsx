@@ -7,6 +7,8 @@ import { AuthContext } from '../../components/core/Auth';
 import { toast } from 'react-toastify';
 import { TableProvider, useTableContext } from '../../contexts/TableContext';
 import PermissionModal from '../../components/Table/PermissionModal';
+import RowColumnCellPermissionModal from '../../components/Table/RowColumnCellPermissionModal';
+import { getUserDatabaseRole } from './Utils/permissionUtils.jsx';
 import {
   DatabaseOutlined,
   TableOutlined,
@@ -250,6 +252,8 @@ const TableHeaderActions = () => {
   const { selectedRowKeys } = useTableContext();
   const queryClient = useQueryClient();
   const location = useLocation();
+  const [showRecordPermissionModal, setShowRecordPermissionModal] = useState(false);
+  const [selectedRecordIds, setSelectedRecordIds] = useState([]);
   
   // Extract table ID from current path
   const getTableId = () => {
@@ -259,6 +263,34 @@ const TableHeaderActions = () => {
     }
     return null;
   };
+
+  // Extract database ID from current path
+  const getDatabaseId = () => {
+    if (location.pathname.includes('/database/')) {
+      const pathParts = location.pathname.split('/');
+      const dbIndex = pathParts.indexOf('database');
+      if (dbIndex !== -1 && pathParts[dbIndex + 1]) {
+        return pathParts[dbIndex + 1];
+      }
+    }
+    return null;
+  };
+  
+  // Get current user and user role
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const databaseId = getDatabaseId();
+  
+  // Get database members to determine user role
+  const { data: databaseMembersResponse } = useQuery({
+    queryKey: ['database-members', databaseId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/database/databases/${databaseId}/members`);
+      return response.data;
+    },
+    enabled: !!databaseId,
+  });
+  
+  const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
 
   const tableId = getTableId();
 
@@ -287,20 +319,53 @@ const TableHeaderActions = () => {
     deleteMultipleRecordsMutation.mutate(selectedRowKeys);
   };
 
+  const handleRecordPermission = () => {
+    if (selectedRowKeys.length === 0) {
+      return;
+    }
+    setSelectedRecordIds(selectedRowKeys);
+    setShowRecordPermissionModal(true);
+  };
+
   // Only show delete button when on table detail page and rows are selected
   if (!location.pathname.includes('/table/') || selectedRowKeys.length === 0) {
     return null;
   }
 
   return (
-    <Button
-      danger
-      icon={<DeleteOutlined />}
-      loading={deleteMultipleRecordsMutation.isPending}
-      onClick={handleDeleteSelected}
-    >
-      Delete Selected ({selectedRowKeys.length})
-    </Button>
+    <div style={{ display: 'flex', gap: '8px' }}>
+      {/* Only show Record Permission button for owners and managers */}
+      {(userRole === 'owner' || userRole === 'manager') && (
+        <Button
+          type="default"
+          icon={<SettingOutlined />}
+          onClick={handleRecordPermission}
+        >
+          Record Permission ({selectedRowKeys.length})
+        </Button>
+      )}
+      <Button
+        danger
+        icon={<DeleteOutlined />}
+        loading={deleteMultipleRecordsMutation.isPending}
+        onClick={handleDeleteSelected}
+      >
+        Delete Selected ({selectedRowKeys.length})
+      </Button>
+      
+      {/* Record Permission Modal */}
+      <RowColumnCellPermissionModal
+        visible={showRecordPermissionModal}
+        onCancel={() => {
+          setShowRecordPermissionModal(false);
+          setSelectedRecordIds([]);
+        }}
+        type="record"
+        recordId={selectedRecordIds[0]} // For single record, we'll handle multiple later
+        tableId={getTableId()}
+        databaseId={getDatabaseId()}
+      />
+    </div>
   );
 };
 
@@ -894,7 +959,9 @@ const DatabaseLayout = () => {
           height: '100vh',
           zIndex: 1000,
           background: '#fff',
-          borderRight: '1px solid #f0f0f0'
+          borderRight: '1px solid #f0f0f0',
+          display: 'flex',
+          flexDirection: 'column'
         }}
         theme="light"
       >
@@ -982,7 +1049,7 @@ const DatabaseLayout = () => {
         )}
 
         {/* Navigation Menu */}
-        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)', paddingBottom: '100px' }}>
           <Menu
             theme="light"
             mode="inline"
@@ -1338,6 +1405,39 @@ const DatabaseLayout = () => {
           )}
         </div>
 
+        {/* Navigation Buttons at bottom of screen */}
+        {!collapsed && (
+          <div 
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              width: '280px',
+              padding: '16px',
+              borderTop: '1px solid #e5e7eb',
+              backgroundColor: '#fff',
+              zIndex: 1001,
+              boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <div className="space-y-2">
+              <button
+                onClick={() => navigate('/')}
+                className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <HomeOutlined className="mr-2" />
+                Về trang chủ
+              </button>
+              <button
+                onClick={() => navigate('/profile/base')}
+                className="w-full flex items-center px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+              >
+                <AppstoreOutlined className="mr-2" />
+                Quản lý Base
+              </button>
+            </div>
+          </div>
+        )}
 
       </Sider>
 

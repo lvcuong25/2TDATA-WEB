@@ -51,8 +51,7 @@ const EditColumnModal = ({
   setEditingColumn,
   columns,
   loading,
-  currentTableId = null,
-  currentDatabaseId = null
+  currentTableId = null
 }) => {
   if (!editingColumn) return null;
 
