@@ -11,7 +11,12 @@ import Organization from "../model/Organization.js";
 
 const hashPassword = (password) => hashSync(password, 10);
 const comparePassword = (password, hashPassword) => compareSync(password, hashPassword);
-const token = (payload, expiresIn) => jwt.sign(payload, process.env.JWT_SECRET || process.env.SECRET_KEY, { expiresIn });
+const token = (payload, expiresIn) => {
+  // console.log('🔍 Creating JWT token with payload:', payload);
+  const token = jwt.sign(payload, process.env.JWT_SECRET || process.env.SECRET_KEY, { expiresIn });
+  // console.log('🔍 JWT token created successfully');
+  return token;
+};
 
 export const signUp = async (req, res, next) => {
     try {
@@ -28,14 +33,14 @@ export const signUp = async (req, res, next) => {
 
         // Check current site context
         const currentSiteId = req.site?._id?.toString();
-        console.log('DEBUG signup:', {
-            currentSiteId,
-            reqSite: req.site?.name,
-            reqSiteId: req.site?._id,
-            hostname: req.hostname,
-            role,
-            site_id
-        });
+        // console.log('DEBUG signup:', {
+        //     currentSiteId,
+        //     reqSite: req.site?.name,
+        //     reqSiteId: req.site?._id,
+        //     hostname: req.hostname,
+        //     role,
+        //     site_id
+        // });
         
         // Determine final site_id assignment
         let finalSiteId = site_id;
@@ -121,9 +126,9 @@ export const signIn = async (req, res, next) => {
 
         // Check site access permissions
         const currentSiteId = req.site?._id?.toString();
-        console.log("🚀 ~ signIn ~ currentSiteId:", currentSiteId)
+        // console.log("🚀 ~ signIn ~ currentSiteId:", currentSiteId)
         const userSiteId = userExist.site_id?._id?.toString() || userExist.site_id?.toString();
-        console.log("🚀 ~ signIn ~ userSiteId:", userSiteId)
+        // console.log("🚀 ~ signIn ~ userSiteId:", userSiteId)
         
         // Super admin can login to any site
         if (userExist.role !== 'super_admin') {

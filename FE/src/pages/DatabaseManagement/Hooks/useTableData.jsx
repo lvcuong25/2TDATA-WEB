@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../utils/axiosInstance-cookie-only';
 
@@ -43,7 +44,7 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       return response.data;
     },
     onSuccess: () => {
-      console.log('Group preference saved successfully');
+      // console.log('Group preference saved successfully');
     },
     onError: (error) => {
       console.error('Error saving group preference:', error);
@@ -70,7 +71,7 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       return response.data;
     },
     onSuccess: () => {
-      console.log('Field preference saved successfully');
+      // console.log('Field preference saved successfully');
     },
     onError: (error) => {
       console.error('Error saving field preference:', error);
@@ -262,12 +263,120 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     },
   });
 
+  // Fetch column permissions
+  const { data: columnPermissionsResponse, error: columnPermissionsError, isLoading: columnPermissionsLoading } = useQuery({
+    queryKey: ['columnPermissions', tableId],
+    queryFn: async () => {
+      // console.log(`🔍 Fetching column permissions for tableId: ${tableId}`);
+      try {
+        const response = await axiosInstance.get(`/permissions/tables/${tableId}/columns/permissions`);
+        // console.log(`🔍 Column permissions response:`, response.data);
+        return response.data;
+      } catch (error) {
+        console.error(`🔍 Column permissions API error:`, error);
+        throw error;
+      }
+    },
+    enabled: !!tableId,
+  });
+
+  // Debug column permissions query
+  useEffect(() => {
+    if (tableId) {
+      // console.log(`🔍 Column Permissions Query State:`, {
+      //   tableId,
+      //   isLoading: columnPermissionsLoading,
+      //   error: columnPermissionsError,
+      //   data: columnPermissionsResponse
+      // });
+    }
+  }, [tableId, columnPermissionsLoading, columnPermissionsError, columnPermissionsResponse]);
+
+  // Fetch record permissions
+  const { data: recordPermissionsResponse } = useQuery({
+    queryKey: ['recordPermissions', tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/permissions/tables/${tableId}/records/permissions`);
+      return response.data;
+    },
+    enabled: !!tableId,
+  });
+
+  // Fetch cell permissions
+  const { data: cellPermissionsResponse } = useQuery({
+    queryKey: ['cellPermissions', tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/permissions/tables/${tableId}/cells/permissions`);
+      return response.data;
+    },
+    enabled: !!tableId,
+  });
+
+  // Fetch database members for user role
+  const { data: databaseMembersResponse, error: databaseMembersError, isLoading: databaseMembersLoading } = useQuery({
+    queryKey: ['databaseMembers', databaseId],
+    queryFn: async () => {
+      // console.log(`🔍 Fetching database members for databaseId: ${databaseId}`);
+      try {
+        const response = await axiosInstance.get(`/database/databases/${databaseId}/members`);
+        // console.log(`🔍 Database members response:`, response.data);
+        return response.data;
+      } catch (error) {
+        console.error(`🔍 Database members API error:`, error);
+        // If still getting permission error, try test route as fallback
+        if (error.response?.data?.error === 'no_manage_permission') {
+          // console.log(`🔍 Trying test route as fallback...`);
+          const testResponse = await axiosInstance.get(`/database/databases/${databaseId}/members-test`);
+          // console.log(`🔍 Test route response:`, testResponse.data);
+          return testResponse.data;
+        }
+        throw error;
+      }
+    },
+    enabled: !!databaseId,
+    retry: 1,
+    retryDelay: 1000,
+  });
+
+  // Debug database members query
+  useEffect(() => {
+    if (databaseId) {
+      // console.log(`🔍 Database Members Query State:`, {
+      //   databaseId,
+      //   isLoading: databaseMembersLoading,
+      //   error: databaseMembersError,
+      //   data: databaseMembersResponse
+      // });
+    }
+  }, [databaseId, databaseMembersLoading, databaseMembersError, databaseMembersResponse]);
+
+  // Debug when databaseId changes
+  useEffect(() => {
+    // console.log(`🔍 DatabaseId changed:`, databaseId);
+    // console.log(`🔍 useQuery enabled:`, !!databaseId);
+  }, [databaseId]);
+
+  // Debug useQuery state
+  useEffect(() => {
+    // console.log(`🔍 Database Members useQuery State:`, {
+    //   databaseId,
+    //   enabled: !!databaseId,
+    //   isLoading: databaseMembersLoading,
+    //   error: databaseMembersError,
+    //   data: databaseMembersResponse
+    // });
+  }, [databaseId, databaseMembersLoading, databaseMembersError, databaseMembersResponse]);
+
   return {
     // Queries
     groupPreferenceResponse,
     fieldPreferenceResponse,
     tableStructureResponse,
     recordsResponse,
+    columnPermissionsResponse,
+    recordPermissionsResponse,
+    cellPermissionsResponse,
+    databaseMembersResponse,
     isLoading,
     error,
     

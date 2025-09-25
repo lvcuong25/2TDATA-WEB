@@ -7,6 +7,7 @@ import Comment from '../model/Comment.js';
 import Organization from '../model/Organization.js';
 import BaseMember from '../model/BaseMember.js';
 import exprEvalEngine from '../utils/exprEvalEngine.js';
+import { isSuperAdmin } from '../utils/permissionUtils.js';
 
 
 // Helper function to calculate formula columns for records
@@ -168,17 +169,19 @@ export const createRecord = async (req, res) => {
     }
 
     // Check if user is a member of the database
-    const baseMember = await BaseMember.findOne({
-      databaseId: table.databaseId._id,
-      userId
-    });
+    // Super admin có quyền tạo record trong mọi database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({
+        databaseId: table.databaseId._id,
+        userId
+      });
 
-    if (!baseMember) {
-      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
-    }
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
 
-    // Check if user has permission to create records
-    if (baseMember.role === 'member') {
+      // Check if user has permission to create records
+      if (baseMember.role === 'member') {
       // For members, check table permissions
       const TablePermission = (await import('../model/TablePermission.js')).default;
       
@@ -194,20 +197,30 @@ export const createRecord = async (req, res) => {
       let canEditData = false;
       let canAddData = false;
       
-      tablePermissions.forEach(perm => {
-        if (perm.permissions) {
-          if (perm.permissions.canEditData) {
-            canEditData = true;
-          }
-          if (perm.permissions.canAddData) {
-            canAddData = true;
-          }
-        }
+      // Sort permissions by priority: specific_user > specific_role > all_members
+      const sortedPermissions = tablePermissions.sort((a, b) => {
+        const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+        return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
       });
+      
+      // Check permissions in priority order
+      for (const perm of sortedPermissions) {
+        if (perm.permissions) {
+          if (perm.permissions.canEditData !== undefined) {
+            canEditData = perm.permissions.canEditData;
+          }
+          if (perm.permissions.canAddData !== undefined) {
+            canAddData = perm.permissions.canAddData;
+          }
+          // Stop at first permission found (highest priority)
+          break;
+        }
+      }
 
       if (!canEditData && !canAddData) {
         return res.status(403).json({ message: 'Access denied - you do not have permission to create records in this table' });
       }
+    }
     }
     // Owners and managers can always create records
 
@@ -392,6 +405,21 @@ export const createRecord = async (req, res) => {
 
     await record.save();
 
+    // Tạo default permission cho record
+    const RecordPermission = (await import('../model/RecordPermission.js')).default;
+    const defaultPermission = new RecordPermission({
+      recordId: record._id,
+      tableId: tableId,
+      databaseId: table.databaseId._id,
+      targetType: 'all_members',
+      permissions: {
+        canView: true
+      },
+      createdBy: userId,
+      isDefault: true
+    });
+    await defaultPermission.save();
+
     res.status(201).json({
       success: true,
       message: 'Record created successfully',
@@ -434,14 +462,25 @@ export const getRecords = async (req, res) => {
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    // Verify user is a member of the organization that owns this table's database
-    const organization = await Organization.findOne({ 
-      _id: table.databaseId.orgId,
-      'members.user': userId 
-    });
-    
-    if (!organization) {
-      return res.status(403).json({ message: "Access denied - user is not a member of this database" });
+    // Super admin có quyền truy cập tất cả database
+    if (!isSuperAdmin(req.user)) {
+      // Check if user is a member of this database (either through organization or direct database membership)
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.databaseId._id, 
+        userId 
+      });
+
+      if (!baseMember) {
+        // If not a direct database member, check if user is organization member
+        const organization = await Organization.findOne({ 
+          _id: table.databaseId.orgId,
+          'members.user': userId 
+        });
+        
+        if (!organization) {
+          return res.status(403).json({ message: "Access denied - user is not a member of this database" });
+        }
+      }
     }
 
     const skip = (page - 1) * limit;
@@ -636,12 +675,12 @@ export const updateRecord = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.siteId;
 
-    console.log('Backend: updateRecord called:', {
-      recordId,
-      data,
-      userId,
-      siteId
-    });
+    // console.log('Backend: updateRecord called:', {
+    //   recordId,
+    //   data,
+    //   userId,
+    //   siteId
+    // });
 
     if (!data || typeof data !== 'object') {
       return res.status(400).json({ message: 'Data is required and must be an object' });
@@ -665,13 +704,13 @@ export const updateRecord = async (req, res) => {
       return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
     }
 
-    // Check if user has permission to edit records
+    // Check if user has permission to edit this specific record
     if (baseMember.role === 'member') {
-      // For members, check table permissions
-      const TablePermission = (await import('../model/TablePermission.js')).default;
+      // For members, check record permissions
+      const RecordPermission = (await import('../model/RecordPermission.js')).default;
       
-      const tablePermissions = await TablePermission.find({
-        tableId: record.tableId._id,
+      const recordPermissions = await RecordPermission.find({
+        recordId: recordId,
         $or: [
           { targetType: 'all_members' },
           { targetType: 'specific_user', userId: userId },
@@ -679,15 +718,77 @@ export const updateRecord = async (req, res) => {
         ]
       });
 
-      let canEditData = false;
-      tablePermissions.forEach(perm => {
-        if (perm.permissions && perm.permissions.canEditData) {
-          canEditData = true;
-        }
+      let canEditRecord = false;
+      
+      // Sort permissions by priority: specific_user > specific_role > all_members
+      const sortedPermissions = recordPermissions.sort((a, b) => {
+        const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+        return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
       });
+      
+      // Check permissions in priority order
+      for (const perm of sortedPermissions) {
+        if (perm.canEdit !== undefined) {
+          canEditRecord = perm.canEdit;
+          // Stop at first permission found (highest priority)
+          break;
+        }
+      }
 
-      if (!canEditData) {
-        return res.status(403).json({ message: 'Access denied - you do not have permission to edit records in this table' });
+      if (!canEditRecord) {
+        return res.status(403).json({ message: 'Access denied - you do not have permission to edit this record' });
+      }
+    }
+
+    // For members, also check cell-level permissions for each field being updated
+    if (baseMember.role === 'member') {
+      const CellPermission = (await import('../model/CellPermission.js')).default;
+      
+      // Check cell permissions for each field being updated
+      for (const [fieldName, fieldValue] of Object.entries(data)) {
+        if (fieldValue !== undefined) {
+          // Find the column for this field
+          const column = await Column.findOne({ 
+            tableId: record.tableId._id, 
+            name: fieldName 
+          });
+          
+          if (column) {
+            // Check cell permissions for this specific cell
+            const cellPermissions = await CellPermission.find({
+              recordId: recordId,
+              columnId: column._id,
+              $or: [
+                { targetType: 'all_members' },
+                { targetType: 'specific_user', userId: userId },
+                { targetType: 'specific_role', role: baseMember.role }
+              ]
+            });
+
+            let canEditCell = false;
+            
+            // Sort permissions by priority: specific_user > specific_role > all_members
+            const sortedPermissions = cellPermissions.sort((a, b) => {
+              const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+              return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
+            });
+            
+            // Check permissions in priority order
+            for (const perm of sortedPermissions) {
+              if (perm.canEdit !== undefined) {
+                canEditCell = perm.canEdit;
+                // Stop at first permission found (highest priority)
+                break;
+              }
+            }
+
+            if (!canEditCell) {
+              return res.status(403).json({ 
+                message: `Access denied - you do not have permission to edit cell '${fieldName}' in this record` 
+              });
+            }
+          }
+        }
       }
     }
     // Owners and managers can always edit records
@@ -783,13 +884,13 @@ export const updateRecord = async (req, res) => {
         if (column.dataType === 'url' && value && value !== '') {
           let urlToValidate = value;
           
-          console.log('Backend: URL validation:', {
-            columnName: column.name,
-            value,
-            urlConfig: column.urlConfig,
-            hasUrlConfig: !!column.urlConfig,
-            protocol: column.urlConfig?.protocol
-          });
+          // console.log('Backend: URL validation:', {
+          //   columnName: column.name,
+          //   value,
+          //   urlConfig: column.urlConfig,
+          //   hasUrlConfig: !!column.urlConfig,
+          //   protocol: column.urlConfig?.protocol
+          // });
           
           // Auto-add protocol
           if (!value.startsWith('http://') && !value.startsWith('https://')) {
@@ -805,7 +906,7 @@ export const updateRecord = async (req, res) => {
             }
           }
           
-          console.log('Backend: URL to validate:', urlToValidate);
+          // console.log('Backend: URL to validate:', urlToValidate);
           
           // Only validate URL format if protocol is not 'none'
           if (!(column.urlConfig && column.urlConfig.protocol === 'none')) {
@@ -916,11 +1017,21 @@ export const deleteRecord = async (req, res) => {
       });
 
       let canEditData = false;
-      tablePermissions.forEach(perm => {
-        if (perm.permissions && perm.permissions.canEditData) {
-          canEditData = true;
-        }
+      
+      // Sort permissions by priority: specific_user > specific_role > all_members
+      const sortedPermissions = tablePermissions.sort((a, b) => {
+        const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+        return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
       });
+      
+      // Check permissions in priority order
+      for (const perm of sortedPermissions) {
+        if (perm.permissions && perm.permissions.canEditData !== undefined) {
+          canEditData = perm.permissions.canEditData;
+          // Stop at first permission found (highest priority)
+          break;
+        }
+      }
 
       if (!canEditData) {
         return res.status(403).json({ message: 'Access denied - you do not have permission to delete records in this table' });
@@ -947,11 +1058,10 @@ export const deleteRecord = async (req, res) => {
 // Bulk delete records by IDs
 // Bulk delete records by IDs
 export const deleteMultipleRecords = async (req, res) => {
-    console.log("🔄 deleteMultipleRecords called with:", req.body);
-    console.log("🔄 Request user:", req.user);
-    console.log("🔄 Request siteId:", req.siteId);
-    
   try {
+    // console.log("🔄 deleteMultipleRecords called with:", req.body);
+    // console.log("🔄 Request user:", req.user);
+    // console.log("🔄 Request siteId:", req.siteId);
     const { recordIds } = req.body;
     
     // Check authentication
@@ -1016,11 +1126,21 @@ export const deleteMultipleRecords = async (req, res) => {
         });
 
         let canEditData = false;
-        tablePermissions.forEach(perm => {
-          if (perm.permissions && perm.permissions.canEditData) {
-            canEditData = true;
-          }
+        
+        // Sort permissions by priority: specific_user > specific_role > all_members
+        const sortedPermissions = tablePermissions.sort((a, b) => {
+          const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+          return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
         });
+        
+        // Check permissions in priority order
+        for (const perm of sortedPermissions) {
+          if (perm.permissions && perm.permissions.canEditData !== undefined) {
+            canEditData = perm.permissions.canEditData;
+            // Stop at first permission found (highest priority)
+            break;
+          }
+        }
 
         if (!canEditData) {
           return res.status(403).json({ 
@@ -1052,11 +1172,10 @@ export const deleteMultipleRecords = async (req, res) => {
 // Delete all records in a table
 // Delete all records in a table
 export const deleteAllRecords = async (req, res) => {
-    console.log("🔄 deleteAllRecords called with tableId:", req.params.tableId);
-    console.log("🔄 Request user:", req.user);
-    console.log("🔄 Request siteId:", req.siteId);
-    
   try {
+    // console.log("🔄 deleteAllRecords called with tableId:", req.params.tableId);
+    // console.log("🔄 Request user:", req.user);
+    // console.log("🔄 Request siteId:", req.siteId);
     const { tableId } = req.params;
     
     // Check authentication
@@ -1111,11 +1230,21 @@ export const deleteAllRecords = async (req, res) => {
       });
 
       let canEditData = false;
-      tablePermissions.forEach(perm => {
-        if (perm.permissions && perm.permissions.canEditData) {
-          canEditData = true;
-        }
+      
+      // Sort permissions by priority: specific_user > specific_role > all_members
+      const sortedPermissions = tablePermissions.sort((a, b) => {
+        const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+        return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
       });
+      
+      // Check permissions in priority order
+      for (const perm of sortedPermissions) {
+        if (perm.permissions && perm.permissions.canEditData !== undefined) {
+          canEditData = perm.permissions.canEditData;
+          // Stop at first permission found (highest priority)
+          break;
+        }
+      }
 
       if (!canEditData) {
         return res.status(403).json({ 
@@ -1175,14 +1304,25 @@ export const getTableStructure = async (req, res) => {
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    // Verify user is a member of the organization that owns this table's database
-    const organization = await Organization.findOne({ 
-      _id: table.databaseId.orgId,
-      'members.user': userId 
-    });
-    
-    if (!organization) {
-      return res.status(403).json({ message: "Access denied - user is not a member of this database" });
+    // Super admin có quyền truy cập tất cả database
+    if (!isSuperAdmin(req.user)) {
+      // Check if user is a member of this database (either through organization or direct database membership)
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.databaseId._id, 
+        userId 
+      });
+
+      if (!baseMember) {
+        // If not a direct database member, check if user is organization member
+        const organization = await Organization.findOne({ 
+          _id: table.databaseId.orgId,
+          'members.user': userId 
+        });
+        
+        if (!organization) {
+          return res.status(403).json({ message: "Access denied - user is not a member of this database" });
+        }
+      }
     }
 
     const columns = await Column.find({ tableId }).sort({ order: 1 });

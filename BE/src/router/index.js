@@ -28,6 +28,9 @@ import tableRouter from "./table.routes.js";
 import columnPermsRouter from "./column-perms.routes.js";
 import rolesPermsRouter from "./roles-perms.routes.js";
 import permissionRouter from "./permission.routes.js";
+import recordPermissionRouter from "../routes/recordPermissionRoutes.js";
+import columnPermissionRouter from "../routes/columnPermissionRoutes.js";
+import cellPermissionRouter from "../routes/cellPermissionRoutes.js";
 
 const router = Router();
 
@@ -89,6 +92,9 @@ router.use("/tables", tableRouter);
 router.use(columnPermsRouter);
 router.use(rolesPermsRouter);
 router.use("/permissions", permissionRouter);
+router.use("/permissions", recordPermissionRouter);
+router.use("/permissions", columnPermissionRouter);
+router.use("/permissions", cellPermissionRouter);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 

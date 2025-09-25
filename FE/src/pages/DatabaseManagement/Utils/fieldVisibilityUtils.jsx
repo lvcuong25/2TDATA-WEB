@@ -3,6 +3,8 @@
  * Provides functions to handle field visibility, system fields, and field preferences
  */
 
+import { canViewColumn } from './permissionUtils.jsx';
+
 /**
  * System field definitions
  */
@@ -32,13 +34,16 @@ export const getAllColumnsWithSystem = (columns, showSystemFields) => {
 };
 
 /**
- * Get visible columns based on visibility settings
+ * Get visible columns based on visibility settings and permissions
  * @param {Array} columns - Regular columns
  * @param {Object} fieldVisibility - Field visibility object
  * @param {boolean} showSystemFields - Whether to show system fields
+ * @param {Array} columnPermissions - Array of column permissions (optional)
+ * @param {Object} user - Current user object (optional)
+ * @param {string} userRole - User's role in the database (optional)
  * @returns {Array} Visible columns
  */
-export const getVisibleColumns = (columns, fieldVisibility, showSystemFields) => {
+export const getVisibleColumns = (columns, fieldVisibility, showSystemFields, columnPermissions = null, user = null, userRole = null) => {
   const allColumnsWithSystem = getAllColumnsWithSystem(columns, showSystemFields);
 
   return allColumnsWithSystem.filter(column => {
@@ -49,11 +54,42 @@ export const getVisibleColumns = (columns, fieldVisibility, showSystemFields) =>
       return true; // Show system fields by default when showSystemFields is true
     }
     
-    // For regular fields, use normal visibility logic
-    if (fieldVisibility[column._id] === undefined) {
-      return true;
+    // For regular fields, first check UI visibility
+    let isUIVisible = true;
+    if (fieldVisibility[column._id] !== undefined) {
+      isUIVisible = fieldVisibility[column._id];
     }
-    return fieldVisibility[column._id];
+    
+    // If UI visibility is false, don't show the column
+    if (!isUIVisible) {
+      return false;
+    }
+    
+    // If permissions are provided, check column permissions
+    if (columnPermissions && user && userRole) {
+      // Use imported permission check function
+      const hasPermission = canViewColumn(columnPermissions, column._id, user, userRole);
+      console.log(`🚨 Column ${column.name} (${column._id}): hasPermission=${hasPermission}, userRole=${userRole}`);
+      
+      // Find relevant permissions for this column
+      const columnPerms = columnPermissions.filter(perm => perm.columnId === column._id);
+      console.log(`🚨 Column ${column.name} permissions:`, columnPerms.map(p => ({
+        targetType: p.targetType,
+        canView: p.canView,
+        canEdit: p.canEdit,
+        userId: p.userId?._id,
+        role: p.role
+      })));
+      
+      if (columnPerms.length > 0) {
+        console.log(`🚨 Column ${column.name} will be ${hasPermission ? 'VISIBLE' : 'HIDDEN'} due to permissions`);
+      }
+      
+      return hasPermission;
+    }
+    
+    // Default to visible if no permission check needed
+    return true;
   });
 };
 

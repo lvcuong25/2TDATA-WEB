@@ -23,7 +23,8 @@ import {
   EditOutlined,
   AppstoreOutlined,
   ExpandOutlined,
-  ZoomInOutlined
+  ZoomInOutlined,
+  LockOutlined
 } from '@ant-design/icons';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
@@ -43,6 +44,7 @@ import {
 import LinkedTableSelectModal from './LinkedTableSelectModal';
 import LookupDropdown from './LookupDropdown';
 import EditRecordModal from '../Modals/EditRecordModal';
+import { canEditCell, canViewCell } from '../Utils/permissionUtils.jsx';
 
 // Custom AddOptionInput component for dropdown
 const AddOptionInput = ({ onAddOption, placeholder = "Enter new option" }) => {
@@ -238,6 +240,8 @@ const TableBody = ({
   setCellValue,
   handleResizeStart,
   handleEditColumn,
+  handleColumnPermission,
+  handleCellPermission,
   handleDeleteColumn,
   handleAddRow,
   handleAddRowToGroup,
@@ -256,8 +260,18 @@ const TableBody = ({
   formatCellValueForDisplay,
   // Row height props
   tableId,
-  rowHeightSettings
+  databaseId,
+  rowHeightSettings,
+  
+  // Permission props
+  cellPermissions,
+  currentUser,
+  userRole,
+  cellPermissionsResponse,
+  addDebugLog
 }) => {
+  // Debug userRole
+  console.log('🚨 TABLEBODY userRole:', userRole, 'type:', typeof userRole);
   // State for linked table modal
   const [linkedTableModal, setLinkedTableModal] = useState({
     visible: false,
@@ -270,6 +284,7 @@ const TableBody = ({
     visible: false,
     record: null
   });
+
 
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
@@ -285,6 +300,49 @@ const TableBody = ({
     } catch {
       return dateString;
     }
+  };
+
+  // Helper function to check if cell can be edited
+  const isCellEditableByPermission = (recordId, columnId) => {
+    console.log('🔍 isCellEditableByPermission called:', {
+      recordId,
+      columnId,
+      cellPermissions: cellPermissions?.length || 0,
+      cellPermissionsResponse: cellPermissionsResponse,
+      currentUser: currentUser?._id,
+      userRole
+    });
+    
+    
+    if (!cellPermissions || !currentUser || !userRole) {
+      console.log('🔍 Missing permission data, defaulting to editable');
+      return true; // Default to editable if no permission data
+    }
+    
+    const result = canEditCell(cellPermissions, recordId, columnId, currentUser, userRole);
+    console.log('🔍 isCellEditableByPermission result:', result);
+    return result;
+  };
+
+  // Helper function to check if current editing cell can be edited
+  const canEditCurrentCell = () => {
+    console.log('🔍 canEditCurrentCell called:', {
+      editingCell: editingCell,
+      hasColumn: !!editingCell?.column,
+      hasColumnId: !!editingCell?.column?._id,
+      recordId: editingCell?.recordId,
+      columnId: editingCell?.column?._id
+    });
+    
+    
+    if (!editingCell || !editingCell.column || !editingCell.column._id) {
+      console.log('🔍 canEditCurrentCell: Missing editingCell data, returning false');
+      return false;
+    }
+    
+    const result = isCellEditableByPermission(editingCell.recordId, editingCell.column._id);
+    console.log('🔍 canEditCurrentCell result:', result);
+    return result;
   };
 
   // Check if a cell is selected
@@ -445,6 +503,7 @@ const TableBody = ({
                   </>
                 )}
               </div>
+              {console.log('🚨 DROPDOWN DEBUG:', { columnName: column.name, userRole, canShowPermission: userRole === 'manager' || userRole === 'owner' })}
               <Dropdown
                 menu={{
                   items: [
@@ -456,17 +515,23 @@ const TableBody = ({
                     {
                       type: 'divider',
                     },
-                    {
+                    // Only show permission option for manager and owner
+                    ...(userRole === 'manager' || userRole === 'owner' ? [{
                       key: 'permissions',
                       label: 'Phân quyền',
                       onClick: () => {
-                        // TODO: Implement permission management
-                        console.log('Phân quyền cho cột:', column.name);
+                        console.log('🚨 CLICKING PERMISSION BUTTON for column:', column.name);
+                        console.log('🚨 handleColumnPermission function:', handleColumnPermission);
+                        console.log('🚨 Column object:', column);
+                        if (handleColumnPermission) {
+                          handleColumnPermission(column);
+                        } else {
+                          console.error('🚨 handleColumnPermission is not defined!');
+                        }
                       },
-                    },
-                    {
+                    }, {
                       type: 'divider',
-                    },
+                    }] : []),
                     {
                       key: 'delete',
                       label: 'Delete Column',
@@ -779,11 +844,18 @@ const TableBody = ({
                                   <Input
                                     type="date"
                                     value={formatDateForInput(cellValue)}
-                                    onChange={(e) => setCellValue(e.target.value)}
+                                    onChange={(e) => {
+                                      if (!canEditCurrentCell()) {
+                                        console.log('🔍 Permission denied: Cannot edit date cell');
+                                        return;
+                                      }
+                                      setCellValue(e.target.value);
+                                    }}
                                     onPressEnter={handleCellSave}
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
+                                    disabled={!canEditCurrentCell()}
                                     style={{
                                       width: '100%',
                                       height: '100%',
@@ -800,7 +872,8 @@ const TableBody = ({
                                       right: '0',
                                       bottom: '0',
                                       boxSizing: 'border-box',
-                                      outline: 'none'
+                                      outline: 'none',
+                                      cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                                     }}
                                   />
                                 );
@@ -810,11 +883,18 @@ const TableBody = ({
                                     type="number"
                                     step="0.01"
                                     value={cellValue}
-                                    onChange={(e) => setCellValue(e.target.value)}
+                                    onChange={(e) => {
+                                      if (!canEditCurrentCell()) {
+                                        console.log('🔍 Permission denied: Cannot edit percent cell');
+                                        return;
+                                      }
+                                      setCellValue(e.target.value);
+                                    }}
                                     onPressEnter={handleCellSave}
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
+                                    disabled={!canEditCurrentCell()}
                                     style={{
                                       width: '100%',
                                       height: '100%',
@@ -831,7 +911,8 @@ const TableBody = ({
                                       right: '0',
                                       bottom: '0',
                                       boxSizing: 'border-box',
-                                      outline: 'none'
+                                      outline: 'none',
+                                      cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                                     }}
                                   />
                                 );
@@ -841,11 +922,18 @@ const TableBody = ({
                                     type="number"
                                     step={dataType === 'currency' ? "0.01" : undefined}
                                     value={cellValue}
-                                    onChange={(e) => setCellValue(e.target.value)}
+                                    onChange={(e) => {
+                                      if (!canEditCurrentCell()) {
+                                        console.log('🔍 Permission denied: Cannot edit number/currency cell');
+                                        return;
+                                      }
+                                      setCellValue(e.target.value);
+                                    }}
                                     onPressEnter={handleCellSave}
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
+                                    disabled={!canEditCurrentCell()}
                                     style={{
                                       width: '100%',
                                       height: '100%',
@@ -862,7 +950,8 @@ const TableBody = ({
                                       right: '0',
                                       bottom: '0',
                                       boxSizing: 'border-box',
-                                      outline: 'none'
+                                      outline: 'none',
+                                      cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                                     }}
                                   />
                                 );
@@ -914,12 +1003,19 @@ const TableBody = ({
                                   <Input
                                     type="tel"
                                     value={cellValue}
-                                    onChange={(e) => setCellValue(e.target.value)}
+                                    onChange={(e) => {
+                                      if (!canEditCurrentCell()) {
+                                        console.log('🔍 Permission denied: Cannot edit phone cell');
+                                        return;
+                                      }
+                                      setCellValue(e.target.value);
+                                    }}
                                     onPressEnter={handleCellSave}
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
                                     placeholder="Enter phone number"
+                                    disabled={!canEditCurrentCell()}
                                     style={{
                                       width: '100%',
                                       height: '100%',
@@ -936,7 +1032,8 @@ const TableBody = ({
                                       right: '0',
                                       bottom: '0',
                                       boxSizing: 'border-box',
-                                      outline: 'none'
+                                      outline: 'none',
+                                      cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                                     }}
                                   />
                                 );
@@ -948,12 +1045,19 @@ const TableBody = ({
                                   <Input
                                     type={format === '24' ? 'time' : 'text'}
                                     value={cellValue}
-                                    onChange={(e) => setCellValue(e.target.value)}
+                                    onChange={(e) => {
+                                      if (!canEditCurrentCell()) {
+                                        console.log('🔍 Permission denied: Cannot edit time cell');
+                                        return;
+                                      }
+                                      setCellValue(e.target.value);
+                                    }}
                                     onPressEnter={handleCellSave}
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
                                     placeholder={placeholder}
+                                    disabled={!canEditCurrentCell()}
                                     style={{
                                       width: '100%',
                                       height: '100%',
@@ -970,7 +1074,8 @@ const TableBody = ({
                                       right: '0',
                                       bottom: '0',
                                       boxSizing: 'border-box',
-                                      outline: 'none'
+                                      outline: 'none',
+                                      cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                                     }}
                                   />
                                 );
@@ -1085,7 +1190,13 @@ const TableBody = ({
                                     <Input
                                       type="number"
                                       value={cellValue}
-                                      onChange={(e) => setCellValue(e.target.value)}
+                                      onChange={(e) => {
+                                        if (!canEditCurrentCell()) {
+                                          console.log('🔍 Permission denied: Cannot edit rating cell');
+                                          return;
+                                        }
+                                        setCellValue(e.target.value);
+                                      }}
                                       onPressEnter={handleCellSave}
                                       onBlur={handleCellSave}
                                       size="small"
@@ -1093,10 +1204,12 @@ const TableBody = ({
                                       min={0}
                                       max={maxStars}
                                       step={allowHalf ? 0.5 : 1}
+                                      disabled={!canEditCurrentCell()}
                                       style={{
                                         width: '60px',
                                         marginLeft: '8px',
-                                        fontSize: '12px'
+                                        fontSize: '12px',
+                                        cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                                       }}
                                     />
                                   </div>
@@ -1227,11 +1340,18 @@ const TableBody = ({
                                 return (
                                   <Input
                                     value={cellValue}
-                                    onChange={(e) => setCellValue(e.target.value)}
+                                    onChange={(e) => {
+                                      if (!canEditCurrentCell()) {
+                                        console.log('🔍 Permission denied: Cannot edit text cell');
+                                        return;
+                                      }
+                                      setCellValue(e.target.value);
+                                    }}
                                     onPressEnter={handleCellSave}
                                     onBlur={handleCellSave}
                                     autoFocus
                                     size="small"
+                                    disabled={!canEditCurrentCell()}
                                     style={{
                                       width: '100%',
                                       height: '100%',
@@ -1248,7 +1368,8 @@ const TableBody = ({
                                       right: '0',
                                       bottom: '0',
                                       boxSizing: 'border-box',
-                                      outline: 'none'
+                                      outline: 'none',
+                                      cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                                     }}
                                   />
                                 );
@@ -1267,11 +1388,89 @@ const TableBody = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 boxSizing: 'border-box',
-                                backgroundColor: column.isSystem ? '#fafafa' : 'transparent',
-                                color: column.isSystem ? '#666' : '#333',
-                                fontStyle: column.isSystem ? 'italic' : 'normal'
+                                backgroundColor: column.isSystem ? '#fafafa' : (!isCellEditableByPermission(record._id, column._id) ? '#f5f5f5' : 'transparent'),
+                                color: column.isSystem ? '#666' : (!isCellEditableByPermission(record._id, column._id) ? '#999' : '#333'),
+                                fontStyle: column.isSystem ? 'italic' : 'normal',
+                                cursor: !isCellEditableByPermission(record._id, column._id) ? 'not-allowed' : 'pointer'
                               }}
-                              onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                if (column.isSystem) return;
+                                
+                                // Create context menu using DOM elements
+                                const { clientX, clientY } = e;
+                                const contextMenu = document.createElement('div');
+                                contextMenu.style.position = 'fixed';
+                                contextMenu.style.left = `${clientX}px`;
+                                contextMenu.style.top = `${clientY}px`;
+                                contextMenu.style.zIndex = '9999';
+                                contextMenu.style.backgroundColor = 'white';
+                                contextMenu.style.border = '1px solid #d9d9d9';
+                                contextMenu.style.borderRadius = '6px';
+                                contextMenu.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                                contextMenu.style.padding = '4px 0';
+                                contextMenu.style.minWidth = '120px';
+                                
+                                // Only show permission menu item for owners and managers
+                                if (userRole === 'manager' || userRole === 'owner') {
+                                  const menuItem = document.createElement('div');
+                                  menuItem.style.padding = '8px 12px';
+                                  menuItem.style.cursor = 'pointer';
+                                  menuItem.style.display = 'flex';
+                                  menuItem.style.alignItems = 'center';
+                                  menuItem.style.gap = '8px';
+                                  menuItem.style.fontSize = '14px';
+                                  menuItem.style.color = '#333';
+                                  menuItem.style.transition = 'background-color 0.2s';
+                                  menuItem.innerHTML = `
+                                    <svg style="color: #1890ff; width: 14px; height: 14px;" viewBox="0 0 1024 1024">
+                                      <path fill="currentColor" d="M257.7 752c2 0 4-.2 6-.5L431.9 722c2-.4 3.9-1.3 5.3-2.8l423.9-423.9a9.96 9.96 0 0 0 0-14.1L694.9 114.9c-1.9-1.9-4.4-2.9-7.1-2.9s-5.2 1-7.1 2.9L256.8 538.8c-1.5 1.5-2.4 3.3-2.8 5.3l-29.5 168.2a33.5 33.5 0 0 0 9.4 29.8c6.6 6.4 14.9 9.9 23.8 9.9zm67.4-174.4L687.8 215l73.3 73.3-362.7 362.6-88.9 15.7 15.6-89zM880 836H144c-17.7 0-32 14.3-32 32v36c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-36c0-17.7-14.3-32-32-32z"/>
+                                    </svg>
+                                    Phân quyền cell
+                                  `;
+                                  
+                                  menuItem.addEventListener('mouseenter', () => {
+                                    menuItem.style.backgroundColor = '#f5f5f5';
+                                  });
+                                  menuItem.addEventListener('mouseleave', () => {
+                                    menuItem.style.backgroundColor = 'transparent';
+                                  });
+                                  menuItem.addEventListener('click', () => {
+                                    handleCellPermission(record._id, column._id, column.name);
+                                    document.body.removeChild(contextMenu);
+                                  });
+                                  
+                                  contextMenu.appendChild(menuItem);
+                                }
+                                document.body.appendChild(contextMenu);
+                                
+                                // Remove context menu when clicking elsewhere
+                                const removeMenu = () => {
+                                  if (document.body.contains(contextMenu)) {
+                                    document.body.removeChild(contextMenu);
+                                  }
+                                  document.removeEventListener('click', removeMenu);
+                                };
+                                setTimeout(() => document.addEventListener('click', removeMenu), 0);
+                              }}
+                              onClick={() => {
+                                console.log('🔍 CELL ONCLICK TRIGGERED!', {
+                                  recordId: record._id,
+                                  columnName: column.name,
+                                  value,
+                                  isSystem: column.isSystem,
+                                  dataType: column.dataType,
+                                  isEditable: isCellEditableByPermission(record._id, column._id)
+                                });
+                                
+                                if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || !isCellEditableByPermission(record._id, column._id)) {
+                                  console.log('🔍 Cell click blocked by conditions');
+                                  return;
+                                }
+                                
+                                console.log('🔍 Calling handleCellClick...');
+                                handleCellClick(record._id, column.name, value);
+                              }}
                               onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                               onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
@@ -1554,7 +1753,7 @@ const TableBody = ({
                                                 fontStyle: 'italic',
                                                 cursor: 'pointer'
                                               }}
-                                              onClick={() => handleCellClick(record._id, column.name, value)}
+                                              onClick={!isCellEditableByPermission(record._id, column._id) ? undefined : () => handleCellClick(record._id, column.name, value)}
                                               >
                                                 Select value...
                                               </div>
@@ -1570,7 +1769,30 @@ const TableBody = ({
                                             </div>
                                           );
                                         })()
-                                        : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''))
+                                        : (() => {
+                                            // Check if user can view this cell
+                                            const canView = canViewCell(
+                                              cellPermissions, 
+                                              record._id, 
+                                              column._id, 
+                                              currentUser, 
+                                              userRole
+                                            );
+                                            
+                                            if (!canView) {
+                                              return (
+                                                <LockOutlined 
+                                                  style={{ 
+                                                    color: '#d9d9d9', 
+                                                    fontSize: '14px',
+                                                    padding: '2px'
+                                                  }} 
+                                                />
+                                              );
+                                            }
+                                            
+                                            return formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''));
+                                          })()
                               }
                             </div>
                           )}
@@ -1824,11 +2046,18 @@ const TableBody = ({
                             <Input
                               type="date"
                               value={formatDateForInput(cellValue)}
-                              onChange={(e) => setCellValue(e.target.value)}
+                              onChange={(e) => {
+                                if (!canEditCurrentCell()) {
+                                  console.log('🔍 Permission denied: Cannot edit date cell (grouped)');
+                                  return;
+                                }
+                                setCellValue(e.target.value);
+                              }}
                               onPressEnter={handleCellSave}
                               onBlur={handleCellSave}
                               autoFocus
                               size="small"
+                              disabled={!canEditCurrentCell()}
                               style={{
                                 width: '100%',
                                 height: '100%',
@@ -1845,7 +2074,8 @@ const TableBody = ({
                                 right: '0',
                                 bottom: '0',
                                 boxSizing: 'border-box',
-                                outline: 'none'
+                                outline: 'none',
+                                cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                               }}
                             />
                           );
@@ -1855,11 +2085,18 @@ const TableBody = ({
                               type="number"
                               step={dataType === 'currency' ? "0.01" : undefined}
                               value={cellValue}
-                              onChange={(e) => setCellValue(e.target.value)}
+                              onChange={(e) => {
+                                if (!canEditCurrentCell()) {
+                                  console.log('🔍 Permission denied: Cannot edit number/currency cell (grouped)');
+                                  return;
+                                }
+                                setCellValue(e.target.value);
+                              }}
                               onPressEnter={handleCellSave}
                               onBlur={handleCellSave}
                               autoFocus
                               size="small"
+                              disabled={!canEditCurrentCell()}
                               style={{
                                 width: '100%',
                                 height: '100%',
@@ -1876,7 +2113,8 @@ const TableBody = ({
                                 right: '0',
                                 bottom: '0',
                                 boxSizing: 'border-box',
-                                outline: 'none'
+                                outline: 'none',
+                                cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                               }}
                             />
                           );
@@ -1885,12 +2123,19 @@ const TableBody = ({
                             <Input
                               type="tel"
                               value={cellValue}
-                              onChange={(e) => setCellValue(e.target.value)}
+                              onChange={(e) => {
+                                if (!canEditCurrentCell()) {
+                                  console.log('🔍 Permission denied: Cannot edit phone cell (grouped)');
+                                  return;
+                                }
+                                setCellValue(e.target.value);
+                              }}
                               onPressEnter={handleCellSave}
                               onBlur={handleCellSave}
                               autoFocus
                               size="small"
                               placeholder="Enter phone number"
+                              disabled={!canEditCurrentCell()}
                               style={{
                                 width: '100%',
                                 height: '100%',
@@ -1907,7 +2152,8 @@ const TableBody = ({
                                 right: '0',
                                 bottom: '0',
                                 boxSizing: 'border-box',
-                                outline: 'none'
+                                outline: 'none',
+                                cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                               }}
                             />
                           );
@@ -1919,12 +2165,19 @@ const TableBody = ({
                             <Input
                               type={format === '24' ? 'time' : 'text'}
                               value={cellValue}
-                              onChange={(e) => setCellValue(e.target.value)}
+                              onChange={(e) => {
+                                if (!canEditCurrentCell()) {
+                                  console.log('🔍 Permission denied: Cannot edit time cell (grouped)');
+                                  return;
+                                }
+                                setCellValue(e.target.value);
+                              }}
                               onPressEnter={handleCellSave}
                               onBlur={handleCellSave}
                               autoFocus
                               size="small"
                               placeholder={placeholder}
+                              disabled={!canEditCurrentCell()}
                               style={{
                                 width: '100%',
                                 height: '100%',
@@ -1941,7 +2194,8 @@ const TableBody = ({
                                 right: '0',
                                 bottom: '0',
                                 boxSizing: 'border-box',
-                                outline: 'none'
+                                outline: 'none',
+                                cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                               }}
                             />
                           );
@@ -2114,11 +2368,18 @@ const TableBody = ({
                           return (
                             <Input
                               value={cellValue}
-                              onChange={(e) => setCellValue(e.target.value)}
+                              onChange={(e) => {
+                                if (!canEditCurrentCell()) {
+                                  console.log('🔍 Permission denied: Cannot edit text cell (grouped)');
+                                  return;
+                                }
+                                setCellValue(e.target.value);
+                              }}
                               onPressEnter={handleCellSave}
                               onBlur={handleCellSave}
                               autoFocus
                               size="small"
+                              disabled={!canEditCurrentCell()}
                               style={{
                                 width: '100%',
                                 height: '100%',
@@ -2135,7 +2396,8 @@ const TableBody = ({
                                 right: '0',
                                 bottom: '0',
                                 boxSizing: 'border-box',
-                                outline: 'none'
+                                outline: 'none',
+                                cursor: canEditCurrentCell() ? 'text' : 'not-allowed'
                               }}
                             />
                           );
@@ -2154,11 +2416,89 @@ const TableBody = ({
                           display: 'flex',
                           alignItems: 'center',
                           boxSizing: 'border-box',
-                          backgroundColor: column.isSystem ? '#fafafa' : 'transparent',
-                          color: column.isSystem ? '#666' : '#333',
-                          fontStyle: column.isSystem ? 'italic' : 'normal'
+                          backgroundColor: column.isSystem ? '#fafafa' : (!isCellEditableByPermission(record._id, column._id) ? '#f5f5f5' : 'transparent'),
+                          color: column.isSystem ? '#666' : (!isCellEditableByPermission(record._id, column._id) ? '#999' : '#333'),
+                          fontStyle: column.isSystem ? 'italic' : 'normal',
+                          cursor: !isCellEditableByPermission(record._id, column._id) ? 'not-allowed' : 'pointer'
                         }}
-                        onClick={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' ? undefined : () => handleCellClick(record._id, column.name, value)}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          if (column.isSystem) return;
+                          
+                          // Create context menu using DOM elements
+                          const { clientX, clientY } = e;
+                          const contextMenu = document.createElement('div');
+                          contextMenu.style.position = 'fixed';
+                          contextMenu.style.left = `${clientX}px`;
+                          contextMenu.style.top = `${clientY}px`;
+                          contextMenu.style.zIndex = '9999';
+                          contextMenu.style.backgroundColor = 'white';
+                          contextMenu.style.border = '1px solid #d9d9d9';
+                          contextMenu.style.borderRadius = '6px';
+                          contextMenu.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                          contextMenu.style.padding = '4px 0';
+                          contextMenu.style.minWidth = '120px';
+                          
+                          // Only show permission menu item for owners and managers
+                          if (userRole === 'manager' || userRole === 'owner') {
+                            const menuItem = document.createElement('div');
+                            menuItem.style.padding = '8px 12px';
+                            menuItem.style.cursor = 'pointer';
+                            menuItem.style.display = 'flex';
+                            menuItem.style.alignItems = 'center';
+                            menuItem.style.gap = '8px';
+                            menuItem.style.fontSize = '14px';
+                            menuItem.style.color = '#333';
+                            menuItem.style.transition = 'background-color 0.2s';
+                            menuItem.innerHTML = `
+                              <svg style="color: #1890ff; width: 14px; height: 14px;" viewBox="0 0 1024 1024">
+                                <path fill="currentColor" d="M257.7 752c2 0 4-.2 6-.5L431.9 722c2-.4 3.9-1.3 5.3-2.8l423.9-423.9a9.96 9.96 0 0 0 0-14.1L694.9 114.9c-1.9-1.9-4.4-2.9-7.1-2.9s-5.2 1-7.1 2.9L256.8 538.8c-1.5 1.5-2.4 3.3-2.8 5.3l-29.5 168.2a33.5 33.5 0 0 0 9.4 29.8c6.6 6.4 14.9 9.9 23.8 9.9zm67.4-174.4L687.8 215l73.3 73.3-362.7 362.6-88.9 15.7 15.6-89zM880 836H144c-17.7 0-32 14.3-32 32v36c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-36c0-17.7-14.3-32-32-32z"/>
+                              </svg>
+                              Phân quyền cell
+                            `;
+                            
+                            menuItem.addEventListener('mouseenter', () => {
+                              menuItem.style.backgroundColor = '#f5f5f5';
+                            });
+                            menuItem.addEventListener('mouseleave', () => {
+                              menuItem.style.backgroundColor = 'transparent';
+                            });
+                            menuItem.addEventListener('click', () => {
+                              handleCellPermission(record._id, column._id, column.name);
+                              document.body.removeChild(contextMenu);
+                            });
+                            
+                            contextMenu.appendChild(menuItem);
+                          }
+                          document.body.appendChild(contextMenu);
+                          
+                          // Remove context menu when clicking elsewhere
+                          const removeMenu = () => {
+                            if (document.body.contains(contextMenu)) {
+                              document.body.removeChild(contextMenu);
+                            }
+                            document.removeEventListener('click', removeMenu);
+                          };
+                          setTimeout(() => document.addEventListener('click', removeMenu), 0);
+                        }}
+                        onClick={() => {
+                          console.log('🔍 CELL ONCLICK TRIGGERED (GROUPED)!', {
+                            recordId: record._id,
+                            columnName: column.name,
+                            value,
+                            isSystem: column.isSystem,
+                            dataType: column.dataType,
+                            isEditable: isCellEditableByPermission(record._id, column._id)
+                          });
+                          
+                          if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || !isCellEditableByPermission(record._id, column._id)) {
+                            console.log('🔍 Cell click blocked by conditions (grouped)');
+                            return;
+                          }
+                          
+                          console.log('🔍 Calling handleCellClick (grouped)...');
+                          handleCellClick(record._id, column.name, value);
+                        }}
                         onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
                         onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
@@ -2583,7 +2923,30 @@ const TableBody = ({
                                           </div>
                                         );
                                       })()
-                                      : formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''))
+                                      : (() => {
+                                          // Check if user can view this cell
+                                          const canView = canViewCell(
+                                            cellPermissions, 
+                                            record._id, 
+                                            column._id, 
+                                            currentUser, 
+                                            userRole
+                                          );
+                                          
+                                          if (!canView) {
+                                            return (
+                                              <LockOutlined 
+                                                style={{ 
+                                                  color: '#d9d9d9', 
+                                                  fontSize: '14px',
+                                                  padding: '2px'
+                                                }} 
+                                              />
+                                            );
+                                          }
+                                          
+                                          return formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''));
+                                        })()
                         }
                       </div>
                     )}
@@ -2693,6 +3056,7 @@ const TableBody = ({
         record={linkedTableModal.record}
         updateRecordMutation={updateRecordMutation}
       />
+
     </div>
   );
 };

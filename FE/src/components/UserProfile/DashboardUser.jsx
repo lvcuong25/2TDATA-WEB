@@ -168,25 +168,14 @@ const DashboardUser = () => {
           icon: <AppstoreOutlined />,
           label: <Link to="/profile/organization/services">Quản lý dịch vụ</Link>,
         },
-      ],
-    });
-  }
-
-  //
-      const changePasswordIdx = menuItems.findIndex(item => item.key === '/profile/change-password');
-    // Insert organization group before 'Đổi mật khẩu'
-    menuItems.splice(changePasswordIdx, 0, {
-      key: 'base-management',
-      icon: <TeamOutlined />,
-      label: 'Base',
-      children: [
         {
           key: '/profile/base',
-          icon: <UsergroupAddOutlined />,
+          icon: <AppstoreOutlined />,
           label: <Link to="/profile/base">Quản lý base</Link>,
         },
       ],
     });
+  }
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -267,6 +256,7 @@ const DashboardUser = () => {
               {location.pathname === '/admin' && 'Quản trị'}
               {location.pathname === '/profile/organization' && 'Quản lý thành viên'}
               {location.pathname === '/profile/organization/services' && 'Quản lý dịch vụ'}
+              {location.pathname === '/profile/base' && 'Quản lý base'}
             </Title>
           </div>
         </Header>

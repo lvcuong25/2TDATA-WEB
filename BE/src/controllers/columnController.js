@@ -4,6 +4,7 @@ import Database from '../model/Database.js';
 import Record from '../model/Record.js';
 import Organization from '../model/Organization.js';
 import BaseMember from '../model/BaseMember.js';
+import { isSuperAdmin } from '../utils/permissionUtils.js';
 
 // Column Controllers
 export const createColumn = async (req, res) => {
@@ -11,26 +12,26 @@ export const createColumn = async (req, res) => {
     const { tableId, name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig, lookupConfig } = req.body;
     const userId = req.user._id;
 
-    console.log('Creating column with data:', {
-      tableId,
-      name,
-      dataType,
-      isRequired,
-      isUnique,
-      defaultValue,
-      checkboxConfig,
-      singleSelectConfig,
-      multiSelectConfig,
-      dateConfig,
-      currencyConfig,
-      percentConfig,
-      urlConfig,
-      phoneConfig,
-      timeConfig,
-      ratingConfig,
-      linkedTableConfig,
-      lookupConfig
-    });
+    // console.log('Creating column with data:', {
+    //   tableId,
+    //   name,
+    //   dataType,
+    //   isRequired,
+    //   isUnique,
+    //   defaultValue,
+    //   checkboxConfig,
+    //   singleSelectConfig,
+    //   multiSelectConfig,
+    //   dateConfig,
+    //   currencyConfig,
+    //   percentConfig,
+    //   urlConfig,
+    //   phoneConfig,
+    //   timeConfig,
+    //   ratingConfig,
+    //   linkedTableConfig,
+    //   lookupConfig
+    // });
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Column name is required' });
@@ -54,17 +55,19 @@ export const createColumn = async (req, res) => {
     }
 
     // Check if user is a member of the database
-    const baseMember = await BaseMember.findOne({
-      databaseId: table.databaseId._id,
-      userId
-    });
+    // Super admin có quyền tạo column trong mọi database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({
+        databaseId: table.databaseId._id,
+        userId
+      });
 
-    if (!baseMember) {
-      return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
-    }
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
 
-    // Check if user has permission to edit table structure
-    if (baseMember.role === 'member') {
+      // Check if user has permission to edit table structure
+      if (baseMember.role === 'member') {
       // For members, check table permissions
       const TablePermission = (await import('../model/TablePermission.js')).default;
       
@@ -78,15 +81,26 @@ export const createColumn = async (req, res) => {
       });
 
       let canEditStructure = false;
-      tablePermissions.forEach(perm => {
-        if (perm.permissions && perm.permissions.canEditStructure) {
-          canEditStructure = true;
-        }
+      
+      // Sort permissions by priority: specific_user > specific_role > all_members
+      const sortedPermissions = tablePermissions.sort((a, b) => {
+        const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+        return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
       });
+      
+      // Check permissions in priority order
+      for (const perm of sortedPermissions) {
+        if (perm.permissions && perm.permissions.canEditStructure !== undefined) {
+          canEditStructure = perm.permissions.canEditStructure;
+          // Stop at first permission found (highest priority)
+          break;
+        }
+      }
 
       if (!canEditStructure) {
         return res.status(403).json({ message: 'Access denied - you do not have permission to edit table structure' });
       }
+    }
     }
     // Owners and managers can always edit table structure
 
@@ -193,17 +207,17 @@ export const createColumn = async (req, res) => {
       columnData.urlConfig = {
         protocol: (urlConfig && urlConfig.protocol) || 'https'
       };
-      console.log('Backend: Adding URL config:', {
-        dataType,
-        urlConfig,
-        columnData: columnData.urlConfig
-      });
+      // console.log('Backend: Adding URL config:', {
+      //   dataType,
+      //   urlConfig,
+      //   columnData: columnData.urlConfig
+      // });
     } else {
-      console.log('Backend: URL dataType but no urlConfig:', {
-        dataType,
-        urlConfig,
-        hasUrlConfig: !!urlConfig
-      });
+      // console.log('Backend: URL dataType but no urlConfig:', {
+      //   dataType,
+      //   urlConfig,
+      //   hasUrlConfig: !!urlConfig
+      // });
     }
 
     // Phone data type doesn't need special config, just basic validation
@@ -212,12 +226,12 @@ export const createColumn = async (req, res) => {
       if (phoneConfig !== undefined) {
         columnData.phoneConfig = phoneConfig;
       }
-      console.log('Backend: Creating phone column:', {
-        dataType,
-        name,
-        hasPhoneConfig: !!phoneConfig,
-        phoneConfig
-      });
+      // console.log('Backend: Creating phone column:', {
+      //   dataType,
+      //   name,
+      //   hasPhoneConfig: !!phoneConfig,
+      //   phoneConfig
+      // });
     }
 
     // Time data type doesn't need special config, just basic validation
@@ -226,12 +240,12 @@ export const createColumn = async (req, res) => {
       if (timeConfig !== undefined) {
         columnData.timeConfig = timeConfig;
       }
-      console.log('Backend: Creating time column:', {
-        dataType,
-        name,
-        hasTimeConfig: !!timeConfig,
-        timeConfig
-      });
+      // console.log('Backend: Creating time column:', {
+      //   dataType,
+      //   name,
+      //   hasTimeConfig: !!timeConfig,
+      //   timeConfig
+      // });
     }
 
     // Rating data type doesn't need special config, just basic validation
@@ -240,12 +254,12 @@ export const createColumn = async (req, res) => {
       if (ratingConfig !== undefined) {
         columnData.ratingConfig = ratingConfig;
       }
-      console.log('Backend: Creating rating column:', {
-        dataType,
-        name,
-        hasRatingConfig: !!ratingConfig,
-        ratingConfig
-      });
+      // console.log('Backend: Creating rating column:', {
+      //   dataType,
+      //   name,
+      //   hasRatingConfig: !!ratingConfig,
+      //   ratingConfig
+      // });
     }
 
     // Only add linkedTableConfig if dataType is linked_table and linkedTableConfig is provided
@@ -257,12 +271,12 @@ export const createColumn = async (req, res) => {
         defaultValue: linkedTableConfig.defaultValue || null,
         filterRules: linkedTableConfig.filterRules || []
       };
-      console.log('Backend: Creating linked_table column:', {
-        dataType,
-        name,
-        hasLinkedTableConfig: !!linkedTableConfig,
-        linkedTableConfig: columnData.linkedTableConfig
-      });
+      // console.log('Backend: Creating linked_table column:', {
+      //   dataType,
+      //   name,
+      //   hasLinkedTableConfig: !!linkedTableConfig,
+      //   linkedTableConfig: columnData.linkedTableConfig
+      // });
     }
 
     // Only add lookupConfig if dataType is lookup and lookupConfig is provided
@@ -275,12 +289,12 @@ export const createColumn = async (req, res) => {
         lookupColumnName: lookupConfig.lookupColumnName || '',
         defaultValue: lookupConfig.defaultValue || null
       };
-      console.log('Backend: Creating lookup column:', {
-        dataType,
-        name,
-        hasLookupConfig: !!lookupConfig,
-        lookupConfig: columnData.lookupConfig
-      });
+      // console.log('Backend: Creating lookup column:', {
+      //   dataType,
+      //   name,
+      //   hasLookupConfig: !!lookupConfig,
+      //   lookupConfig: columnData.lookupConfig
+      // });
     }
 
     // Set default value for currency column if not provided
@@ -294,13 +308,34 @@ export const createColumn = async (req, res) => {
     }
 
 
-    console.log('Column data to save:', columnData);
+    // console.log('Column data to save:', columnData);
 
     const column = new Column(columnData);
 
-    console.log('About to save column...');
+    // console.log('About to save column...');
     await column.save();
-    console.log('Column saved successfully:', column);
+    // console.log('Column saved successfully:', column);
+
+    // Tạo default permission cho column
+    try {
+      const ColumnPermission = (await import('../model/ColumnPermission.js')).default;
+      const defaultPermission = new ColumnPermission({
+        columnId: column._id,
+        tableId: tableId,
+        databaseId: table.databaseId._id,
+        targetType: 'all_members',
+        name: column.name, // Thêm field name required
+        canView: true,
+        canEdit: true,
+        createdBy: userId,
+        isDefault: true
+      });
+      await defaultPermission.save();
+      // console.log('Default column permission created successfully');
+    } catch (permissionError) {
+      console.error('Error creating default column permission:', permissionError);
+      // Không throw error để không ảnh hưởng đến việc tạo column
+    }
 
     res.status(201).json({
       success: true,
@@ -398,17 +433,63 @@ export const updateColumn = async (req, res) => {
     const { columnId } = req.params;
     const { name, dataType, isRequired, isUnique, defaultValue, order, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig } = req.body;
     const userId = req.user._id;
-    const siteId = req.siteId;
 
-    const column = await Column.findOne({
-      _id: columnId,
-      userId,
-      siteId
-    });
-
+    // Find column and populate table info
+    const column = await Column.findById(columnId).populate('tableId');
+    
     if (!column) {
       return res.status(404).json({ message: 'Column not found' });
     }
+
+    // Check if user is a member of this database
+    // Super admin có quyền update column trong mọi database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: column.tableId.databaseId, 
+        userId 
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+
+      // Check if user has permission to edit this column
+      if (baseMember.role === 'member') {
+      // For members, check column permissions
+      const ColumnPermission = (await import('../model/ColumnPermission.js')).default;
+      
+      const columnPermissions = await ColumnPermission.find({
+        columnId: columnId,
+        $or: [
+          { targetType: 'all_members' },
+          { targetType: 'specific_user', userId: userId },
+          { targetType: 'specific_role', role: baseMember.role }
+        ]
+      });
+
+      let canEditColumn = false;
+      
+      // Sort permissions by priority: specific_user > specific_role > all_members
+      const sortedPermissions = columnPermissions.sort((a, b) => {
+        const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+        return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
+      });
+      
+      // Check permissions in priority order
+      for (const perm of sortedPermissions) {
+        if (perm.canEdit !== undefined) {
+          canEditColumn = perm.canEdit;
+          // Stop at first permission found (highest priority)
+          break;
+        }
+      }
+
+      if (!canEditColumn) {
+        return res.status(403).json({ message: 'Access denied - you do not have permission to edit this column' });
+      }
+    }
+    }
+    // Owners and managers can always edit columns
 
     const oldColumnName = column.name;
     let shouldUpdateRecordData = false;
@@ -430,7 +511,7 @@ export const updateColumn = async (req, res) => {
 
     // If column name was changed, update all records FIRST before changing column metadata
     if (shouldUpdateRecordData && name.trim() !== oldColumnName) {
-      console.log(`Updating records: renaming column key from "${oldColumnName}" to "${name.trim()}"`);
+      // console.log(`Updating records: renaming column key from "${oldColumnName}" to "${name.trim()}"`);
       
       // Find all records that have data for the old column name
       const records = await Record.find({ 
@@ -455,7 +536,7 @@ export const updateColumn = async (req, res) => {
         }
       }
       
-      console.log(`Successfully renamed column key in ${updatedCount} records from "${oldColumnName}" to "${name.trim()}"`);
+      // console.log(`Successfully renamed column key in ${updatedCount} records from "${oldColumnName}" to "${name.trim()}"`);
     }
 
     // Now update column metadata
@@ -530,11 +611,11 @@ export const updateColumn = async (req, res) => {
       column.urlConfig = {
         protocol: (urlConfig && urlConfig.protocol) || 'https'
       };
-      console.log('Backend: Updating URL config:', {
-        dataType,
-        urlConfig,
-        columnUrlConfig: column.urlConfig
-      });
+      // console.log('Backend: Updating URL config:', {
+      //   dataType,
+      //   urlConfig,
+      //   columnUrlConfig: column.urlConfig
+      // });
     } else if (dataType !== 'url') {
       column.urlConfig = undefined;
     }
@@ -545,12 +626,12 @@ export const updateColumn = async (req, res) => {
       if (phoneConfig !== undefined) {
         column.phoneConfig = phoneConfig;
       }
-      console.log('Backend: Updating phone column:', {
-        dataType,
-        name,
-        hasPhoneConfig: !!phoneConfig,
-        phoneConfig
-      });
+      // console.log('Backend: Updating phone column:', {
+      //   dataType,
+      //   name,
+      //   hasPhoneConfig: !!phoneConfig,
+      //   phoneConfig
+      // });
     }
 
     // Time data type doesn't need special config
@@ -559,12 +640,12 @@ export const updateColumn = async (req, res) => {
       if (timeConfig !== undefined) {
         column.timeConfig = timeConfig;
       }
-      console.log('Backend: Updating time column:', {
-        dataType,
-        name,
-        hasTimeConfig: !!timeConfig,
-        timeConfig
-      });
+      // console.log('Backend: Updating time column:', {
+      //   dataType,
+      //   name,
+      //   hasTimeConfig: !!timeConfig,
+      //   timeConfig
+      // });
     }
 
     // Rating data type doesn't need special config
@@ -573,23 +654,23 @@ export const updateColumn = async (req, res) => {
       if (ratingConfig !== undefined) {
         column.ratingConfig = ratingConfig;
       }
-      console.log('Backend: Updating rating column:', {
-        dataType,
-        name,
-        hasRatingConfig: !!ratingConfig,
-        ratingConfig
-      });
+      // console.log('Backend: Updating rating column:', {
+      //   dataType,
+      //   name,
+      //   hasRatingConfig: !!ratingConfig,
+      //   ratingConfig
+      // });
     }
 
     // Linked table data type configuration
     if (dataType === 'linked_table' && linkedTableConfig !== undefined) {
       column.linkedTableConfig = linkedTableConfig;
-      console.log('Backend: Updating linked_table column:', {
-        dataType,
-        name,
-        hasLinkedTableConfig: !!linkedTableConfig,
-        linkedTableConfig
-      });
+      // console.log('Backend: Updating linked_table column:', {
+      //   dataType,
+      //   name,
+      //   hasLinkedTableConfig: !!linkedTableConfig,
+      //   linkedTableConfig
+      // });
     } else if (dataType !== 'linked_table') {
       column.linkedTableConfig = undefined;
     }
@@ -667,17 +748,17 @@ export const getLinkedTableData = async (req, res) => {
     // Get total count for pagination
     const totalCount = await Record.countDocuments(query);
 
-    console.log('🔍 Backend: Query and Records:', {
-      query: query,
-      recordsCount: records.length,
-      totalCount: totalCount,
-      firstRecord: records[0] ? {
-        _id: records[0]._id,
-        tableId: records[0].tableId,
-        data: records[0].data,
-        dataKeys: Object.keys(records[0].data || {})
-      } : null
-    });
+    // console.log('🔍 Backend: Query and Records:', {
+    //   query: query,
+    //   recordsCount: records.length,
+    //   totalCount: totalCount,
+    //   firstRecord: records[0] ? {
+    //     _id: records[0]._id,
+    //     tableId: records[0].tableId,
+    //     data: records[0].data,
+    //     dataKeys: Object.keys(records[0].data || {})
+    //   } : null
+    // });
 
     // Get linked table info
     const linkedTable = await Table.findOne({ _id: linkedTableId });
@@ -689,17 +770,17 @@ export const getLinkedTableData = async (req, res) => {
       siteId
     }).sort({ order: 1 });
 
-    console.log('🔍 getLinkedTableData Debug:', {
-      columnId,
-      linkedTableId,
-      query,
-      recordsCount: records.length,
-      totalCount,
-      linkedTable: linkedTable ? { _id: linkedTable._id, name: linkedTable.name } : null,
-      linkedTableColumns: linkedTableColumns.map(col => ({ _id: col._id, name: col.name })),
-      firstRecord: records[0] ? { _id: records[0]._id, data: records[0].data } : null,
-      allRecordsData: records.map(r => ({ _id: r._id, dataKeys: Object.keys(r.data || {}) }))
-    });
+    // console.log('🔍 getLinkedTableData Debug:', {
+    //   columnId,
+    //   linkedTableId,
+    //   query,
+    //   recordsCount: records.length,
+    //   totalCount,
+    //   linkedTable: linkedTable ? { _id: linkedTable._id, name: linkedTable.name } : null,
+    //   linkedTableColumns: linkedTableColumns.map(col => ({ _id: col._id, name: col.name })),
+    //   firstRecord: records[0] ? { _id: records[0]._id, data: records[0].data } : null,
+    //   allRecordsData: records.map(r => ({ _id: r._id, dataKeys: Object.keys(r.data || {}) }))
+    // });
 
     // Transform records to options format
     const options = records.map((record, index) => {
@@ -728,20 +809,20 @@ export const getLinkedTableData = async (req, res) => {
       };
     });
 
-    console.log('🔍 Backend: All records data:', records.map(record => ({
-      _id: record._id,
-      tableId: record.tableId,
-      data: record.data,
-      dataKeys: Object.keys(record.data || {}),
-      dataEntries: Object.entries(record.data || {}).map(([key, val]) => ({ key, value: val }))
-    })));
+    // console.log('🔍 Backend: All records data:', records.map(record => ({
+    //   _id: record._id,
+    //   tableId: record.tableId,
+    //   data: record.data,
+    //   dataKeys: Object.keys(record.data || {}),
+    //   dataEntries: Object.entries(record.data || {}).map(([key, val]) => ({ key, value: val }))
+    // })));
 
-    console.log('🔍 Backend: Transformed options:', options.map(option => ({
-      value: option.value,
-      label: option.label,
-      data: option.data,
-      dataKeys: Object.keys(option.data || {})
-    })));
+    // console.log('🔍 Backend: Transformed options:', options.map(option => ({
+    //   value: option.value,
+    //   label: option.label,
+    //   data: option.data,
+    //   dataKeys: Object.keys(option.data || {})
+    // })));
 
     res.status(200).json({
       success: true,
@@ -785,7 +866,7 @@ export const deleteColumn = async (req, res) => {
     const columnName = column.name;
     const tableId = column.tableId;
 
-    console.log(`Deleting column "${columnName}" and cleaning up data in all records`);
+    // console.log(`Deleting column "${columnName}" and cleaning up data in all records`);
 
     // Remove the column data from all records in this table first
     await Record.updateMany(
@@ -798,7 +879,7 @@ export const deleteColumn = async (req, res) => {
     // Then delete column metadata
     await Column.deleteOne({ _id: columnId });
 
-    console.log(`Successfully deleted column "${columnName}" and removed data from all records`);
+    // console.log(`Successfully deleted column "${columnName}" and removed data from all records`);
 
     res.status(200).json({
       success: true,
@@ -818,7 +899,7 @@ export const getLookupData = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.siteId;
 
-    console.log('🔍 getLookupData called:', { columnId, search, page, limit });
+    // console.log('🔍 getLookupData called:', { columnId, search, page, limit });
 
     // Get the column
     const column = await Column.findOne({
@@ -841,7 +922,7 @@ export const getLookupData = async (req, res) => {
       return res.status(400).json({ message: 'Lookup configuration not found' });
     }
 
-    console.log('🔍 Lookup config:', lookupConfig);
+    // console.log('🔍 Lookup config:', lookupConfig);
 
     // Get the linked table
     const linkedTable = await Table.findById(lookupConfig.linkedTableId);
@@ -855,8 +936,8 @@ export const getLookupData = async (req, res) => {
       return res.status(404).json({ message: 'Lookup column not found' });
     }
 
-    console.log('🔍 Linked table:', linkedTable.name);
-    console.log('🔍 Lookup column:', lookupColumn.name);
+    // console.log('🔍 Linked table:', linkedTable.name);
+    // console.log('🔍 Lookup column:', lookupColumn.name);
 
     // Build search query - search in all text fields
     let query = { tableId: lookupConfig.linkedTableId };
@@ -913,12 +994,12 @@ export const getLookupData = async (req, res) => {
       };
     });
 
-    console.log('🔍 Lookup data result:', {
-      totalCount,
-      optionsCount: options.length,
-      linkedTable: linkedTable.name,
-      linkedTableColumns: linkedTableColumns.length
-    });
+    // console.log('🔍 Lookup data result:', {
+    //   totalCount,
+    //   optionsCount: options.length,
+    //   linkedTable: linkedTable.name,
+    //   linkedTableColumns: linkedTableColumns.length
+    // });
 
     res.json({
       success: true,

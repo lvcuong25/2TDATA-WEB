@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button, Input, Select, Checkbox, Tooltip, Tag } from 'antd';
+import React, { useState } from 'react';
+import { Button, Input, Select, Checkbox, Tooltip, Tag, Dropdown, Menu } from 'antd';
 import {
   UnorderedListOutlined,
   FilterOutlined,
@@ -11,7 +11,9 @@ import {
   RightOutlined,
   PlusOutlined,
   DeleteOutlined,
-  SortAscendingOutlined
+  SortAscendingOutlined,
+  SettingOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import {
   getFieldVisibilityButtonStyle,
@@ -97,8 +99,11 @@ const TableHeader = ({
   handleRemoveSortRule,
   // Row height props
   tableId,
+  databaseId,
   rowHeightSettings,
-  onRowHeightChange
+  onRowHeightChange,
+  // Column actions
+  handleEditColumn
 }) => {
   return (
     <div style={{
@@ -233,6 +238,7 @@ const TableHeader = ({
                       }}>
                         {String(column.name || '')}
                       </span>
+                      
                       
                       {/* Visibility Toggle */}
                       <Checkbox
@@ -1063,6 +1069,8 @@ const TableHeader = ({
         size="small"
         style={{ color: '#666' }}
       />
+      
+      
     </div>
   );
 };

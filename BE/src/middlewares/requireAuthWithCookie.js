@@ -24,9 +24,19 @@ export const requireAuthWithCookie = async (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET || process.env.SECRET_KEY);
+    // console.log('🔍 JWT payload (requireAuth):', payload);
+    
+    if (!payload._id) {
+      console.error('❌ JWT payload missing _id (requireAuth):', payload);
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid token - missing user ID' 
+      });
+    }
     
     // Attach the user to the request
-    req.user = await User.findById(payload._id).select('-password');
+    req.user = await User.findById(payload._id).select('+role');
+    // console.log('🔍 User found (requireAuth):', req.user ? { id: req.user._id, email: req.user.email, role: req.user.role } : 'null');
 
     if (!req.user) {
       return res.status(401).json({ 

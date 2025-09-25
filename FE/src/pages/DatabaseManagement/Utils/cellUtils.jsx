@@ -12,7 +12,7 @@
  * @returns {Object} Cell editing state
  */
 export const initializeCellEditing = (recordId, columnName, currentValue, column) => {
-  const editingCell = { recordId, columnName };
+  const editingCell = { recordId, columnName, column };
   
   let cellValue;
   if (column) {
