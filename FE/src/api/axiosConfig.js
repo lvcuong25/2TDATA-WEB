@@ -14,9 +14,13 @@ import axios from 'axios';
 
 // Dynamic base URL function for multi-site support
 const getApiBaseURL = () => {
-  const protocol = window.location.protocol;
-  const host = window.location.host;
-  return `${protocol}//${host}/api`;
+  // In development mode on local machine
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:3004/api';
+  }
+  
+  // In production/staging, use relative URL (goes through Nginx)
+  return '/api';
 };
 
 // Create axios instance with dynamic base configuration

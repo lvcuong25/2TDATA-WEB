@@ -6,11 +6,6 @@ const recordSchema = new mongoose.Schema({
     ref: 'Table',
     required: true
   },
-  databaseId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Database',
-    required: true
-  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -40,7 +35,6 @@ const recordSchema = new mongoose.Schema({
 
 // Index for efficient querying
 recordSchema.index({ tableId: 1, createdAt: -1 });
-recordSchema.index({ databaseId: 1, tableId: 1 });
 
 // Pre-save middleware to update the updatedAt field
 recordSchema.pre('save', function(next) {

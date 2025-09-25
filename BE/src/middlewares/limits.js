@@ -64,16 +64,18 @@ async function getOrgByBaseId(baseId) {
 export function guardPerBaseUserLimit({ defaultLimit = 200, bypassForSuperAdmin = true } = {}) {
   return async (req, res, next) => {
     try {
-      const { baseId } = req.params;
-      const { userId } = req.body || {};
- 
-      if (!baseId) return res.status(400).json({ ok: false, error: "baseId_required" });
+      const { baseId, databaseId, userId: paramUserId } = req.params;
+      const actualBaseId = databaseId || baseId; // Support both databaseId and baseId
+      const { userId: bodyUserId } = req.body || {};
+      const userId = paramUserId || bodyUserId; // Check both params and body
+
+      if (!actualBaseId) return res.status(400).json({ ok: false, error: "baseId_required" });
       if (!userId) return res.status(400).json({ ok: false, error: "userId_required" });
  
       // (tuỳ chọn) bypass super admin
       if (bypassForSuperAdmin && req.user?.isSuperAdmin) return next();
  
-      const { base, org } = await getOrgByBaseId(baseId);
+      const { base, org } = await getOrgByBaseId(actualBaseId);
       if (!base) return res.status(404).json({ ok: false, error: "base_not_found" });
       if (!org)  return res.status(404).json({ ok: false, error: "org_not_found" });
       if (org.active === false) return res.status(403).json({ ok: false, error: "org_inactive" });

@@ -16,14 +16,14 @@ export function can(action) {
 
       // Nếu client đưa tableName, map nó sang tableId theo (baseId, name)
       if (!tableId && tableName) {
-        const table = await Table.findOne({ baseId, name: tableName }).lean();
+        const table = await Table.findOne({ databaseId: baseId, name: tableName }).lean();
         if (!table) return res.status(404).json({ ok: false, error: "table_not_found" });
         tableId = String(table._id);
         req.params.tableId = tableId; // cho handler phía sau dùng
       }
 
       // Tính quyền hiệu lực theo role của user trong base + table
-      const perms = await resolveEffectivePerms({ userId: user._id, orgId, baseId, tableId, action });
+      const perms = await resolveEffectivePerms({ userId: user._id, orgId, databaseId: baseId, tableId, action });
       if (!perms.allow) return res.status(403).json({ ok: false, error: perms.reason });
 
       req.perms = perms; // rowQuery, colPerms, cellRuleLocks, canCreate/Update/Delete
@@ -38,25 +38,21 @@ export function can(action) {
 export function canManageMembers() {
   return async (req, res, next) => {
     try {
-      const { baseId } = req.params;
-      if (!baseId) return res.status(400).json({ ok: false, error: "baseId_required" });
+      const { databaseId, baseId } = req.params;
+      const actualBaseId = databaseId || baseId; // Support both databaseId and baseId
+      if (!actualBaseId) return res.status(400).json({ ok: false, error: "databaseId_required" });
 
       const userId = req.user?._id;
       if (!userId) return res.status(401).json({ ok: false, error: "unauthorized" });
 
       // 1. Kiểm tra membership
-      const member = await BaseMember.findOne({ baseId, userId }).lean();
+      const member = await BaseMember.findOne({ databaseId: actualBaseId, userId }).lean();
       if (!member) {
         return res.status(403).json({ ok: false, error: "not_a_member" });
       }
 
-      // 2. Lấy role và check quyền
-      const role = await BaseRole.findById(member.baseRoleId).lean();
-      if (!role) {
-        return res.status(403).json({ ok: false, error: "role_not_found" });
-      }
-
-      if (role.canManageMembers !== true) {
+      // 2. Kiểm tra quyền dựa trên role của tổ chức
+      if (member.role !== "owner" && member.role !== "manager") {
         return res.status(403).json({ ok: false, error: "no_manage_permission" });
       }
 
@@ -71,13 +67,14 @@ export function canManageMembers() {
 export function canCreateTable() {
   return async (req, res, next) => {
     try {
-      const { baseId } = req.params;
-      if (!baseId) return res.status(400).json({ ok: false, error: "baseId_required" });
+      const { baseId, databaseId } = req.params;
+      const actualBaseId = databaseId || baseId; // Support both databaseId and baseId
+      if (!actualBaseId) return res.status(400).json({ ok: false, error: "baseId_required" });
 
       const userId = req.user?._id;
       if (!userId) return res.status(401).json({ ok: false, error: "unauthorized" });
 
-      const member = await BaseMember.findOne({ baseId, userId }).lean();
+      const member = await BaseMember.findOne({ databaseId: actualBaseId, userId }).lean();
       if (!member) {
         return res.status(403).json({ ok: false, error: "not_a_member" });
       }

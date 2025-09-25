@@ -1,48 +1,10 @@
-import mongoose from "mongoose";
+// ─────────────────────────────────────────────────────────────────────────────
+// Database model is now an alias for Base
+// Base and Database are now the same entity
+// ─────────────────────────────────────────────────────────────────────────────
+import Base from "./Base.js";
 
-const databaseSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true },
-  siteId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Site',
-    required: true
-  },
-  description: {
-    type: String,
-    trim: true,
-    default: ''
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-}, {
-  timestamps: true
-});
-
-// Compound index to ensure unique database names per user and site
-databaseSchema.index({ name: 1, userId: 1, siteId: 1 }, { unique: true });
-
-// Pre-save middleware to update the updatedAt field
-databaseSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
-
-const Database = mongoose.model('Database', databaseSchema);
+// Database is now just an alias for Base
+const Database = Base;
 
 export default Database;

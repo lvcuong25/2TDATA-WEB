@@ -1,0 +1,1476 @@
+[
+  {
+    "_id": "68a81827fc77d9db7dcc0b4f",
+    "tableId": "68a81819fc77d9db7dcc0b2b",
+    "databaseId": "68a80a9fc4e5218ab1e615c9",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {},
+    "createdAt": "2025-08-22T07:11:35.995Z",
+    "updatedAt": "2025-08-22T07:11:35.996Z",
+    "__v": 0
+  },
+  {
+    "_id": "68a84b72a03089bc75983e76",
+    "tableId": "68a84b55a03089bc75983d96",
+    "databaseId": "68a84b44a03089bc75983d1e",
+    "userId": "689f0af2e0baeb5b8fad31f0",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {},
+    "createdAt": "2025-08-22T10:50:26.952Z",
+    "updatedAt": "2025-08-22T10:50:50.032Z",
+    "__v": 0
+  },
+  {
+    "_id": "68a84b74a03089bc75983ea0",
+    "tableId": "68a84b55a03089bc75983d96",
+    "databaseId": "68a84b44a03089bc75983d1e",
+    "userId": "689f0af2e0baeb5b8fad31f0",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {},
+    "createdAt": "2025-08-22T10:50:28.756Z",
+    "updatedAt": "2025-08-22T10:50:34.416Z",
+    "__v": 0
+  },
+  {
+    "_id": "68a84b75a03089bc75983eca",
+    "tableId": "68a84b55a03089bc75983d96",
+    "databaseId": "68a84b44a03089bc75983d1e",
+    "userId": "689f0af2e0baeb5b8fad31f0",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {},
+    "createdAt": "2025-08-22T10:50:29.052Z",
+    "updatedAt": "2025-08-22T10:50:34.017Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b808e007f78563aa6b140f",
+    "table": "68b7e526e9453f8c6e40507f",
+    "data": {
+      "productName": "Laptop Dell",
+      "saleDate": "2024-01-15",
+      "deliveryDays": 7,
+      "Ngày": "2024-09-03"
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:22:40.007Z",
+    "updatedAt": "2025-09-03T09:22:40.007Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b808e007f78563aa6b1410",
+    "table": "68b7e526e9453f8c6e40507f",
+    "data": {
+      "productName": "iPhone 15",
+      "saleDate": "2024-02-20",
+      "deliveryDays": 3,
+      "Ngày": "2024-09-03"
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:22:40.007Z",
+    "updatedAt": "2025-09-03T09:22:40.007Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80a92a4d979b05e6b140d",
+    "table": "68b809fa4649d3c2586b140b",
+    "data": {
+      "ProductName": "Test Product 1",
+      "StartDate": "2024-09-03",
+      "Days": 7
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:29:54.399Z",
+    "updatedAt": "2025-09-03T09:29:54.399Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80a92a4d979b05e6b140e",
+    "table": "68b809fa4649d3c2586b140b",
+    "data": {
+      "ProductName": "Test Product 2",
+      "StartDate": "2024-09-15",
+      "Days": 30
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:29:54.399Z",
+    "updatedAt": "2025-09-03T09:29:54.399Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80a92a4d979b05e6b140f",
+    "table": "68b809fa4649d3c2586b140b",
+    "data": {
+      "ProductName": "Test Product 3",
+      "StartDate": "2024-10-01",
+      "Days": 5
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:29:54.399Z",
+    "updatedAt": "2025-09-03T09:29:54.399Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80b41cc0faf52016b140b",
+    "table": "68b809fa4649d3c2586b140b",
+    "data": {
+      "ProductName": "Laptop Gaming ASUS",
+      "StartDate": "2024-09-05",
+      "Days": 14
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:32:49.727Z",
+    "updatedAt": "2025-09-03T09:32:49.727Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80b41cc0faf52016b140c",
+    "table": "68b809fa4649d3c2586b140b",
+    "data": {
+      "ProductName": "Điện thoại iPhone 15",
+      "StartDate": "2024-09-10",
+      "Days": 21
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:32:49.727Z",
+    "updatedAt": "2025-09-03T09:32:49.727Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80b41cc0faf52016b140d",
+    "table": "68b809fa4649d3c2586b140b",
+    "data": {
+      "ProductName": "Máy tính bảng iPad",
+      "StartDate": "2024-09-20",
+      "Days": 10
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:32:49.727Z",
+    "updatedAt": "2025-09-03T09:32:49.727Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80b41cc0faf52016b140e",
+    "table": "68b809fa4649d3c2586b140b",
+    "data": {
+      "ProductName": "Tai nghe Sony WH-1000XM5",
+      "StartDate": "2024-09-25",
+      "Days": 3
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:32:49.727Z",
+    "updatedAt": "2025-09-03T09:32:49.727Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80d3187f4d2f4d46b1410",
+    "table": "68b80d3187f4d2f4d46b140b",
+    "data": {
+      "Ten": "Laptop",
+      "NgayBD": "2024-09-01",
+      "SoNgay": 10
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:41:05.896Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80d3187f4d2f4d46b1411",
+    "table": "68b80d3187f4d2f4d46b140b",
+    "data": {
+      "Ten": "Phone",
+      "NgayBD": "2024-09-05",
+      "SoNgay": 15
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:41:05.896Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80d3187f4d2f4d46b1412",
+    "table": "68b80d3187f4d2f4d46b140b",
+    "data": {
+      "Ten": "Tablet",
+      "NgayBD": "2024-09-10",
+      "SoNgay": 7
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:41:05.896Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80dea7c66186ee76b140f",
+    "table": "68b80dd7e421369d046b140b",
+    "data": {
+      "TenSP": "iPhone 15",
+      "NgayBD2024": "2024-09-01",
+      "SoNgayPlus": 14
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:44:10.003Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80dea7c66186ee76b1410",
+    "table": "68b80dd7e421369d046b140b",
+    "data": {
+      "TenSP": "MacBook Pro",
+      "NgayBD2024": "2024-09-05",
+      "SoNgayPlus": 21
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:44:10.003Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80e73777932afa66b140f",
+    "table": "68b80e5c7353c246626b140b",
+    "data": {
+      "ProductName2024": "MacBook Pro",
+      "StartDate2024": "2024-09-01",
+      "DaysCount2024": 30
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:46:27.940Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80e73777932afa66b1410",
+    "table": "68b80e5c7353c246626b140b",
+    "data": {
+      "ProductName2024": "iPhone 15",
+      "StartDate2024": "2024-09-10",
+      "DaysCount2024": 14
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:46:27.940Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b80e73777932afa66b1411",
+    "table": "68b80e5c7353c246626b140b",
+    "data": {
+      "ProductName2024": "iPad Air",
+      "StartDate2024": "2024-09-20",
+      "DaysCount2024": 7
+    },
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "createdAt": "2025-09-03T09:46:27.940Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b918fefe6dc823d86cb266",
+    "tableId": "68b918fefe6dc823d86cb256",
+    "databaseId": "68a8074ac4e5218ab1e609e4",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "StartDate": "2024-01-15",
+      "DaysToAdd": 30
+    },
+    "createdAt": "2025-09-04T04:43:42.805Z",
+    "updatedAt": "2025-09-04T04:43:42.806Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b918fefe6dc823d86cb268",
+    "tableId": "68b918fefe6dc823d86cb256",
+    "databaseId": "68a8074ac4e5218ab1e609e4",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "StartDate": "2024-06-01",
+      "DaysToAdd": 45
+    },
+    "createdAt": "2025-09-04T04:43:42.810Z",
+    "updatedAt": "2025-09-04T04:43:42.811Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b918fefe6dc823d86cb26a",
+    "tableId": "68b918fefe6dc823d86cb256",
+    "databaseId": "68a8074ac4e5218ab1e609e4",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "StartDate": "2024-12-25",
+      "DaysToAdd": 7
+    },
+    "createdAt": "2025-09-04T04:43:42.814Z",
+    "updatedAt": "2025-09-04T04:43:42.815Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b918fefe6dc823d86cb26c",
+    "tableId": "68b918fefe6dc823d86cb256",
+    "databaseId": "68a8074ac4e5218ab1e609e4",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "StartDate": "2024-02-28",
+      "DaysToAdd": 1
+    },
+    "createdAt": "2025-09-04T04:43:42.819Z",
+    "updatedAt": "2025-09-04T04:43:42.819Z",
+    "__v": 0
+  },
+  {
+    "_id": "68b918fefe6dc823d86cb26e",
+    "tableId": "68b918fefe6dc823d86cb256",
+    "databaseId": "68a8074ac4e5218ab1e609e4",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "StartDate": "2024-09-04",
+      "DaysToAdd": 90
+    },
+    "createdAt": "2025-09-04T04:43:42.823Z",
+    "updatedAt": "2025-09-04T04:43:42.824Z",
+    "__v": 0
+  },
+  {
+    "_id": "68ba91ee75e3f71cd32a30d2",
+    "tableId": "68aec77e3e024ec181fda2e7",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "2": "1",
+      "Text": "",
+      "Number": "",
+      "Date 1": "2025-09-05",
+      "ádsad": "",
+      "New Column 1": []
+    },
+    "createdAt": "2025-09-05T07:31:58.212Z",
+    "updatedAt": "2025-09-11T10:07:54.376Z",
+    "__v": 0
+  },
+  {
+    "_id": "68ba943c75e3f71cd32a4001",
+    "tableId": "68aec77e3e024ec181fda2e7",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "2": "2",
+      "Text": "",
+      "Number": "",
+      "Date 1": "2025-09-13",
+      "ádsad": "1",
+      "New Column 1": []
+    },
+    "createdAt": "2025-09-05T07:41:48.724Z",
+    "updatedAt": "2025-09-11T10:07:54.376Z",
+    "__v": 0
+  },
+  {
+    "_id": "68ba995ccac19839a00ae5d0",
+    "tableId": "68aec77e3e024ec181fda2e7",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "2": "1",
+      "Text": "",
+      "Number": "1",
+      "Date 1": "2025-09-13",
+      "ádsad": "2",
+      "New Column 1": []
+    },
+    "createdAt": "2025-09-05T08:03:40.577Z",
+    "updatedAt": "2025-09-11T10:07:54.376Z",
+    "__v": 0
+  },
+  {
+    "_id": "68ba9a3fcac19839a00afb58",
+    "tableId": "68aec77e3e024ec181fda2e7",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "2": "1",
+      "Text": "",
+      "Number": "1",
+      "Date 1": "",
+      "ádsad": "",
+      "New Column 1": []
+    },
+    "createdAt": "2025-09-05T08:07:27.272Z",
+    "updatedAt": "2025-09-11T10:07:54.376Z",
+    "__v": 0
+  },
+  {
+    "_id": "68ba9f6acac19839a00b306a",
+    "tableId": "68aec77e3e024ec181fda2e7",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "2": "1",
+      "Text": "1",
+      "Number": "2",
+      "Date 1": "",
+      "ádsad": "",
+      "New Column 1": []
+    },
+    "createdAt": "2025-09-05T08:29:30.280Z",
+    "updatedAt": "2025-09-11T10:07:54.376Z",
+    "__v": 0
+  },
+  {
+    "_id": "68baa3bbcac19839a00b6062",
+    "tableId": "68aec77e3e024ec181fda2e7",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "2": "",
+      "Text": "",
+      "Number": "2",
+      "Date 1": "",
+      "ádsad": "",
+      "New Column 1": []
+    },
+    "createdAt": "2025-09-05T08:47:55.290Z",
+    "updatedAt": "2025-09-11T10:07:54.376Z",
+    "__v": 0
+  },
+  {
+    "_id": "68baa3bdcac19839a00b6125",
+    "tableId": "68aec77e3e024ec181fda2e7",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "2": "",
+      "Text": "",
+      "Number": "3",
+      "Date 1": "",
+      "ádsad": "",
+      "New Column 1": []
+    },
+    "createdAt": "2025-09-05T08:47:57.417Z",
+    "updatedAt": "2025-09-11T10:07:54.376Z",
+    "__v": 0
+  },
+  {
+    "_id": "68bdcd8da818af605792b036",
+    "tableId": "68aec77e3e024ec181fda2e7",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "2": "",
+      "Text": "",
+      "Number": "1",
+      "Date 1": "",
+      "ádsad": "",
+      "New Column 1": []
+    },
+    "createdAt": "2025-09-07T18:23:09.732Z",
+    "updatedAt": "2025-09-11T10:07:54.376Z",
+    "__v": 0
+  },
+  {
+    "_id": "68be4f84a818af6057941b18",
+    "tableId": "68b95991df06cd4f1c15e31f",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Text": "",
+      "URL": "http://1",
+      "URL 1": "https://1",
+      "URL s": "1"
+    },
+    "createdAt": "2025-09-08T03:37:40.427Z",
+    "updatedAt": "2025-09-10T15:48:15.691Z",
+    "__v": 0
+  },
+  {
+    "_id": "68be4f85a818af6057941beb",
+    "tableId": "68b95991df06cd4f1c15e31f",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Text": "",
+      "URL": "http://test",
+      "URL 1": "https://2",
+      "URL s": "1"
+    },
+    "createdAt": "2025-09-08T03:37:41.345Z",
+    "updatedAt": "2025-09-08T06:49:25.942Z",
+    "__v": 0
+  },
+  {
+    "_id": "68be5a331054fdbec9b10b12",
+    "tableId": "68b95991df06cd4f1c15e31f",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Text": "",
+      "URL": "http://1",
+      "URL 1": "https://1",
+      "URL s": "2"
+    },
+    "createdAt": "2025-09-08T04:23:15.113Z",
+    "updatedAt": "2025-09-08T06:49:26.909Z",
+    "__v": 0
+  },
+  {
+    "_id": "68beb1af4ab7b666dea04667",
+    "tableId": "68beb18f4ab7b666dea04255",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Tên giao dịch": "Thu từ bán hàng",
+      "Loại giao dịch": "Dòng thu",
+      "Giá trị giao dịch": "400000000"
+    },
+    "createdAt": "2025-09-08T10:36:31.425Z",
+    "updatedAt": "2025-09-09T15:19:36.891Z",
+    "__v": 0
+  },
+  {
+    "_id": "68beb1b14ab7b666dea0480f",
+    "tableId": "68beb18f4ab7b666dea04255",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Tên giao dịch": "",
+      "Loại giao dịch": "",
+      "Giá trị giao dịch": "0"
+    },
+    "createdAt": "2025-09-08T10:36:33.213Z",
+    "updatedAt": "2025-09-09T16:55:16.412Z",
+    "__v": 0
+  },
+  {
+    "_id": "68beb1b14ab7b666dea04828",
+    "tableId": "68beb18f4ab7b666dea04255",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Tên giao dịch": "",
+      "Loại giao dịch": "",
+      "Giá trị giao dịch": ""
+    },
+    "createdAt": "2025-09-08T10:36:33.229Z",
+    "updatedAt": "2025-09-09T15:23:24.355Z",
+    "__v": 0
+  },
+  {
+    "_id": "68beb1b14ab7b666dea0496d",
+    "tableId": "68beb18f4ab7b666dea04255",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Tên giao dịch": "",
+      "Loại giao dịch": "",
+      "Giá trị giao dịch": ""
+    },
+    "createdAt": "2025-09-08T10:36:33.528Z",
+    "updatedAt": "2025-09-09T15:20:05.607Z",
+    "__v": 0
+  },
+  {
+    "_id": "68beb967f7b179687ce95119",
+    "tableId": "68a81819fc77d9db7dcc0b2b",
+    "databaseId": "68a80a9fc4e5218ab1e615c9",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "test_percent": 75
+    },
+    "createdAt": "2025-09-08T11:09:27.452Z",
+    "updatedAt": "2025-09-08T11:09:27.453Z",
+    "__v": 0
+  },
+  {
+    "_id": "68bfa684aecfa5cefc2f9beb",
+    "tableId": "68babcc6cac19839a00c5194",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "1": "",
+      "Text": "",
+      "Multi Select": "",
+      "Date": "",
+      "k": "",
+      "New Column": "50"
+    },
+    "createdAt": "2025-09-09T04:01:08.091Z",
+    "updatedAt": "2025-09-10T15:51:02.999Z",
+    "__v": 0
+  },
+  {
+    "_id": "68bfa686aecfa5cefc2f9cbe",
+    "tableId": "68babcc6cac19839a00c5194",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "1": "",
+      "Text": "",
+      "Multi Select": "",
+      "Date": "",
+      "k": "",
+      "New Column": 11
+    },
+    "createdAt": "2025-09-09T04:01:10.753Z",
+    "updatedAt": "2025-09-10T15:49:40.902Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c045a3656d512b445e260e",
+    "tableId": "68beb18f4ab7b666dea04255",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Tên giao dịch": "",
+      "Loại giao dịch": "",
+      "Giá trị giao dịch": ""
+    },
+    "createdAt": "2025-09-09T15:20:03.243Z",
+    "updatedAt": "2025-09-09T15:20:05.231Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c0498e656d512b445e3a01",
+    "tableId": "68c0497c656d512b445e3782",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "12": "21"
+    },
+    "createdAt": "2025-09-09T15:36:46.973Z",
+    "updatedAt": "2025-09-09T15:36:58.357Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c04991656d512b445e3ad4",
+    "tableId": "68c0497c656d512b445e3782",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "12": "2121"
+    },
+    "createdAt": "2025-09-09T15:36:49.078Z",
+    "updatedAt": "2025-09-09T15:36:59.850Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c04991656d512b445e3ba7",
+    "tableId": "68c0497c656d512b445e3782",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "12": "2121"
+    },
+    "createdAt": "2025-09-09T15:36:49.937Z",
+    "updatedAt": "2025-09-09T15:37:01.590Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c04994656d512b445e3c7a",
+    "tableId": "68c0497c656d512b445e3782",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "12": ""
+    },
+    "createdAt": "2025-09-09T15:36:52.277Z",
+    "updatedAt": "2025-09-09T15:37:02.671Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c04995656d512b445e3d4d",
+    "tableId": "68c0497c656d512b445e3782",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "12": ""
+    },
+    "createdAt": "2025-09-09T15:36:53.579Z",
+    "updatedAt": "2025-09-09T15:36:53.580Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c04996656d512b445e3e20",
+    "tableId": "68c0497c656d512b445e3782",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "12": ""
+    },
+    "createdAt": "2025-09-09T15:36:54.613Z",
+    "updatedAt": "2025-09-09T15:36:54.614Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c05b08656d512b445e54b4",
+    "tableId": "68c05ad4656d512b445e52a2",
+    "databaseId": "68c05abf656d512b445e5206",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Sản phẩm": "",
+      "SP2": "1212121",
+      "SP3": "434343",
+      "Formula": 1646464,
+      "Checkbox": true
+    },
+    "createdAt": "2025-09-09T16:51:20.144Z",
+    "updatedAt": "2025-09-11T09:34:11.218Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c05b59656d512b445e571e",
+    "tableId": "68c05ad4656d512b445e52a2",
+    "databaseId": "68c05abf656d512b445e5206",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Sản phẩm": "",
+      "SP2": "1",
+      "SP3": "2",
+      "Formula": 3,
+      "Checkbox": true
+    },
+    "createdAt": "2025-09-09T16:52:41.778Z",
+    "updatedAt": "2025-09-11T07:13:02.019Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c05be1656d512b445e8186",
+    "tableId": "68c05ad4656d512b445e52a2",
+    "databaseId": "68c05abf656d512b445e5206",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Sản phẩm": "",
+      "SP2": "1",
+      "SP3": "2",
+      "Formula": 3,
+      "Checkbox": true
+    },
+    "createdAt": "2025-09-09T16:54:57.770Z",
+    "updatedAt": "2025-09-11T09:35:41.202Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c05be2656d512b445e8273",
+    "tableId": "68c05ad4656d512b445e52a2",
+    "databaseId": "68c05abf656d512b445e5206",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Sản phẩm": "",
+      "SP2": "1",
+      "SP3": "2",
+      "Formula": 3,
+      "Checkbox": true
+    },
+    "createdAt": "2025-09-09T16:54:58.697Z",
+    "updatedAt": "2025-09-11T07:13:02.019Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c05be3656d512b445e8360",
+    "tableId": "68c05ad4656d512b445e52a2",
+    "databaseId": "68c05abf656d512b445e5206",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Sản phẩm": "",
+      "SP2": "1",
+      "SP3": "2",
+      "Formula": 3,
+      "Checkbox": true
+    },
+    "createdAt": "2025-09-09T16:54:59.491Z",
+    "updatedAt": "2025-09-11T07:13:02.019Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c1398ee39fab07406ca7c9",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "3",
+      "Text 1": "",
+      "Multi Select": [
+        "2"
+      ],
+      "Single Select": "1",
+      "Multi Select 1": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    "createdAt": "2025-09-10T08:40:46.537Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c13990e39fab07406ca8b6",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Multi Select": "1,2,3",
+      "Single Select": "3",
+      "Multi Select 1": []
+    },
+    "createdAt": "2025-09-10T08:40:48.106Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c1399ce39fab07406cad53",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Multi Select": [],
+      "Text 1": "",
+      "Single Select": "1",
+      "Multi Select 1": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    "createdAt": "2025-09-10T08:41:00.119Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c13c34e39fab07406ccd18",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Single Select": "3",
+      "Multi Select": []
+    },
+    "createdAt": "2025-09-10T08:52:04.981Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c13c36e39fab07406cce06",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Single Select": "2",
+      "Multi Select 1": []
+    },
+    "createdAt": "2025-09-10T08:52:06.128Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c13c40e39fab07406cd0cb",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Single Select": "2",
+      "Multi Select": []
+    },
+    "createdAt": "2025-09-10T08:52:16.532Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c13d79e39fab07406cfb16",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Single Select": "1",
+      "Multi Select 1": [
+        "1",
+        "3"
+      ]
+    },
+    "createdAt": "2025-09-10T08:57:29.798Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c13d8de39fab07406d0109",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Single Select": "1",
+      "Multi Select": []
+    },
+    "createdAt": "2025-09-10T08:57:49.707Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c142c4e39fab07406d4e75",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Single Select": "2"
+    },
+    "createdAt": "2025-09-10T09:20:04.951Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c142c6e39fab07406d4f62",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Multi Select": []
+    },
+    "createdAt": "2025-09-10T09:20:06.225Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c142dce39fab07406d5316",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": ""
+    },
+    "createdAt": "2025-09-10T09:20:28.479Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c143c3e39fab07406d74fb",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": ""
+    },
+    "createdAt": "2025-09-10T09:24:19.489Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c144b6e39fab07406d89c9",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": ""
+    },
+    "createdAt": "2025-09-10T09:28:22.790Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c14639e39fab07406dd672",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": ""
+    },
+    "createdAt": "2025-09-10T09:34:49.953Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c14e98e39fab07406e1e67",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": ""
+    },
+    "createdAt": "2025-09-10T10:10:32.709Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c14ffae39fab07406e2e9f",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Multi Select": "1,3"
+    },
+    "createdAt": "2025-09-10T10:16:26.536Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e15e39fab07406ecba2",
+    "tableId": "68babcc6cac19839a00c5194",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "1": "",
+      "Text": "",
+      "Multi Select": "",
+      "Date": "",
+      "k": "",
+      "New Column": ""
+    },
+    "createdAt": "2025-09-10T15:49:41.059Z",
+    "updatedAt": "2025-09-10T15:49:44.709Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e5de39fab07406eda51",
+    "tableId": "68b95991df06cd4f1c15e31f",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Text": "",
+      "URL": "",
+      "URL 1": "",
+      "URL s": ""
+    },
+    "createdAt": "2025-09-10T15:50:53.782Z",
+    "updatedAt": "2025-09-10T15:50:53.783Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e5ee39fab07406edb3e",
+    "tableId": "68b95991df06cd4f1c15e31f",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Text": "",
+      "URL": "",
+      "URL 1": "",
+      "URL s": ""
+    },
+    "createdAt": "2025-09-10T15:50:54.550Z",
+    "updatedAt": "2025-09-10T15:50:54.550Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e5fe39fab07406edc2b",
+    "tableId": "68b95991df06cd4f1c15e31f",
+    "databaseId": "68b95985df06cd4f1c15e251",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Text": "",
+      "URL": "",
+      "URL 1": "",
+      "URL s": ""
+    },
+    "createdAt": "2025-09-10T15:50:55.249Z",
+    "updatedAt": "2025-09-10T15:50:55.250Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e70e39fab07406ee11a",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Single Select": "1"
+    },
+    "createdAt": "2025-09-10T15:51:12.634Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e71e39fab07406ee207",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Single Select": "4"
+    },
+    "createdAt": "2025-09-10T15:51:13.616Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e72e39fab07406ee2f4",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Single Select": "2"
+    },
+    "createdAt": "2025-09-10T15:51:14.614Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e73e39fab07406ee3e1",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Single Select": "3"
+    },
+    "createdAt": "2025-09-10T15:51:15.484Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e74e39fab07406ee4ce",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Single Select": "1",
+      "Text 1": ""
+    },
+    "createdAt": "2025-09-10T15:51:16.208Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e75e39fab07406ee5bb",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Single Select": "3",
+      "Multi Select": []
+    },
+    "createdAt": "2025-09-10T15:51:17.509Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e76e39fab07406ee6a8",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": ""
+    },
+    "createdAt": "2025-09-10T15:51:18.395Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19e7ae39fab07406ee795",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Single Select": "1"
+    },
+    "createdAt": "2025-09-10T15:51:22.420Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19ea0e39fab07406eeee9",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Single Select": "1"
+    },
+    "createdAt": "2025-09-10T15:52:00.728Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19ea4e39fab07406ef089",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Single Select": "1"
+    },
+    "createdAt": "2025-09-10T15:52:04.568Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c19ea6e39fab07406ef176",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Single Select": "1"
+    },
+    "createdAt": "2025-09-10T15:52:06.250Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c23a4ee39fab07406fb384",
+    "tableId": "68b9196ed5fdabd25cca2d06",
+    "databaseId": "68a80c41fc77d9db7dcbe224",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "689ef3e9992a826ed6bf9b45",
+    "data": {
+      "Phone 1": "",
+      "Rating": "",
+      "Text 1": "",
+      "Multi Select": "",
+      "Single Select": "1"
+    },
+    "createdAt": "2025-09-11T02:56:14.747Z",
+    "updatedAt": "2025-09-11T07:14:22.854Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c2954be04319691ddd288c",
+    "tableId": "68c2950ce04319691ddd2726",
+    "databaseId": "68a80a9fc4e5218ab1e615c9",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "name": "iPhone 15"
+    },
+    "createdAt": "2025-09-11T09:24:27.271Z",
+    "updatedAt": "2025-09-11T09:24:27.272Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c2955fe04319691ddd28b2",
+    "tableId": "68c2950ce04319691ddd2726",
+    "databaseId": "68a80a9fc4e5218ab1e615c9",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "name": "Samsung Galaxy S24"
+    },
+    "createdAt": "2025-09-11T09:24:47.417Z",
+    "updatedAt": "2025-09-11T09:24:47.418Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c29572e04319691ddd290a",
+    "tableId": "68a81819fc77d9db7dcc0b2b",
+    "databaseId": "68a80a9fc4e5218ab1e615c9",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "test_percent": 0,
+      "product_links": [
+        "68c2954be04319691ddd288c",
+        "68c2955fe04319691ddd28b2"
+      ]
+    },
+    "createdAt": "2025-09-11T09:25:06.613Z",
+    "updatedAt": "2025-09-11T09:25:06.613Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c2a88930be99fc15806cb3",
+    "tableId": "68c2a88930be99fc15806aab",
+    "databaseId": "68c2a88930be99fc15806a85",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "name": "John Doe",
+      "email": "john@test.com",
+      "age": 28,
+      "status": "active"
+    },
+    "createdAt": "2025-09-11T10:46:33.930Z",
+    "updatedAt": "2025-09-11T10:46:33.930Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c2a88930be99fc15806cda",
+    "tableId": "68c2a88930be99fc15806aab",
+    "databaseId": "68c2a88930be99fc15806a85",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "name": "Jane Smith",
+      "email": "jane@test.com",
+      "age": 25,
+      "status": "active"
+    },
+    "createdAt": "2025-09-11T10:46:33.952Z",
+    "updatedAt": "2025-09-11T10:46:33.952Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c2a88930be99fc15806d01",
+    "tableId": "68c2a88930be99fc15806aab",
+    "databaseId": "68c2a88930be99fc15806a85",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "name": "Bob Wilson",
+      "email": "bob@test.com",
+      "age": 32,
+      "status": "inactive"
+    },
+    "createdAt": "2025-09-11T10:46:33.978Z",
+    "updatedAt": "2025-09-11T10:46:33.979Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c2a88a30be99fc15806d27",
+    "tableId": "68c2a88930be99fc15806b6e",
+    "databaseId": "68c2a88930be99fc15806a85",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "title": "Hello World",
+      "content": "This is the first post for testing links functionality",
+      "author": "68c2a88930be99fc15806cb3",
+      "category": "technology",
+      "published": true,
+      "views": 100
+    },
+    "createdAt": "2025-09-11T10:46:34.004Z",
+    "updatedAt": "2025-09-11T10:46:34.004Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c2a88a30be99fc15806d4d",
+    "tableId": "68c2a88930be99fc15806b6e",
+    "databaseId": "68c2a88930be99fc15806a85",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "title": "MongoDB Guide",
+      "content": "A comprehensive guide to MongoDB relationships and links",
+      "author": "68c2a88930be99fc15806cda",
+      "category": "technology",
+      "published": true,
+      "views": 250
+    },
+    "createdAt": "2025-09-11T10:46:34.029Z",
+    "updatedAt": "2025-09-11T10:46:34.029Z",
+    "__v": 0
+  },
+  {
+    "_id": "68c2a88a30be99fc15806d73",
+    "tableId": "68c2a88930be99fc15806b6e",
+    "databaseId": "68c2a88930be99fc15806a85",
+    "userId": "686d48c7b40faa30ed2b5cd4",
+    "siteId": "686d45a89a0a0c37366567c8",
+    "data": {
+      "title": "Business Tips",
+      "content": "Essential tips for growing your business",
+      "author": "68c2a88930be99fc15806cb3",
+      "category": "business",
+      "published": false,
+      "views": 0
+    },
+    "createdAt": "2025-09-11T10:46:34.056Z",
+    "updatedAt": "2025-09-11T10:46:34.056Z",
+    "__v": 0
+  }
+]

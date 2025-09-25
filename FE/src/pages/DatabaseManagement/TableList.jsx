@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../components/core/Auth';
 
 const TableList = () => {
   const { databaseId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTable, setNewTable] = useState({ name: '', description: '' });
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -50,6 +52,20 @@ const TableList = () => {
   const database = databaseResponse?.data;
   const tables = tablesResponse?.data || [];
   const allDatabases = allDatabasesResponse?.data || [];
+
+  // Fetch user's role in this base
+  const { data: userBaseRole } = useQuery({
+    queryKey: ['userBaseRole', databaseId, currentUser?._id],
+    queryFn: async () => {
+      if (!databaseId || !currentUser?._id) return null;
+      const response = await axiosInstance.get(`/database/databases/${databaseId}/me`);
+      return response.data;
+    },
+    enabled: !!databaseId && !!currentUser?._id,
+  });
+
+  const userRole = userBaseRole?.member?.role;
+  const canManageTables = userRole === 'owner' || userRole === 'manager';
 
   // Create table mutation
   const createTableMutation = useMutation({
@@ -245,18 +261,30 @@ const TableList = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{database.name}</h1>
-            <p className="mt-1 text-gray-600">Quản lý các bảng trong database</p>
+            <p className="mt-1 text-gray-600">
+              {canManageTables ? 'Quản lý các bảng trong database' : 'Xem các bảng trong database'}
+            </p>
             {database.description && (
               <p className="mt-2 text-sm text-gray-500">{database.description}</p>
             )}
+            {!canManageTables && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <span className="font-medium">Lưu ý:</span> Bạn đang xem database với quyền member. 
+                  Chỉ owner và manager mới có thể tạo, sửa, xóa bảng.
+                </p>
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            disabled={createTableMutation.isPending}
-          >
-            {createTableMutation.isPending ? 'Creating...' : '+ Tạo mới Table'}
-          </button>
+          {canManageTables && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              disabled={createTableMutation.isPending}
+            >
+              {createTableMutation.isPending ? 'Creating...' : '+ Tạo mới Table'}
+            </button>
+          )}
         </div>
 
         {/* Search and Controls */}
@@ -393,39 +421,41 @@ const TableList = () => {
                       <p className="text-sm text-gray-500">Table</p>
                     </div>
                   </div>
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCopyingTable({
-                          _id: table._id,
-                          name: `${table.name} - Copy`,
-                          description: table.description || '',
-                          targetDatabaseId: databaseId
-                        });
-                        setShowCopyModal(true);
-                      }}
-                      className="text-green-600 hover:text-green-800 p-1"
-                      title="Sao chép table"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteTable(table._id, table.name);
-                      }}
-                      className="text-red-600 hover:text-red-800 p-1"
-                      title="Xóa table"
-                      disabled={deleteTableMutation.isPending}
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
+                  {canManageTables && (
+                    <div className="flex space-x-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCopyingTable({
+                            _id: table._id,
+                            name: `${table.name} - Copy`,
+                            description: table.description || '',
+                            targetDatabaseId: databaseId
+                          });
+                          setShowCopyModal(true);
+                        }}
+                        className="text-green-600 hover:text-green-800 p-1"
+                        title="Sao chép table"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTable(table._id, table.name);
+                        }}
+                        className="text-red-600 hover:text-red-800 p-1"
+                        title="Xóa table"
+                        disabled={deleteTableMutation.isPending}
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 {table.description && (
@@ -518,39 +548,41 @@ const TableList = () => {
                           {formatDate(table.updatedAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCopyingTable({
-                                  _id: table._id,
-                                  name: `${table.name} - Copy`,
-                                  description: table.description || '',
-                                  targetDatabaseId: databaseId
-                                });
-                                setShowCopyModal(true);
-                              }}
-                              className="text-green-600 hover:text-green-800 p-1"
-                              title="Sao chép table"
-                            >
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTable(table._id, table.name);
-                              }}
-                              className="text-red-600 hover:text-red-800 p-1"
-                              title="Xóa table"
-                              disabled={deleteTableMutation.isPending}
-                            >
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
+                          {canManageTables && (
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCopyingTable({
+                                    _id: table._id,
+                                    name: `${table.name} - Copy`,
+                                    description: table.description || '',
+                                    targetDatabaseId: databaseId
+                                  });
+                                  setShowCopyModal(true);
+                                }}
+                                className="text-green-600 hover:text-green-800 p-1"
+                                title="Sao chép table"
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteTable(table._id, table.name);
+                                }}
+                                className="text-red-600 hover:text-red-800 p-1"
+                                title="Xóa table"
+                                disabled={deleteTableMutation.isPending}
+                              >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -695,6 +727,7 @@ const TableList = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

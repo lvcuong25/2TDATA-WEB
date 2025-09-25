@@ -3,6 +3,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import express from "express";
 import BaseRole from "../model/BaseRole.js";
+import Base from "../model/Base.js";
+import Organization from "../model/Organization.js";
 import { toObjectId } from "../utils/helper.js";
 import responseHelper from "../utils/responseHelper.js";
 
@@ -53,5 +55,38 @@ async function getRoles(req, res, next) {
   });
 }
 routerRoles.get("/baseroles", getRoles);
+
+// Lấy danh sách role của tổ chức (không tạo role riêng cho database)
+async function getOrgRoles(req, res, next) {
+  try {
+    const { databaseId } = req.params;
+    console.log("getOrgRoles - databaseId:", databaseId);
+    
+    // Lấy database để tìm orgId
+    const database = await Base.findById(databaseId).lean();
+    if (!database) {
+      return res.status(404).json({ ok: false, error: "database_not_found" });
+    }
+    
+    // Lấy organization để lấy danh sách roles
+    const organization = await Organization.findById(database.orgId).lean();
+    if (!organization) {
+      return res.status(404).json({ ok: false, error: "organization_not_found" });
+    }
+    
+    // Trả về roles của tổ chức
+    const orgRoles = [
+      { name: "Owner", role: "owner", canManageDatabase: true },
+      { name: "Manager", role: "manager", canManageDatabase: true },
+      { name: "Member", role: "member", canManageDatabase: false }
+    ];
+    
+    return res.json({ ok: true, data: orgRoles });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok: false, error: "get_roles_error" });
+  }
+}
+routerRoles.get("/database/databases/:databaseId/roles", getOrgRoles);
 
 export default routerRoles;

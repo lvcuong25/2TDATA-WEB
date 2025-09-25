@@ -23,15 +23,10 @@ const tableSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    baseId: {
+    databaseId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Base",
       required: true,
-    },
-    databaseId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Database",
-      //required: true
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,

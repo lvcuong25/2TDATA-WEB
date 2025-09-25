@@ -4,11 +4,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
 import { SearchOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
+
+import { useAuth } from '../../components/core/Auth';
+
 import DatabaseExcelActions from './DatabaseExcelActions';
+
 
 const DatabaseList = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { currentUser, currentOrganization } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newDatabase, setNewDatabase] = useState({ name: '', description: '' });
   const [showEditModal, setShowEditModal] = useState(false);
@@ -39,6 +44,13 @@ const DatabaseList = () => {
 
   // Extract databases array from response
   const databases = responseData?.data || [];
+
+  // Check user role in organization
+  const userMember = currentOrganization?.members?.find(member => 
+    member.user === currentUser?._id
+  );
+  const userRole = userMember?.role;
+  const canCreateDatabase = userRole === 'owner' || userRole === 'manager';
 
   // Filter and sort databases
   const filteredAndSortedDatabases = React.useMemo(() => {
@@ -79,21 +91,24 @@ const DatabaseList = () => {
     return filtered;
   }, [databases, searchTerm, sortBy, sortOrder]);
 
-  // Create database mutation
+  // Create database mutation (now creates a base)
   const createDatabaseMutation = useMutation({
     mutationFn: async (databaseData) => {
       const response = await axiosInstance.post('/database/databases', databaseData);
       return response.data;
     },
     onSuccess: () => {
-      toast.success('Database created successfully');
+      toast.success('Tạo database thành công!');
       setShowCreateModal(false);
       setNewDatabase({ name: '', description: '' });
       queryClient.invalidateQueries(['databases']);
     },
     onError: (error) => {
       console.error('Error creating database:', error);
-      toast.error(error.response?.data?.message || 'Failed to create database');
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.error || 
+                          'Không thể tạo database. Vui lòng thử lại!';
+      toast.error(errorMessage);
     },
   });
 
@@ -154,6 +169,18 @@ const DatabaseList = () => {
 
   const handleCreateDatabase = async (e) => {
     e.preventDefault();
+    
+    // Validation
+    if (!newDatabase.name || newDatabase.name.trim() === '') {
+      toast.error('Vui lòng nhập tên database!');
+      return;
+    }
+    
+    if (newDatabase.name.length < 2) {
+      toast.error('Tên database phải có ít nhất 2 ký tự!');
+      return;
+    }
+    
     createDatabaseMutation.mutate(newDatabase);
   };
 
@@ -256,13 +283,15 @@ const DatabaseList = () => {
                 List
               </button>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-              disabled={createDatabaseMutation.isPending}
-            >
-              {createDatabaseMutation.isPending ? 'Creating...' : '+ Tạo mới Database'}
-            </button>
+            {canCreateDatabase && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                disabled={createDatabaseMutation.isPending}
+              >
+                {createDatabaseMutation.isPending ? 'Creating...' : '+ Tạo mới Database'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -333,14 +362,16 @@ const DatabaseList = () => {
           <p className="mt-1 text-sm text-gray-500">
             {searchTerm ? 'Thử thay đổi từ khóa tìm kiếm' : 'Bắt đầu bằng cách tạo database đầu tiên của bạn.'}
           </p>
-          <div className="mt-6">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              + Tạo Database
-            </button>
-          </div>
+          {canCreateDatabase && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                + Tạo Database
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -658,7 +689,7 @@ const DatabaseList = () => {
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
                   disabled={createDatabaseMutation.isPending}
                 >
-                  {createDatabaseMutation.isPending ? 'Creating...' : 'Tạo Database'}
+                  {createDatabaseMutation.isPending ? 'Đang tạo...' : 'Tạo Database'}
                 </button>
               </div>
             </form>

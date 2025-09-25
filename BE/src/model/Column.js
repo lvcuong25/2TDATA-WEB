@@ -7,17 +7,11 @@ const columnSchema = new mongoose.Schema({
     trim: true
   },
   key: { type: String, required: true },
-  baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true },
   type: { type: String, enum: ["string", "number", "date", "boolean", "json"], default: "string" },
   tableId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Table',
     required: true
-  },
-  databaseId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Database',
-    //required: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,

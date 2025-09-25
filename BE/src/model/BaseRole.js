@@ -29,11 +29,12 @@ const CellRuleLock = new mongoose.Schema(
 
 const BaseRoleSchema = new mongoose.Schema(
   {
+    databaseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true },
     name: { type: String, required: true },
     builtin: { type: Boolean, default: false },
     permissions: { type: Object }, 
   },
   { timestamps: true, versionKey: false }
 );
-// BaseRoleSchema.index({ baseId: 1, name: 1 }, { unique: true });
+BaseRoleSchema.index({ databaseId: 1, name: 1 }, { unique: true });
 export default mongoose.model("BaseRole", BaseRoleSchema);
