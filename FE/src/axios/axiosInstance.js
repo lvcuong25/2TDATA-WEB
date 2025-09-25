@@ -7,15 +7,19 @@ const instance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true // Enable cookies to be sent with requests
 });
 
-// Request interceptor to add auth token
+// Request interceptor - cookies will be sent automatically
 instance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    console.log('Axios/axiosInstance request:', {
+      url: config.url,
+      method: config.method,
+      withCredentials: config.withCredentials
+    });
+    // Cookies will be sent automatically with withCredentials: true
+    // No need to manually add Authorization header
     return config;
   },
   (error) => {
@@ -26,6 +30,10 @@ instance.interceptors.request.use(
 // Response interceptor to handle errors
 instance.interceptors.response.use(
   (response) => {
+    console.log('Axios/axiosInstance response:', {
+      url: response.config.url,
+      status: response.status
+    });
     return response;
   },
   (error) => {
@@ -38,14 +46,13 @@ instance.interceptors.response.use(
     
     // Handle authentication errors (401)
     if (error.response?.status === 401) {
-      console.log('401 error detected, clearing auth data...');
-      localStorage.removeItem('accessToken');
+      console.log('401 error detected, user needs to login...');
       localStorage.removeItem('user');
-      sessionStorage.removeItem('accessToken');
       
       // Don't redirect for iframe routes to avoid breaking iframe functionality
       const isIframeRoute = error.config?.url?.includes('/iframe/');
-      if (!isIframeRoute && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+      const isHomePage = window.location.pathname === '/' || window.location.pathname === '';
+      if (!isIframeRoute && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin') && !isHomePage) {
         const currentPath = window.location.pathname + window.location.search;
         window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
       }
@@ -57,10 +64,8 @@ instance.interceptors.response.use(
       
       // Check if user is inactive
       if (errorData?.error === 'USER_INACTIVE') {
-        console.log('User inactive detected, clearing auth data...');
-        localStorage.removeItem('accessToken');
+        console.log('User inactive detected...');
         localStorage.removeItem('user');
-        sessionStorage.removeItem('accessToken');
         
         // Show user-friendly message
         if (typeof window !== 'undefined' && window.toast) {
@@ -68,7 +73,8 @@ instance.interceptors.response.use(
         }
         
         // Redirect to login page
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin')) {
+        const isHomePage = window.location.pathname === '/' || window.location.pathname === '';
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signin') && !isHomePage) {
           const currentPath = window.location.pathname + window.location.search;
           window.location.href = `/signin?redirect=${encodeURIComponent(currentPath)}`;
         }

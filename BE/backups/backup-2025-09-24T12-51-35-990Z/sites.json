@@ -1,0 +1,4445 @@
+[
+  {
+    "_id": "686d45a89a0a0c37366567c8",
+    "name": "2T DATA",
+    "domains": [
+      "2tdata.com",
+      "www.2tdata.com",
+      "localhost"
+    ],
+    "status": "active",
+    "settings": {
+      "iframeUrl": "",
+      "allowRegistration": true,
+      "language": "en",
+      "maxUsers": 1000,
+      "requireEmailVerification": false,
+      "timezone": "UTC"
+    },
+    "createdAt": "2025-07-08T16:22:00.239Z",
+    "site_admins": [
+      {
+        "user_id": "683d4ca494a974c92874014e",
+        "role": "site_admin",
+        "permissions": [
+          "manage_users",
+          "manage_content",
+          "view_analytics"
+        ],
+        "created_at": "2025-07-09T04:47:12.986Z"
+      },
+      {
+        "user_id": "683d826bbd6f8b712e09e2fd",
+        "role": "site_admin",
+        "permissions": [
+          "manage_users",
+          "manage_content",
+          "view_analytics"
+        ],
+        "created_at": "2025-07-09T04:47:12.995Z"
+      },
+      {
+        "user_id": "683dccfafc41d7f76acb966a",
+        "role": "site_admin",
+        "permissions": [
+          "manage_users",
+          "manage_content",
+          "view_analytics"
+        ],
+        "created_at": "2025-07-09T04:47:13.000Z"
+      },
+      {
+        "user_id": "684cfcde4543b4acb407bf2d",
+        "role": "site_admin",
+        "permissions": [
+          "manage_users",
+          "manage_content",
+          "view_analytics"
+        ],
+        "created_at": "2025-07-09T04:47:13.004Z"
+      },
+      {
+        "user_id": "6853df464543b4acb4081353",
+        "role": "site_admin",
+        "permissions": [
+          "manage_users",
+          "manage_content",
+          "view_analytics"
+        ],
+        "created_at": "2025-07-09T04:47:13.008Z"
+      },
+      {
+        "user_id": "6858d16fbfe0fea76b8749a3",
+        "role": "site_admin",
+        "permissions": [
+          "manage_users",
+          "manage_content",
+          "view_analytics"
+        ],
+        "created_at": "2025-07-09T04:47:13.011Z"
+      },
+      {
+        "user_id": "6863a9309eeab67b5f1f27a1",
+        "role": "site_admin",
+        "permissions": [
+          "manage_users",
+          "manage_content",
+          "view_analytics"
+        ],
+        "created_at": "2025-07-09T04:47:13.015Z"
+      }
+    ],
+    "stats": {
+      "lastActivity": "2025-09-24T08:32:42.764Z",
+      "totalContent": 0,
+      "totalUsers": 36
+    },
+    "theme_config": {
+      "primaryColor": "#1890ff",
+      "secondaryColor": "#f0f0f0",
+      "layout": "default"
+    },
+    "updatedAt": "2025-09-24T08:32:42.783Z",
+    "is_main_site": true,
+    "logo_url": "",
+    "footer_config": {
+      "companyInfo": {
+        "name": "2T DATA SOLUTION",
+        "address": "Tầng 6, 26 Phố Dương Đình Nghệ, Yên Hòa, Cầu Giấy, Hà Nội",
+        "hotline": "0968 335 486",
+        "email": "sales@2tdata.com",
+        "website": "https://2tdata.com/"
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "2T DATA"
+        },
+        "partners": [
+          {
+            "image": "/uploads/footer/2t_data_partner_hcw.png",
+            "alt": "HCW",
+            "link": "https://hcw.com.vn/",
+            "height": "60px",
+            "_id": "6873e423f499f0d006f0c9c9"
+          },
+          {
+            "image": "/uploads/footer/2t_data_partner_logo.jpg",
+            "alt": "2T DATA",
+            "link": "#",
+            "height": "90px",
+            "_id": "6873e423f499f0d006f0c9ca"
+          },
+          {
+            "image": "/uploads/footer/2t_data_partner_remobpo.png",
+            "alt": "REMOBPO",
+            "link": "https://remobpo.com/",
+            "height": "60px",
+            "_id": "6873e423f499f0d006f0c9cb"
+          }
+        ]
+      },
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#003399",
+        "copyrightTextColor": "#ffffff",
+        "linkHoverColor": "#2563eb"
+      },
+      "quickLinks": [
+        {
+          "title": "Trang chủ",
+          "url": "#",
+          "_id": "6873e3d1fe18cf8240f966cd"
+        },
+        {
+          "title": "Dịch vụ",
+          "url": "#",
+          "_id": "6873e3d1fe18cf8240f966ce"
+        },
+        {
+          "title": "Chính sách bán hàng",
+          "url": "#",
+          "_id": "6873e3d1fe18cf8240f966cf"
+        },
+        {
+          "title": "Liên hệ",
+          "url": "#",
+          "_id": "6873e3d1fe18cf8240f966d0"
+        }
+      ],
+      "socialLinks": [],
+      "copyright": "Copyright © 2025 2T Data Solution | Powered by 2T Data Solution",
+      "partnersTitle": "Thành viên 2T Group"
+    }
+  },
+  {
+    "_id": "6870da9f9cd286a32fb7c17f",
+    "name": "HCW Afiliate",
+    "domains": [
+      "nguyenhungmarketing.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#1890ff",
+      "secondaryColor": "#f0f0f0",
+      "layout": "default"
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "iframeUrl": "",
+      "allowRegistration": true,
+      "language": "en",
+      "maxUsers": 1000,
+      "requireEmailVerification": false,
+      "timezone": "UTC"
+    },
+    "site_admins": [],
+    "stats": {
+      "totalUsers": 8,
+      "totalContent": 0,
+      "lastActivity": "2025-08-13T09:42:53.173Z"
+    },
+    "createdAt": "2025-07-11T09:34:23.158Z",
+    "updatedAt": "2025-08-18T04:49:17.340Z",
+    "footer_config": {
+      "companyInfo": {
+        "address": "",
+        "email": "",
+        "hotline": "",
+        "name": "Company Name",
+        "website": ""
+      },
+      "copyright": "© 2025 Company. All rights reserved.",
+      "logos": {
+        "main": {
+          "alt": "Main Logo",
+          "image": ""
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc",
+        "textColor": "#000000"
+      }
+    }
+  },
+  {
+    "_id": "68710dbbfd143940af44fe83",
+    "name": "Test Site for Admin",
+    "domains": [
+      "testsite.com",
+      "www.testsite.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "site_admins": [],
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-07-11T13:12:27.592Z"
+    },
+    "createdAt": "2025-07-11T13:12:27.593Z",
+    "updatedAt": "2025-07-11T13:12:27.593Z",
+    "footer_config": {
+      "companyInfo": {
+        "address": "",
+        "email": "",
+        "hotline": "",
+        "name": "Company Name",
+        "website": ""
+      },
+      "copyright": "© 2025 Company. All rights reserved.",
+      "logos": {
+        "main": {
+          "alt": "Main Logo",
+          "image": ""
+        },
+        "partners": []
+      },
+      "quickLinks": [],
+      "socialLinks": [],
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc",
+        "textColor": "#000000"
+      },
+      "partnersTitle": "Thành viên 2T Group"
+    }
+  },
+  {
+    "_id": "6873bd04b96e868e0d6b140b",
+    "name": "Trung LQ 8 Affiliate",
+    "domains": [
+      "trunglq8.com"
+    ],
+    "footer_config": {
+      "companyInfo": {
+        "name": "Trung LQ 8",
+        "address": "Hanoi, Vietnam",
+        "hotline": "0123456789",
+        "email": "contact@trunglq8.com",
+        "website": "https://trunglq8.com"
+      },
+      "logos": {
+        "main": {
+          "alt": "Main Logo",
+          "image": ""
+        },
+        "partners": [
+          {
+            "image": "/uploads/footer/partner_1752458235135_trung_lq_8_affiliate_partner_undefined_1752458241505.webp",
+            "alt": "T1",
+            "link": "#",
+            "height": "60px",
+            "_id": "6874641d831bc360648290cd"
+          },
+          {
+            "image": "/uploads/footer/partner_1752458240432_trung_lq_8_affiliate_partner_undefined_1752458247224.jpg",
+            "alt": "G2",
+            "link": "#",
+            "height": "60px",
+            "_id": "6874641d831bc360648290ce"
+          }
+        ]
+      },
+      "styles": {
+        "backgroundColor": "#ef0707",
+        "textColor": "#ffffff",
+        "copyrightBgColor": "#000000",
+        "copyrightTextColor": "#cccccc",
+        "linkHoverColor": "#ff5733"
+      },
+      "quickLinks": [
+        {
+          "title": "Home",
+          "url": "/home",
+          "_id": "687463ee831bc36064829071"
+        },
+        {
+          "title": "About",
+          "url": "/about",
+          "_id": "687463ee831bc36064829072"
+        }
+      ],
+      "copyright": "Copyright © 2025 Trung LQ 8",
+      "socialLinks": [],
+      "partnersTitle": "Thành viên G2 Group"
+    },
+    "is_main_site": false,
+    "settings": {
+      "allowRegistration": true,
+      "language": "en",
+      "maxUsers": 1000,
+      "requireEmailVerification": false,
+      "timezone": "UTC"
+    },
+    "site_admins": [],
+    "stats": {
+      "lastActivity": "2025-09-08T15:34:26.418Z",
+      "totalContent": 0,
+      "totalUsers": 0
+    },
+    "status": "active",
+    "theme_config": {
+      "primaryColor": "#1890ff",
+      "secondaryColor": "#f0f0f0",
+      "layout": "default"
+    },
+    "updatedAt": "2025-09-08T15:34:26.421Z"
+  },
+  {
+    "_id": "689ef3e9992a826ed6bf9b45",
+    "name": "dev hihi",
+    "domains": [
+      "dev.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#1890ff",
+      "secondaryColor": "#f0f0f0",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "2T DATA SOLUTION",
+        "address": "Tầng 6, 26 Phố Dương Đình Nghệ, Yên Hòa, Cầu Giấy, Hà Nội",
+        "hotline": "0968 335 486",
+        "email": "sales@2tdata.com",
+        "website": "https://2tdata.com/"
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "2T DATA"
+        },
+        "partners": []
+      },
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#003399",
+        "copyrightTextColor": "#ffffff",
+        "linkHoverColor": "#2563eb"
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [
+        {
+          "title": "Trang chủ",
+          "url": "#",
+          "_id": "689ef3e9992a826ed6bf9b46"
+        },
+        {
+          "title": "Dịch vụ",
+          "url": "#",
+          "_id": "689ef3e9992a826ed6bf9b47"
+        },
+        {
+          "title": "Chính sách bán hàng",
+          "url": "#",
+          "_id": "689ef3e9992a826ed6bf9b48"
+        },
+        {
+          "title": "Liên hệ",
+          "url": "#",
+          "_id": "689ef3e9992a826ed6bf9b49"
+        }
+      ],
+      "copyright": "Copyright © 2025 2T Data Solution | Powered by 2T Data Solution",
+      "socialLinks": []
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "language": "en",
+      "maxUsers": 1000,
+      "requireEmailVerification": false,
+      "timezone": "UTC"
+    },
+    "site_admins": [],
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-11T10:58:54.313Z"
+    },
+    "createdAt": "2025-08-15T08:46:33.100Z",
+    "updatedAt": "2025-09-11T10:58:54.315Z"
+  },
+  {
+    "_id": "689ef449992a826ed6bf9d7c",
+    "name": "hcw",
+    "domains": [
+      "data.hcw.com.vn"
+    ],
+    "theme_config": {
+      "primaryColor": "#1890ff",
+      "secondaryColor": "#f0f0f0",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "2T DATA SOLUTION",
+        "address": "Tầng 6, 26 Phố Dương Đình Nghệ, Yên Hòa, Cầu Giấy, Hà Nội",
+        "hotline": "0968 335 486",
+        "email": "sales@2tdata.com",
+        "website": "https://2tdata.com/"
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "2T DATA"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [
+        {
+          "title": "Trang chủ",
+          "url": "#",
+          "_id": "689ef449992a826ed6bf9d7d"
+        },
+        {
+          "title": "Dịch vụ",
+          "url": "#",
+          "_id": "689ef449992a826ed6bf9d7e"
+        },
+        {
+          "title": "Chính sách bán hàng",
+          "url": "#",
+          "_id": "689ef449992a826ed6bf9d7f"
+        },
+        {
+          "title": "Liên hệ",
+          "url": "#",
+          "_id": "689ef449992a826ed6bf9d80"
+        }
+      ],
+      "copyright": "Copyright © 2025 2T Data Solution | Powered by 2T Data Solution",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#003399",
+        "copyrightTextColor": "#ffffff",
+        "linkHoverColor": "#2563eb"
+      },
+      "socialLinks": []
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "site_admins": [],
+    "stats": {
+      "totalUsers": 3,
+      "totalContent": 0,
+      "lastActivity": "2025-09-11T14:38:38.418Z"
+    },
+    "createdAt": "2025-08-15T08:48:09.993Z",
+    "updatedAt": "2025-09-11T14:38:38.421Z"
+  },
+  {
+    "_id": "68d3b419b5a52b22b1ecfd50",
+    "name": "Quang Trung's Site",
+    "domains": [
+      "quangtrung.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Quang Trung's Company",
+        "email": "trunglq8.93@gmail.com",
+        "website": "quangtrung.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:04:25.979Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:04:25.984Z",
+    "updatedAt": "2025-09-24T09:04:25.984Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04ad6",
+    "name": "Trường's Site",
+    "domains": [
+      "trng.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Trường's Company",
+        "email": "hcwvietnam@gmail.com",
+        "website": "trường.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:18.678Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:18.687Z",
+    "updatedAt": "2025-09-24T09:05:18.687Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04aea",
+    "name": "Lương Quang Trung's Site",
+    "domains": [
+      "lngquangtrung.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Lương Quang Trung's Company",
+        "email": "if.phoenix93@gmail.com",
+        "website": "lươngquangtrung.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:18.740Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:18.742Z",
+    "updatedAt": "2025-09-24T09:05:18.742Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04afe",
+    "name": "Khắc Huy's Site",
+    "domains": [
+      "khchuy.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khắc Huy's Company",
+        "email": "Tranlekhachuy000@gmail.com",
+        "website": "khắchuy.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:18.782Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:18.783Z",
+    "updatedAt": "2025-09-24T09:05:18.783Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04b12",
+    "name": "Nguyễn Hà Phương's Site",
+    "domains": [
+      "nguynhphng.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Hà Phương's Company",
+        "email": "nguyenthihaphuong038@gmail.com",
+        "website": "nguyễnhàphương.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:18.818Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:18.819Z",
+    "updatedAt": "2025-09-24T09:05:18.819Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04b26",
+    "name": "việt cường 's Site",
+    "domains": [
+      "vitcng.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "việt cường 's Company",
+        "email": "vietcuong2532k3@gmail.com",
+        "website": "việtcường.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:18.854Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:18.856Z",
+    "updatedAt": "2025-09-24T09:05:18.856Z"
+  },
+  {
+    "_id": "68d3b44eb4370caaf5f04b3a",
+    "name": "Quý Nam's Site",
+    "domains": [
+      "qunam.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Quý Nam's Company",
+        "email": "quynam220502fptdp@outlook.com",
+        "website": "quýnam.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:18.897Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:18.899Z",
+    "updatedAt": "2025-09-24T09:05:18.899Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef467e",
+    "name": "Quang Trung's Site",
+    "domains": [
+      "quangtrungcb96a0.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Quang Trung's Company",
+        "email": "trunglqhe170149@fpt.edu.vn",
+        "website": "quangtrung.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:37.644Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:37.654Z",
+    "updatedAt": "2025-09-24T09:05:37.654Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef4692",
+    "name": "việt cường 's Site",
+    "domains": [
+      "vitcng765225.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "việt cường 's Company",
+        "email": "vietcuong@gmail.com",
+        "website": "việtcường.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:37.712Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:37.714Z",
+    "updatedAt": "2025-09-24T09:05:37.714Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46a6",
+    "name": "Nguyễn Hưng's Site",
+    "domains": [
+      "nguynhng766a3a.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Hưng's Company",
+        "email": "hunggucci23@gmail.com",
+        "website": "nguyễnhưng.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:37.756Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:37.759Z",
+    "updatedAt": "2025-09-24T09:05:37.759Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46ba",
+    "name": "Đỗ Tuấn Trường's Site",
+    "domains": [
+      "tuntrng28c32c.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Đỗ Tuấn Trường's Company",
+        "email": "khach.hang.hcw@gmail.com",
+        "website": "đỗtuấntrường.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:37.807Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:37.808Z",
+    "updatedAt": "2025-09-24T09:05:37.808Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46ce",
+    "name": "Trần Bảo Ngọc's Site",
+    "domains": [
+      "trnbongc07bf2d.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Trần Bảo Ngọc's Company",
+        "email": "tranbaongochn.work@gmail.com",
+        "website": "trầnbảongọc.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:37.851Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:37.853Z",
+    "updatedAt": "2025-09-24T09:05:37.853Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46e2",
+    "name": "Bao Ngoc Tran's Site",
+    "domains": [
+      "baongoctran07c5d0.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Bao Ngoc Tran's Company",
+        "email": "tranbaongocdp00@gmail.com",
+        "website": "baongoctran.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:37.892Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:37.894Z",
+    "updatedAt": "2025-09-24T09:05:37.894Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef46f6",
+    "name": "Test's Site",
+    "domains": [
+      "test07d8c5.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Test's Company",
+        "email": "test@hcw.com.vn",
+        "website": "test.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:37.936Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:37.937Z",
+    "updatedAt": "2025-09-24T09:05:37.937Z"
+  },
+  {
+    "_id": "68d3b461cadcbd368fef470a",
+    "name": "Trường's Site",
+    "domains": [
+      "trng07fe40.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Trường's Company",
+        "email": "marketingnhakhoaleduan@gmail.com",
+        "website": "trường.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:37.975Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:37.976Z",
+    "updatedAt": "2025-09-24T09:05:37.976Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef471e",
+    "name": "Lưu Dương Minh's Site",
+    "domains": [
+      "ludngminh081353.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Lưu Dương Minh's Company",
+        "email": "luuduongminhs1@gmail.com",
+        "website": "lưudươngminh.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:38.055Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:38.057Z",
+    "updatedAt": "2025-09-24T09:05:38.057Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef4732",
+    "name": "Quang Trung's Site",
+    "domains": [
+      "quangtrung083d40.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Quang Trung's Company",
+        "email": "testapi@gmail.com",
+        "website": "quangtrung.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:38.127Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:38.130Z",
+    "updatedAt": "2025-09-24T09:05:38.130Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef4746",
+    "name": "Phúc's Site",
+    "domains": [
+      "phc8749a3.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Phúc's Company",
+        "email": "narutotiensinh@gmail.com",
+        "website": "phúc.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:38.183Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:38.184Z",
+    "updatedAt": "2025-09-24T09:05:38.184Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef475a",
+    "name": "Tuấn Anh's Site",
+    "domains": [
+      "tunanh1f27a1.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Tuấn Anh's Company",
+        "email": "tuananh271089@gmail.com",
+        "website": "tuấnanh.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:38.216Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:38.217Z",
+    "updatedAt": "2025-09-24T09:05:38.217Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef476e",
+    "name": "Uyên - FLamico's Site",
+    "domains": [
+      "uynflamico1f708f.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Uyên - FLamico's Company",
+        "email": "ibericofood@gmail.com",
+        "website": "uyên-flamico.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:38.267Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:38.268Z",
+    "updatedAt": "2025-09-24T09:05:38.268Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef4782",
+    "name": "Super Admin's Site",
+    "domains": [
+      "superadmin2b5cd4.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Super Admin's Company",
+        "email": "superadmin@2tdata.com",
+        "website": "superadmin.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:38.307Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:38.308Z",
+    "updatedAt": "2025-09-24T09:05:38.308Z"
+  },
+  {
+    "_id": "68d3b462cadcbd368fef4796",
+    "name": "Quang Trung's Site",
+    "domains": [
+      "quangtrung3a96b6.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Quang Trung's Company",
+        "email": "trunglq8@gmail.com",
+        "website": "quangtrung.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:05:38.342Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:05:38.343Z",
+    "updatedAt": "2025-09-24T09:05:38.343Z"
+  },
+  {
+    "_id": "68d3b4aaebf235169793e5d5",
+    "name": "truongdt0690@gmail.com's Site",
+    "domains": [
+      "truongdt0690gma3a9f66.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "truongdt0690@gmail.com's Company",
+        "email": "truongdt0690@gmail.com",
+        "website": "truongdt0690gma.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:06:50.818Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:06:50.830Z",
+    "updatedAt": "2025-09-24T09:06:50.830Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251513",
+    "name": "truongdt0690@gmail.com's Site",
+    "domains": [
+      "truongdt0690gma686e1e4d047b5b9d9e3a9f66.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "truongdt0690@gmail.com's Company",
+        "email": "truongdt0690@gmail.com",
+        "website": "truongdt0690gma.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.551Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.558Z",
+    "updatedAt": "2025-09-24T09:07:30.558Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251526",
+    "name": "site-admin's Site",
+    "domains": [
+      "siteadmin68712ad5529d2368eb9bb19e.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "site-admin's Company",
+        "email": "siteadmin@nguyenhung.com",
+        "website": "siteadmin.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.600Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.601Z",
+    "updatedAt": "2025-09-24T09:07:30.601Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e725153a",
+    "name": "Test HCW Admin's Site",
+    "domains": [
+      "testhcwadmin687131cb38c20e102e42538d.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Test HCW Admin's Company",
+        "email": "test.hcw@2tdata.com",
+        "website": "testhcwadmin.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.636Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.639Z",
+    "updatedAt": "2025-09-24T09:07:30.639Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e725154e",
+    "name": "Thọ's Site",
+    "domains": [
+      "th6871c8a95fe76125db9a2a7d.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Thọ's Company",
+        "email": "haanhng567815@gmail.com",
+        "website": "th.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.672Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.674Z",
+    "updatedAt": "2025-09-24T09:07:30.674Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251562",
+    "name": "Test User's Site",
+    "domains": [
+      "testuser6874ee45feee144cb2c5ff94.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Test User's Company",
+        "email": "testuser17524936376@nguyenhung.com",
+        "website": "testuser.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.709Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.710Z",
+    "updatedAt": "2025-09-24T09:07:30.710Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251576",
+    "name": "TEST's Site",
+    "domains": [
+      "test6874fb18267e647e9aee2bcb.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "TEST's Company",
+        "email": "user@nguyenhung.com",
+        "website": "test.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.744Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.745Z",
+    "updatedAt": "2025-09-24T09:07:30.745Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e725158a",
+    "name": "Quang Trung's Site",
+    "domains": [
+      "quangtrung6875e088267e647e9aee64ee.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Quang Trung's Company",
+        "email": "testsite@gmail.com",
+        "website": "quangtrung.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.779Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.780Z",
+    "updatedAt": "2025-09-24T09:07:30.780Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e725159e",
+    "name": "TRANTRUNGHIEU's Site",
+    "domains": [
+      "trantrunghieu68773d518a5234f8117ddbed.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "TRANTRUNGHIEU's Company",
+        "email": "sunnyhairvietnamfactory@gmail.com",
+        "website": "trantrunghieu.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.816Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.817Z",
+    "updatedAt": "2025-09-24T09:07:30.817Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515b2",
+    "name": "Nguyễn Quốc Bảo's Site",
+    "domains": [
+      "nguynqucbo6878a4e1bccfdd20d9b54fad.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Quốc Bảo's Company",
+        "email": "tmvhoaianh123@gmail.com",
+        "website": "nguynqucbo.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.857Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.859Z",
+    "updatedAt": "2025-09-24T09:07:30.859Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515c6",
+    "name": "Phạm Ngọc Nam's Site",
+    "domains": [
+      "phmngcnam687d08e2b354baffe842b60c.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Phạm Ngọc Nam's Company",
+        "email": "phamngocnam@viennu.vn",
+        "website": "phmngcnam.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.893Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.894Z",
+    "updatedAt": "2025-09-24T09:07:30.894Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515da",
+    "name": "Đinh Quang Sự's Site",
+    "domains": [
+      "inhquangs688097a553713a002d1566c3.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Đinh Quang Sự's Company",
+        "email": "bap.hethong@gmail.com",
+        "website": "inhquangs.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.923Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.924Z",
+    "updatedAt": "2025-09-24T09:07:30.924Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e72515ee",
+    "name": "Nguyễn Quý Nam Test's Site",
+    "domains": [
+      "nguynqunamtest6880b2fce9274de9ae0925da.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Quý Nam Test's Company",
+        "email": "quynam.20.10a2@gmail.com",
+        "website": "nguynqunamtest.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.956Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.956Z",
+    "updatedAt": "2025-09-24T09:07:30.956Z"
+  },
+  {
+    "_id": "68d3b4d2108634a3e7251602",
+    "name": "Nguyễn Ngọc Linh's Site",
+    "domains": [
+      "nguynngclinh6880bb0453713a002d1632fe.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Ngọc Linh's Company",
+        "email": "yuling284@gmail.com",
+        "website": "nguynngclinh.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:30.991Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:30.992Z",
+    "updatedAt": "2025-09-24T09:07:30.992Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251616",
+    "name": "Nguyễn Văn Hiếu's Site",
+    "domains": [
+      "nguynvnhiu6886f86650d49c5d27862bb2.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Văn Hiếu's Company",
+        "email": "founder.zenlee@gmail.com",
+        "website": "nguynvnhiu.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.024Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.025Z",
+    "updatedAt": "2025-09-24T09:07:31.025Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725162a",
+    "name": "Nguyễn Văn Hiếu's Site",
+    "domains": [
+      "nguynvnhiu68873c7948e6108bc297dce0.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Văn Hiếu's Company",
+        "email": "Founder.zenlee@gmail.com",
+        "website": "nguynvnhiu.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.056Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.057Z",
+    "updatedAt": "2025-09-24T09:07:31.057Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725163e",
+    "name": "Lưu Thị Thanh's Site",
+    "domains": [
+      "luththanh6889884748e6108bc2996ce3.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Lưu Thị Thanh's Company",
+        "email": "thanhluu5585@gmail.com",
+        "website": "luththanh.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.095Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.096Z",
+    "updatedAt": "2025-09-24T09:07:31.096Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251652",
+    "name": "Nguyễn Ngọc Luân's Site",
+    "domains": [
+      "nguynngclun6889ca8748e6108bc299c895.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Ngọc Luân's Company",
+        "email": "nguyenngocsonkdol@gmail.com",
+        "website": "nguynngclun.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.143Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.144Z",
+    "updatedAt": "2025-09-24T09:07:31.144Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251666",
+    "name": "Nguyễn Viết Ngọc's Site",
+    "domains": [
+      "nguynvitngc688c487448e6108bc29bd961.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Viết Ngọc's Company",
+        "email": "marmanager@khothiclinic.vn",
+        "website": "nguynvitngc.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.177Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.178Z",
+    "updatedAt": "2025-09-24T09:07:31.178Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725167a",
+    "name": "anhltn2034@gmail.com's Site",
+    "domains": [
+      "anhltn2034gmail68999e4390d69a19d2072c29.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "anhltn2034@gmail.com's Company",
+        "email": "anhltn2034@gmail.com",
+        "website": "anhltn2034gmail.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.214Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.215Z",
+    "updatedAt": "2025-09-24T09:07:31.215Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725168e",
+    "name": "Trương Duy Hiếu's Site",
+    "domains": [
+      "trngduyhiu689ac21a90d69a19d208728e.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Trương Duy Hiếu's Company",
+        "email": "duyhieubds87@gmail.com",
+        "website": "trngduyhiu.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.249Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.250Z",
+    "updatedAt": "2025-09-24T09:07:31.250Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516a2",
+    "name": "Khách Hàng Demo 01's Site",
+    "domains": [
+      "khchhngdemo01689c4dc85f3f3a13ad66326c.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 01's Company",
+        "email": "khachhang.demo01@gmail.com",
+        "website": "khchhngdemo01.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.283Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.284Z",
+    "updatedAt": "2025-09-24T09:07:31.284Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516b6",
+    "name": "Khách Hàng Demo 02's Site",
+    "domains": [
+      "khchhngdemo02689c4dc85f3f3a13ad66326f.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 02's Company",
+        "email": "khachhang.demo02@gmail.com",
+        "website": "khchhngdemo02.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.320Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.322Z",
+    "updatedAt": "2025-09-24T09:07:31.322Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516ca",
+    "name": "Khách Hàng Demo 03's Site",
+    "domains": [
+      "khchhngdemo03689c4dc85f3f3a13ad663272.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 03's Company",
+        "email": "khachhang.demo03@gmail.com",
+        "website": "khchhngdemo03.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.356Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.357Z",
+    "updatedAt": "2025-09-24T09:07:31.357Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516de",
+    "name": "Khách Hàng Demo 04's Site",
+    "domains": [
+      "khchhngdemo04689c4dc85f3f3a13ad663275.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 04's Company",
+        "email": "khachhang.demo04@gmail.com",
+        "website": "khchhngdemo04.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.394Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.395Z",
+    "updatedAt": "2025-09-24T09:07:31.395Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72516f2",
+    "name": "Khách Hàng Demo 05's Site",
+    "domains": [
+      "khchhngdemo05689c4dc85f3f3a13ad663278.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 05's Company",
+        "email": "khachhang.demo05@gmail.com",
+        "website": "khchhngdemo05.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.438Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.439Z",
+    "updatedAt": "2025-09-24T09:07:31.439Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251706",
+    "name": "Khách Hàng Demo 06's Site",
+    "domains": [
+      "khchhngdemo06689c4dc85f3f3a13ad66327b.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 06's Company",
+        "email": "khachhang.demo06@gmail.com",
+        "website": "khchhngdemo06.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.477Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.478Z",
+    "updatedAt": "2025-09-24T09:07:31.478Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725171a",
+    "name": "Khách Hàng Demo 07's Site",
+    "domains": [
+      "khchhngdemo07689c4dc85f3f3a13ad66327e.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 07's Company",
+        "email": "khachhang.demo07@gmail.com",
+        "website": "khchhngdemo07.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.519Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.521Z",
+    "updatedAt": "2025-09-24T09:07:31.521Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725172e",
+    "name": "Khách Hàng Demo 08's Site",
+    "domains": [
+      "khchhngdemo08689c4dc85f3f3a13ad663281.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 08's Company",
+        "email": "khachhang.demo08@gmail.com",
+        "website": "khchhngdemo08.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.561Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.563Z",
+    "updatedAt": "2025-09-24T09:07:31.563Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251742",
+    "name": "Khách Hàng Demo 09's Site",
+    "domains": [
+      "khchhngdemo09689c4dc95f3f3a13ad663284.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 09's Company",
+        "email": "khachhang.demo09@gmail.com",
+        "website": "khchhngdemo09.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.600Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.600Z",
+    "updatedAt": "2025-09-24T09:07:31.600Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251756",
+    "name": "Khách Hàng Demo 10's Site",
+    "domains": [
+      "khchhngdemo10689c4dc95f3f3a13ad663287.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 10's Company",
+        "email": "khachhang.demo10@gmail.com",
+        "website": "khchhngdemo10.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.637Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.639Z",
+    "updatedAt": "2025-09-24T09:07:31.639Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725176a",
+    "name": "Khách Hàng Demo 11's Site",
+    "domains": [
+      "khchhngdemo11689c4dc95f3f3a13ad66328a.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 11's Company",
+        "email": "khachhang.demo11@gmail.com",
+        "website": "khchhngdemo11.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.688Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.690Z",
+    "updatedAt": "2025-09-24T09:07:31.690Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725177e",
+    "name": "Khách Hàng Demo 12's Site",
+    "domains": [
+      "khchhngdemo12689c4dc95f3f3a13ad66328d.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 12's Company",
+        "email": "khachhang.demo12@gmail.com",
+        "website": "khchhngdemo12.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.747Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.749Z",
+    "updatedAt": "2025-09-24T09:07:31.749Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e7251792",
+    "name": "Khách Hàng Demo 13's Site",
+    "domains": [
+      "khchhngdemo13689c4dc95f3f3a13ad663290.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 13's Company",
+        "email": "khachhang.demo13@gmail.com",
+        "website": "khchhngdemo13.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.794Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.795Z",
+    "updatedAt": "2025-09-24T09:07:31.795Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517a6",
+    "name": "Khách Hàng Demo 14's Site",
+    "domains": [
+      "khchhngdemo14689c4dc95f3f3a13ad663293.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 14's Company",
+        "email": "khachhang.demo14@gmail.com",
+        "website": "khchhngdemo14.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.830Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.831Z",
+    "updatedAt": "2025-09-24T09:07:31.831Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517ba",
+    "name": "Khách Hàng Demo 15's Site",
+    "domains": [
+      "khchhngdemo15689c4dc95f3f3a13ad663296.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 15's Company",
+        "email": "khachhang.demo15@gmail.com",
+        "website": "khchhngdemo15.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.868Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.869Z",
+    "updatedAt": "2025-09-24T09:07:31.869Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517ce",
+    "name": "Khách Hàng Demo 16's Site",
+    "domains": [
+      "khchhngdemo16689c4dc95f3f3a13ad663299.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 16's Company",
+        "email": "khachhang.demo16@gmail.com",
+        "website": "khchhngdemo16.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.903Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.904Z",
+    "updatedAt": "2025-09-24T09:07:31.904Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517e2",
+    "name": "Khách Hàng Demo 17's Site",
+    "domains": [
+      "khchhngdemo17689c4dc95f3f3a13ad66329c.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 17's Company",
+        "email": "khachhang.demo17@gmail.com",
+        "website": "khchhngdemo17.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.934Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.935Z",
+    "updatedAt": "2025-09-24T09:07:31.935Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e72517f6",
+    "name": "Khách Hàng Demo 18's Site",
+    "domains": [
+      "khchhngdemo18689c4dc95f3f3a13ad66329f.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 18's Company",
+        "email": "khachhang.demo18@gmail.com",
+        "website": "khchhngdemo18.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.967Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:31.968Z",
+    "updatedAt": "2025-09-24T09:07:31.968Z"
+  },
+  {
+    "_id": "68d3b4d3108634a3e725180a",
+    "name": "Khách Hàng Demo 19's Site",
+    "domains": [
+      "khchhngdemo19689c4dca5f3f3a13ad6632a2.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 19's Company",
+        "email": "khachhang.demo19@gmail.com",
+        "website": "khchhngdemo19.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:31.999Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.000Z",
+    "updatedAt": "2025-09-24T09:07:32.000Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e725181e",
+    "name": "Khách Hàng Demo 20's Site",
+    "domains": [
+      "khchhngdemo20689c4dca5f3f3a13ad6632a5.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách Hàng Demo 20's Company",
+        "email": "khachhang.demo20@gmail.com",
+        "website": "khchhngdemo20.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:32.031Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.032Z",
+    "updatedAt": "2025-09-24T09:07:32.032Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e7251832",
+    "name": "Phan Lê Thanh Tâm's Site",
+    "domains": [
+      "phanlthanhtm689ea51c90d69a19d20e689f.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Phan Lê Thanh Tâm's Company",
+        "email": "phanlethanhtam@gmail.com",
+        "website": "phanlthanhtm.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:32.065Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.066Z",
+    "updatedAt": "2025-09-24T09:07:32.066Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e7251846",
+    "name": "Khách hàng test verify platform's Site",
+    "domains": [
+      "khchhngtestveri689ed23390d69a19d20ef6da.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Khách hàng test verify platform's Company",
+        "email": "khach.hang.test.verify.platform@gmail.com",
+        "website": "khchhngtestveri.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:32.101Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.102Z",
+    "updatedAt": "2025-09-24T09:07:32.102Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e725185a",
+    "name": "Lê Thị Ngọc Ánh's Site",
+    "domains": [
+      "lthngcnh689f0af2e0baeb5b8fad31f0.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Lê Thị Ngọc Ánh's Company",
+        "email": "anhltn2003@gmail.com",
+        "website": "lthngcnh.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:32.134Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.135Z",
+    "updatedAt": "2025-09-24T09:07:32.135Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e725186e",
+    "name": "khach hang test platform's Site",
+    "domains": [
+      "khachhangtestpl689f0c198a34389d33a92f9e.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "khach hang test platform's Company",
+        "email": "khach.hang.test.platform@gmail.com",
+        "website": "khachhangtestpl.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:32.163Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.164Z",
+    "updatedAt": "2025-09-24T09:07:32.164Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e7251882",
+    "name": "Hà Văn Duẩn's Site",
+    "domains": [
+      "hvndun68a2957fae017015879dc94e.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Hà Văn Duẩn's Company",
+        "email": "havanduan2304.stark@gmail.com",
+        "website": "hvndun.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:32.193Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.194Z",
+    "updatedAt": "2025-09-24T09:07:32.194Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e7251896",
+    "name": "TEST's Site",
+    "domains": [
+      "test68a3f617654371caf93e0adf.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "TEST's Company",
+        "email": "tp.sales.hcw@gmail.com",
+        "website": "test.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:32.221Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.223Z",
+    "updatedAt": "2025-09-24T09:07:32.223Z"
+  },
+  {
+    "_id": "68d3b4d4108634a3e72518aa",
+    "name": "Nguyễn Nam's Site",
+    "domains": [
+      "nguynnam68b069a96530c93a801cde80.2tdata.com"
+    ],
+    "theme_config": {
+      "primaryColor": "#3B82F6",
+      "secondaryColor": "#1F2937",
+      "layout": "default"
+    },
+    "footer_config": {
+      "companyInfo": {
+        "name": "Nguyễn Nam's Company",
+        "email": "x321pm@gmail.com",
+        "website": "nguynnam.2tdata.com",
+        "address": "",
+        "hotline": ""
+      },
+      "logos": {
+        "main": {
+          "image": "",
+          "alt": "Main Logo"
+        },
+        "partners": []
+      },
+      "partnersTitle": "Thành viên 2T Group",
+      "quickLinks": [],
+      "socialLinks": [],
+      "copyright": "© 2025 Company. All rights reserved.",
+      "styles": {
+        "backgroundColor": "#ffffff",
+        "textColor": "#000000",
+        "copyrightBgColor": "#f5f5f5",
+        "copyrightTextColor": "#666666",
+        "linkHoverColor": "#0066cc"
+      }
+    },
+    "is_main_site": false,
+    "status": "active",
+    "settings": {
+      "allowRegistration": true,
+      "requireEmailVerification": false,
+      "timezone": "UTC",
+      "language": "en",
+      "maxUsers": 1000
+    },
+    "stats": {
+      "totalUsers": 0,
+      "totalContent": 0,
+      "lastActivity": "2025-09-24T09:07:32.251Z"
+    },
+    "site_admins": [],
+    "createdAt": "2025-09-24T09:07:32.252Z",
+    "updatedAt": "2025-09-24T09:07:32.252Z"
+  }
+]

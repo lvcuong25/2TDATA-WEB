@@ -1,0 +1,99 @@
+import mongoose from "mongoose";
+import UserService from "../model/UserService.js";
+
+// Kết nối database
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/2tdata");
+    console.log("Connected to MongoDB");
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    process.exit(1);
+  }
+};
+
+// Hàm thực hiện cập nhật tự động
+const performAutoUpdate = async () => {
+  try {
+    console.log("Starting auto update process...");
+    
+    // Lấy danh sách service cần cập nhật trực tiếp từ database
+    const now = new Date();
+    const servicesToUpdate = await UserService.find({
+      'autoUpdate.enabled': true,
+      'autoUpdate.nextUpdateAt': { $lte: now },
+      'link_update': { $exists: true, $not: { $size: 0 } }
+    }).populate('user', 'name email')
+      .populate('service', 'name slug');
+    
+    console.log(`Found ${servicesToUpdate.length} services to update`);
+    
+    for (const service of servicesToUpdate) {
+      try {
+        console.log(`Updating service: ${service.service?.name} for user: ${service.user?.name}`);
+        
+        // Gọi các link_update
+        if (service.link_update && service.link_update.length > 0) {
+          await Promise.all(
+            service.link_update.map(async (link) => {
+              if (link.url) {
+                try {
+                  const response = await fetch(link.url, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                  });
+                  console.log(`Successfully called update link: ${link.url} - Status: ${response.status}`);
+                } catch (error) {
+                  console.error(`Error calling update link ${link.url}:`, error.message);
+                }
+              }
+            })
+          );
+        }
+        
+        // Cập nhật thời gian cập nhật cuối cùng
+        service.autoUpdate.lastUpdateAt = new Date();
+        service.autoUpdate.nextUpdateAt = new Date(Date.now() + service.autoUpdate.interval * 60 * 1000);
+        await service.save();
+        console.log(`Updated last update time for service: ${service._id}`);
+        
+      } catch (error) {
+        console.error(`Error updating service ${service._id}:`, error.message);
+      }
+    }
+    
+    console.log("Auto update process completed");
+  } catch (error) {
+    console.error("Error in auto update process:", error);
+  }
+};
+
+// Hàm chính
+const main = async () => {
+  await connectDB();
+  
+  // Chạy cập nhật tự động
+  await performAutoUpdate();
+  
+  // Đóng kết nối database
+  await mongoose.connection.close();
+  console.log("Database connection closed");
+  process.exit(0);
+};
+
+// Xử lý lỗi
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Promise Rejection:', err);
+  process.exit(1);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+// Chạy script
+main();

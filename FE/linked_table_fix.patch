@@ -1,0 +1,66 @@
+--- FormView.jsx.backup	2025-09-15 13:39:00.000000000 +0000
++++ FormView.jsx	2025-09-15 13:39:00.000000000 +0000
+@@ -896,12 +896,12 @@
+           <Input
+             placeholder={`Chọn từ ${column.linkedTableConfig?.linkedTableName || 'bảng liên kết'}`}
+             size="large"
+             readOnly
+-            value={(() => {
+-              if (!selectedLinkedTableValue) return '';
+-              if (Array.isArray(selectedLinkedTableValue)) {
+-                return selectedLinkedTableValue.map(item => item.label || item.name).join(', ');
++            value={(() => {
++              const formValue = form.getFieldValue(column.name);
++              if (!formValue) return '';
++              if (Array.isArray(formValue)) {
++                return formValue.map(item => item.label || item.name || item.value || String(item)).join(', ');
+               }
+-              return selectedLinkedTableValue.label || selectedLinkedTableValue.name || '';
++              return formValue.label || formValue.name || formValue.value || String(formValue);
+             })()}
+             style={{ 
+               borderRadius: '8px',
+@@ -923,17 +923,21 @@
+   const handleSelectLinkedTableValue = (value) => {
+     if (currentLinkedTableColumn) {
+       const valueField = currentLinkedTableColumn.linkedTableConfig?.linkedColumnId || '_id';
+       const displayField = currentLinkedTableColumn.linkedTableConfig?.displayColumnId || 'name';
+       
+       // Set form value
+       if (currentLinkedTableColumn.linkedTableConfig?.allowMultiple) {
+         form.setFieldValue(currentLinkedTableColumn.name, value);
++        setSelectedLinkedTableValue(value);
+       } else {
+-        form.setFieldValue(currentLinkedTableColumn.name, value[0] || value);
++        const singleValue = Array.isArray(value) ? value[0] : value;
++        form.setFieldValue(currentLinkedTableColumn.name, singleValue);
++        setSelectedLinkedTableValue(singleValue);
+       }
+-      setSelectedLinkedTableValue(value);
+       handleCloseLinkedTableModal();
+     }
+   };
++  
++  // Force re-render when form values change
++  const formValues = form.getFieldsValue();
+ 
+@@ -1153,12 +1157,17 @@
+         visible={linkedTableModalVisible}
+         onCancel={handleCloseLinkedTableModal}
+         onSelect={handleSelectLinkedTableValue}
+         column={currentLinkedTableColumn}
+-        record={{ _id: 'form-record', data: {} }}
++        record={{ _id: 'form-record', data: form.getFieldsValue() }}
+         updateRecordMutation={{
+           mutate: (data, options) => {
+             // For form, we just update the form value
+             if (data.data && currentLinkedTableColumn) {
+-              form.setFieldValue(currentLinkedTableColumn.name, data.data[currentLinkedTableColumn.name]);
++              const newValue = data.data[currentLinkedTableColumn.name];
++              form.setFieldValue(currentLinkedTableColumn.name, newValue);
++              setSelectedLinkedTableValue(newValue);
++              // Force component re-render
++              setFormConfig(prev => ({ ...prev }));
+             }
+             options?.onSuccess?.();
+           }

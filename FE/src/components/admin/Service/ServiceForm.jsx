@@ -1,16 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { toast } from "react-toastify";
-import { Button, Input, Form, Space, Card, Tooltip } from 'antd';
+import { Button, Input, Form, Space, Card, Tooltip, Spin } from 'antd';
 import { Link, useNavigate } from "react-router-dom";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 import { uploadFileCloudinary } from "../libs/uploadImageCloud";
 import { PlusOutlined, MinusCircleOutlined, LinkOutlined, EyeOutlined } from '@ant-design/icons';
+import { getSafeImageUrl } from "../../../utils/imageUtils";
+import { AuthContext } from "../../core/Auth";
 
 const ServiceForm = () => {
     const navigate = useNavigate();
     const [image, setImage] = useState('https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg');
+    
+    // Add authentication context
+    const authContext = useContext(AuthContext) || {};
+    const currentUser = authContext?.currentUser || null;
+    const authLoading = authContext?.isLoading || false;
+    const isAdmin = authContext?.isAdmin || false;
+
+    // Show loading if authentication is still loading
+    if (authLoading) {
+        return <Spin size="large" />;
+    }
+
+    // Redirect if user is not authenticated or not admin
+    if (!currentUser) {
+        navigate("/signin");
+        return null;
+    }
+
+    if (!isAdmin) {
+        navigate("/");
+        return null;
+    }
 
     const { control, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
@@ -108,7 +132,7 @@ const ServiceForm = () => {
                 <div className="flex flex-col md:flex-row gap-6">
                     <div className="md:w-1/3">
                         <Form.Item label="Ảnh Dịch vụ">
-                            <img src={image} alt="Service preview" className="w-full h-auto object-cover rounded-lg mb-4" />
+                            <img src={getSafeImageUrl(image)} alt="Service preview" className="w-full h-auto object-cover rounded-lg mb-4" />
                             <div className="flex flex-col">
                                 <button type="button"
                                     onClick={() => document.getElementById('file')?.click()}

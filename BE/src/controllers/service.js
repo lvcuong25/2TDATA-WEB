@@ -37,6 +37,22 @@ export const getServiceById = async (req, res, next) => {
     try {
         const { id } = req.params;
 
+        // Check if user is authenticated
+        if (!req.user) {
+            return res.status(401).json({
+                message: "Authentication required",
+                error: "AUTHENTICATION_REQUIRED"
+            });
+        }
+
+        // Check if user object has required properties
+        if (!req.user._id || !req.user.role) {
+            return res.status(401).json({
+                message: "Invalid user data",
+                error: "INVALID_USER_DATA"
+            });
+        }
+
         // Nếu là admin hoặc super_admin, cho phép xem bất kỳ service nào
         if (req.user.role === 'admin' || req.user.role === 'site_admin' || req.user.role === 'super_admin') {
             const service = await Service.findById(id);
@@ -50,6 +66,12 @@ export const getServiceById = async (req, res, next) => {
 
         // Nếu là user thường, kiểm tra danh sách service được gán
         const user = await User.findById(req.user._id).populate('service');
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
 
         if (!user.service || user.service.length === 0) {
             return res.status(403).json({
@@ -74,10 +96,33 @@ export const getServiceById = async (req, res, next) => {
 export const getServiceBySlug = async (req, res, next) => {
     try {
         const { slug } = req.params;
+
+        // Check if user is authenticated
+        if (!req.user) {
+            return res.status(401).json({
+                message: "Authentication required",
+                error: "AUTHENTICATION_REQUIRED"
+            });
+        }
+
+        // Check if user object has required properties
+        if (!req.user._id || !req.user.role) {
+            return res.status(401).json({
+                message: "Invalid user data",
+                error: "INVALID_USER_DATA"
+            });
+        }
+
         const userId = req.user._id;
 
         // Lấy thông tin user và populate danh sách service
         const user = await User.findById(userId).populate('service');
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
 
         // Nếu là admin hoặc super_admin, cho phép xem bất kỳ service nào
         if (req.user.role === 'admin' || req.user.role === 'site_admin' || req.user.role === 'super_admin') {
@@ -116,7 +161,7 @@ export const createService = async (req, res, next) => {
         const { name, description, image, image_public_id, slug, authorizedLinks } = req.body;
         
         // Only super admin or legacy admin can create services
-        if (req.user.role !== 'super_admin' && req.user.role !== 'admin' && req.user.role !== 'site_admin') {
+        if (!req.user || (req.user.role !== 'super_admin' && req.user.role !== 'admin' && req.user.role !== 'site_admin')) {
             return res.status(403).json({
                 message: "Only admin can create services",
             });

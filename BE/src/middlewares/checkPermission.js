@@ -9,22 +9,25 @@ const { SECRET_KEY } = process.env;
 export const checkPermission = (permission) => {
     return async (req, res, next) => {
         try {
+            let token = null;
+            
+            // Check Authorization header first
             const authorization = req.headers?.authorization;
-            if (!authorization) {
+            if (authorization && authorization.startsWith('Bearer ')) {
+                token = authorization.split(" ")[1];
+            }
+            
+            // If no token in header, check cookie
+            if (!token && req.cookies && req.cookies.accessToken) {
+                token = req.cookies.accessToken;
+            }
+            
+            if (!token) {
                 return res.status(401).json({
-                    message: "Authorization header is missing",
-                    error: "NO_AUTH_HEADER"
+                    message: "Authentication token is missing",
+                    error: "NO_TOKEN"
                 });
             }
-
-            if (!authorization.startsWith('Bearer ')) {
-                return res.status(401).json({
-                    message: "Invalid authorization format",
-                    error: "INVALID_AUTH_FORMAT"
-                });
-            }
-
-            const token = authorization.split(" ")[1];
             
             let decoded;
             try {
@@ -45,7 +48,7 @@ export const checkPermission = (permission) => {
                 throw error;
             }
 
-            const user = await User.findById(decoded._id).populate('service').populate('site_id');
+            const user = await User.findById(decoded._id).populate('service').populate('site_id').lean();
             if (!user) {
                 return res.status(403).json({
                     message: "User does not exist",

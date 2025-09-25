@@ -70,3 +70,35 @@ export const api = {
 };
 
 export default api;
+
+  // Database Management
+  database: {
+    // Database operations
+    getAllDatabases: (params) => axiosConfig.get('/database/databases', { params }),
+    getDatabaseById: (id) => axiosConfig.get(`/database/databases/${id}`),
+    createDatabase: (data) => axiosConfig.post('/database/databases', data),
+    updateDatabase: (id, data) => axiosConfig.put(`/database/databases/${id}`, data),
+    deleteDatabase: (id) => axiosConfig.delete(`/database/databases/${id}`),
+    
+    // Table operations
+    getTablesByDatabase: (databaseId) => axiosConfig.get(`/database/databases/${databaseId}/tables`),
+    getTableById: (id) => axiosConfig.get(`/database/tables/${id}`),
+    createTable: (data) => axiosConfig.post('/database/tables', data),
+    updateTable: (id, data) => axiosConfig.put(`/database/tables/${id}`, data),
+    deleteTable: (id) => axiosConfig.delete(`/database/tables/${id}`),
+    getTableStructure: (id) => axiosConfig.get(`/database/tables/${id}/structure`),
+    
+    // Column operations
+    getColumnsByTable: (tableId) => axiosConfig.get(`/database/tables/${tableId}/columns`),
+    getColumnById: (id) => axiosConfig.get(`/database/columns/${id}`),
+    createColumn: (data) => axiosConfig.post('/database/columns', data),
+    updateColumn: (id, data) => axiosConfig.put(`/database/columns/${id}`, data),
+    deleteColumn: (id) => axiosConfig.delete(`/database/columns/${id}`),
+    
+    // Record operations
+    getRecordsByTable: (tableId, params) => axiosConfig.get(`/database/tables/${tableId}/records`, { params }),
+    getRecordById: (id) => axiosConfig.get(`/database/records/${id}`),
+    createRecord: (data) => axiosConfig.post('/database/records', data),
+    updateRecord: (id, data) => axiosConfig.put(`/database/records/${id}`, data),
+    deleteRecord: (id) => axiosConfig.delete(`/database/records/${id}`),
+  },

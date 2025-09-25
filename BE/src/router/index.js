@@ -1,10 +1,11 @@
-﻿import { Router } from "express";
+import { Router } from "express";
 import routerUser from "./routerUser.js";
 import routerAuth from "./routerAuth.js";
 import routerService from "./routerService.js";
 import routerBlog from "./routerBlog.js";
 import routerIframe from "./routerIframe.js";
 import routerFooterUpload from "./routerFooterUpload.js";
+import routerViewUpload from "./routerViewUpload.js";
 import routerServer from "./routerServer.js";
 
 import userInfoRouter from "./userInfoRouter.js";
@@ -15,6 +16,18 @@ import routerAsset from "./routerAsset.js";
 import adminRouter from "./adminRouter.js";
 
 import routerOrganization from "./routerOrganization.js";
+import routerDatabase from "./routerDatabase.js";
+import routerOrder from "./orderRouter.js";
+import routerCell from "./routerCell.js";
+import basesRouter from "./bases.routes.js";
+import membersRouter from "./members.routes.js";
+import baseRolesRouter from "./baseRoles.routes.js";
+import locksRouter from "./locks.routes.js";
+import columnsReadRouter from "./columns.read.routes.js";
+import tableRouter from "./table.routes.js";
+import columnPermsRouter from "./column-perms.routes.js";
+import rolesPermsRouter from "./roles-perms.routes.js";
+import permissionRouter from "./permission.routes.js";
 
 const router = Router();
 
@@ -26,11 +39,11 @@ router.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     version: "1.0.0",
     database: "connected",
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
-// Root endpoint
+// Root endpoint - UPDATED to include iframe
 router.get("/", (req, res) => {
   res.status(200).json({
     message: "Welcome to 2TDATA-WEB API",
@@ -41,8 +54,12 @@ router.get("/", (req, res) => {
       users: "/api/user",
       services: "/api/service",
       blogs: "/api/blogs",
-      sites: "/api/sites"
-    }
+      sites: "/api/sites",
+      server: "/api/server",
+      iframe: "/api/iframe",
+      iframe_n8n: "/api/iframe/n8n/upsert",
+      database: "/api/database",
+    },
   });
 });
 
@@ -56,14 +73,25 @@ router.use("/server", routerServer);
 
 router.use("/iframe", routerIframe);
 router.use("/footer", routerFooterUpload);
+router.use("/view", routerViewUpload);
 router.use("/sites", routerSite);
 router.use("/site-admins", siteAdminRoutes);
 router.use("/assets", routerAsset);
+router.use("/orders", routerOrder);
+router.use("/action", routerCell);
 
+router.use(basesRouter);
+router.use(membersRouter);
+router.use(baseRolesRouter);
+router.use(locksRouter);
+router.use(columnsReadRouter);
+router.use("/tables", tableRouter);
+router.use(columnPermsRouter);
+router.use(rolesPermsRouter);
+router.use("/permissions", permissionRouter);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 
-
 router.use("/organization", routerOrganization);
+router.use("/database", routerDatabase);
 export default router;
- 

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Form, Input, Button, Select, Row, Col, Card, Divider } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Button, Select, Row, Col, Card, Divider, Alert, Tag, message } from 'antd';
 import { useForm, Controller } from 'react-hook-form';
-import { UserOutlined, TeamOutlined, InfoCircleOutlined, GlobalOutlined } from '@ant-design/icons';
+import { UserOutlined, TeamOutlined, InfoCircleOutlined, GlobalOutlined, WarningOutlined, CheckCircleOutlined, SyncOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import axios from '../../../api/axiosConfig';
 
@@ -14,16 +14,20 @@ const statusOptions = [
 ];
 
 const ServerForm = ({ initialValues = {}, onSubmit, loading, users = [] }) => {
-  const { control, handleSubmit, watch, formState: { errors } } = useForm({
+  const { control, handleSubmit, watch, formState: { errors }, setValue } = useForm({
     defaultValues: {
       ...initialValues,
-      userLimits: initialValues.userLimits || {}
+      userLimits: initialValues.userLimits || { min: 1, max: 1 }
     }
   });
 
   const watchedUserLimits = watch('userLimits');
   const watchedUsers = watch('users');
   const watchedSelectedSite = watch('selectedSite');
+  
+  // State để lưu thông tin về users và server
+  const [userServerStatus, setUserServerStatus] = useState({});
+  const [checkingUsers, setCheckingUsers] = useState(false);
 
   // Fetch sites for filtering
   const { data: sitesData } = useQuery({
@@ -38,6 +42,103 @@ const ServerForm = ({ initialValues = {}, onSubmit, loading, users = [] }) => {
   const filteredUsers = watchedSelectedSite 
     ? users.filter(user => user.site_id?._id === watchedSelectedSite || user.site_id === watchedSelectedSite)
     : users;
+
+  // Hàm kiểm tra và gán user vào server
+  const checkAndAssignUserToServer = async (userIds) => {
+    if (!userIds || userIds.length === 0) {
+      setUserServerStatus({});
+      return;
+    }
+
+    setCheckingUsers(true);
+    try {
+      // Kiểm tra từng user một
+      const results = [];
+      for (const userId of userIds) {
+        try {
+          const response = await axios.post('/service/check-assign-user', { userId });
+          results.push(response.data);
+        } catch (error) {
+          // Xử lý lỗi khi server đầy hoặc vượt quá limit
+          if (error.response?.status === 400) {
+            results.push({
+              success: false,
+              userId: userId,
+              message: error.response.data.message,
+              hasServer: false,
+              error: true
+            });
+          } else {
+            results.push({
+              success: false,
+              userId: userId,
+              message: 'Lỗi khi kiểm tra user',
+              hasServer: false
+            });
+          }
+        }
+      }
+      
+      // Cập nhật trạng thái users
+      const newUserStatus = {};
+      let hasErrors = false;
+      
+      results.forEach(result => {
+        if (result.success && result.hasServer) {
+          newUserStatus[result.userId] = {
+            hasServer: true,
+            serverId: result.serverInfo.serverId,
+            serverLink: result.serverInfo.link
+          };
+        } else {
+          newUserStatus[result.userId] = {
+            hasServer: false,
+            message: result.message,
+            error: result.error || false
+          };
+          if (result.error) {
+            hasErrors = true;
+          }
+        }
+      });
+      
+      setUserServerStatus(newUserStatus);
+      
+      // Hiển thị thông báo
+      if (hasErrors) {
+        const errorCount = results.filter(r => r.error).length;
+        message.error(`${errorCount} user(s) không thể gán do server đầy`);
+      } else {
+        const successCount = results.filter(r => r.success).length;
+        if (successCount > 0) {
+          message.success(`Đã gán ${successCount} users`);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error checking user server status:', error);
+      message.error('Lỗi khi kiểm tra trạng thái server của users');
+    } finally {
+      setCheckingUsers(false);
+    }
+  };
+
+  // Kiểm tra users khi danh sách users thay đổi
+  useEffect(() => {
+    if (watchedUsers && watchedUsers.length > 0) {
+      checkAndAssignUserToServer(watchedUsers);
+    } else {
+      setUserServerStatus({});
+    }
+  }, [watchedUsers]);
+
+  // Tự động điền giá trị mặc định cho userLimits
+  useEffect(() => {
+    if (!watchedUserLimits?.min && !watchedUserLimits?.max) {
+      setValue('userLimits.min', 1);
+      setValue('userLimits.max', 1);
+    }
+  }, []);
 
   return (
     <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
@@ -205,6 +306,11 @@ const ServerForm = ({ initialValues = {}, onSubmit, loading, users = [] }) => {
               </span>
             }
             className="mb-4"
+            extra={
+              checkingUsers && (
+                <SyncOutlined spin className="text-blue-500" />
+              )
+            }
           >
             {/* Site Selection */}
             <Form.Item
@@ -263,32 +369,73 @@ const ServerForm = ({ initialValues = {}, onSubmit, loading, users = [] }) => {
                   }
                 }}
                 render={({ field }) => (
-                  <Select
-                    mode="multiple"
-                    placeholder={
-                      watchedSelectedSite 
-                        ? `Chọn người dùng từ site đã chọn (${filteredUsers.length} người dùng)`
-                        : "Chọn người dùng (có thể bỏ trống hoặc chọn nhiều)"
-                    }
-                    allowClear
-                    value={Array.isArray(field.value) ? field.value : field.value ? [field.value] : []}
-                    onChange={val => field.onChange(Array.isArray(val) ? val : [val])}
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                    }
-                  >
-                    {filteredUsers.map(user => (
-                      <Option key={user._id} value={user._id}>
-                        {user.name} ({user.email})
-                        {user.site_id?.name && (
-                          <span className="text-gray-500 text-sm ml-2">
-                            - {user.site_id.name}
-                          </span>
-                        )}
-                      </Option>
-                    ))}
-                  </Select>
+                  <div>
+                    <Select
+                      mode="multiple"
+                      placeholder={
+                        watchedSelectedSite 
+                          ? `Chọn người dùng từ site đã chọn (${filteredUsers.length} người dùng)`
+                          : "Chọn người dùng (có thể bỏ trống hoặc chọn nhiều)"
+                      }
+                      allowClear
+                      value={Array.isArray(field.value) ? field.value : field.value ? [field.value] : []}
+                      onChange={val => field.onChange(Array.isArray(val) ? val : [val])}
+                      showSearch
+                      filterOption={(input, option) =>
+                        (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                      }
+                      loading={checkingUsers}
+                    >
+                      {filteredUsers.map(user => (
+                        <Option key={user._id} value={user._id}>
+                          <div className="flex items-center justify-between">
+                            <span>
+                              {user.name} ({user.email})
+                              {user.site_id?.name && (
+                                <span className="text-gray-500 text-sm ml-2">
+                                  - {user.site_id.name}
+                                </span>
+                              )}
+                            </span>
+                            {userServerStatus[user._id] && (
+                              <Tag 
+                                color={
+                                  userServerStatus[user._id].error ? 'red' :
+                                  userServerStatus[user._id].hasServer ? 'green' : 'blue'
+                                }
+                              >
+                                {userServerStatus[user._id].error ? 'Lỗi' : ''}
+                              </Tag>
+                            )}
+                          </div>
+                        </Option>
+                      ))}
+                    </Select>
+                    
+                    {/* Hiển thị lỗi cho users không thể gán */}
+                    {watchedUsers && watchedUsers.length > 0 && Object.keys(userServerStatus).length > 0 && (
+                      <div className="mt-3">
+                        {watchedUsers.map(userId => {
+                          const status = userServerStatus[userId];
+                          const user = filteredUsers.find(u => u._id === userId);
+                          
+                          if (status && status.error) {
+                            return (
+                              <Alert
+                                key={userId}
+                                message={`${user?.name} (${user?.email}) - Không thể gán`}
+                                description={status.message}
+                                type="error"
+                                showIcon
+                                className="mb-2"
+                              />
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
               />
             </Form.Item>

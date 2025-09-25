@@ -3,7 +3,7 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { Space, Table, Button, Popconfirm, Tag, Modal, Input, Form, Descriptions, Avatar, Select, Row, Col, Badge } from "antd";
 import { toast } from "react-toastify";
 import { CheckOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, EditOutlined, LinkOutlined, SearchOutlined } from "@ant-design/icons";
-import instance from "../../../utils/axiosInstance";
+import instance from "../../../utils/axiosInstance-cookie-only";
 import LinkFieldArray from '../shared/LinkFieldArray';
 
 const StatusList = () => {
@@ -219,7 +219,9 @@ const StatusList = () => {
         return (
           <div className="flex items-center gap-2">
             <img
-              src={service?.image || 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
+              src={service?.image && service.image.trim() !== ""
+              ? service.image
+              : 'https://t4.ftcdn.net/jpg/04/73/25/49/360_F_473254957_bxG9yf4ly7OBO5I0O5KABlN930GwaMQz.jpg'}
               alt={service?.name || 'Service image'}
               className="w-10 h-10 object-cover rounded"
             />
@@ -381,6 +383,16 @@ const StatusList = () => {
         <Form form={form} layout="vertical">
           {selectedService && selectedService.user && (
             <Descriptions title="Thông tin người dùng" bordered column={1} size="small" className="mb-4">
+              <Descriptions.Item label="User ID">
+                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded border">
+                  {selectedService.user?._id || 'N/A'}
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="UserService ID">
+                <span className="font-mono text-sm bg-blue-100 px-2 py-1 rounded border">
+                  {selectedService._id || 'N/A'}
+                </span>
+              </Descriptions.Item>
               <Descriptions.Item label="Tên">{selectedService.user?.name || 'N/A'}</Descriptions.Item>
               <Descriptions.Item label="Email">{selectedService.user?.email || 'N/A'}</Descriptions.Item>
               {selectedService.user?.phone && <Descriptions.Item label="Điện thoại">{selectedService.user.phone}</Descriptions.Item>}

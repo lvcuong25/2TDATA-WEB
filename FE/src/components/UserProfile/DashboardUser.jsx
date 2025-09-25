@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { AuthContext } from '../core/Auth';
 import { useQuery } from '@tanstack/react-query';
-import instance from '../../utils/axiosInstance';
+import instance from '../../utils/axiosInstance-cookie-only';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -26,13 +26,16 @@ const DashboardUser = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const { currentUser, removeCurrentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+  const removeCurrentUser = authContext?.removeCurrentUser;
+  const notifyAuthChange = authContext?.notifyAuthChange;
 
-  // Kiểm tra user đã có tổ chức chưa
+  // Kiểm tra user đã có tổ chức chưa - ẩn menu nếu chưa có tổ chức (kể cả super admin)
   const { data: orgData } = useQuery({
     queryKey: ['organization', currentUser?._id],
     queryFn: async () => {
-      if (!currentUser?._id || currentUser.role === 'admin') return null;
+      if (!currentUser?._id) return null;
       try {
         const res = await instance.get(`organization/user/${currentUser._id}`);
         return res;
@@ -43,16 +46,68 @@ const DashboardUser = () => {
     enabled: !!currentUser?._id,
     retry: false,
   });
-  const hasOrganization = !!orgData || currentUser?.role === 'admin';
+  // Chỉ hiển thị menu "Tổ chức" khi user thực sự có tổ chức (không phân biệt role)
+  const hasOrganization = !!orgData;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
+      // Call backend logout API to clear cookie
+      try {
+        await instance.post('/auth/logout');
+        console.log('Backend logout successful');
+      } catch (apiError) {
+        console.warn('Backend logout failed, continuing with client-side cleanup:', apiError);
+        // Continue with client-side cleanup even if API fails
+      }
+
+      // Clear user data from context and storage
       removeCurrentUser();
+      
+      // Clear localStorage and sessionStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('auth_timestamp');
+      sessionStorage.removeItem('user');
+      
+      // Clear any cached user data
+      if (window.userData) {
+        delete window.userData;
+      }
+      
+      // Clear React Query cache if available
+      if (window.queryClient) {
+        window.queryClient.clear();
+      }
+      
+      // Clear any other potential auth data
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('auth') || key.includes('user')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.includes('auth') || key.includes('user')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
+      // Thông báo cho các tab khác sử dụng notifyAuthChange
+      if (notifyAuthChange) {
+        notifyAuthChange(null);
+      } else {
+        // Fallback: dispatch events để thông báo cho các tab khác
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('authUpdate', { detail: null }));
+      }
+
       toast.success('Đăng xuất thành công!');
-      navigate('/');
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Có lỗi xảy ra khi đăng xuất!');
+      
+      // Force redirect even if there's an error
+      window.location.href = '/';
     }
   };
 
@@ -85,7 +140,7 @@ const DashboardUser = () => {
   ];
 
   // Add admin menu if user is admin, super_admin, or site_admin
-  if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') {
+  if (authContext?.isAdmin) {
     menuItems.splice(4, 0, {
       key: '/admin',
       icon: <SettingOutlined />,
@@ -93,7 +148,7 @@ const DashboardUser = () => {
     });
   }
 
-  // Add organization menu if user has organization
+  // Add organization menu ONLY if user has organization (không phân biệt role, kể cả super admin)
   if (hasOrganization) {
     // Find index of 'Đổi mật khẩu'
     const changePasswordIdx = menuItems.findIndex(item => item.key === '/profile/change-password');
@@ -116,6 +171,22 @@ const DashboardUser = () => {
       ],
     });
   }
+
+  //
+      const changePasswordIdx = menuItems.findIndex(item => item.key === '/profile/change-password');
+    // Insert organization group before 'Đổi mật khẩu'
+    menuItems.splice(changePasswordIdx, 0, {
+      key: 'base-management',
+      icon: <TeamOutlined />,
+      label: 'Base',
+      children: [
+        {
+          key: '/profile/base',
+          icon: <UsergroupAddOutlined />,
+          label: <Link to="/profile/base">Quản lý base</Link>,
+        },
+      ],
+    });
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -146,8 +217,8 @@ const DashboardUser = () => {
                   {currentUser?.name || 'User'}
                 </Title>
                 <Text className="text-xs text-gray-500">
-                  {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') ? 
-                    (currentUser?.role === 'super_admin' ? 'Quản trị tối cao' : 
+                  {authContext?.isAdmin ? 
+                    (authContext?.isSuperAdmin ? 'Quản trị tối cao' : 
                      currentUser?.role === 'site_admin' ? 'Quản trị site' : 'Quản trị viên') : 'Người dùng'}
                 </Text>
               </div>

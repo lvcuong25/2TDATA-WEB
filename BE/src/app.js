@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import router from './router/index.js';
 import { connectDB } from "./config/db.js";
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import logger from './utils/logger.js';
 import { authAndSiteDetectionMiddleware } from './middlewares/authAndSiteDetection.js';
 import { applySiteFilterMiddleware } from './middlewares/siteDetection.js';
@@ -34,6 +35,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Cookie parser middleware
+app.use(cookieParser());
+
 // Serve static files for uploads
 app.use('/uploads', express.static('uploads'));
 app.use('/logos', express.static('uploads/logos'));
@@ -46,7 +50,10 @@ app.use("/api", (req, res, next) => {
         '/api/auth/sign-up',
         '/api/auth/sign-in',
         '/api/auth/send-otp',
-        '/api/auth/reset-password'
+        '/api/auth/reset-password',
+        '/api/auth', // ← Thêm endpoint /api/auth để Frontend có thể verify user
+        '/api/service/check-assign-user',
+        '/api/iframe/n8n/upsert'
     ];
     
     if (skipRoutes.some(route => req.path.startsWith(route))) {
@@ -62,6 +69,7 @@ app.use("/api", (req, res, next) => {
 
 // Main router
 app.use("/api", router);
+
 
 // 404 handler
 app.use((req, res, next) => {

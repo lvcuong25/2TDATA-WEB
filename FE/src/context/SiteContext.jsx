@@ -1,5 +1,5 @@
 ﻿import React, { createContext, useContext, useState, useEffect } from 'react';
-import axiosInstance from '../axios/axiosInstance';
+import axiosInstance from '../utils/axiosInstance-cookie-only';
 
 const SiteContext = createContext();
 
@@ -58,6 +58,28 @@ const updateLogoMetaTags = (siteData) => {
   }
 };
 
+// Helper function to clear all authentication data
+const clearAuthData = () => {
+  // Clear all auth-related localStorage items
+  localStorage.removeItem('user');
+  localStorage.removeItem('auth_timestamp');
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('token');
+  
+  // Clear sessionStorage as well
+  sessionStorage.clear();
+  
+  // Clear all cookies for current domain
+  document.cookie.split(";").forEach((c) => {
+    document.cookie = c
+      .replace(/^ +/, "")
+      .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+  });
+  
+  console.log('Authentication data cleared for site switch');
+};
+
 export const useSite = () => {
   const context = useContext(SiteContext);
   if (!context) {
@@ -69,6 +91,7 @@ export const useSite = () => {
 export const SiteProvider = ({ children }) => {
   const [currentSite, setCurrentSite] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [previousHostname, setPreviousHostname] = useState(null);
 
   useEffect(() => {
     detectAndLoadSite();
@@ -76,11 +99,47 @@ export const SiteProvider = ({ children }) => {
 
   const detectAndLoadSite = async () => {
     try {
+      // Get current hostname
+      const currentHostname = window.location.hostname;
+      
+      // Check if hostname has changed (user switched site)
+      const storedHostname = localStorage.getItem('last_hostname');
+      
+      if (storedHostname && storedHostname !== currentHostname) {
+        console.log(`Site switch detected: ${storedHostname} -> ${currentHostname}`);
+        // Clear all authentication data when switching sites
+        clearAuthData();
+        
+        // Force reload to ensure clean state
+        localStorage.setItem('last_hostname', currentHostname);
+        window.location.reload();
+        return;
+      }
+      
+      // Store current hostname
+      localStorage.setItem('last_hostname', currentHostname);
+      
       // Build timestamp: 2025-07-01T06:57:00Z - Force rebuild
       // Use the public /sites/current endpoint that detects site based on hostname
       const response = await axiosInstance.get('/sites/current');
       if (response.data.success) {
         const siteData = response.data.data;
+        
+        // Check if site ID has changed (another way to detect site switch)
+        const storedSiteId = localStorage.getItem('current_site_id');
+        if (storedSiteId && storedSiteId !== siteData._id) {
+          console.log(`Site ID change detected: ${storedSiteId} -> ${siteData._id}`);
+          // Clear authentication data
+          clearAuthData();
+          localStorage.setItem('current_site_id', siteData._id);
+          // Force reload
+          window.location.reload();
+          return;
+        }
+        
+        // Store current site ID
+        localStorage.setItem('current_site_id', siteData._id);
+        
         setCurrentSite(siteData);
         
         // Update document title with site name
@@ -127,6 +186,18 @@ export const SiteProvider = ({ children }) => {
       const response = await axiosInstance.get('/sites/current');
       if (response.data.success) {
         const siteData = response.data.data;
+        
+        // Check if site has changed
+        if (siteData._id !== currentSite._id) {
+          console.log('Site change detected during refresh');
+          // Clear auth data and reload
+          clearAuthData();
+          localStorage.setItem('current_site_id', siteData._id);
+          localStorage.setItem('last_hostname', window.location.hostname);
+          window.location.reload();
+          return;
+        }
+        
         setCurrentSite(siteData);
         
         // Update favicon and logos dynamically
@@ -143,6 +214,28 @@ export const SiteProvider = ({ children }) => {
     }
   };
 
+  // Listen for hostname changes (in case of programmatic navigation)
+  useEffect(() => {
+    const checkHostnameChange = () => {
+      const currentHostname = window.location.hostname;
+      const storedHostname = localStorage.getItem('last_hostname');
+      
+      if (storedHostname && storedHostname !== currentHostname) {
+        console.log('Hostname change detected via navigation');
+        clearAuthData();
+        localStorage.setItem('last_hostname', currentHostname);
+        window.location.reload();
+      }
+    };
+    
+    // Check on popstate (browser back/forward)
+    window.addEventListener('popstate', checkHostnameChange);
+    
+    return () => {
+      window.removeEventListener('popstate', checkHostnameChange);
+    };
+  }, []);
+
   const value = {
     currentSite,
     loading,
@@ -155,4 +248,30 @@ export const SiteProvider = ({ children }) => {
       {children}
     </SiteContext.Provider>
   );
+};
+
+// Site change detection hook
+export const useSiteChangeDetection = () => {
+  const { currentSite } = useSite();
+  const [siteChanged, setSiteChanged] = useState(false);
+
+  useEffect(() => {
+    // Lưu site hiện tại vào localStorage khi load
+    if (currentSite?._id) {
+      const lastSiteId = localStorage.getItem('last_site_id');
+      
+      if (lastSiteId && lastSiteId !== currentSite._id) {
+        console.log('🔄 Site change detected:', {
+          from: lastSiteId,
+          to: currentSite._id,
+          siteName: currentSite.name
+        });
+        setSiteChanged(true);
+      }
+      
+      localStorage.setItem('last_site_id', currentSite._id);
+    }
+  }, [currentSite]);
+
+  return { siteChanged, resetSiteChange: () => setSiteChanged(false) };
 };

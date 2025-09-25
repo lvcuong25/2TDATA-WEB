@@ -5,7 +5,7 @@ import Joi from 'joi';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import instance from '../utils/axiosInstance';
+import instance from '../utils/axiosInstance-cookie-only';
 import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 
 const signupChema = Joi.object({

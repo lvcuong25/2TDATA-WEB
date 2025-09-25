@@ -8,7 +8,9 @@ import Dropdown from './PrivacPolicy/Dropdown';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { currentUser, isLogin } = useContext(AuthContext);
+    const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+  const isLogin = authContext?.isLogin;
     const { currentSite } = useSite();
 
     const location = useLocation();
@@ -110,6 +112,21 @@ const Header = () => {
                     </Link>
                   </li>
                 )}
+                {isLogin && (
+                  <li>
+                    <Link
+                      to="/database"
+                      className={`block py-2 px-3 rounded-sm md:p-0 ${
+                        location.pathname.startsWith('/database')
+                          ? 'text-white bg-blue-700 md:bg-transparent md:text-blue-700 md:dark:text-blue-500'
+                          : 'text-gray-900 hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700'
+                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Cơ sở dữ liệu
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link
                     to="/service"
@@ -123,7 +140,7 @@ const Header = () => {
                     Dịch vụ
                   </Link>
                 </li>
-                {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin' || currentUser?.role === 'site_admin') && (
+                {(authContext?.isAdmin) && (
                   <li>
                     <Link
                       to="/admin"

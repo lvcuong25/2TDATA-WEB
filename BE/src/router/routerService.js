@@ -9,7 +9,11 @@ import {
 } from "../controllers/service.js";
 import { checkServiceAccess } from "../middlewares/checkServiceAccess.js";
 import { getUser } from "../middlewares/getUser.js";
-import { webhookRealtime } from '../controllers/webhookRealtime.js';
+import { 
+    webhookRealtime, 
+    checkAndAssignUserToServer,
+    webhookRealtimeNew
+} from '../controllers/webhookRealtime.js';
 
 const routerService = Router();
 
@@ -35,5 +39,11 @@ routerService.put("/:id",getUser, updateService);
 routerService.delete("/:id",getUser, deleteService);
 
 routerService.post('/webhook-realtime', webhookRealtime);
+
+// ===== WEBHOOK REALTIME MỚI =====
+routerService.post('/webhook-new', webhookRealtimeNew);
+
+// Endpoint cho kiểm tra và gán user vào server
+routerService.post('/check-assign-user', checkAndAssignUserToServer);
 
 export default routerService; 

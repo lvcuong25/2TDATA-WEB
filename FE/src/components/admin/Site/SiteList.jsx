@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, message, Space, Tag, Typography, Card, Tooltip } from 'antd';
 import { Link } from 'react-router-dom';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, GlobalOutlined } from '@ant-design/icons';
-import axiosInstance from '../../../axios/axiosInstance';
+import axiosInstance from '../../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 

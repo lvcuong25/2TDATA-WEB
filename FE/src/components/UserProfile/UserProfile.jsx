@@ -3,10 +3,12 @@ import { Card, Avatar, Descriptions, Button, Divider, message, Row, Col, Tag, Sp
 import { UserOutlined, EditOutlined, SaveOutlined, CloseOutlined, MailOutlined, CalendarOutlined, PhoneOutlined } from '@ant-design/icons';
 import { AuthContext } from '../core/Auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import instance from '../../utils/axiosInstance';
+import instance from '../../utils/axiosInstance-cookie-only';
 
 const UserProfile = () => {
-  const { currentUser, setCurrentUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+  const setCurrentUser = authContext?.setCurrentUser;
   // Editing state if needed later
   const [isEditing, setIsEditing] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -110,11 +112,11 @@ const UserProfile = () => {
                   {currentUser.name || 'Chưa có tên'}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-2">
-                  {currentUser.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
+                  {authContext?.isAdmin ? 'Quản trị viên' : 'Người dùng'}
                 </p>
                 <div className="mt-2">
-                  <Tag color={currentUser.role === 'admin' ? 'red' : 'blue'}>
-                    {currentUser.role === 'admin' ? 'Admin' : 'User'}
+                  <Tag color={authContext?.isAdmin ? 'red' : 'blue'}>
+                    {authContext?.isAdmin ? 'Admin' : 'User'}
                   </Tag>
                 </div>
               </div>
@@ -219,7 +221,7 @@ const UserProfile = () => {
                 <div>
                   <p className="text-sm text-purple-600 font-medium mb-1">Vai trò</p>
                   <p className="text-lg font-semibold text-purple-900">
-                    {currentUser.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
+                    {authContext?.isAdmin ? 'Quản trị viên' : 'Người dùng'}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">

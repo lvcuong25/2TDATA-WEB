@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, Button, Card, List, message, Modal, Input, Form, Space, Popconfirm } from 'antd';
 import { UploadOutlined, DeleteOutlined, EditOutlined, PlusOutlined, UndoOutlined } from '@ant-design/icons';
-import instance from '../../../axios/axiosInstance';
+import instance from '../../../utils/axiosInstance-cookie-only';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 

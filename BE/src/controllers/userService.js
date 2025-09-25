@@ -542,3 +542,265 @@ export const deleteUserService = async (req, res, next) => {
         next(error);
     }
 };
+
+// Cập nhật cài đặt auto update cho user service
+export const updateAutoUpdateSettings = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { enabled, interval, scheduleType, scheduleTime, scheduleDate, scheduleDays, nextUpdateAt, clearInterval, clearSchedule } = req.body;
+        const userId = req.user._id;
+        
+        console.log('Auto update request body:', req.body);
+        console.log('Request details:', {
+            enabled,
+            interval,
+            scheduleType,
+            scheduleTime,
+            scheduleDate,
+            scheduleDays,
+            nextUpdateAt,
+            clearInterval,
+            clearSchedule
+        });
+
+        // Validate input
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ message: "enabled phải là boolean" });
+        }
+
+        // Tìm UserService
+        const userService = await UserService.findById(id);
+        if (!userService) {
+            return res.status(404).json({ message: "Không tìm thấy thông tin service" });
+        }
+
+        // Kiểm tra quyền cập nhật (chỉ user sở hữu hoặc admin mới được cập nhật)
+        const isOwner = userService.user.toString() === userId.toString();
+        const isAdmin = req.user.role === 'super_admin' || req.user.role === 'site_admin';
+        
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ message: "Bạn không có quyền cập nhật service này" });
+        }
+
+        // Cập nhật cài đặt auto update
+        userService.autoUpdate.enabled = enabled;
+        
+        if (enabled) {
+            // Nếu có scheduleType và không phải null, đây là lịch trình cố định
+            if (scheduleType && scheduleType !== null && scheduleType !== 'null') {
+                userService.autoUpdate.scheduleType = scheduleType;
+                userService.autoUpdate.scheduleTime = scheduleTime;
+                userService.autoUpdate.scheduleDate = scheduleDate;
+                userService.autoUpdate.scheduleDays = scheduleDays;
+                userService.autoUpdate.nextUpdateAt = nextUpdateAt ? new Date(nextUpdateAt) : null;
+                
+                // LUÔN xóa thông tin interval cũ khi chuyển sang schedule
+                console.log('🧹 Clearing old interval data when switching to schedule');
+                userService.autoUpdate.interval = undefined;
+            } else {
+                // Nếu không có scheduleType, đây là interval
+                if (!interval || typeof interval !== 'number' || interval < 1) {
+                    return res.status(400).json({ message: "interval phải là số dương (phút)" });
+                }
+                userService.autoUpdate.interval = interval;
+                userService.autoUpdate.lastUpdateAt = new Date();
+                // Tính thời gian cập nhật tiếp theo
+                userService.autoUpdate.nextUpdateAt = new Date(Date.now() + interval * 60 * 1000);
+                
+                // LUÔN xóa thông tin schedule cũ khi chuyển sang interval
+                console.log('🧹 Clearing old schedule data when switching to interval');
+                userService.autoUpdate.scheduleType = undefined;
+                userService.autoUpdate.scheduleTime = undefined;
+                userService.autoUpdate.scheduleDate = undefined;
+                userService.autoUpdate.scheduleDays = undefined;
+            }
+        } else {
+            // Tắt auto update
+            userService.autoUpdate.nextUpdateAt = null;
+            userService.autoUpdate.scheduleType = undefined;
+            userService.autoUpdate.scheduleTime = undefined;
+            userService.autoUpdate.scheduleDate = undefined;
+            userService.autoUpdate.scheduleDays = undefined;
+        }
+
+        console.log('Before save - autoUpdate:', JSON.stringify(userService.autoUpdate, null, 2));
+        console.log('Before save - autoUpdate details:', {
+            enabled: userService.autoUpdate.enabled,
+            interval: userService.autoUpdate.interval,
+            scheduleType: userService.autoUpdate.scheduleType,
+            scheduleTime: userService.autoUpdate.scheduleTime,
+            scheduleDate: userService.autoUpdate.scheduleDate,
+            scheduleDays: userService.autoUpdate.scheduleDays,
+            nextUpdateAt: userService.autoUpdate.nextUpdateAt
+        });
+        await userService.save();
+        console.log('After save - autoUpdate:', JSON.stringify(userService.autoUpdate, null, 2));
+        console.log('After save - autoUpdate details:', {
+            enabled: userService.autoUpdate.enabled,
+            interval: userService.autoUpdate.interval,
+            scheduleType: userService.autoUpdate.scheduleType,
+            scheduleTime: userService.autoUpdate.scheduleTime,
+            scheduleDate: userService.autoUpdate.scheduleDate,
+            scheduleDays: userService.autoUpdate.scheduleDays,
+            nextUpdateAt: userService.autoUpdate.nextUpdateAt
+        });
+
+        // Populate thông tin đầy đủ trước khi trả về
+        const updatedUserService = await UserService.findById(userService._id)
+            .populate('user', 'name email phone address avatar')
+            .populate('service', 'name slug image status description')
+            .populate('approvedBy', 'name email avatar');
+        
+        console.log('Updated service autoUpdate:', JSON.stringify(updatedUserService.autoUpdate, null, 2));
+
+        let message = "Đã tắt cập nhật tự động";
+        if (enabled) {
+            if (scheduleType && scheduleType !== null && scheduleType !== 'null') {
+                const timeStr = scheduleTime || '';
+                switch (scheduleType) {
+                    case 'daily':
+                        message = `Đã bật cập nhật tự động hàng ngày lúc ${timeStr}`;
+                        break;
+                    case 'weekly':
+                        message = `Đã bật cập nhật tự động hàng tuần lúc ${timeStr}`;
+                        break;
+                    case 'monthly':
+                        message = `Đã bật cập nhật tự động hàng tháng lúc ${timeStr}`;
+                        break;
+                    case 'once':
+                        message = `Đã bật cập nhật tự động một lần lúc ${timeStr}`;
+                        break;
+                    default:
+                        message = `Đã bật cập nhật tự động theo lịch trình lúc ${timeStr}`;
+                }
+            } else {
+                message = `Đã bật cập nhật tự động mỗi ${interval} phút`;
+            }
+        }
+
+        return res.status(200).json({
+            data: updatedUserService,
+            message: message
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// API để lấy danh sách các service cần cập nhật tự động
+export const getServicesForAutoUpdate = async (req, res, next) => {
+    try {
+        const now = new Date();
+        
+        // Tìm các service có auto update enabled và đã đến thời gian cập nhật
+        const servicesToUpdate = await UserService.find({
+            'autoUpdate.enabled': true,
+            'autoUpdate.nextUpdateAt': { $lte: now },
+            'link_update': { $exists: true, $not: { $size: 0 } }
+        }).populate('user', 'name email')
+          .populate('service', 'name slug');
+
+        return res.status(200).json({
+            data: servicesToUpdate,
+            message: `Tìm thấy ${servicesToUpdate.length} service cần cập nhật`
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// API để cập nhật thời gian cập nhật cuối cùng sau khi thực hiện auto update
+export const updateLastUpdateTime = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        
+        const userService = await UserService.findById(id);
+        if (!userService) {
+            return res.status(404).json({ message: "Không tìm thấy service" });
+        }
+
+        if (userService.autoUpdate.enabled) {
+            userService.autoUpdate.lastUpdateAt = new Date();
+            
+            // Tính nextUpdateAt dựa trên loại cập nhật
+            if (userService.autoUpdate.scheduleType) {
+                // Xử lý schedule
+                userService.autoUpdate.nextUpdateAt = calculateNextScheduleTime(userService.autoUpdate);
+            } else {
+                // Xử lý interval
+                userService.autoUpdate.nextUpdateAt = new Date(Date.now() + userService.autoUpdate.interval * 60 * 1000);
+            }
+            
+            await userService.save();
+        }
+
+        return res.status(200).json({
+            message: "Đã cập nhật thời gian cập nhật cuối cùng"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Helper function để tính thời gian cập nhật tiếp theo cho schedule
+const calculateNextScheduleTime = (autoUpdateSettings) => {
+    const now = new Date();
+    const { scheduleType, scheduleTime, scheduleDate, scheduleDays } = autoUpdateSettings;
+    
+    if (!scheduleTime) return null;
+    
+    const [hours, minutes] = scheduleTime.split(':').map(Number);
+    
+    if (scheduleType === 'once') {
+        if (!scheduleDate) return null;
+        const scheduledDate = new Date(scheduleDate);
+        scheduledDate.setHours(hours, minutes, 0, 0);
+        return scheduledDate > now ? scheduledDate : null;
+    }
+    
+    if (scheduleType === 'daily') {
+        const todayScheduled = new Date();
+        todayScheduled.setHours(hours, minutes, 0, 0);
+        
+        if (todayScheduled > now) {
+            return todayScheduled;
+        } else {
+            const tomorrowScheduled = new Date(todayScheduled);
+            tomorrowScheduled.setDate(tomorrowScheduled.getDate() + 1);
+            return tomorrowScheduled;
+        }
+    }
+    
+    if (scheduleType === 'weekly') {
+        if (!scheduleDays || scheduleDays.length === 0) return null;
+        
+        const currentDay = now.getDay(); // 0 = Chủ nhật, 1 = Thứ 2, ...
+        const nextDays = scheduleDays.filter(day => day > currentDay);
+        
+        if (nextDays.length > 0) {
+            const nextDay = Math.min(...nextDays);
+            const daysToAdd = nextDay - currentDay;
+            const nextScheduled = new Date(now);
+            nextScheduled.setDate(nextScheduled.getDate() + daysToAdd);
+            nextScheduled.setHours(hours, minutes, 0, 0);
+            return nextScheduled;
+        } else {
+            // Tìm ngày gần nhất trong tuần sau
+            const nextWeekDay = Math.min(...scheduleDays);
+            const daysToAdd = 7 - currentDay + nextWeekDay;
+            const nextScheduled = new Date(now);
+            nextScheduled.setDate(nextScheduled.getDate() + daysToAdd);
+            nextScheduled.setHours(hours, minutes, 0, 0);
+            return nextScheduled;
+        }
+    }
+    
+    if (scheduleType === 'monthly') {
+        const nextScheduled = new Date(now);
+        nextScheduled.setMonth(nextScheduled.getMonth() + 1);
+        nextScheduled.setHours(hours, minutes, 0, 0);
+        return nextScheduled;
+    }
+    
+    return null;
+};

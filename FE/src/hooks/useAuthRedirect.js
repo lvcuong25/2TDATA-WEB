@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../components/core/Auth';
 
 // Hook để xử lý redirect authentication một cách nhất quán
 export const useAuthRedirect = () => {
   const navigate = useNavigate();
+  const { currentUser } = useContext(AuthContext);
   
   const checkAuthAndRedirect = () => {
-    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
     const currentPath = window.location.pathname;
     
     // Định nghĩa các routes cần authentication
@@ -25,14 +26,14 @@ export const useAuthRedirect = () => {
     ];
     const authRoutes = ['/login', '/logup', '/rest-password'];
     
-    // Nếu đang ở route authentication và đã có token, redirect về trang chính
-    if (authRoutes.includes(currentPath) && token) {
+    // Nếu đang ở route authentication và đã có user, redirect về trang chính
+    if (authRoutes.includes(currentPath) && currentUser) {
       navigate('/service/my-service');
       return;
     }
     
-    // Nếu đang ở protected route và không có token, redirect về login
-    if (protectedRoutes.some(route => currentPath.startsWith(route)) && !token) {
+    // Nếu đang ở protected route và không có user, redirect về login
+    if (protectedRoutes.some(route => currentPath.startsWith(route)) && !currentUser) {
       // Lưu URL hiện tại để redirect sau khi login
       const redirectUrl = encodeURIComponent(currentPath);
       navigate(`/login?redirect=${redirectUrl}`);

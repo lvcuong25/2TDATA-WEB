@@ -22,7 +22,7 @@ const router = express.Router();
 
 // Public routes - Get current site info (no auth required)
 // Explicitly add detectSiteMiddleware for this route
-router.get('/current', detectSiteMiddleware, getCurrentSiteInfo);
+router.get('/current', getCurrentSiteInfo);
 
 // Protected routes - require authentication
 router.use(getUser);

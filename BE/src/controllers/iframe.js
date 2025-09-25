@@ -1,4 +1,5 @@
 import Iframe from "../model/Iframe.js";
+import mongoose from 'mongoose';
 
 // Lấy danh sách tất cả iframe với pagination
 export const getAllIframes = async (req, res) => {
@@ -12,6 +13,15 @@ export const getAllIframes = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
+    // Chỉ cho phép site_admin và super_admin truy cập
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      console.log('[IFRAME] Access denied for role:', req.user.role);
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền truy cập quản lý iframe",
+        error: "ACCESS_DENIED"
+      });
+    }
+
     // Pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -22,7 +32,7 @@ export const getAllIframes = async (req, res) => {
     
     // Super admin có thể xem tất cả
     if (req.user.role !== 'super_admin') {
-      // Admin và user chỉ xem iframe của site mình
+      // Site admin chỉ xem iframe của site mình
       if (req.user.site_id) {
         query.site_id = req.user.site_id._id || req.user.site_id;
       }
@@ -69,17 +79,24 @@ export const getIframeById = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
+    // Chỉ cho phép site_admin và super_admin truy cập
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền truy cập quản lý iframe",
+        error: "ACCESS_DENIED"
+      });
+    }
+
     const iframe = await Iframe.findById(req.params.id).populate("viewers", "name email");
     if (!iframe) return res.status(404).json({ message: "Iframe not found" });
 
     // Kiểm tra quyền xem
-    if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
-      // User thường chỉ xem được nếu là viewer
-      const isViewer = iframe.viewers.some(viewer => 
-        viewer._id.toString() === req.user._id.toString()
-      );
-      if (!isViewer) {
-        console.log('[IFRAME] Access denied. Viewer list:', iframe.viewers.map(v => v._id.toString()), 'User:', req.user._id.toString());
+    if (req.user.role !== 'super_admin') {
+      // Site admin chỉ xem được iframe của site mình
+      const userSiteId = req.user.site_id?._id?.toString() || req.user.site_id?.toString();
+      const iframeSiteId = iframe.site_id?.toString();
+      
+      if (userSiteId !== iframeSiteId) {
         return res.status(403).json({ message: "Access denied" });
       }
     }
@@ -232,6 +249,8 @@ export const getIframeByDomainPublic = async (req, res) => {
 
 
 // Thêm mới iframe
+// Thêm mới iframe
+// Thêm mới iframe
 export const createIframe = async (req, res) => {
   try {
     // Kiểm tra authentication
@@ -239,14 +258,25 @@ export const createIframe = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
-    // Chỉ admin và super_admin mới được tạo iframe
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.role !== 'site_admin') {
-      return res.status(403).json({ message: "Admin access required" });
+    // Chỉ site_admin và super_admin mới được tạo iframe
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền tạo iframe",
+        error: "ACCESS_DENIED"
+      });
     }
+
+    // AUTO-FIX: Nếu không có user_id trong request body, sử dụng user hiện tại
+    const user_id = req.body.user_id || req.user._id;
+    
+    console.log('[IFRAME CREATE] Using user_id:', user_id);
+    console.log('[IFRAME CREATE] Request user:', req.user.email);
+    console.log('[IFRAME CREATE] Viewers from request:', req.body.viewers);
 
     // Tự động gán site_id từ user đang đăng nhập
     const iframeData = {
       ...req.body,
+      user_id: user_id, // Ensure user_id is always present
       site_id: req.user.site_id?._id || req.user.site_id
     };
     
@@ -255,13 +285,77 @@ export const createIframe = async (req, res) => {
       iframeData.site_id = req.body.site_id;
     }
     
+    // LOGIC VIEWERS - CHỈ TỰ ĐỘNG THÊM KHI KHÔNG CÓ VIEWERS
+    if (!req.body.viewers || !Array.isArray(req.body.viewers) || req.body.viewers.length === 0) {
+      // Nếu không có viewers được chỉ định, tự động thêm user hiện tại
+      console.log('[IFRAME CREATE] No viewers specified, auto-adding creator');
+      iframeData.viewers = [user_id];
+    } else {
+      // Nếu đã có viewers được chỉ định, giữ nguyên danh sách
+      console.log('[IFRAME CREATE] Viewers already specified, keeping original list');
+      iframeData.viewers = req.body.viewers;
+    }
+    
+    console.log('[IFRAME CREATE] Final iframe data:', {
+      title: iframeData.title,
+      domain: iframeData.domain,
+      user_id: iframeData.user_id,
+      site_id: iframeData.site_id,
+      viewers_count: iframeData.viewers.length,
+      viewers: iframeData.viewers
+    });
+    
     const newIframe = new Iframe(iframeData);
     const savedIframe = await newIframe.save();
-    res.status(201).json(savedIframe);
+    
+    // Populate the response
+    const populatedIframe = await Iframe.findById(savedIframe._id)
+      .populate("viewers", "name email")
+      .populate("user_id", "name email")
+      .populate("site_id", "name");
+    
+    res.status(201).json({
+      success: true,
+      message: "Iframe created successfully",
+      data: populatedIframe
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('[IFRAME CREATE] Error:', error);
+    
+    // Handle validation errors more specifically
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => ({
+        field: err.path,
+        message: err.message,
+        value: err.value
+      }));
+      
+      return res.status(400).json({ 
+        success: false,
+        message: "Validation failed",
+        error: "VALIDATION_ERROR",
+        details: validationErrors
+      });
+    }
+    
+    // Handle duplicate domain error
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Domain already exists", 
+        error: "DUPLICATE_DOMAIN"
+      });
+    }
+    
+    res.status(400).json({ 
+      success: false,
+      message: error.message,
+      error: "CREATE_IFRAME_ERROR"
+    });
   }
 };
+;
+;
 
 // Sửa iframe
 export const updateIframe = async (req, res) => {
@@ -269,6 +363,14 @@ export const updateIframe = async (req, res) => {
     // Kiểm tra authentication
     if (!req.user) {
       return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Chỉ site_admin và super_admin mới được sửa iframe
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền sửa iframe",
+        error: "ACCESS_DENIED"
+      });
     }
 
     // Kiểm tra quyền: chỉ cho phép update iframe của site mình
@@ -303,9 +405,12 @@ export const deleteIframe = async (req, res) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
-    // Chỉ admin và super_admin mới được xóa
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.role !== 'site_admin') {
-      return res.status(403).json({ message: "Admin access required" });
+    // Chỉ site_admin và super_admin mới được xóa iframe
+    if (req.user.role !== 'site_admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ 
+        message: "Chỉ site admin và super admin mới có quyền xóa iframe",
+        error: "ACCESS_DENIED"
+      });
     }
 
     const query = { _id: req.params.id };
@@ -420,6 +525,266 @@ export const preloadIframe = async (req, res) => {
     res.status(500).json({ 
       preloaded: false,
       message: error.message 
+    });
+  }
+};
+
+// Thêm/cập nhật iframe cho n8n (không cần authentication)
+// Thêm/cập nhật iframe cho n8n (không cần authentication) - ENHANCED VERSION
+export const upsertIframeForN8N = async (req, res) => {
+  try {
+    console.log('[IFRAME N8N] upsertIframeForN8N called');
+    console.log('[IFRAME N8N] Request body:', req.body);
+    console.log('[IFRAME N8N] Host:', req.get('host'));
+
+    const { title, domain, user_id, url } = req.body;
+
+    // Validate required fields
+    if (!title || !domain || !user_id || !url) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu thông tin bắt buộc",
+        error: "MISSING_REQUIRED_FIELDS",
+        required_fields: ["title", "domain", "user_id", "url"]
+      });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      return res.status(400).json({
+        success: false,
+        message: "URL không hợp lệ",
+        error: "INVALID_URL"
+      });
+    }
+
+    // Validate domain format
+    if (!/^[a-zA-Z0-9-]+$/.test(domain)) {
+      return res.status(400).json({
+        success: false,
+        message: "Tên miền chỉ được chứa chữ cái, số và dấu gạch ngang",
+        error: "INVALID_DOMAIN_FORMAT"
+      });
+    }
+
+    // Validate user_id format
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+      return res.status(400).json({
+        success: false,
+        message: "user_id không hợp lệ",
+        error: "INVALID_USER_ID"
+      });
+    }
+
+    // Auto-detect site_id from host header
+    let hostname = req.get('x-host') || req.get('host') || req.hostname;
+    hostname = hostname.split(':')[0]; // Remove port if present
+
+    console.log('[IFRAME N8N] Detecting site for hostname:', hostname);
+
+    // Find site by domain
+    const Site = mongoose.model('Site');
+    let site = await Site.findOne({ 
+      domains: { $in: [hostname] },
+      status: 'active' 
+    });
+
+    // Try alternative patterns for localhost development
+    if (!site && (hostname.includes('localhost') || hostname === '127.0.0.1')) {
+      const patterns = [
+        hostname,
+        hostname.replace('.localhost', ''),
+        `${hostname}.localhost`,
+        'localhost',
+        '2tdata.com'
+      ];
+      
+      for (const pattern of patterns) {
+        site = await Site.findOne({ 
+          domains: { $in: [pattern] },
+          status: 'active' 
+        });
+        if (site) {
+          console.log('[IFRAME N8N] Found site with pattern:', pattern);
+          break;
+        }
+      }
+    }
+
+    // If still no site found, try to find the main site
+    if (!site) {
+      site = await Site.findOne({ 
+        $or: [
+          { is_main_site: true },
+          { name: /main|master|2tdata/i }
+        ],
+        status: 'active' 
+      }).sort({ createdAt: 1 });
+    }
+
+    if (!site) {
+      return res.status(404).json({
+        success: false,
+        message: `Không tìm thấy site cho domain: ${hostname}`,
+        error: "SITE_NOT_FOUND"
+      });
+    }
+
+    console.log('[IFRAME N8N] Using site:', site.name, 'ID:', site._id);
+
+    // VALIDATE USER EXISTS AND GET USER INFO
+    const User = mongoose.model('User');
+    const user = await User.findById(user_id).select('_id email name site_id');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy user với user_id đã cung cấp",
+        error: "USER_NOT_FOUND"
+      });
+    }
+
+    console.log('[IFRAME N8N] Found user:', user.email);
+
+    // Check if iframe already exists with this domain
+    const existingIframe = await Iframe.findOne({ domain });
+
+    if (existingIframe) {
+      // Update existing iframe
+      console.log('[IFRAME N8N] Updating existing iframe for domain:', domain);
+      
+      // Ensure user_id is in viewers array (add if not present)
+      let currentViewers = existingIframe.viewers || [];
+      const userIdString = user_id.toString();
+      
+      // Convert existing viewers to strings for comparison
+      const existingViewerIds = currentViewers.map(v => v.toString());
+      
+      // Add user_id to viewers if not already present
+      if (!existingViewerIds.includes(userIdString)) {
+        currentViewers.push(user_id);
+        console.log('[IFRAME N8N] Added user_id to viewers array');
+      }
+
+      const updatedIframe = await Iframe.findOneAndUpdate(
+        { domain },
+        {
+          title,
+          url,
+          user_id,
+          site_id: site._id,
+          viewers: currentViewers,
+          updatedAt: new Date()
+        },
+        { new: true, runValidators: true }
+      ).populate([
+        { path: 'user_id', select: 'email name' },
+        { path: 'site_id', select: 'name domains' },
+        { path: 'viewers', select: 'email name' }
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: `Domain "${domain}" đã được cập nhật thành công`,
+        action: "updated",
+        data: {
+          id: updatedIframe._id,
+          title: updatedIframe.title,
+          domain: updatedIframe.domain,
+          url: updatedIframe.url,
+          user_email: updatedIframe.user_id.email,
+          viewers: updatedIframe.viewers,
+          viewers_count: updatedIframe.viewers.length,
+          site_id: updatedIframe.site_id._id,
+          site_name: updatedIframe.site_id.name,
+          created_at: updatedIframe.createdAt,
+          updated_at: updatedIframe.updatedAt
+        }
+      });
+    } else {
+      // Create new iframe
+      console.log('[IFRAME N8N] Creating new iframe for domain:', domain);
+      
+      // Create new iframe with user_id automatically added to viewers
+      const newIframe = new Iframe({
+        title,
+        domain,
+        url,
+        user_id,
+        site_id: site._id,
+        viewers: [user_id] // Automatically add user_id to viewers
+      });
+
+      const savedIframe = await newIframe.save();
+      
+      // Populate the saved iframe with user and site information
+      const populatedIframe = await Iframe.findById(savedIframe._id).populate([
+        { path: 'user_id', select: 'email name' },
+        { path: 'site_id', select: 'name domains' },
+        { path: 'viewers', select: 'email name' }
+      ]);
+
+      console.log('[IFRAME N8N] Created iframe with user_id in viewers');
+
+      return res.status(201).json({
+        success: true,
+        message: `Domain "${domain}" đã được tạo thành công`,
+        action: "created",
+        data: {
+          id: populatedIframe._id,
+          title: populatedIframe.title,
+          domain: populatedIframe.domain,
+          url: populatedIframe.url,
+          user_email: populatedIframe.user_id.email,
+          viewers: populatedIframe.viewers,
+          viewers_count: populatedIframe.viewers.length,
+          site_id: populatedIframe.site_id._id,
+          site_name: populatedIframe.site_id.name,
+          created_at: populatedIframe.createdAt,
+          updated_at: populatedIframe.updatedAt
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('[IFRAME N8N] Error:', error);
+    
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Domain này đã tồn tại",
+        error: "DOMAIN_ALREADY_EXISTS"
+      });
+    }
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: "Dữ liệu không hợp lệ",
+        error: "VALIDATION_ERROR",
+        details: validationErrors
+      });
+    }
+
+    // Handle cast errors (invalid ObjectId)
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: "ID không hợp lệ",
+        error: "INVALID_ID"
+      });
+    }
+
+    // Generic error
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi server nội bộ",
+      error: "INTERNAL_SERVER_ERROR"
     });
   }
 };
