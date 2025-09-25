@@ -91,12 +91,20 @@ import {
 } from "../controllers/calendarController.js";
 
 import {
+  exportDatabaseToExcel,
+  importExcelToDatabase
+} from "../controllers/excelController.js";
+
+import {
   createViewValidation,
   updateViewValidation,
   copyViewValidation
 } from "../validations/viewValidation.js";
 
+
 import { requireAuthWithCookie } from "../middlewares/requireAuthWithCookie.js";
+
+import { uploadExcel } from "../middlewares/upload.js";
 
 const router = Router();
 
@@ -502,5 +510,6 @@ router.post("/databases/:databaseId/tables/:tableId/create-default-cell-permissi
     });
   }
 });
+
 
 export default router;
