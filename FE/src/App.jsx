@@ -1,7 +1,6 @@
 import { ToastContainer, toast } from "react-toastify"
 import Router from "./router"
 import { useEffect } from "react"
-import { AuthProvider } from "./components/core/Auth"
 import SiteAccessChecker from "./components/SiteAccessChecker"
 
 function App() {
@@ -16,10 +15,8 @@ function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <SiteAccessChecker>
-        <Router/>
-      </SiteAccessChecker>
+    <SiteAccessChecker>
+      <Router/>
       <ToastContainer
         className="w-full max-w-full break-words"
         toastClassName="max-h-24 overflow-y-auto whitespace-normal break-words"
@@ -33,7 +30,7 @@ function App() {
         draggable
         pauseOnHover
       />
-    </AuthProvider>
+    </SiteAccessChecker>
   )
 }
 
