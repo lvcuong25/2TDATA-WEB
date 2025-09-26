@@ -7,16 +7,29 @@ import App from './App.jsx';
 import { AuthProvider } from './components/core/Auth.jsx';
 import { SiteProvider } from './context/SiteContext.jsx';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
-createRoot(document.getElementById('root')).render(
-  <QueryClientProvider client={queryClient}>
-    <SiteProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </AuthProvider>
-    </SiteProvider>
-  </QueryClientProvider>
-);
+// Wrapper component to ensure proper context initialization
+const AppWrapper = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SiteProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AuthProvider>
+      </SiteProvider>
+    </QueryClientProvider>
+  );
+};
+
+createRoot(document.getElementById('root')).render(<AppWrapper />);
