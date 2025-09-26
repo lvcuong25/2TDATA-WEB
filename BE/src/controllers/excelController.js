@@ -8,13 +8,30 @@ import Database from '../model/Database.js';
 export const exportDatabaseToExcel = async (req, res) => {
   try {
     const { databaseId } = req.params;
+    
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
     const userId = req.user._id;
     const siteId = req.siteId;
 
     // Get database information
-    const database = await Database.findOne({ _id: databaseId, userId, siteId });
+    let database = await Database.findById(databaseId);
+    
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
+    }
+    
+    // Check if user has access to this database
+    if (database.ownerId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Access denied to this database' });
+    }
+    
+    // Check if database belongs to the current site
+    if (database.orgId.toString() !== siteId.toString()) {
+      return res.status(403).json({ message: 'Database does not belong to current site' });
     }
 
     // Get all tables in the database
@@ -105,6 +122,12 @@ export const exportDatabaseToExcel = async (req, res) => {
 export const importExcelToDatabase = async (req, res) => {
   try {
     const { databaseId } = req.params;
+    
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
     const userId = req.user._id;
     const siteId = req.siteId;
     const { tableName, overwrite = false } = req.body;
@@ -115,7 +138,7 @@ export const importExcelToDatabase = async (req, res) => {
     }
 
     // Get database information
-    const database = await Database.findOne({ _id: databaseId, userId, siteId });
+    const database = await Database.findOne({ _id: databaseId, ownerId: userId, orgId: siteId });
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
     }
@@ -276,6 +299,7 @@ export const importExcelToDatabase = async (req, res) => {
 
         const columnData = {
           name: columnName,
+          key: columnName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '_'), // Generate key from name
           dataType,
           isRequired: false,
           order: i,

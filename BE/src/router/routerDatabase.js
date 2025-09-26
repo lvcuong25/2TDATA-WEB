@@ -103,6 +103,7 @@ import {
 
 
 import { requireAuthWithCookie } from "../middlewares/requireAuthWithCookie.js";
+import { authAndSiteDetectionMiddleware } from "../middlewares/authAndSiteDetection.js";
 
 import { uploadExcel } from "../middlewares/upload.js";
 
@@ -281,6 +282,11 @@ router.post("/tables/:tableId/kanban/column", addKanbanColumn);
 router.get("/tables/:tableId/calendar", getCalendarData);
 router.get("/tables/:tableId/calendar/config", getCalendarConfig);
 router.put("/records/:recordId/calendar", updateRecordDate);
+
+// Excel routes
+router.get("/databases/:databaseId/export/excel", authAndSiteDetectionMiddleware, exportDatabaseToExcel);
+router.post("/databases/:databaseId/export/excel", authAndSiteDetectionMiddleware, exportDatabaseToExcel);
+router.post("/databases/:databaseId/import/excel", authAndSiteDetectionMiddleware, uploadExcel, importExcelToDatabase);
 
 // Test route for column permissions (bypass permission check)
 router.get("/databases/:databaseId/tables/:tableId/columns-permissions-test", async (req, res) => {
