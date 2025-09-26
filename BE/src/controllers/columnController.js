@@ -375,7 +375,7 @@ export const getColumns = async (req, res) => {
     }
 
     // Check if table's database belongs to the organization
-    if (!table.baseId || !table.baseId.orgId) {
+    if (!table.databaseId || !table.databaseId.orgId) {
       return res.status(404).json({ message: 'Table not found' });
     }
 

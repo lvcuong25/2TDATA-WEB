@@ -1,6 +1,7 @@
 import Database from '../model/Database.js';
 import User from '../model/User.js';
 import BaseMember from '../model/BaseMember.js';
+import BaseRole from '../model/BaseRole.js';
 import { isSuperAdmin, hasDatabaseAccess, getUserDatabaseRole, canManageDatabase } from '../utils/permissionUtils.js';
 
 // Create database
@@ -10,10 +11,24 @@ export const createDatabase = async (req, res) => {
     const currentUserId = req.user._id;
     const siteId = req.siteId; // Get site ID from middleware
 
+    // Find organization where current user is a member
+    const Organization = (await import('../model/Organization.js')).default;
+    const organization = await Organization.findOne({ 
+      site_id: siteId,
+      'members.user': currentUserId 
+    });
+    
+    if (!organization) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Organization not found for this user' 
+      });
+    }
+
     // Create database with required fields
     const database = new Database({
       name,
-      orgId: siteId, // Use siteId as orgId
+      orgId: organization._id, // Use organization._id as orgId
       ownerId: currentUserId
     });
 
@@ -27,6 +42,36 @@ export const createDatabase = async (req, res) => {
     });
 
     await baseMember.save();
+
+    // Create default roles for the database
+    const defaultRoles = [
+      {
+        databaseId: database._id,
+        name: 'Manager',
+        builtin: true,
+        permissions: {
+          canManageMembers: true,
+          canManageTables: true,
+          canManageViews: true,
+          canExportData: true,
+          canImportData: true
+        }
+      },
+      {
+        databaseId: database._id,
+        name: 'Member',
+        builtin: true,
+        permissions: {
+          canViewData: true,
+          canEditData: true,
+          canCreateRecords: true,
+          canUpdateRecords: true,
+          canDeleteRecords: false
+        }
+      }
+    ];
+
+    await BaseRole.insertMany(defaultRoles);
 
     res.status(201).json({ success: true, data: database });
   } catch (error) {
@@ -214,17 +259,37 @@ export const getDatabaseMembers = async (req, res) => {
     // console.log(`🔍 BaseMembers found:`, baseMembers);
     
     // Check if current user has access to this database (super admin có quyền truy cập tất cả)
+    console.log(`🔍 User role check:`, {
+      userId: currentUserId,
+      userRole: req.user.role,
+      isSuperAdmin: isSuperAdmin(req.user)
+    });
+    
     if (!isSuperAdmin(req.user)) {
+      console.log(`🔍 Checking access for user:`, {
+        currentUserId,
+        currentUserIdType: typeof currentUserId,
+        baseMembersCount: baseMembers.length,
+        baseMembers: baseMembers.map(m => ({
+          userId: m.userId?._id,
+          userIdType: typeof m.userId?._id,
+          role: m.role
+        }))
+      });
+
       const userMember = baseMembers.find(member => 
         member.userId._id.toString() === currentUserId.toString()
       );
 
-      // console.log(`🔍 User member found:`, userMember);
+      console.log(`🔍 User member found:`, userMember);
 
       // Allow access if user is a member (owner, manager, or member)
       if (!userMember) {
+        console.log(`🔍 Access denied - user not found in members`);
         return res.status(403).json({ message: 'Access denied to this database' });
       }
+    } else {
+      console.log(`🔍 Super admin access granted - bypassing member check`);
     }
 
     // Return members with populated user data

@@ -3,6 +3,9 @@ import Table from '../model/Table.js';
 import Column from '../model/Column.js';
 import Record from '../model/Record.js';
 import Database from '../model/Database.js';
+import BaseMember from '../model/BaseMember.js';
+import Organization from '../model/Organization.js';
+import { isSuperAdmin } from '../utils/permissionUtils.js';
 
 // Export database to Excel (all tables)
 export const exportDatabaseToExcel = async (req, res) => {
@@ -12,13 +15,33 @@ export const exportDatabaseToExcel = async (req, res) => {
     const siteId = req.siteId;
 
     // Get database information
-    const database = await Database.findOne({ _id: databaseId, userId, siteId });
+    const database = await Database.findById(databaseId);
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
     }
 
+    // Check if user has access to this database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: databaseId, 
+        userId 
+      });
+
+      if (!baseMember) {
+        // Check if user is organization member
+        const organization = await Organization.findOne({ 
+          _id: database.orgId,
+          'members.user': userId 
+        });
+        
+        if (!organization) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
+      }
+    }
+
     // Get all tables in the database
-    const tables = await Table.find({ databaseId, userId, siteId });
+    const tables = await Table.find({ databaseId });
     if (tables.length === 0) {
       return res.status(400).json({ message: 'No tables found in this database' });
     }
@@ -115,9 +138,29 @@ export const importExcelToDatabase = async (req, res) => {
     }
 
     // Get database information
-    const database = await Database.findOne({ _id: databaseId, userId, siteId });
+    const database = await Database.findById(databaseId);
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
+    }
+
+    // Check if user has access to this database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: databaseId, 
+        userId 
+      });
+
+      if (!baseMember) {
+        // Check if user is organization member
+        const organization = await Organization.findOne({ 
+          _id: database.orgId,
+          'members.user': userId 
+        });
+        
+        if (!organization) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
+      }
     }
 
     // Read Excel file
