@@ -427,7 +427,7 @@ const DatabaseLayout = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const databases = databasesResponse?.data || [];
+  const databases = Array.isArray(databasesResponse?.data) ? databasesResponse.data : [];
 
   // Fetch tables for all databases
   const { data: allTablesResponse } = useQuery({

@@ -68,18 +68,29 @@ async function getOrgRoles(req, res, next) {
       return res.status(404).json({ ok: false, error: "database_not_found" });
     }
     
-    // Lấy organization để lấy danh sách roles
-    const organization = await Organization.findById(database.orgId).lean();
-    if (!organization) {
-      return res.status(404).json({ ok: false, error: "organization_not_found" });
-    }
+    // Lấy roles từ BaseRole model
+    const baseRoles = await BaseRole.find({ databaseId }).lean();
+    console.log("getOrgRoles - baseRoles found:", baseRoles.length);
     
-    // Trả về roles của tổ chức
+    // Trả về roles của database (bao gồm builtin roles)
     const orgRoles = [
-      { name: "Owner", role: "owner", canManageDatabase: true },
-      { name: "Manager", role: "manager", canManageDatabase: true },
-      { name: "Member", role: "member", canManageDatabase: false }
+      { name: "Owner", role: "owner", canManageDatabase: true, builtin: true },
+      { name: "Manager", role: "manager", canManageDatabase: true, builtin: true },
+      { name: "Member", role: "member", canManageDatabase: false, builtin: true }
     ];
+    
+    // Thêm custom roles nếu có
+    baseRoles.forEach(role => {
+      if (!role.builtin) {
+        orgRoles.push({
+          name: role.name,
+          role: role.name.toLowerCase(),
+          canManageDatabase: role.permissions?.canManageMembers || false,
+          builtin: false,
+          permissions: role.permissions
+        });
+      }
+    });
     
     return res.json({ ok: true, data: orgRoles });
   } catch (e) {

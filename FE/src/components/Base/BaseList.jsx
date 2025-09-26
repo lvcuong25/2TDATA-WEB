@@ -129,7 +129,7 @@ const BaseList = () => {
       title: "Tên database",
       key: "name",
       render: (_, record) => (
-        <Link to={`/profile/base/${record._id}`}>{record.name}</Link>
+        <Link to={`/profile/base/${record._id}/management`}>{record.name}</Link>
       ),
     },
     {
