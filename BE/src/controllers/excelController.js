@@ -174,7 +174,7 @@ export const importExcelToDatabase = async (req, res) => {
       const worksheet = workbook.Sheets[currentSheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-      console.log(`Processing sheet "${currentSheetName}" with ${jsonData.length} rows`);
+      console.log(`Processing sheet ${sheetIndex + 1}/${sheetNames.length}: "${currentSheetName}" with ${jsonData.length} rows`);
 
       if (jsonData.length < 2) {
         allErrors.push(`Sheet "${currentSheetName}": Must have at least a header row and one data row`);
@@ -185,10 +185,8 @@ export const importExcelToDatabase = async (req, res) => {
       const excelHeaders = jsonData[0];
       const dataRows = jsonData.slice(1);
 
-      // Generate table name for this sheet
-      const finalTableName = sheetNames.length === 1 
-        ? (tableName || `Table_${new Date().getTime()}`)
-        : `${tableName || 'Sheet'}_${currentSheetName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      // Generate table name for this sheet - use only sheet name, no file name prefix
+      const finalTableName = currentSheetName || `Table_${new Date().getTime()}`;
 
       // Check if table already exists
       const existingTable = await Table.findOne({ 
@@ -380,9 +378,15 @@ export const importExcelToDatabase = async (req, res) => {
       totalErrors: allErrors.length
     });
 
+    // Create detailed success message
+    const tableNames = importResults.map(result => result.tableName).join(', ');
+    const successMessage = totalTables > 0 
+      ? `Successfully imported ${totalImported} records into ${totalTables} table(s): ${tableNames}`
+      : 'No data was imported';
+
     res.json({
       success: true,
-      message: `Excel import completed: ${totalTables} tables created, ${totalImported} records imported`,
+      message: successMessage,
       data: {
         totalSheets: sheetNames.length,
         totalTables: totalTables,
@@ -390,7 +394,8 @@ export const importExcelToDatabase = async (req, res) => {
         totalRows: totalRows,
         totalErrors: allErrors.length,
         results: importResults,
-        errors: allErrors
+        errors: allErrors,
+        tableNames: tableNames
       }
     });
 
