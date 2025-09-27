@@ -61,7 +61,6 @@ export const exportDatabaseToExcel = async (req, res) => {
     // Get all tables in the database
 
     const tables = await Table.find({ databaseId, userId, siteId });
-    console.log(`Found ${tables.length} tables for database ${databaseId}`);
 
     if (tables.length === 0) {
       return res.status(400).json({ message: 'No tables found in this database' });
@@ -73,20 +72,16 @@ export const exportDatabaseToExcel = async (req, res) => {
 
     // Process each table
     for (const table of tables) {
-      console.log(`Processing table: ${table.name} (${table._id})`);
       
       // Get columns for this table
       const columns = await Column.find({ tableId: table._id }).sort({ order: 1 });
-      console.log(`Found ${columns.length} columns for table ${table.name}`);
       
       if (columns.length === 0) {
-        console.log(`Skipping table ${table.name} - no columns found`);
         continue;
       }
 
       // Get records for this table
       const records = await Record.find({ tableId: table._id });
-      console.log(`Found ${records.length} records for table ${table.name}`);
 
       // Prepare data for Excel
       const excelData = [];
@@ -211,7 +206,6 @@ export const importExcelToDatabase = async (req, res) => {
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetNames = workbook.SheetNames;
     
-    console.log(`Found ${sheetNames.length} sheets:`, sheetNames);
 
     if (sheetNames.length === 0) {
       return res.status(400).json({ message: 'Excel file has no sheets' });
@@ -226,7 +220,6 @@ export const importExcelToDatabase = async (req, res) => {
       const worksheet = workbook.Sheets[currentSheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-      console.log(`Processing sheet ${sheetIndex + 1}/${sheetNames.length}: "${currentSheetName}" with ${jsonData.length} rows`);
 
       if (jsonData.length < 2) {
         allErrors.push(`Sheet "${currentSheetName}": Must have at least a header row and one data row`);
@@ -306,7 +299,6 @@ export const importExcelToDatabase = async (req, res) => {
 
         // No special config needed - everything is text
 
-        console.log(`Column "${columnName}" detected as ${dataType}`);
 
         const column = new Column(columnData);
 
@@ -318,12 +310,9 @@ export const importExcelToDatabase = async (req, res) => {
       const importedRecords = [];
       const errors = [];
 
-      console.log(`Starting import of ${dataRows.length} rows for sheet "${currentSheetName}"`);
-      console.log('Columns created:', columns.map(c => ({ name: c.name, type: c.dataType })));
 
     for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
       const row = dataRows[rowIndex];
-      console.log(`Processing row ${rowIndex + 1}:`, row);
       
       // Check if row has any meaningful data
       const hasRowData = row && row.some(cell => {
@@ -334,7 +323,6 @@ export const importExcelToDatabase = async (req, res) => {
       });
       
       if (!hasRowData) {
-        console.log(`Skipping empty row ${rowIndex + 1}:`, row);
         continue; // Skip empty rows
       }
 
@@ -346,7 +334,6 @@ export const importExcelToDatabase = async (req, res) => {
         const column = columns[i];
         const cellValue = row[i];
         
-        console.log(`Processing cell [${rowIndex + 1}, ${i}]: "${cellValue}" for column "${column.name}" (type: ${column.dataType})`);
         
         // Check if cell has meaningful data (not just whitespace)
         const hasValue = cellValue !== null && 
@@ -360,18 +347,14 @@ export const importExcelToDatabase = async (req, res) => {
           // Convert everything to text to preserve original data
           let convertedValue = String(cellValue);
           
-          console.log(`Converted value: "${cellValue}" -> "${convertedValue}" for column "${column.name}"`);
           recordData[column.name] = convertedValue;
         } else {
-          console.log(`Skipping empty cell [${rowIndex + 1}, ${i}] for column "${column.name}"`);
         }
       }
 
-      console.log(`Row ${rowIndex + 1} hasValidData: ${hasValidData}, recordData:`, recordData);
       
       if (hasValidData) {
         try {
-          console.log(`Saving record for row ${rowIndex + 1}:`, recordData);
           
           const record = new Record({
             tableId: newTable._id,
@@ -383,24 +366,14 @@ export const importExcelToDatabase = async (req, res) => {
           
           await record.save();
           importedRecords.push(record);
-          console.log(`Successfully saved record for row ${rowIndex + 1}`);
         } catch (saveError) {
           console.error(`Error saving record for row ${rowIndex + 1}:`, saveError);
           errors.push(`Row ${rowIndex + 2}: Failed to save record - ${saveError.message}`);
         }
       } else {
-        console.log(`No valid data found in row ${rowIndex + 1}`);
       }
     }
 
-      console.log(`Import completed for sheet "${currentSheetName}":`, {
-        tableId: newTable._id,
-        tableName: newTable.name,
-        importedCount: importedRecords.length,
-        totalRows: dataRows.length,
-        columnsCreated: columns.length,
-        errors: errors.length
-      });
 
       // Add result for this sheet
       importResults.push({
@@ -422,13 +395,6 @@ export const importExcelToDatabase = async (req, res) => {
     const totalRows = importResults.reduce((sum, result) => sum + result.totalRows, 0);
     const totalTables = importResults.length;
 
-    console.log('All sheets import completed:', {
-      totalSheets: sheetNames.length,
-      totalTables: totalTables,
-      totalImported: totalImported,
-      totalRows: totalRows,
-      totalErrors: allErrors.length
-    });
 
     // Create detailed success message
     const tableNames = importResults.map(result => result.tableName).join(', ');

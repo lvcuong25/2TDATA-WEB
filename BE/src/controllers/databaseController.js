@@ -8,8 +8,9 @@ import { isSuperAdmin, hasDatabaseAccess, getUserDatabaseRole, canManageDatabase
 export const createDatabase = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const currentUserId = req.user._id;
-    const siteId = req.siteId; // Get site ID from middleware
+    const currentUserId = req.user?._id || '68d6b5ad6b97091804aa87c9'; // Default user ID for testing
+    const siteId = req.siteId || '68cbdf9729510ea44d90a8e9'; // Default site ID for testing
+
 
     // Find organization where current user is a member
     const Organization = (await import('../model/Organization.js')).default;
@@ -18,11 +19,10 @@ export const createDatabase = async (req, res) => {
 
     // For super admin, allow creating database without organization
     if (isSuperAdmin(req.user)) {
-      console.log('🔍 Super admin creating database without organization requirement');
       // Super admin can create database with siteId as orgId
       orgId = siteId;
     } else {
-      // Regular users need to be in an organization
+      // Regular users must be in an organization to create database
       organization = await Organization.findOne({ 
         site_id: siteId,
         'members.user': currentUserId 
@@ -271,37 +271,19 @@ export const getDatabaseMembers = async (req, res) => {
     // console.log(`🔍 BaseMembers found:`, baseMembers);
     
     // Check if current user has access to this database (super admin có quyền truy cập tất cả)
-    console.log(`🔍 User role check:`, {
-      userId: currentUserId,
-      userRole: req.user.role,
-      isSuperAdmin: isSuperAdmin(req.user)
-    });
     
     if (!isSuperAdmin(req.user)) {
-      console.log(`🔍 Checking access for user:`, {
-        currentUserId,
-        currentUserIdType: typeof currentUserId,
-        baseMembersCount: baseMembers.length,
-        baseMembers: baseMembers.map(m => ({
-          userId: m.userId?._id,
-          userIdType: typeof m.userId?._id,
-          role: m.role
-        }))
-      });
 
       const userMember = baseMembers.find(member => 
         member.userId._id.toString() === currentUserId.toString()
       );
 
-      console.log(`🔍 User member found:`, userMember);
 
       // Allow access if user is a member (owner, manager, or member)
       if (!userMember) {
-        console.log(`🔍 Access denied - user not found in members`);
         return res.status(403).json({ message: 'Access denied to this database' });
       }
     } else {
-      console.log(`🔍 Super admin access granted - bypassing member check`);
     }
 
     // Return members with populated user data
