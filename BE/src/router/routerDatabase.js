@@ -6,7 +6,8 @@ import {
   updateDatabase,
   deleteDatabase,
   getDatabaseMembers,
-  updateUserRole
+  updateUserRole,
+  removeDatabaseMember
 } from "../controllers/databaseController.js";
 
 
@@ -117,6 +118,7 @@ router.get("/databases/:databaseId", getDatabaseById);
 
 router.get("/databases/:databaseId/members", requireAuthWithCookie, getDatabaseMembers);
 router.put("/databases/update-user-role", requireAuthWithCookie, updateUserRole);
+router.delete("/databases/:databaseId/members/:memberId", requireAuthWithCookie, removeDatabaseMember);
 
 // Add missing routes directly to routerDatabase
 router.get("/databases/:databaseId/me", async (req, res, next) => {
