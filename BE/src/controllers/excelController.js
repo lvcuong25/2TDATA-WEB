@@ -5,7 +5,7 @@ import Record from '../model/Record.js';
 import Database from '../model/Database.js';
 import BaseMember from '../model/BaseMember.js';
 import Organization from '../model/Organization.js';
-import { isSuperAdmin } from '../utils/permissionUtils.js';
+import { isSuperAdmin, hasDatabaseAccess, getUserDatabaseRole } from '../utils/permissionUtils.js';
 
 // Export database to Excel (all tables)
 export const exportDatabaseToExcel = async (req, res) => {
@@ -21,40 +21,17 @@ export const exportDatabaseToExcel = async (req, res) => {
     const siteId = req.siteId;
 
     // Get database information
-
-    let database = await Database.findById(databaseId);
+    const database = await Database.findById(databaseId);
     
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
     }
-    
-    // Check if user has access to this database
-    if (database.ownerId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: 'Access denied to this database' });
-    }
-    
-    // Check if database belongs to the current site
-    if (database.orgId.toString() !== siteId.toString()) {
-      return res.status(403).json({ message: 'Database does not belong to current site' });
-    }
 
     // Check if user has access to this database
     if (!isSuperAdmin(req.user)) {
-      const baseMember = await BaseMember.findOne({ 
-        databaseId: databaseId, 
-        userId 
-      });
-
-      if (!baseMember) {
-        // Check if user is organization member
-        const organization = await Organization.findOne({ 
-          _id: database.orgId,
-          'members.user': userId 
-        });
-        
-        if (!organization) {
-          return res.status(403).json({ message: 'Access denied' });
-        }
+      const hasAccess = await hasDatabaseAccess(userId, databaseId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: 'Access denied' });
       }
     }
 
@@ -170,35 +147,16 @@ export const importExcelToDatabase = async (req, res) => {
     }
 
     // Get database information
-    // For super admin, allow access to any database they own
-    let database;
-    if (isSuperAdmin(req.user)) {
-      database = await Database.findOne({ _id: databaseId, ownerId: userId });
-    } else {
-      database = await Database.findOne({ _id: databaseId, ownerId: userId });
-    }
-
+    const database = await Database.findById(databaseId);
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
     }
 
     // Check if user has access to this database
     if (!isSuperAdmin(req.user)) {
-      const baseMember = await BaseMember.findOne({ 
-        databaseId: databaseId, 
-        userId 
-      });
-
-      if (!baseMember) {
-        // Check if user is organization member
-        const organization = await Organization.findOne({ 
-          _id: database.orgId,
-          'members.user': userId 
-        });
-        
-        if (!organization) {
-          return res.status(403).json({ message: 'Access denied' });
-        }
+      const hasAccess = await hasDatabaseAccess(userId, databaseId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: 'Access denied' });
       }
     }
 
