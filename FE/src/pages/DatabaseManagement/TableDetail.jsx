@@ -1503,7 +1503,7 @@ const TableDetail = () => {
       return (
         <div style={{ margin: '0', padding: '0' }}>
           {/* Header */}
-          <div className="mb-6">
+          <div className="">
             <div className="flex justify-between items-center">
               <div>
                 {/* Description hidden for grid view */}

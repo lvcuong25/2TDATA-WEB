@@ -285,6 +285,9 @@ const TableBody = ({
     record: null
   });
 
+  // State for hovered row
+  const [hoveredRow, setHoveredRow] = useState(null);
+
 
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
@@ -429,7 +432,10 @@ const TableBody = ({
         <div style={{
           display: 'flex',
           borderBottom: '1px solid #d9d9d9',
-          backgroundColor: '#fafafa'
+          backgroundColor: '#fafafa',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10
         }}>
           {/* Checkbox and Index Column */}
           <div style={{
@@ -609,7 +615,7 @@ const TableBody = ({
         </div>
 
         {/* Table Body */}
-        <div style={{ maxHeight: 'calc(100vh - 200px)', overflow: 'visible' }}>
+        <div style={{ overflow: 'visible' }}>
           {/* Grouped Records */}
           {groupedData.groups.map((group, groupIndex) => {
             const isExpanded = expandedGroups.has(group.key);
@@ -702,27 +708,16 @@ const TableBody = ({
                         backgroundColor: '#fafafa',
                         position: 'relative'
                       }}
-                      onMouseEnter={(e) => {
-                        const checkbox = e.currentTarget.querySelector('.hover-checkbox');
-                        const number = e.currentTarget.querySelector('.index-number');
-                        const editBtn = e.currentTarget.querySelector('.edit-button');
-                        if (checkbox) checkbox.style.opacity = '1';
-                        if (number) number.style.marginLeft = '20px';
-                        if (editBtn) editBtn.style.opacity = '1';
+                      onMouseEnter={() => {
+                        setHoveredRow(record._id);
                       }}
-                      onMouseLeave={(e) => {
-                        const checkbox = e.currentTarget.querySelector('.hover-checkbox');
-                        const number = e.currentTarget.querySelector('.index-number');
-                        const editBtn = e.currentTarget.querySelector('.edit-button');
-                        const isSelected = selectedRowKeys.includes(record._id);
-                        if (checkbox) checkbox.style.opacity = isSelected ? '1' : '0';
-                        if (number) number.style.marginLeft = isSelected ? '20px' : '0px';
-                        if (editBtn) editBtn.style.opacity = '0';
+                      onMouseLeave={() => {
+                        setHoveredRow(null);
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <div style={{
-                          opacity: selectedRowKeys.includes(record._id) ? 1 : 0,
+                          opacity: selectedRowKeys.includes(record._id) || hoveredRow === record._id ? 1 : 0,
                           transition: 'opacity 0.2s ease',
                           position: 'absolute',
                           left: '4px'
@@ -740,7 +735,7 @@ const TableBody = ({
                           fontWeight: 'bold',
                           opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1,
                           transition: 'margin-left 0.2s ease',
-                          marginLeft: selectedRowKeys.includes(record._id) ? '20px' : '0px'
+                          marginLeft: selectedRowKeys.includes(record._id) || hoveredRow === record._id ? '20px' : '0px'
                         }}
                           className="index-number"
                         >
@@ -754,7 +749,7 @@ const TableBody = ({
                           icon={<ExpandOutlined />}
                           className="edit-button"
                           style={{
-                            opacity: 0,
+                            opacity: hoveredRow === record._id ? 1 : 0,
                             transition: 'opacity 0.2s ease',
                             color: '#1890ff',
                             fontSize: '12px',
@@ -1904,27 +1899,16 @@ const TableBody = ({
                   padding: '4px 8px',
                   position: 'relative'
                 }}
-                onMouseEnter={(e) => {
-                  const checkbox = e.currentTarget.querySelector('.hover-checkbox');
-                  const number = e.currentTarget.querySelector('.index-number');
-                  const editBtn = e.currentTarget.querySelector('.edit-button');
-                  if (checkbox) checkbox.style.opacity = '1';
-                  if (number) number.style.marginLeft = '20px';
-                  if (editBtn) editBtn.style.opacity = '1';
+                onMouseEnter={() => {
+                  setHoveredRow(record._id);
                 }}
-                onMouseLeave={(e) => {
-                  const checkbox = e.currentTarget.querySelector('.hover-checkbox');
-                  const number = e.currentTarget.querySelector('.index-number');
-                  const editBtn = e.currentTarget.querySelector('.edit-button');
-                  const isSelected = selectedRowKeys.includes(record._id);
-                  if (checkbox) checkbox.style.opacity = isSelected ? '1' : '0';
-                  if (number) number.style.marginLeft = isSelected ? '20px' : '0px';
-                  if (editBtn) editBtn.style.opacity = '0';
+                onMouseLeave={() => {
+                  setHoveredRow(null);
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <div style={{
-                    opacity: selectedRowKeys.includes(record._id) ? 1 : 0,
+                    opacity: selectedRowKeys.includes(record._id) || hoveredRow === record._id ? 1 : 0,
                     transition: 'opacity 0.2s ease',
                     position: 'absolute',
                     left: '4px'
@@ -1942,7 +1926,7 @@ const TableBody = ({
                     fontWeight: 'bold',
                     opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1,
                     transition: 'margin-left 0.2s ease',
-                    marginLeft: selectedRowKeys.includes(record._id) ? '20px' : '0px'
+                    marginLeft: selectedRowKeys.includes(record._id) || hoveredRow === record._id ? '20px' : '0px'
                   }}
                     className="index-number"
                   >
@@ -1960,7 +1944,7 @@ const TableBody = ({
                       handleRecordClick(record);
                     }}
                     style={{
-                      opacity: 0,
+                      opacity: hoveredRow === record._id ? 1 : 0,
                       transition: 'opacity 0.2s ease',
                       color: '#1890ff',
                       fontSize: '12px',
