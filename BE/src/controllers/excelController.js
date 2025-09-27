@@ -175,7 +175,7 @@ export const importExcelToDatabase = async (req, res) => {
     if (isSuperAdmin(req.user)) {
       database = await Database.findOne({ _id: databaseId, ownerId: userId });
     } else {
-      database = await Database.findOne({ _id: databaseId, ownerId: userId, orgId: siteId });
+      database = await Database.findOne({ _id: databaseId, ownerId: userId });
     }
 
     if (!database) {
