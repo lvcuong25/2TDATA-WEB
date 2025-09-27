@@ -38,15 +38,16 @@ const UserOrganization = () => {
   const organizations = Array.isArray(orgData?.data) ? orgData.data : (orgData?.data ? [orgData.data] : []);
   const currentOrg = selectedOrgId ? organizations.find(org => org._id === selectedOrgId) : organizations[0];
 
-  // Lấy danh sách users chưa thuộc tổ chức nào
+  // Lấy danh sách users chưa thuộc tổ chức nào (từ site của tổ chức hiện tại)
   const { data: availableUsers, isLoading: loadingUsers } = useQuery({
-    queryKey: ['availableUsers', currentSite?._id],
+    queryKey: ['availableUsers', currentOrg?.site_id?._id || currentOrg?.site_id],
     queryFn: async () => {
-      if (!currentSite?._id) return [];
-      const { data } = await instance.get(`/organization/available-users?siteId=${currentSite._id}`);
+      const siteId = currentOrg?.site_id?._id || currentOrg?.site_id;
+      if (!siteId) return [];
+      const { data } = await instance.get(`/organization/available-users?siteId=${siteId}`);
       return data || [];
     },
-    enabled: !!currentSite?._id,
+    enabled: !!(currentOrg?.site_id?._id || currentOrg?.site_id),
   });
 
   // Mutations
@@ -54,7 +55,7 @@ const UserOrganization = () => {
     mutationFn: (values) => instance.post(`/organization/${currentOrg?._id}/members`, values),
     onSuccess: () => {
       queryClient.invalidateQueries(['userOrganizations', currentUser?._id]);
-      queryClient.invalidateQueries(['availableUsers', currentSite?._id]);
+      queryClient.invalidateQueries(['availableUsers', currentOrg?.site_id?._id || currentOrg?.site_id]);
       form.resetFields();
       toast.success('Thêm thành viên thành công!');
     },
@@ -67,7 +68,7 @@ const UserOrganization = () => {
     mutationFn: (userId) => instance.delete(`/organization/${currentOrg?._id}/members/${userId}`),
     onSuccess: () => {
       queryClient.invalidateQueries(['userOrganizations', currentUser?._id]);
-      queryClient.invalidateQueries(['availableUsers', currentSite?._id]);
+      queryClient.invalidateQueries(['availableUsers', currentOrg?.site_id?._id || currentOrg?.site_id]);
       toast.success('Xóa thành viên thành công!');
     },
     onError: (err) => {
@@ -197,14 +198,22 @@ const UserOrganization = () => {
   return (
     <div className="space-y-6">
       {/* Organization Selector for Super Admin */}
-      {currentUser?.role === 'super_admin' && organizations.length > 1 && (
+      {currentUser?.role === 'super_admin' && organizations.length > 0 && (
         <Card className="shadow-sm border-l-4 border-l-blue-500">
           <div className="p-4">
             <div className="flex items-center mb-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
               <h3 className="text-lg font-semibold text-gray-800">Quản lý tổ chức</h3>
+              <span className="ml-2 text-sm text-gray-500 bg-blue-100 px-2 py-1 rounded">
+                {organizations.length} tổ chức
+              </span>
             </div>
-            <p className="text-sm text-gray-600 mb-4">Bạn có quyền truy cập vào nhiều tổ chức. Chọn tổ chức để xem và quản lý:</p>
+            <p className="text-sm text-gray-600 mb-4">
+              {organizations.length > 1 
+                ? "Bạn có quyền truy cập vào nhiều tổ chức. Chọn tổ chức để xem và quản lý:"
+                : "Tổ chức hiện tại của bạn:"
+              }
+            </p>
             <Select
               value={selectedOrgId || currentOrg?._id}
               onChange={setSelectedOrgId}
@@ -224,6 +233,9 @@ const UserOrganization = () => {
                         {org.site_id.name}
                       </span>
                     )}
+                    <span className="ml-2 text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded">
+                      {org.members?.length || 0} thành viên
+                    </span>
                   </div>
                 </Select.Option>
               ))}

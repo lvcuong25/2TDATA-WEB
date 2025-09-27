@@ -357,8 +357,11 @@ export const getOrganizationsByUserId = async (req, res) => {
         if (!userId) {
             return res.status(400).json({ error: 'Missing userId parameter' });
         }
-        const org = await Organization.findOne({ 'members.user': userId })
+        
+        // Lấy tất cả tổ chức mà user này là thành viên
+        const orgs = await Organization.find({ 'members.user': userId })
             .populate('manager', 'name email')
+            .populate('site_id', 'name domains')
             .populate('members.user', 'name email avatar')
             .populate({
                 path: 'services',
@@ -368,10 +371,18 @@ export const getOrganizationsByUserId = async (req, res) => {
                 }
             })
             .sort({ createdAt: -1 });
-        if (!org) {
+            
+        if (!orgs || orgs.length === 0) {
             return res.status(404).json({ error: 'Không tìm thấy tổ chức nào.' });
         }
-        res.json(org);
+        
+        // Nếu chỉ có 1 tổ chức, trả về object (để tương thích với code cũ)
+        // Nếu có nhiều tổ chức, trả về array
+        if (orgs.length === 1) {
+            res.json(orgs[0]);
+        } else {
+            res.json(orgs);
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
