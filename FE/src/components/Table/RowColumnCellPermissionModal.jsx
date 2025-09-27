@@ -112,7 +112,7 @@ const RowColumnCellPermissionModal = ({
     queryKey: ['database-members', databaseId],
     queryFn: async () => {
       console.log('🚨 FETCHING DATABASE MEMBERS for databaseId:', databaseId);
-      const response = await axiosConfig.get(`/permissions/databases/${databaseId}/members`);
+      const response = await axiosConfig.get(`/permissions/database/databases/${databaseId}/members`);
       console.log('🚨 DATABASE MEMBERS RESPONSE:', response.data);
       return response.data;
     },

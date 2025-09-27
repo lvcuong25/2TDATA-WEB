@@ -13,22 +13,34 @@ export const createDatabase = async (req, res) => {
 
     // Find organization where current user is a member
     const Organization = (await import('../model/Organization.js')).default;
-    const organization = await Organization.findOne({ 
-      site_id: siteId,
-      'members.user': currentUserId 
-    });
-    
-    if (!organization) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Organization not found for this user' 
+    let organization = null;
+    let orgId = null;
+
+    // For super admin, allow creating database without organization
+    if (isSuperAdmin(req.user)) {
+      console.log('🔍 Super admin creating database without organization requirement');
+      // Super admin can create database with siteId as orgId
+      orgId = siteId;
+    } else {
+      // Regular users need to be in an organization
+      organization = await Organization.findOne({ 
+        site_id: siteId,
+        'members.user': currentUserId 
       });
+      
+      if (!organization) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Organization not found for this user' 
+        });
+      }
+      orgId = organization._id;
     }
 
     // Create database with required fields
     const database = new Database({
       name,
-      orgId: organization._id, // Use organization._id as orgId
+      orgId: orgId, // Use organization._id as orgId or siteId for super admin
       ownerId: currentUserId
     });
 

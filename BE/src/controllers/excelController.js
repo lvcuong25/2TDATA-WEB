@@ -175,8 +175,13 @@ export const importExcelToDatabase = async (req, res) => {
     }
 
     // Get database information
-
-    const database = await Database.findOne({ _id: databaseId, ownerId: userId, orgId: siteId });
+    // For super admin, allow access to any database they own
+    let database;
+    if (isSuperAdmin(req.user)) {
+      database = await Database.findOne({ _id: databaseId, ownerId: userId });
+    } else {
+      database = await Database.findOne({ _id: databaseId, ownerId: userId, orgId: siteId });
+    }
 
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
