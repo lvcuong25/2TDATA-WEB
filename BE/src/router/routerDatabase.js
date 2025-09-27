@@ -112,7 +112,7 @@ const router = Router();
 
 // Database routes
 router.post("/databases", createDatabase);
-router.get("/databases", getDatabases);
+router.get("/databases", requireAuthWithCookie, getDatabases);
 router.get("/databases/:databaseId", getDatabaseById);
 
 router.get("/databases/:databaseId/members", requireAuthWithCookie, getDatabaseMembers);
