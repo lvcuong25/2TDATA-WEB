@@ -98,6 +98,6 @@ async function getOrgRoles(req, res, next) {
     res.status(500).json({ ok: false, error: "get_roles_error" });
   }
 }
-routerRoles.get("/database/databases/:databaseId/roles", getOrgRoles);
+routerRoles.get("/databases/:databaseId/roles", getOrgRoles);
 
 export default routerRoles;

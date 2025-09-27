@@ -8,6 +8,7 @@ import Site from '../model/Site.js';
  */
 export const authAndSiteDetectionMiddleware = async (req, res, next) => {
   try {
+    console.log('🔍 Middleware called for:', req.method, req.path);
     // Bước 1: Authentication (nếu có token)
     let token = null;
     
@@ -167,6 +168,8 @@ export const authAndSiteDetectionMiddleware = async (req, res, next) => {
     req.siteId = site._id;
     req.siteFilter = { site_id: site._id };
     req.domain = hostname;
+    
+    console.log('✅ Site found:', site.name, 'for domain:', hostname);
     
     // Check if user is site admin
     if (req.user && site.site_admins) {

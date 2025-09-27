@@ -67,10 +67,6 @@ export const api = {
     update: (id, data) => axiosConfig.put(`/assets/${id}`, data),
     delete: (id) => axiosConfig.delete(`/assets/${id}`),
   },
-};
-
-export default api;
-
   // Database Management
   database: {
     // Database operations
@@ -102,3 +98,6 @@ export default api;
     updateRecord: (id, data) => axiosConfig.put(`/database/records/${id}`, data),
     deleteRecord: (id) => axiosConfig.delete(`/database/records/${id}`),
   },
+};
+
+export default api;

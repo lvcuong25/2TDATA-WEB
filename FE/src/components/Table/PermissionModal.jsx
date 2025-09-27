@@ -49,7 +49,7 @@ const PermissionModal = ({
   const { data: membersResponse, isLoading: membersLoading } = useQuery({
     queryKey: ['database-members', databaseId],
     queryFn: async () => {
-      const response = await axiosConfig.get(`/permissions/databases/${databaseId}/members`);
+      const response = await axiosConfig.get(`/permissions/database/databases/${databaseId}/members`);
       return response.data;
     },
     enabled: !!databaseId && visible

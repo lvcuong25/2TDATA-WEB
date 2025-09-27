@@ -238,10 +238,13 @@ export const addMember = async (req, res) => {
         if (!userToAdd) {
             return res.status(404).json({ error: "Không tìm thấy người dùng để thêm." });
         }
-        const orgSiteId = organization.site_id?.toString();
-        const userSiteId = userToAdd.site_id?.toString();
-        if (orgSiteId && userSiteId && orgSiteId !== userSiteId) {
-            return res.status(400).json({ error: "Chỉ được thêm người dùng cùng site với tổ chức." });
+        // For super admin, allow adding users from any site
+        if (currentUserRole !== 'super_admin') {
+            const orgSiteId = organization.site_id?.toString();
+            const userSiteId = userToAdd.site_id?.toString();
+            if (orgSiteId && userSiteId && orgSiteId !== userSiteId) {
+                return res.status(400).json({ error: "Chỉ được thêm người dùng cùng site với tổ chức." });
+            }
         }
 
         const isMember = organization.members.some(member => member.user.equals(userId));
@@ -354,8 +357,11 @@ export const getOrganizationsByUserId = async (req, res) => {
         if (!userId) {
             return res.status(400).json({ error: 'Missing userId parameter' });
         }
-        const org = await Organization.findOne({ 'members.user': userId })
+        
+        // Lấy tất cả tổ chức mà user này là thành viên
+        const orgs = await Organization.find({ 'members.user': userId })
             .populate('manager', 'name email')
+            .populate('site_id', 'name domains')
             .populate('members.user', 'name email avatar')
             .populate({
                 path: 'services',
@@ -365,10 +371,18 @@ export const getOrganizationsByUserId = async (req, res) => {
                 }
             })
             .sort({ createdAt: -1 });
-        if (!org) {
+            
+        if (!orgs || orgs.length === 0) {
             return res.status(404).json({ error: 'Không tìm thấy tổ chức nào.' });
         }
-        res.json(org);
+        
+        // Nếu chỉ có 1 tổ chức, trả về object (để tương thích với code cũ)
+        // Nếu có nhiều tổ chức, trả về array
+        if (orgs.length === 1) {
+            res.json(orgs[0]);
+        } else {
+            res.json(orgs);
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
