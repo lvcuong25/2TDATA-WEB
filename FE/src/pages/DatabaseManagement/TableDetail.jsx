@@ -37,7 +37,12 @@ import {
   getCompactHeaderStyle,
   getNormalHeaderStyle,
   initializeColumnWidths,
-  getColumnWidthString
+  getColumnWidthString,
+  reorderColumns,
+  generateColumnOrders,
+  saveColumnOrder,
+  loadColumnOrder,
+  applyColumnOrder
 } from './Utils/columnUtils.jsx';
 import {
   getOperatorOptions,
@@ -416,6 +421,14 @@ const TableDetail = () => {
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
 
+  // Column reordering state
+  const [columnOrder, setColumnOrder] = useState(() => {
+    return loadColumnOrder(tableId);
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedColumn, setDraggedColumn] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+
 
   // Handle clicking outside sort dropdown
   React.useEffect(() => {
@@ -544,6 +557,78 @@ const TableDetail = () => {
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Column reordering handlers
+  const handleColumnDragStart = (e, dragIndex) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', dragIndex);
+    
+    setIsDragging(true);
+    setDraggedColumn(dragIndex);
+  };
+
+  const handleColumnDragOver = (e, hoverIndex) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    setDragOverColumn(hoverIndex);
+  };
+
+  const handleColumnDrop = async (e, hoverIndex) => {
+    e.preventDefault();
+    
+    const dragIndex = parseInt(e.dataTransfer.getData('text/html'));
+    
+    if (dragIndex === hoverIndex) {
+      setIsDragging(false);
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+
+    // Reorder columns locally
+    const reorderedColumns = reorderColumns(visibleColumns, dragIndex, hoverIndex);
+    const newColumnOrder = generateColumnOrders(reorderedColumns);
+    
+    setColumnOrder(newColumnOrder);
+    saveColumnOrder(tableId, newColumnOrder);
+
+    // Update backend
+    try {
+      const response = await fetch(`/api/database/tables/${tableId}/columns/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          columnOrders: newColumnOrder
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reorder columns');
+      }
+
+      // Invalidate and refetch table structure to get updated order
+      queryClient.invalidateQueries(['tableStructure', tableId]);
+    } catch (error) {
+      console.error('Error reordering columns:', error);
+      // Revert local changes on error
+      const originalOrder = loadColumnOrder(tableId);
+      setColumnOrder(originalOrder);
+    }
+
+    setIsDragging(false);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  };
+
+  const handleColumnDragEnd = (e) => {
+    setIsDragging(false);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
   };
 
 
@@ -1379,8 +1464,9 @@ const TableDetail = () => {
       userRole
     );
     
-    return result;
-  }, [columns, fieldVisibility, showSystemFields, columnPermissionsResponse, databaseMembersResponse]);
+    // Apply column order
+    return applyColumnOrder(result, columnOrder);
+  }, [columns, fieldVisibility, showSystemFields, columnPermissionsResponse, databaseMembersResponse, columnOrder]);
 
   // Debug effect for visible columns
   useEffect(() => {
@@ -1627,6 +1713,14 @@ const TableDetail = () => {
             updateColumnMutation={updateColumnMutation}
             isResizing={isResizing}
             resizingColumn={resizingColumn}
+            // Column reordering props
+            isDragging={isDragging}
+            draggedColumn={draggedColumn}
+            dragOverColumn={dragOverColumn}
+            handleColumnDragStart={handleColumnDragStart}
+            handleColumnDragOver={handleColumnDragOver}
+            handleColumnDrop={handleColumnDrop}
+            handleColumnDragEnd={handleColumnDragEnd}
             // Utility functions
             getColumnWidthString={getColumnWidthString}
             getColumnHeaderStyle={getColumnHeaderStyle}

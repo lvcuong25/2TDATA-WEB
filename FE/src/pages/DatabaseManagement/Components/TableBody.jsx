@@ -26,6 +26,7 @@ import {
   ZoomInOutlined,
   LockOutlined
 } from '@ant-design/icons';
+import DraggableColumnHeader from './DraggableColumnHeader';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
 import {
@@ -256,6 +257,15 @@ const TableBody = ({
   selectAll,
   setShowAddColumn,
 
+  // Column reordering props
+  isDragging,
+  draggedColumn,
+  dragOverColumn,
+  handleColumnDragStart,
+  handleColumnDragOver,
+  handleColumnDrop,
+  handleColumnDragEnd,
+
   // Utility functions
   formatCellValueForDisplay,
   // Row height props
@@ -458,132 +468,30 @@ const TableBody = ({
           </div>
 
           {/* Data Columns */}
-          {visibleColumns.map(column => (
-            <div key={column._id} style={{
-              width: getColumnWidthString(columnWidths, column._id),
-              minWidth: '50px',
-              padding: isColumnCompact(columnWidths, column._id) ? '4px' : '8px',
-              borderRight: '1px solid #d9d9d9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isColumnCompact(columnWidths, column._id) ? 'center' : 'space-between',
-              backgroundColor: column.isSystem ? '#f6ffed' : '#f5f5f5',
-              position: 'relative',
-              borderTop: column.isSystem ? '2px solid #52c41a' : 'none'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
-                {isColumnCompact(columnWidths, column._id) ? (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: column.isSystem ? '#52c41a' : '#666',
-                    fontStyle: column.isSystem ? 'italic' : 'normal'
-                  }}>
-                    {getDataTypeIcon(column.dataType)}
-                  </div>
-                ) : (
-                  <>
-                    {getDataTypeIcon(column.dataType)}
-                    <span style={{
-                      fontSize: '12px',
-                      fontWeight: column.isSystem ? '400' : 'bold',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      color: column.isSystem ? '#52c41a' : '#333',
-                      fontStyle: column.isSystem ? 'italic' : 'normal'
-                    }}>
-                      {column.name}
-                    </span>
-                    {column.isSystem && (
-                      <span style={{
-                        fontSize: '10px',
-                        color: '#52c41a',
-                        fontWeight: 'bold',
-                        marginLeft: '4px'
-                      }}>
-                        S
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-              {console.log('🚨 DROPDOWN DEBUG:', { columnName: column.name, userRole, canShowPermission: userRole === 'manager' || userRole === 'owner' })}
-              <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: 'edit',
-                      label: 'Chỉnh sửa cột',
-                      onClick: () => handleEditColumn(column),
-                    },
-                    {
-                      type: 'divider',
-                    },
-                    // Only show permission option for manager and owner
-                    ...(userRole === 'manager' || userRole === 'owner' ? [{
-                      key: 'permissions',
-                      label: 'Phân quyền',
-                      onClick: () => {
-                        console.log('🚨 CLICKING PERMISSION BUTTON for column:', column.name);
-                        console.log('🚨 handleColumnPermission function:', handleColumnPermission);
-                        console.log('🚨 Column object:', column);
-                        if (handleColumnPermission) {
-                          handleColumnPermission(column);
-                        } else {
-                          console.error('🚨 handleColumnPermission is not defined!');
-                        }
-                      },
-                    }, {
-                      type: 'divider',
-                    }] : []),
-                    {
-                      key: 'delete',
-                      label: 'Delete Column',
-                      danger: true,
-                      onClick: () => handleDeleteColumn(column._id, column.name),
-                    }
-                  ]
-                }}
-                trigger={['click']}
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<MoreOutlined />}
-                  style={{
-                    padding: isColumnCompact(columnWidths, column._id) ? '2px' : '2px',
-                    fontSize: isColumnCompact(columnWidths, column._id) ? '10px' : '12px'
-                  }}
-                />
-              </Dropdown>
-
-              {/* Resize handle */}
-              <div
-                style={{
-                  position: 'absolute',
-                  right: '-3px',
-                  top: 0,
-                  bottom: 0,
-                  width: '6px',
-                  cursor: 'col-resize',
-                  backgroundColor: isResizing && resizingColumn === column._id ? '#1890ff' : 'transparent',
-                  zIndex: 1
-                }}
-                onMouseDown={(e) => handleResizeStart(e, column._id)}
-                onMouseEnter={(e) => {
-                  if (!isResizing) {
-                    e.target.style.backgroundColor = '#d9d9d9';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isResizing || resizingColumn !== column._id) {
-                    e.target.style.backgroundColor = 'transparent';
-                  }
-                }}
-              />
-            </div>
+          {visibleColumns.map((column, index) => (
+            <DraggableColumnHeader
+              key={column._id}
+              column={column}
+              columnWidths={columnWidths}
+              sortRules={[]}
+              groupRules={[]}
+              fieldVisibility={{}}
+              isDragging={isDragging && draggedColumn === index}
+              isDragOver={dragOverColumn === index}
+              onDragStart={(e) => handleColumnDragStart(e, index)}
+              onDragOver={(e) => handleColumnDragOver(e, index)}
+              onDragEnd={handleColumnDragEnd}
+              onDrop={(e) => handleColumnDrop(e, index)}
+              onResizeStart={handleResizeStart}
+              isResizing={isResizing}
+              resizingColumn={resizingColumn}
+              dragIndex={index}
+              hoverIndex={index}
+              handleEditColumn={handleEditColumn}
+              handleColumnPermission={handleColumnPermission}
+              handleDeleteColumn={handleDeleteColumn}
+              isLastColumn={index === visibleColumns.length - 1}
+            />
           ))}
 
           {/* Add Column Button */}
@@ -591,6 +499,7 @@ const TableBody = ({
             width: '50px',
             minWidth: '50px',
             padding: '8px',
+            borderRight: '1px solid #d9d9d9',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1855,14 +1764,17 @@ const TableBody = ({
                     </div>
 
                     {/* Data Columns */}
-                    {visibleColumns.map(column => (
-                      <div key={column._id} style={{
-                        width: getColumnWidthString(columnWidths, column._id),
-                        minWidth: '50px',
-                        padding: '8px',
-                        borderRight: '1px solid #d9d9d9'
-                      }} />
-                    ))}
+                    {visibleColumns.map((column, index) => {
+                      const isLastColumn = index === visibleColumns.length - 1;
+                      return (
+                        <div key={column._id} style={{
+                          width: getColumnWidthString(columnWidths, column._id),
+                          minWidth: '50px',
+                          padding: '8px',
+                      
+                        }} />
+                      );
+                    })}
 
                     {/* Empty cell for alignment */}
                     <div style={{
@@ -1958,7 +1870,7 @@ const TableBody = ({
               </div>
 
               {/* Data Cells */}
-              {visibleColumns.map(column => {
+              {visibleColumns.map((column, index) => {
                 let value = '';
                 if (column.isSystem) {
                   // Handle system fields
@@ -2011,6 +1923,7 @@ const TableBody = ({
                 const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
                 const isSelected = isCellSelected(record._id, column.name);
 
+                const isLastColumn = index === visibleColumns.length - 1;
                 return (
                   <div key={column._id} style={{
                     width: getColumnWidthString(columnWidths, column._id),
@@ -2997,14 +2910,17 @@ const TableBody = ({
             </div>
 
             {/* Data Columns */}
-            {visibleColumns.map(column => (
-              <div key={column._id} style={{
-                width: getColumnWidthString(columnWidths, column._id),
-                minWidth: '50px',
-                padding: '8px',
-                borderRight: '1px solid #d9d9d9'
-              }} />
-            ))}
+            {visibleColumns.map((column, index) => {
+              const isLastColumn = index === visibleColumns.length - 1;
+              return (
+                <div key={column._id} style={{
+                  width: getColumnWidthString(columnWidths, column._id),
+                  minWidth: '50px',
+                  padding: '8px',
+           
+                }} />
+              );
+            })}
 
             {/* Empty cell for alignment */}
             <div style={{

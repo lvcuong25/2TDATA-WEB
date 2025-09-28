@@ -1024,3 +1024,95 @@ export const getLookupData = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// Reorder columns
+export const reorderColumns = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { columnOrders } = req.body; // Array of { columnId, order }
+    const userId = req.user._id;
+
+    if (!tableId) {
+      return res.status(400).json({ message: 'Table ID is required' });
+    }
+
+    if (!columnOrders || !Array.isArray(columnOrders)) {
+      return res.status(400).json({ message: 'Column orders array is required' });
+    }
+
+    // Verify table exists and belongs to user
+    const table = await Table.findOne({
+      _id: tableId
+    }).populate('databaseId');
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user is a member of the database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({
+        databaseId: table.databaseId._id,
+        userId
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+
+      // Check if user has permission to edit table structure
+      if (baseMember.role === 'member') {
+        const TablePermission = (await import('../model/TablePermission.js')).default;
+        
+        const tablePermissions = await TablePermission.find({
+          tableId: tableId,
+          $or: [
+            { targetType: 'all_members' },
+            { targetType: 'specific_user', userId: userId },
+            { targetType: 'specific_role', role: baseMember.role }
+          ]
+        });
+
+        let canEditStructure = false;
+        
+        const sortedPermissions = tablePermissions.sort((a, b) => {
+          const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+          return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
+        });
+        
+        for (const perm of sortedPermissions) {
+          if (perm.permissions && perm.permissions.canEditStructure !== undefined) {
+            canEditStructure = perm.permissions.canEditStructure;
+            break;
+          }
+        }
+
+        if (!canEditStructure) {
+          return res.status(403).json({ message: 'Access denied - you do not have permission to edit table structure' });
+        }
+      }
+    }
+
+    // Update column orders
+    const updatePromises = columnOrders.map(({ columnId, order }) => {
+      return Column.updateOne(
+        { _id: columnId, tableId: tableId },
+        { order: order }
+      );
+    });
+
+    await Promise.all(updatePromises);
+
+    res.status(200).json({
+      success: true,
+      message: 'Columns reordered successfully'
+    });
+
+  } catch (error) {
+    console.error('Error reordering columns:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};

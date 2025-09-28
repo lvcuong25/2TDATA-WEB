@@ -215,3 +215,72 @@ export const getColumnWidthString = (columnWidths, columnId) => {
 export const shouldShowCompactContent = (columnWidths, columnId, threshold = 80) => {
   return isColumnCompact(columnWidths, columnId, threshold);
 };
+
+/**
+ * Column reordering utilities
+ */
+
+/**
+ * Reorder columns array based on drag and drop
+ * @param {Array} columns - Array of column objects
+ * @param {number} dragIndex - Index of dragged column
+ * @param {number} hoverIndex - Index where column is dropped
+ * @returns {Array} Reordered columns array
+ */
+export const reorderColumns = (columns, dragIndex, hoverIndex) => {
+  const result = Array.from(columns);
+  const [removed] = result.splice(dragIndex, 1);
+  result.splice(hoverIndex, 0, removed);
+  return result;
+};
+
+/**
+ * Generate column orders for API call
+ * @param {Array} columns - Array of column objects
+ * @returns {Array} Array of { columnId, order } objects
+ */
+export const generateColumnOrders = (columns) => {
+  return columns.map((column, index) => ({
+    columnId: column._id,
+    order: index
+  }));
+};
+
+/**
+ * Save column order to localStorage
+ * @param {string} tableId - Table ID
+ * @param {Array} columnOrders - Array of { columnId, order } objects
+ */
+export const saveColumnOrder = (tableId, columnOrders) => {
+  localStorage.setItem(`table_${tableId}_column_order`, JSON.stringify(columnOrders));
+};
+
+/**
+ * Load column order from localStorage
+ * @param {string} tableId - Table ID
+ * @returns {Array} Array of { columnId, order } objects
+ */
+export const loadColumnOrder = (tableId) => {
+  const saved = localStorage.getItem(`table_${tableId}_column_order`);
+  return saved ? JSON.parse(saved) : [];
+};
+
+/**
+ * Apply column order to columns array
+ * @param {Array} columns - Array of column objects
+ * @param {Array} columnOrders - Array of { columnId, order } objects
+ * @returns {Array} Sorted columns array
+ */
+export const applyColumnOrder = (columns, columnOrders) => {
+  if (!columnOrders || columnOrders.length === 0) {
+    return columns.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+  
+  const orderMap = new Map(columnOrders.map(order => [order.columnId, order.order]));
+  
+  return columns.sort((a, b) => {
+    const orderA = orderMap.get(a._id) ?? a.order ?? 0;
+    const orderB = orderMap.get(b._id) ?? b.order ?? 0;
+    return orderA - orderB;
+  });
+};
