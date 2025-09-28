@@ -2,6 +2,8 @@ import View from '../model/View.js';
 import Table from '../model/Table.js';
 import BaseMember from '../model/BaseMember.js';
 import { validationResult } from 'express-validator';
+// PostgreSQL imports
+import { Table as PostgresTable } from '../models/postgres/index.js';
 
 // Create a new view
 export const createView = async (req, res) => {
@@ -30,8 +32,13 @@ export const createView = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.user.site_id?._id || req.site?._id;
 
-    // Verify table exists and get its database info
-    const table = await Table.findById(tableId).populate('databaseId');
+    // Verify table exists and get its database info (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findById(tableId).populate('databaseId'),
+      PostgresTable.findByPk(tableId)
+    ]);
+
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({
         success: false,

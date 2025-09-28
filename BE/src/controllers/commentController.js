@@ -3,6 +3,8 @@ import Record from '../model/Record.js';
 import Table from '../model/Table.js';
 import User from '../model/User.js';
 import { createCommentValidation, updateCommentValidation } from '../validations/commentValidation.js';
+// PostgreSQL imports
+import { Table as PostgresTable } from '../models/postgres/index.js';
 
 // Get all comments for a record
 export const getCommentsByRecord = async (req, res) => {
@@ -59,8 +61,13 @@ export const createComment = async (req, res) => {
       return res.status(404).json({ message: 'Record not found' });
     }
 
-    // Verify table exists
-    const table = await Table.findById(tableId);
+    // Verify table exists (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findById(tableId),
+      PostgresTable.findByPk(tableId)
+    ]);
+
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }

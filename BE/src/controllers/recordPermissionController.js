@@ -4,6 +4,8 @@ import Table from '../model/Table.js';
 import User from '../model/User.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
+// PostgreSQL imports
+import { Table as PostgresTable } from '../models/postgres/index.js';
 
 // Helper function để kiểm tra user có phải manager hoặc owner không
 const isManagerOrOwner = async (userId, databaseId) => {
@@ -65,8 +67,12 @@ export const createRecordPermission = async (req, res) => {
       }
     }
 
-    // Tạo tên mặc định cho permission
-    const table = await Table.findById(record.tableId._id);
+    // Tạo tên mặc định cho permission (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findById(record.tableId._id),
+      PostgresTable.findByPk(record.tableId._id)
+    ]);
+    const table = mongoTable || postgresTable;
     const recordIndex = await Record.countDocuments({ tableId: record.tableId._id, _id: { $lte: recordId } });
     const defaultName = `Record ${recordIndex} - ${table.name}`;
 

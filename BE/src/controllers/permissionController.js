@@ -3,6 +3,9 @@ import Table from '../model/Table.js';
 import View from '../model/View.js';
 import BaseMember from '../model/BaseMember.js';
 import User from '../model/User.js';
+import Database from '../model/Database.js';
+// PostgreSQL imports
+import { Table as PostgresTable } from '../models/postgres/index.js';
 
 // Kiểm tra quyền của user trong database
 const checkUserRole = async (userId, databaseId) => {
@@ -39,14 +42,28 @@ export const createTablePermission = async (req, res) => {
       return res.status(400).json({ message: 'Table ID is required' });
     }
 
-    // Kiểm tra table tồn tại
-    const table = await Table.findById(tableId).populate('databaseId');
+    // Kiểm tra table tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findById(tableId).populate('databaseId'),
+      PostgresTable.findByPk(tableId)
+    ]);
+
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoTable) {
+      databaseId = mongoTable.databaseId._id;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresTable.database_id;
+    }
+
     // Kiểm tra user có quyền phân quyền không
-    const hasPermission = await isManagerOrOwner(currentUserId, table.databaseId._id);
+    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can set permissions' 
@@ -134,14 +151,28 @@ export const getTablePermissions = async (req, res) => {
       return res.status(400).json({ message: 'Table ID is required' });
     }
 
-    // Kiểm tra table tồn tại
-    const table = await Table.findById(tableId).populate('databaseId');
+    // Kiểm tra table tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findById(tableId).populate('databaseId'),
+      PostgresTable.findByPk(tableId)
+    ]);
+
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoTable) {
+      databaseId = mongoTable.databaseId._id;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresTable.database_id;
+    }
+
     // Kiểm tra user có quyền xem quyền không
-    const hasPermission = await isManagerOrOwner(currentUserId, table.databaseId._id);
+    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can view permissions' 
@@ -292,14 +323,28 @@ export const getUserTablePermissions = async (req, res) => {
       return res.status(400).json({ message: 'Table ID is required' });
     }
 
-    // Kiểm tra table tồn tại
-    const table = await Table.findById(tableId).populate('databaseId');
+    // Kiểm tra table tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findById(tableId).populate('databaseId'),
+      PostgresTable.findByPk(tableId)
+    ]);
+
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoTable) {
+      databaseId = mongoTable.databaseId._id;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresTable.database_id;
+    }
+
     // Lấy role của user trong database
-    const userRole = await checkUserRole(currentUserId, table.databaseId._id);
+    const userRole = await checkUserRole(currentUserId, databaseId);
     if (!userRole) {
       return res.status(403).json({ 
         message: 'You are not a member of this database' 
