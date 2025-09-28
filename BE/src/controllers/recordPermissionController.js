@@ -5,7 +5,7 @@ import User from '../model/User.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
 // PostgreSQL imports
-import { Table as PostgresTable } from '../models/postgres/index.js';
+import { Table as PostgresTable, Record as PostgresRecord } from '../models/postgres/index.js';
 
 // Helper function để kiểm tra user có phải manager hoặc owner không
 const isManagerOrOwner = async (userId, databaseId) => {
@@ -30,14 +30,28 @@ export const createRecordPermission = async (req, res) => {
       return res.status(400).json({ message: 'Record ID is required' });
     }
 
-    // Kiểm tra record tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
+    // Kiểm tra record tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
+    }
+
     // Kiểm tra user có quyền set permission không
-    const hasPermission = await isManagerOrOwner(currentUserId, record.tableId.databaseId);
+    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can set permissions' 
@@ -130,14 +144,28 @@ export const getRecordPermissions = async (req, res) => {
       return res.status(400).json({ message: 'Record ID is required' });
     }
 
-    // Kiểm tra record tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
+    // Kiểm tra record tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
+    }
+
     // Kiểm tra user có quyền xem quyền không
-    const hasPermission = await isManagerOrOwner(currentUserId, record.tableId.databaseId);
+    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can view permissions' 

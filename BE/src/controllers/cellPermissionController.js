@@ -5,6 +5,8 @@ import Table from '../model/Table.js';
 import User from '../model/User.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
+// PostgreSQL imports
+import { Record as PostgresRecord } from '../models/postgres/index.js';
 
 // Helper function để kiểm tra user có phải manager hoặc owner không
 const isManagerOrOwner = async (userId, databaseId) => {
@@ -29,21 +31,49 @@ export const createCellPermission = async (req, res) => {
       return res.status(400).json({ message: 'Record ID and Column ID are required' });
     }
 
-    // Kiểm tra record và column tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
-    const column = await Column.findById(columnId).populate('tableId');
+    // Kiểm tra record và column tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+    
+    const [mongoColumn, postgresColumn] = await Promise.all([
+      Column.findById(columnId).populate('tableId'),
+      // Note: Column model is not in PostgreSQL yet, so we only check MongoDB
+      Promise.resolve(null)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
+    const column = mongoColumn; // Only MongoDB for now
     
     if (!record || !column) {
       return res.status(404).json({ message: 'Record or Column not found' });
     }
 
+    // Get table ID from either source
+    let tableId;
+    if (mongoRecord) {
+      tableId = mongoRecord.tableId._id.toString();
+    } else {
+      tableId = postgresRecord.table_id;
+    }
+
     // Kiểm tra record và column cùng table
-    if (record.tableId._id.toString() !== column.tableId._id.toString()) {
+    if (tableId !== column.tableId._id.toString()) {
       return res.status(400).json({ message: 'Record and Column must be in the same table' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
+    }
+
     // Kiểm tra user có quyền set permission không
-    const hasPermission = await isManagerOrOwner(currentUserId, record.tableId.databaseId);
+    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can set permissions' 
@@ -132,16 +162,36 @@ export const getCellPermissions = async (req, res) => {
       return res.status(400).json({ message: 'Record ID and Column ID are required' });
     }
 
-    // Kiểm tra record và column tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
-    const column = await Column.findById(columnId).populate('tableId');
+    // Kiểm tra record và column tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+    
+    const [mongoColumn, postgresColumn] = await Promise.all([
+      Column.findById(columnId).populate('tableId'),
+      // Note: Column model is not in PostgreSQL yet, so we only check MongoDB
+      Promise.resolve(null)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
+    const column = mongoColumn; // Only MongoDB for now
     
     if (!record || !column) {
       return res.status(404).json({ message: 'Record or Column not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
+    }
+
     // Kiểm tra user có quyền xem quyền không
-    const hasPermission = await isManagerOrOwner(currentUserId, record.tableId.databaseId);
+    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can view permissions' 
