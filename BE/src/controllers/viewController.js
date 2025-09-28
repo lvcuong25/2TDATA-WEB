@@ -41,7 +41,7 @@ export const createView = async (req, res) => {
 
     // Check if user is a member of the database
     const baseMember = await BaseMember.findOne({
-      databaseId: table.databaseId._id,
+      databaseId: table.database_id,
       userId
     });
 
@@ -194,10 +194,11 @@ export const getViews = async (req, res) => {
       });
     }
 
-    const userId = req.user._id;
+    const userId = req.user._id?.toString();
 
-    // Verify table exists and get its database info
-    const table = await Table.findById(tableId).populate('databaseId');
+    // Verify table exists and get its database info (using PostgreSQL)
+    const { Table: PostgresTable } = await import('../models/postgres/index.js');
+    const table = await PostgresTable.findByPk(tableId);
     if (!table) {
       return res.status(404).json({
         success: false,
@@ -207,7 +208,7 @@ export const getViews = async (req, res) => {
 
     // Check if user is a member of the database
     const baseMember = await BaseMember.findOne({
-      databaseId: table.databaseId._id,
+      databaseId: table.database_id,
       userId
     });
 

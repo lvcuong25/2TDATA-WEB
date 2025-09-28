@@ -1,7 +1,8 @@
 import express from "express";
 import dotenv from 'dotenv';
 import router from './router/index.js';
-import { connectDB } from "./config/db.js";
+import { hybridDbManager } from './config/hybrid-db.js';
+import { syncModels } from './models/postgres/index.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import logger from './utils/logger.js';
@@ -118,20 +119,26 @@ app.get('/api/test', (req, res) => {
 // Start server function
 async function startServer() {
   try {
-    // Try to connect to database
-    if (DB_URI) {
-      try {
-        await connectDB(DB_URI);
-        console.log('✅ Database connected successfully');
-      } catch (dbError) {
-        console.warn('⚠️ Database connection failed:', dbError.message);
-      }
+    // Connect to hybrid database system
+    try {
+      await hybridDbManager.connectAll();
+      
+      // Sync PostgreSQL models
+      await syncModels(false);
+      console.log('✅ PostgreSQL models synchronized');
+      
+    } catch (dbError) {
+      console.warn('⚠️ Hybrid database connection failed:', dbError.message);
+      console.log('🔄 Continuing without database connection...');
     }
     
     // Start the server
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server started on port ${PORT}`);
       console.log(`🔗 API available at: http://localhost:${PORT}/api`);
+      console.log('📊 Hybrid Database System:');
+      console.log(`   MongoDB: ${hybridDbManager.isMongoConnected() ? '✅ Connected' : '❌ Disconnected'}`);
+      console.log(`   PostgreSQL: ${hybridDbManager.isPostgresConnected() ? '✅ Connected' : '❌ Disconnected'}`);
     });
     
     server.on('error', (err) => {

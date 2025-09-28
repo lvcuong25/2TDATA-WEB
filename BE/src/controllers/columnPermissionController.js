@@ -3,6 +3,7 @@ import Column from '../model/Column.js';
 import Table from '../model/Table.js';
 import User from '../model/User.js';
 import BaseMember from '../model/BaseMember.js';
+import { isSuperAdmin } from '../utils/permissionUtils.js';
 
 // Helper function để kiểm tra user có phải manager hoặc owner không
 const isManagerOrOwner = async (userId, databaseId) => {
@@ -359,8 +360,9 @@ export const getTableColumnPermissions = async (req, res) => {
       return res.status(400).json({ message: 'Table ID is required' });
     }
 
-    // Kiểm tra table tồn tại
-    const table = await Table.findById(tableId);
+    // Kiểm tra table tồn tại (using PostgreSQL)
+    const { Table: PostgresTable } = await import('../models/postgres/index.js');
+    const table = await PostgresTable.findByPk(tableId);
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
@@ -380,13 +382,22 @@ export const getTableColumnPermissions = async (req, res) => {
       }
     }
 
-    // Lấy tất cả columns của table
-    const columns = await Column.find({ tableId });
-    const columnIds = columns.map(col => col._id);
+    // Lấy tất cả columns của table từ cả MongoDB và PostgreSQL
+    const { Column: PostgresColumn } = await import('../models/postgres/index.js');
+    
+    const [mongoColumns, postgresColumns] = await Promise.all([
+      Column.find({ tableId }),
+      PostgresColumn.findAll({ where: { table_id: tableId } })
+    ]);
+    
+    // Combine column IDs from both sources
+    const mongoColumnIds = mongoColumns.map(col => col._id);
+    const postgresColumnIds = postgresColumns.map(col => col.id);
+    const allColumnIds = [...mongoColumnIds, ...postgresColumnIds];
 
     // Lấy tất cả quyền của tất cả columns trong table
     const permissions = await ColumnPermission.find({ 
-      columnId: { $in: columnIds } 
+      columnId: { $in: allColumnIds } 
     })
       .populate('userId', 'name email')
       .populate('createdBy', 'name email')
