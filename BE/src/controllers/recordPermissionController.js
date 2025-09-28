@@ -379,16 +379,30 @@ export const getUserRecordPermission = async (req, res) => {
       return res.status(400).json({ message: 'Record ID is required' });
     }
 
-    // Kiểm tra record tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
+    // Kiểm tra record tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
+    }
+
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
     }
 
     // Lấy role của user trong database
     const baseMember = await BaseMember.findOne({
       userId: currentUserId,
-      databaseId: record.tableId.databaseId
+      databaseId: databaseId
     });
 
     if (!baseMember) {

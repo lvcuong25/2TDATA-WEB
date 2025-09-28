@@ -8,9 +8,9 @@ import Organization from '../model/Organization.js';
 import BaseMember from '../model/BaseMember.js';
 import exprEvalEngine from '../utils/exprEvalEngine.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
-import { updateMetabaseTable } from '../utils/metabaseTableCreator.js';
 // PostgreSQL imports
 import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
+import { updateMetabaseTable } from '../utils/metabaseTableCreator.js';
 
 
 // Helper function to calculate formula columns for records
@@ -98,8 +98,13 @@ const calculateLookupColumns = async (records, tableId) => {
             continue; // No linked record
           }
           
-          // Get the linked record
-          const linkedRecord = await Record.findById(linkedTableValue.recordId);
+          // Get the linked record (check both MongoDB and PostgreSQL)
+          const [mongoLinkedRecord, postgresLinkedRecord] = await Promise.all([
+            Record.findById(linkedTableValue.recordId),
+            PostgresRecord.findByPk(linkedTableValue.recordId)
+          ]);
+
+          const linkedRecord = mongoLinkedRecord || postgresLinkedRecord;
           if (!linkedRecord) {
             continue;
           }

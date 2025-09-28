@@ -4,15 +4,20 @@ import Table from '../model/Table.js';
 import User from '../model/User.js';
 import { createCommentValidation, updateCommentValidation } from '../validations/commentValidation.js';
 // PostgreSQL imports
-import { Table as PostgresTable } from '../models/postgres/index.js';
+import { Table as PostgresTable, Record as PostgresRecord } from '../models/postgres/index.js';
 
 // Get all comments for a record
 export const getCommentsByRecord = async (req, res) => {
   try {
     const { recordId } = req.params;
 
-    // Verify record exists
-    const record = await Record.findById(recordId);
+    // Verify record exists (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId),
+      PostgresRecord.findByPk(recordId)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
@@ -55,8 +60,13 @@ export const createComment = async (req, res) => {
       });
     }
 
-    // Verify record exists
-    const record = await Record.findById(recordId);
+    // Verify record exists (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId),
+      PostgresRecord.findByPk(recordId)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }

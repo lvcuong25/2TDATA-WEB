@@ -414,18 +414,38 @@ export const getUserCellPermission = async (req, res) => {
       return res.status(400).json({ message: 'Record ID and Column ID are required' });
     }
 
-    // Kiểm tra record và column tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
-    const column = await Column.findById(columnId).populate('tableId');
+    // Kiểm tra record và column tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+    
+    const [mongoColumn, postgresColumn] = await Promise.all([
+      Column.findById(columnId).populate('tableId'),
+      // Note: Column model is not in PostgreSQL yet, so we only check MongoDB
+      Promise.resolve(null)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
+    const column = mongoColumn; // Only MongoDB for now
     
     if (!record || !column) {
       return res.status(404).json({ message: 'Record or Column not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
+    }
+
     // Lấy role của user trong database
     const baseMember = await BaseMember.findOne({
       userId: currentUserId,
-      databaseId: record.tableId.databaseId
+      databaseId: databaseId
     });
 
     if (!baseMember) {
