@@ -4,7 +4,8 @@ import {
   MoreOutlined,
   DragOutlined,
   EditOutlined,
-  LockOutlined
+  LockOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import {
   getColumnWidthString,
@@ -36,6 +37,8 @@ const DraggableColumnHeader = ({
   handleEditColumn,
   handleColumnPermission,
   handleDeleteColumn,
+  handleAddColumnLeft,
+  handleAddColumnRight,
   dragIndex,
   hoverIndex,
   isLastColumn = false
@@ -77,6 +80,21 @@ const DraggableColumnHeader = ({
   };
 
   const columnMenuItems = [
+    {
+      key: 'add-left',
+      label: 'Thêm cột bên trái',
+      icon: <PlusOutlined />,
+      onClick: () => handleAddColumnLeft(column)
+    },
+    {
+      key: 'add-right',
+      label: 'Thêm cột bên phải',
+      icon: <PlusOutlined />,
+      onClick: () => handleAddColumnRight(column)
+    },
+    {
+      type: 'divider'
+    },
     {
       key: 'edit',
       label: 'Edit Column',

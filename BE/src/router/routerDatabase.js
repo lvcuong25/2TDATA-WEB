@@ -28,7 +28,8 @@ import {
   deleteColumn,
   getLinkedTableData,
   getLookupData,
-  reorderColumns
+  reorderColumns,
+  createColumnAtPosition
 } from "../controllers/columnController.js";
 
 import {
@@ -201,6 +202,7 @@ router.get("/columns/:columnId/lookup-data", getLookupData);
 router.put("/columns/:columnId", updateColumn);
 router.delete("/columns/:columnId", deleteColumn);
 router.put("/tables/:tableId/columns/reorder", reorderColumns);
+router.post("/tables/:tableId/columns/:position/:referenceColumnId", createColumnAtPosition);
 
 // Record routes - IMPORTANT: Specific routes MUST come before parameterized routes
 router.post("/records", createRecord);

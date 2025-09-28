@@ -244,6 +244,8 @@ const TableBody = ({
   handleColumnPermission,
   handleCellPermission,
   handleDeleteColumn,
+  handleAddColumnLeft,
+  handleAddColumnRight,
   handleAddRow,
   handleAddRowToGroup,
   handleToggleGroupExpansion,
@@ -493,6 +495,8 @@ const TableBody = ({
               handleEditColumn={handleEditColumn}
               handleColumnPermission={handleColumnPermission}
               handleDeleteColumn={handleDeleteColumn}
+              handleAddColumnLeft={handleAddColumnLeft}
+              handleAddColumnRight={handleAddColumnRight}
               isLastColumn={index === visibleColumns.length - 1}
             />
           ))}

@@ -209,6 +209,7 @@ const TableDetail = () => {
     defaultValue: null
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
+  const [addColumnPosition, setAddColumnPosition] = useState(null);
   const [showEditColumn, setShowEditColumn] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
   const [showColumnPermissionModal, setShowColumnPermissionModal] = useState(false);
@@ -912,7 +913,48 @@ const TableDetail = () => {
     
     
     // safeLog('Frontend: Final columnData:', columnData);
-    addColumnMutation.mutate(columnData);
+    
+    // If adding column at specific position, use different API
+    if (addColumnPosition) {
+      const { position, referenceColumnId } = addColumnPosition;
+      const url = `/api/database/tables/${tableId}/columns/${position}/${referenceColumnId}`;
+      
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(columnData)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to create column at position');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Invalidate and refetch table structure
+        queryClient.invalidateQueries(['tableStructure', tableId]);
+        setShowAddColumn(false);
+        setAddColumnPosition(null);
+        setNewColumn({ 
+          name: '', 
+          dataType: 'text',
+          isRequired: false,
+          isUnique: false,
+          defaultValue: null,
+          filterRules: []
+        });
+      })
+      .catch(error => {
+        console.error('Error creating column at position:', error);
+        // Fallback to regular add column
+        addColumnMutation.mutate(columnData);
+      });
+    } else {
+      addColumnMutation.mutate(columnData);
+    }
   };
 
   const handleAddRow = () => {
@@ -1210,6 +1252,16 @@ const TableDetail = () => {
 
   const handleDeleteColumn = (columnId, columnName) => {
     deleteColumnMutation.mutate(columnId);
+  };
+
+  const handleAddColumnLeft = (referenceColumn) => {
+    setShowAddColumn(true);
+    setAddColumnPosition({ position: 'left', referenceColumnId: referenceColumn._id });
+  };
+
+  const handleAddColumnRight = (referenceColumn) => {
+    setShowAddColumn(true);
+    setAddColumnPosition({ position: 'right', referenceColumnId: referenceColumn._id });
   };
 
   const handleCellClick = (recordId, columnName, currentValue) => {
@@ -1735,6 +1787,8 @@ const TableDetail = () => {
             handleColumnPermission={handleColumnPermission}
             handleCellPermission={handleCellPermission}
             handleDeleteColumn={handleDeleteColumn}
+            handleAddColumnLeft={handleAddColumnLeft}
+            handleAddColumnRight={handleAddColumnRight}
             updateRecordMutation={updateRecordMutation}
             updateColumnMutation={updateColumnMutation}
             isResizing={isResizing}
@@ -1794,10 +1848,14 @@ const TableDetail = () => {
           {/* Add Column Modal */}
           <AddColumnModal
             visible={showAddColumn}
-            onCancel={() => setShowAddColumn(false)}
+            onCancel={() => {
+              setShowAddColumn(false);
+              setAddColumnPosition(null);
+            }}
             onSubmit={handleAddColumn}
             newColumn={newColumn}
             setNewColumn={setNewColumn}
+            addColumnPosition={addColumnPosition}
             columns={columns}
             loading={addColumnMutation.isPending}
             currentTableId={tableId}
