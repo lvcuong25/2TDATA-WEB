@@ -52,9 +52,10 @@ app.use("/api", (req, res, next) => {
         '/api/auth/sign-in',
         '/api/auth/send-otp',
         '/api/auth/reset-password',
-        '/api/auth', // ← Thêm endpoint /api/auth để Frontend có thể verify user
+        '/api/auth',
         '/api/service/check-assign-user',
-        '/api/iframe/n8n/upsert'
+        '/api/iframe/n8n/upsert',
+        '/api/database/databases' // Database endpoints including available-users
     ];
     
     if (skipRoutes.some(route => req.path.startsWith(route))) {

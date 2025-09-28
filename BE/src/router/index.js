@@ -17,6 +17,7 @@ import adminRouter from "./adminRouter.js";
 
 import routerOrganization from "./routerOrganization.js";
 import routerDatabase from "./routerDatabase.js";
+import testRouter from "./testRouter.js";
 import routerOrder from "./orderRouter.js";
 import routerCell from "./routerCell.js";
 import basesRouter from "./bases.routes.js";
@@ -47,6 +48,7 @@ router.get("/health", (req, res) => {
     uptime: process.uptime(),
   });
 });
+
 
 // Root endpoint - UPDATED to include iframe
 router.get("/", (req, res) => {
@@ -86,8 +88,6 @@ router.use("/orders", routerOrder);
 router.use("/action", routerCell);
 
 router.use(basesRouter);
-router.use(membersRouter);
-router.use(baseRolesRouter);
 router.use(locksRouter);
 router.use(columnsReadRouter);
 router.use("/tables", tableRouter);
@@ -103,5 +103,9 @@ router.use("/permissions", cellPermissionRouter);
 router.use("/admin", adminRouter);
 
 router.use("/organization", routerOrganization);
+// Mount members and roles routes under /database first to avoid conflicts
+router.use("/database", membersRouter);
+router.use("/database", baseRolesRouter);
 router.use("/database", routerDatabase);
+router.use("/test", testRouter);
 export default router;

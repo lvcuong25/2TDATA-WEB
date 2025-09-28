@@ -1157,3 +1157,337 @@ export const getLookupData = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// Reorder columns
+// Create column at specific position
+export const createColumnAtPosition = async (req, res) => {
+  try {
+    const { tableId, position, referenceColumnId } = req.params;
+    const { name, dataType, isRequired, isUnique, defaultValue, checkboxConfig, singleSelectConfig, multiSelectConfig, dateConfig, formulaConfig, currencyConfig, percentConfig, urlConfig, phoneConfig, timeConfig, ratingConfig, linkedTableConfig, lookupConfig } = req.body;
+    const userId = req.user._id;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ message: 'Column name is required' });
+    }
+
+    if (!dataType) {
+      return res.status(400).json({ message: 'Data type is required' });
+    }
+
+    if (!tableId) {
+      return res.status(400).json({ message: 'Table ID is required' });
+    }
+
+    if (!position || !['left', 'right'].includes(position)) {
+      return res.status(400).json({ message: 'Position must be "left" or "right"' });
+    }
+
+    if (!referenceColumnId) {
+      return res.status(400).json({ message: 'Reference column ID is required' });
+    }
+
+    // Verify table exists and belongs to user
+    const table = await Table.findOne({
+      _id: tableId
+    }).populate('databaseId');
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user is a member of the database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({
+        userId: userId,
+        databaseId: table.databaseId._id
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+
+      // Check if user has permission to edit table structure
+      const canEditStructure = baseMember.role === 'owner' || baseMember.role === 'manager';
+      if (!canEditStructure) {
+        return res.status(403).json({ message: 'Access denied - you do not have permission to edit table structure' });
+      }
+    }
+
+    // Verify reference column exists
+    const referenceColumn = await Column.findOne({
+      _id: referenceColumnId,
+      tableId: tableId
+    });
+
+    if (!referenceColumn) {
+      return res.status(404).json({ message: 'Reference column not found' });
+    }
+
+    const existingColumn = await Column.findOne({
+      name: name.trim(),
+      tableId
+    });
+
+    if (existingColumn) {
+      return res.status(400).json({ message: 'Column with this name already exists in this table' });
+    }
+
+    // Calculate new order based on position
+    let newOrder;
+    if (position === 'left') {
+      newOrder = referenceColumn.order;
+      // Shift all columns with order >= referenceColumn.order to the right
+      await Column.updateMany(
+        { tableId: tableId, order: { $gte: referenceColumn.order } },
+        { $inc: { order: 1 } }
+      );
+    } else { // position === 'right'
+      newOrder = referenceColumn.order + 1;
+      // Shift all columns with order > referenceColumn.order to the right
+      await Column.updateMany(
+        { tableId: tableId, order: { $gt: referenceColumn.order } },
+        { $inc: { order: 1 } }
+      );
+    }
+
+    // Prepare column data (same as createColumn)
+    const columnData = {
+      name: name.trim(),
+      key: name.trim().toLowerCase().replace(/\s+/g, '_'),
+      dataType,
+      isRequired: isRequired || false,
+      isUnique: isUnique || false,
+      defaultValue,
+      order: newOrder,
+      tableId,
+      userId,
+      siteId: req.user?.site_id
+    };
+
+    // Add configs based on dataType (same logic as createColumn)
+    if (dataType === 'checkbox' && checkboxConfig) {
+      columnData.checkboxConfig = {
+        icon: checkboxConfig.icon || 'check-circle',
+        color: checkboxConfig.color || '#52c41a',
+        defaultValue: checkboxConfig.defaultValue !== undefined ? checkboxConfig.defaultValue : false
+      };
+    }
+
+    if (dataType === 'single_select' && singleSelectConfig) {
+      columnData.singleSelectConfig = {
+        options: singleSelectConfig.options || [],
+        defaultValue: singleSelectConfig.defaultValue || ''
+      };
+    }
+
+    if (dataType === 'multi_select' && multiSelectConfig) {
+      columnData.multiSelectConfig = {
+        options: multiSelectConfig.options || [],
+        defaultValue: multiSelectConfig.defaultValue || []
+      };
+    }
+
+    if (dataType === 'date' && dateConfig) {
+      columnData.dateConfig = {
+        format: dateConfig.format || 'DD/MM/YYYY',
+        includeTime: dateConfig.includeTime || false,
+        defaultValue: dateConfig.defaultValue || null
+      };
+    }
+
+    if (dataType === 'formula' && formulaConfig) {
+      columnData.formulaConfig = {
+        formula: formulaConfig.formula || '',
+        resultType: formulaConfig.resultType || 'text'
+      };
+    }
+
+    if (dataType === 'currency' && currencyConfig) {
+      columnData.currencyConfig = {
+        currency: currencyConfig.currency || 'VND',
+        symbol: currencyConfig.symbol || '₫',
+        defaultValue: currencyConfig.defaultValue !== undefined ? currencyConfig.defaultValue : 0
+      };
+    }
+
+    if (dataType === 'percent' && percentConfig) {
+      columnData.percentConfig = {
+        defaultValue: percentConfig.defaultValue !== undefined ? percentConfig.defaultValue : 0
+      };
+    }
+
+    if (dataType === 'url' && urlConfig) {
+      columnData.urlConfig = {
+        protocol: urlConfig.protocol || 'https'
+      };
+    }
+
+    if (dataType === 'phone' && phoneConfig !== undefined) {
+      columnData.phoneConfig = phoneConfig;
+    }
+
+    if (dataType === 'time' && timeConfig !== undefined) {
+      columnData.timeConfig = timeConfig;
+    }
+
+    if (dataType === 'rating' && ratingConfig) {
+      columnData.ratingConfig = {
+        maxRating: ratingConfig.maxRating || 5,
+        icon: ratingConfig.icon || 'star',
+        defaultValue: ratingConfig.defaultValue || 0
+      };
+    }
+
+    if (dataType === 'linked_table' && linkedTableConfig) {
+      columnData.linkedTableConfig = {
+        linkedTableId: linkedTableConfig.linkedTableId,
+        linkedTableName: linkedTableConfig.linkedTableName || '',
+        displayColumnId: linkedTableConfig.displayColumnId,
+        displayColumnName: linkedTableConfig.displayColumnName || '',
+        defaultValue: linkedTableConfig.defaultValue || null
+      };
+    }
+
+    if (dataType === 'lookup' && lookupConfig) {
+      columnData.lookupConfig = {
+        linkedTableId: lookupConfig.linkedTableId,
+        lookupColumnId: lookupConfig.lookupColumnId,
+        linkedTableName: lookupConfig.linkedTableName || '',
+        lookupColumnName: lookupConfig.lookupColumnName || '',
+        defaultValue: lookupConfig.defaultValue || null
+      };
+    }
+
+    // Set default values
+    if (dataType === 'currency' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
+      columnData.defaultValue = 0;
+    }
+
+    if (dataType === 'percent' && (columnData.defaultValue === undefined || columnData.defaultValue === null)) {
+      columnData.defaultValue = 0;
+    }
+
+    const column = new Column(columnData);
+    await column.save();
+
+    // Create default permission for column
+    try {
+      const ColumnPermission = (await import('../model/ColumnPermission.js')).default;
+      const defaultPermission = new ColumnPermission({
+        columnId: column._id,
+        tableId: tableId,
+        databaseId: table.databaseId._id,
+        targetType: 'all_members',
+        name: column.name,
+        canView: true,
+        canEdit: true,
+        createdBy: userId,
+        isDefault: true
+      });
+      await defaultPermission.save();
+    } catch (permissionError) {
+      console.error('Error creating default column permission:', permissionError);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Column created successfully',
+      column: column
+    });
+
+  } catch (error) {
+    console.error('Error creating column at position:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const reorderColumns = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { columnOrders } = req.body; // Array of { columnId, order }
+    const userId = req.user._id;
+
+    if (!tableId) {
+      return res.status(400).json({ message: 'Table ID is required' });
+    }
+
+    if (!columnOrders || !Array.isArray(columnOrders)) {
+      return res.status(400).json({ message: 'Column orders array is required' });
+    }
+
+    // Verify table exists and belongs to user
+    const table = await Table.findOne({
+      _id: tableId
+    }).populate('databaseId');
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user is a member of the database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({
+        databaseId: table.databaseId._id,
+        userId
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+
+      // Check if user has permission to edit table structure
+      if (baseMember.role === 'member') {
+        const TablePermission = (await import('../model/TablePermission.js')).default;
+        
+        const tablePermissions = await TablePermission.find({
+          tableId: tableId,
+          $or: [
+            { targetType: 'all_members' },
+            { targetType: 'specific_user', userId: userId },
+            { targetType: 'specific_role', role: baseMember.role }
+          ]
+        });
+
+        let canEditStructure = false;
+        
+        const sortedPermissions = tablePermissions.sort((a, b) => {
+          const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+          return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
+        });
+        
+        for (const perm of sortedPermissions) {
+          if (perm.permissions && perm.permissions.canEditStructure !== undefined) {
+            canEditStructure = perm.permissions.canEditStructure;
+            break;
+          }
+        }
+
+        if (!canEditStructure) {
+          return res.status(403).json({ message: 'Access denied - you do not have permission to edit table structure' });
+        }
+      }
+    }
+
+    // Update column orders
+    const updatePromises = columnOrders.map(({ columnId, order }) => {
+      return Column.updateOne(
+        { _id: columnId, tableId: tableId },
+        { order: order }
+      );
+    });
+
+    await Promise.all(updatePromises);
+
+    res.status(200).json({
+      success: true,
+      message: 'Columns reordered successfully'
+    });
+
+  } catch (error) {
+    console.error('Error reordering columns:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};

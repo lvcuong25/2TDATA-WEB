@@ -41,36 +41,6 @@ const RowColumnCellPermissionModal = ({
   tableId,
   databaseId 
 }) => {
-  // CRITICAL DEBUG LOG - This should always show
-  console.log('🚨🚨🚨 ROWCOLUMNCELLPERMISSIONMODAL COMPONENT LOADED 🚨🚨🚨');
-  console.log('🚨🚨🚨 VISIBLE:', visible, 'TYPE:', type, 'RECORDID:', recordId, 'COLUMNID:', columnId, 'TABLEID:', tableId, 'DATABASEID:', databaseId);
-  
-  // Test if console is working
-  console.log('TEST CONSOLE LOG');
-  console.warn('TEST CONSOLE WARN');
-  console.error('TEST CONSOLE ERROR');
-  
-  // Test alert to see if JavaScript is working
-  if (visible && type === 'column') {
-    console.log('COLUMN MODAL IS VISIBLE - SHOULD SEE THIS LOG');
-    // Uncomment this line to test if JavaScript is working
-    // alert('COLUMN MODAL IS VISIBLE - DEBUG TEST');
-  }
-  console.log('🔍 RowColumnCellPermissionModal rendered with props:', {
-    visible,
-    type,
-    recordId,
-    columnId,
-    tableId,
-    databaseId
-  });
-  
-  // Force debug log to ensure it shows
-  if (visible) {
-    console.log('🚨 MODAL IS VISIBLE - DEBUG LOGS SHOULD APPEAR');
-    console.log('🚨 Modal type:', type);
-    console.log('🚨 Modal props:', { visible, type, recordId, columnId, tableId, databaseId });
-  }
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState('create');
   const [targetType, setTargetType] = useState('specific_user');
@@ -81,8 +51,6 @@ const RowColumnCellPermissionModal = ({
   
   // Debug permissionsData changes
   useEffect(() => {
-    console.log('🚨 PERMISSIONS DATA STATE CHANGED:', permissionsData);
-    console.log('🚨 PERMISSIONS DATA LENGTH:', permissionsData.length);
     addDebugLog(`PERMISSIONS DATA CHANGED: ${permissionsData.length} permissions`);
   }, [permissionsData]);
   
@@ -95,13 +63,11 @@ const RowColumnCellPermissionModal = ({
   // Add initial debug log when component mounts
   useEffect(() => {
     addDebugLog(`COMPONENT MOUNTED: ${type} modal`);
-  }, []);
+  }, [addDebugLog, type]);
   
   // Debug modal visibility changes
   useEffect(() => {
-    console.log('🚨 MODAL VISIBILITY CHANGED:', visible);
     if (visible) {
-      console.log('🚨 MODAL OPENED WITH PROPS:', { type, recordId, columnId, tableId, databaseId });
       addDebugLog(`MODAL OPENED: ${type} - ${columnId || recordId}`);
     }
   }, [visible, type, recordId, columnId, tableId, databaseId]);
@@ -111,9 +77,10 @@ const RowColumnCellPermissionModal = ({
   const { data: membersResponse, isLoading: membersLoading } = useQuery({
     queryKey: ['database-members', databaseId],
     queryFn: async () => {
-      console.log('🚨 FETCHING DATABASE MEMBERS for databaseId:', databaseId);
-      const response = await axiosConfig.get(`/permissions/databases/${databaseId}/members`);
-      console.log('🚨 DATABASE MEMBERS RESPONSE:', response.data);
+      if (!databaseId) {
+        throw new Error('databaseId is required');
+      }
+      const response = await axiosConfig.get(`/permissions/database/databases/${databaseId}/members`);
       return response.data;
     },
     enabled: !!databaseId && visible
@@ -128,16 +95,19 @@ const RowColumnCellPermissionModal = ({
     queryFn: async () => {
       let url = '';
       if (type === 'record') {
+        if (!recordId) throw new Error('recordId is required for record permissions');
         url = `/permissions/records/${recordId}/permissions`;
       } else if (type === 'column') {
+        if (!columnId) throw new Error('columnId is required for column permissions');
         url = `/permissions/columns/${columnId}/permissions`;
       } else if (type === 'cell') {
+        if (!recordId || !columnId) throw new Error('recordId and columnId are required for cell permissions');
         url = `/permissions/cells/${recordId}/${columnId}/permissions`;
+      } else {
+        throw new Error(`Invalid permission type: ${type}`);
       }
-      console.log('🚨 FETCHING PERMISSIONS for type:', type, 'URL:', url);
       addDebugLog(`FETCHING PERMISSIONS: ${url}`);
       const response = await axiosConfig.get(url);
-      console.log('🚨 PERMISSIONS RESPONSE:', response.data);
       addDebugLog(`PERMISSIONS API RESPONSE: ${response.data.data?.length || 0} permissions`);
       
       // Log detailed permission data
@@ -158,9 +128,7 @@ const RowColumnCellPermissionModal = ({
 
   // Initialize permissionsData when permissions are loaded
   useEffect(() => {
-    console.log('🚨 useEffect permissions changed:', permissions);
     if (permissions) {
-      console.log('🚨 PERMISSIONS FOUND, initializing...');
       addDebugLog(`PERMISSIONS REFETCHED: ${permissions.length} permissions`);
       
       // Log each permission's current state
@@ -177,7 +145,6 @@ const RowColumnCellPermissionModal = ({
       });
       
       const initializedPermissions = permissions.map(permission => {
-        console.log('🚨 Initializing permission:', permission);
         const initialized = {
           ...permission,
           canView: permission.canView || false
@@ -190,10 +157,8 @@ const RowColumnCellPermissionModal = ({
         
         return initialized;
       });
-      console.log('🚨 SETTING PERMISSIONS DATA:', initializedPermissions);
       setPermissionsData(initializedPermissions);
     } else {
-      console.log('🚨 NO PERMISSIONS FOUND');
       addDebugLog('NO PERMISSIONS FOUND');
     }
   }, [permissions, addDebugLog]);
@@ -210,15 +175,18 @@ const RowColumnCellPermissionModal = ({
     mutationFn: async (data) => {
       let url = '';
       if (type === 'record') {
+        if (!recordId) throw new Error('recordId is required for record permissions');
         url = `/permissions/records/${recordId}/permissions`;
       } else if (type === 'column') {
+        if (!columnId) throw new Error('columnId is required for column permissions');
         url = `/permissions/columns/${columnId}/permissions`;
       } else if (type === 'cell') {
+        if (!recordId || !columnId) throw new Error('recordId and columnId are required for cell permissions');
         url = `/permissions/cells/${recordId}/${columnId}/permissions`;
+      } else {
+        throw new Error(`Invalid permission type: ${type}`);
       }
-      console.log('🔍 Creating permission with data:', data, 'URL:', url);
       const response = await axiosConfig.post(url, data);
-      console.log('🔍 Create permission response:', response.data);
       return response.data;
     },
     onSuccess: () => {
@@ -245,6 +213,7 @@ const RowColumnCellPermissionModal = ({
   // Cập nhật quyền
   const updatePermissionMutation = useMutation({
     mutationFn: async ({ permissionId, data }) => {
+      if (!permissionId) throw new Error('permissionId is required');
       let url = '';
       if (type === 'record') {
         url = `/permissions/records/permissions/${permissionId}`;
@@ -252,14 +221,13 @@ const RowColumnCellPermissionModal = ({
         url = `/permissions/columns/permissions/${permissionId}`;
       } else if (type === 'cell') {
         url = `/permissions/cells/permissions/${permissionId}`;
+      } else {
+        throw new Error(`Invalid permission type: ${type}`);
       }
-      console.log('🚨 UPDATING PERMISSION:', permissionId, 'with data:', data, 'URL:', url);
       const response = await axiosConfig.put(url, data);
-      console.log('🚨 UPDATE PERMISSION RESPONSE:', response.data);
       return response.data;
     },
     onSuccess: (data, variables) => {
-      console.log('🚨 UPDATE PERMISSION SUCCESS:', data, variables);
       addDebugLog(`UPDATE SUCCESS: ${variables.permissionId} - ${JSON.stringify(variables.data)}`);
       toast.success('Cập nhật quyền thành công!');
       
@@ -283,6 +251,7 @@ const RowColumnCellPermissionModal = ({
   // Xóa quyền
   const deletePermissionMutation = useMutation({
     mutationFn: async (permissionId) => {
+      if (!permissionId) throw new Error('permissionId is required');
       let url = '';
       if (type === 'record') {
         url = `/permissions/records/permissions/${permissionId}`;
@@ -290,10 +259,10 @@ const RowColumnCellPermissionModal = ({
         url = `/permissions/columns/permissions/${permissionId}`;
       } else if (type === 'cell') {
         url = `/permissions/cells/permissions/${permissionId}`;
+      } else {
+        throw new Error(`Invalid permission type: ${type}`);
       }
-      console.log('🔍 Deleting permission:', permissionId, 'URL:', url);
       const response = await axiosConfig.delete(url);
-      console.log('🔍 Delete permission response:', response.data);
       return response.data;
     },
     onSuccess: (data, permissionId) => {
@@ -314,7 +283,6 @@ const RowColumnCellPermissionModal = ({
   });
 
   const handleSubmit = (values) => {
-    console.log('🔍 handleSubmit called with values:', values);
     const permissionData = {
       targetType,
       name: values.name || '',
@@ -339,19 +307,15 @@ const RowColumnCellPermissionModal = ({
       permissionData.role = selectedRole;
     }
 
-    console.log('🔍 Final permission data:', permissionData);
     createPermissionMutation.mutate(permissionData);
   };
 
   const handleUpdatePermission = (permissionId, data) => {
-    console.log('🚨 HANDLE UPDATE PERMISSION CALLED:', permissionId, data);
-    console.log('🚨 CALLING updatePermissionMutation.mutate...');
     addDebugLog(`UPDATE PERMISSION: ${permissionId} - ${JSON.stringify(data)}`);
     updatePermissionMutation.mutate({ permissionId, data });
   };
 
   const handleDeletePermission = (permissionId) => {
-    console.log('🔍 handleDeletePermission called:', permissionId);
     const confirmed = window.confirm('Bạn có chắc chắn muốn xóa quyền này?');
     
     if (confirmed) {
@@ -383,7 +347,6 @@ const RowColumnCellPermissionModal = ({
 
   const renderPermissionSwitch = (type, key, permission) => {
     const currentValue = permission[key] || false;
-    console.log('🚨 RENDER PERMISSION SWITCH:', { type, key, permission, currentValue });
     
     return (
       <Switch
