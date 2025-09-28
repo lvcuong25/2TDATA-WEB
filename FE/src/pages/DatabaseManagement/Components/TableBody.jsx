@@ -422,14 +422,16 @@ const TableBody = ({
         background: 'transparent',
         overflow: 'auto',
         cursor: isResizing ? 'col-resize' : 'default',
-        width: '100%'
+        width: '100%',
+        height: 'auto',
+        maxHeight: 'calc(100vh - 120px)'
       }}
     >
       <div style={{
         display: 'block',
         border: '1px solid #d9d9d9',
         borderTop: '1px solid #d9d9d9',
-        overflow: 'auto',
+        overflow: 'visible',
         backgroundColor: 'transparent',
         userSelect: isResizing ? 'none' : 'auto',
         width: 'fit-content',
@@ -445,7 +447,8 @@ const TableBody = ({
           backgroundColor: '#fafafa',
           position: 'sticky',
           top: 0,
-          zIndex: 10
+          zIndex: 100,
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
           {/* Checkbox and Index Column */}
           <div style={{
@@ -1767,12 +1770,12 @@ const TableBody = ({
                     {visibleColumns.map((column, index) => {
                       const isLastColumn = index === visibleColumns.length - 1;
                       return (
-                        <div key={column._id} style={{
-                          width: getColumnWidthString(columnWidths, column._id),
-                          minWidth: '50px',
-                          padding: '8px',
+                      <div key={column._id} style={{
+                        width: getColumnWidthString(columnWidths, column._id),
+                        minWidth: '50px',
+                        padding: '8px',
                       
-                        }} />
+                      }} />
                       );
                     })}
 
@@ -2913,12 +2916,12 @@ const TableBody = ({
             {visibleColumns.map((column, index) => {
               const isLastColumn = index === visibleColumns.length - 1;
               return (
-                <div key={column._id} style={{
-                  width: getColumnWidthString(columnWidths, column._id),
-                  minWidth: '50px',
-                  padding: '8px',
+              <div key={column._id} style={{
+                width: getColumnWidthString(columnWidths, column._id),
+                minWidth: '50px',
+                padding: '8px',
            
-                }} />
+              }} />
               );
             })}
 
