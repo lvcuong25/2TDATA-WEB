@@ -23,7 +23,7 @@ import {
   EditOutlined,
   EyeOutlined
 } from '@ant-design/icons';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import instance from '../../utils/axiosInstance-cookie-only';
 import { useAuth } from '../core/Auth';
 import MemberManagement from './MemberManagement';
@@ -34,6 +34,7 @@ const { TabPane } = Tabs;
 
 const BaseManagement = () => {
   const { databaseId } = useParams();
+  const navigate = useNavigate();
   const { currentUser, currentOrganization } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -338,6 +339,12 @@ const BaseManagement = () => {
                         onClick={() => setActiveTab('roles')}
                       >
                         Configure Permissions
+                      </Button>
+                      <Button 
+                        icon={<DatabaseOutlined />}
+                        onClick={() => navigate('/database')}
+                      >
+                        Database
                       </Button>
                     </Space>
                   </Card>

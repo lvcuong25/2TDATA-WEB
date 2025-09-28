@@ -26,6 +26,7 @@ import {
   ZoomInOutlined,
   LockOutlined
 } from '@ant-design/icons';
+import DraggableColumnHeader from './DraggableColumnHeader';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
 import dayjs from 'dayjs';
 import {
@@ -243,6 +244,8 @@ const TableBody = ({
   handleColumnPermission,
   handleCellPermission,
   handleDeleteColumn,
+  handleAddColumnLeft,
+  handleAddColumnRight,
   handleAddRow,
   handleAddRowToGroup,
   handleToggleGroupExpansion,
@@ -255,6 +258,15 @@ const TableBody = ({
   resizingColumn,
   selectAll,
   setShowAddColumn,
+
+  // Column reordering props
+  isDragging,
+  draggedColumn,
+  dragOverColumn,
+  handleColumnDragStart,
+  handleColumnDragOver,
+  handleColumnDrop,
+  handleColumnDragEnd,
 
   // Utility functions
   formatCellValueForDisplay,
@@ -284,6 +296,9 @@ const TableBody = ({
     visible: false,
     record: null
   });
+
+  // State for hovered row
+  const [hoveredRow, setHoveredRow] = useState(null);
 
 
   // Format datetime to YYYY-MM-DD HH:MM format
@@ -409,14 +424,16 @@ const TableBody = ({
         background: 'transparent',
         overflow: 'auto',
         cursor: isResizing ? 'col-resize' : 'default',
-        width: '100%'
+        width: '100%',
+        height: 'auto',
+        maxHeight: 'calc(100vh - 120px)'
       }}
     >
       <div style={{
         display: 'block',
         border: '1px solid #d9d9d9',
         borderTop: '1px solid #d9d9d9',
-        overflow: 'auto',
+        overflow: 'visible',
         backgroundColor: 'transparent',
         userSelect: isResizing ? 'none' : 'auto',
         width: 'fit-content',
@@ -429,7 +446,11 @@ const TableBody = ({
         <div style={{
           display: 'flex',
           borderBottom: '1px solid #d9d9d9',
-          backgroundColor: '#fafafa'
+          backgroundColor: '#fafafa',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}>
           {/* Checkbox and Index Column */}
           <div style={{
@@ -452,132 +473,32 @@ const TableBody = ({
           </div>
 
           {/* Data Columns */}
-          {visibleColumns.map(column => (
-            <div key={column._id} style={{
-              width: getColumnWidthString(columnWidths, column._id),
-              minWidth: '50px',
-              padding: isColumnCompact(columnWidths, column._id) ? '4px' : '8px',
-              borderRight: '1px solid #d9d9d9',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isColumnCompact(columnWidths, column._id) ? 'center' : 'space-between',
-              backgroundColor: column.isSystem ? '#f6ffed' : '#f5f5f5',
-              position: 'relative',
-              borderTop: column.isSystem ? '2px solid #52c41a' : 'none'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
-                {isColumnCompact(columnWidths, column._id) ? (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: column.isSystem ? '#52c41a' : '#666',
-                    fontStyle: column.isSystem ? 'italic' : 'normal'
-                  }}>
-                    {getDataTypeIcon(column.dataType)}
-                  </div>
-                ) : (
-                  <>
-                    {getDataTypeIcon(column.dataType)}
-                    <span style={{
-                      fontSize: '12px',
-                      fontWeight: column.isSystem ? '400' : 'bold',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      color: column.isSystem ? '#52c41a' : '#333',
-                      fontStyle: column.isSystem ? 'italic' : 'normal'
-                    }}>
-                      {column.name}
-                    </span>
-                    {column.isSystem && (
-                      <span style={{
-                        fontSize: '10px',
-                        color: '#52c41a',
-                        fontWeight: 'bold',
-                        marginLeft: '4px'
-                      }}>
-                        S
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-              {console.log('🚨 DROPDOWN DEBUG:', { columnName: column.name, userRole, canShowPermission: userRole === 'manager' || userRole === 'owner' })}
-              <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: 'edit',
-                      label: 'Chỉnh sửa cột',
-                      onClick: () => handleEditColumn(column),
-                    },
-                    {
-                      type: 'divider',
-                    },
-                    // Only show permission option for manager and owner
-                    ...(userRole === 'manager' || userRole === 'owner' ? [{
-                      key: 'permissions',
-                      label: 'Phân quyền',
-                      onClick: () => {
-                        console.log('🚨 CLICKING PERMISSION BUTTON for column:', column.name);
-                        console.log('🚨 handleColumnPermission function:', handleColumnPermission);
-                        console.log('🚨 Column object:', column);
-                        if (handleColumnPermission) {
-                          handleColumnPermission(column);
-                        } else {
-                          console.error('🚨 handleColumnPermission is not defined!');
-                        }
-                      },
-                    }, {
-                      type: 'divider',
-                    }] : []),
-                    {
-                      key: 'delete',
-                      label: 'Delete Column',
-                      danger: true,
-                      onClick: () => handleDeleteColumn(column._id, column.name),
-                    }
-                  ]
-                }}
-                trigger={['click']}
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<MoreOutlined />}
-                  style={{
-                    padding: isColumnCompact(columnWidths, column._id) ? '2px' : '2px',
-                    fontSize: isColumnCompact(columnWidths, column._id) ? '10px' : '12px'
-                  }}
-                />
-              </Dropdown>
-
-              {/* Resize handle */}
-              <div
-                style={{
-                  position: 'absolute',
-                  right: '-3px',
-                  top: 0,
-                  bottom: 0,
-                  width: '6px',
-                  cursor: 'col-resize',
-                  backgroundColor: isResizing && resizingColumn === column._id ? '#1890ff' : 'transparent',
-                  zIndex: 1
-                }}
-                onMouseDown={(e) => handleResizeStart(e, column._id)}
-                onMouseEnter={(e) => {
-                  if (!isResizing) {
-                    e.target.style.backgroundColor = '#d9d9d9';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isResizing || resizingColumn !== column._id) {
-                    e.target.style.backgroundColor = 'transparent';
-                  }
-                }}
-              />
-            </div>
+          {visibleColumns.map((column, index) => (
+            <DraggableColumnHeader
+              key={column._id}
+              column={column}
+              columnWidths={columnWidths}
+              sortRules={[]}
+              groupRules={[]}
+              fieldVisibility={{}}
+              isDragging={isDragging && draggedColumn === index}
+              isDragOver={dragOverColumn === index}
+              onDragStart={(e) => handleColumnDragStart(e, index)}
+              onDragOver={(e) => handleColumnDragOver(e, index)}
+              onDragEnd={handleColumnDragEnd}
+              onDrop={(e) => handleColumnDrop(e, index)}
+              onResizeStart={handleResizeStart}
+              isResizing={isResizing}
+              resizingColumn={resizingColumn}
+              dragIndex={index}
+              hoverIndex={index}
+              handleEditColumn={handleEditColumn}
+              handleColumnPermission={handleColumnPermission}
+              handleDeleteColumn={handleDeleteColumn}
+              handleAddColumnLeft={handleAddColumnLeft}
+              handleAddColumnRight={handleAddColumnRight}
+              isLastColumn={index === visibleColumns.length - 1}
+            />
           ))}
 
           {/* Add Column Button */}
@@ -585,6 +506,7 @@ const TableBody = ({
             width: '50px',
             minWidth: '50px',
             padding: '8px',
+            borderRight: '1px solid #d9d9d9',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -609,7 +531,7 @@ const TableBody = ({
         </div>
 
         {/* Table Body */}
-        <div style={{ maxHeight: 'calc(100vh - 200px)', overflow: 'visible' }}>
+        <div style={{ overflow: 'visible' }}>
           {/* Grouped Records */}
           {groupedData.groups.map((group, groupIndex) => {
             const isExpanded = expandedGroups.has(group.key);
@@ -702,27 +624,16 @@ const TableBody = ({
                         backgroundColor: '#fafafa',
                         position: 'relative'
                       }}
-                      onMouseEnter={(e) => {
-                        const checkbox = e.currentTarget.querySelector('.hover-checkbox');
-                        const number = e.currentTarget.querySelector('.index-number');
-                        const editBtn = e.currentTarget.querySelector('.edit-button');
-                        if (checkbox) checkbox.style.opacity = '1';
-                        if (number) number.style.marginLeft = '20px';
-                        if (editBtn) editBtn.style.opacity = '1';
+                      onMouseEnter={() => {
+                        setHoveredRow(record._id);
                       }}
-                      onMouseLeave={(e) => {
-                        const checkbox = e.currentTarget.querySelector('.hover-checkbox');
-                        const number = e.currentTarget.querySelector('.index-number');
-                        const editBtn = e.currentTarget.querySelector('.edit-button');
-                        const isSelected = selectedRowKeys.includes(record._id);
-                        if (checkbox) checkbox.style.opacity = isSelected ? '1' : '0';
-                        if (number) number.style.marginLeft = isSelected ? '20px' : '0px';
-                        if (editBtn) editBtn.style.opacity = '0';
+                      onMouseLeave={() => {
+                        setHoveredRow(null);
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <div style={{
-                          opacity: selectedRowKeys.includes(record._id) ? 1 : 0,
+                          opacity: selectedRowKeys.includes(record._id) || hoveredRow === record._id ? 1 : 0,
                           transition: 'opacity 0.2s ease',
                           position: 'absolute',
                           left: '4px'
@@ -740,7 +651,7 @@ const TableBody = ({
                           fontWeight: 'bold',
                           opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1,
                           transition: 'margin-left 0.2s ease',
-                          marginLeft: selectedRowKeys.includes(record._id) ? '20px' : '0px'
+                          marginLeft: selectedRowKeys.includes(record._id) || hoveredRow === record._id ? '20px' : '0px'
                         }}
                           className="index-number"
                         >
@@ -754,7 +665,7 @@ const TableBody = ({
                           icon={<ExpandOutlined />}
                           className="edit-button"
                           style={{
-                            opacity: 0,
+                            opacity: hoveredRow === record._id ? 1 : 0,
                             transition: 'opacity 0.2s ease',
                             color: '#1890ff',
                             fontSize: '12px',
@@ -1860,14 +1771,17 @@ const TableBody = ({
                     </div>
 
                     {/* Data Columns */}
-                    {visibleColumns.map(column => (
+                    {visibleColumns.map((column, index) => {
+                      const isLastColumn = index === visibleColumns.length - 1;
+                      return (
                       <div key={column._id} style={{
                         width: getColumnWidthString(columnWidths, column._id),
                         minWidth: '50px',
                         padding: '8px',
-                        borderRight: '1px solid #d9d9d9'
+                      
                       }} />
-                    ))}
+                      );
+                    })}
 
                     {/* Empty cell for alignment */}
                     <div style={{
@@ -1904,27 +1818,16 @@ const TableBody = ({
                   padding: '4px 8px',
                   position: 'relative'
                 }}
-                onMouseEnter={(e) => {
-                  const checkbox = e.currentTarget.querySelector('.hover-checkbox');
-                  const number = e.currentTarget.querySelector('.index-number');
-                  const editBtn = e.currentTarget.querySelector('.edit-button');
-                  if (checkbox) checkbox.style.opacity = '1';
-                  if (number) number.style.marginLeft = '20px';
-                  if (editBtn) editBtn.style.opacity = '1';
+                onMouseEnter={() => {
+                  setHoveredRow(record._id);
                 }}
-                onMouseLeave={(e) => {
-                  const checkbox = e.currentTarget.querySelector('.hover-checkbox');
-                  const number = e.currentTarget.querySelector('.index-number');
-                  const editBtn = e.currentTarget.querySelector('.edit-button');
-                  const isSelected = selectedRowKeys.includes(record._id);
-                  if (checkbox) checkbox.style.opacity = isSelected ? '1' : '0';
-                  if (number) number.style.marginLeft = isSelected ? '20px' : '0px';
-                  if (editBtn) editBtn.style.opacity = '0';
+                onMouseLeave={() => {
+                  setHoveredRow(null);
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <div style={{
-                    opacity: selectedRowKeys.includes(record._id) ? 1 : 0,
+                    opacity: selectedRowKeys.includes(record._id) || hoveredRow === record._id ? 1 : 0,
                     transition: 'opacity 0.2s ease',
                     position: 'absolute',
                     left: '4px'
@@ -1942,7 +1845,7 @@ const TableBody = ({
                     fontWeight: 'bold',
                     opacity: selectedRowKeys.includes(record._id) ? 0.3 : 1,
                     transition: 'margin-left 0.2s ease',
-                    marginLeft: selectedRowKeys.includes(record._id) ? '20px' : '0px'
+                    marginLeft: selectedRowKeys.includes(record._id) || hoveredRow === record._id ? '20px' : '0px'
                   }}
                     className="index-number"
                   >
@@ -1960,7 +1863,7 @@ const TableBody = ({
                       handleRecordClick(record);
                     }}
                     style={{
-                      opacity: 0,
+                      opacity: hoveredRow === record._id ? 1 : 0,
                       transition: 'opacity 0.2s ease',
                       color: '#1890ff',
                       fontSize: '12px',
@@ -1974,7 +1877,7 @@ const TableBody = ({
               </div>
 
               {/* Data Cells */}
-              {visibleColumns.map(column => {
+              {visibleColumns.map((column, index) => {
                 let value = '';
                 if (column.isSystem) {
                   // Handle system fields
@@ -2027,6 +1930,7 @@ const TableBody = ({
                 const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
                 const isSelected = isCellSelected(record._id, column.name);
 
+                const isLastColumn = index === visibleColumns.length - 1;
                 return (
                   <div key={column._id} style={{
                     width: getColumnWidthString(columnWidths, column._id),
@@ -3013,14 +2917,17 @@ const TableBody = ({
             </div>
 
             {/* Data Columns */}
-            {visibleColumns.map(column => (
+            {visibleColumns.map((column, index) => {
+              const isLastColumn = index === visibleColumns.length - 1;
+              return (
               <div key={column._id} style={{
                 width: getColumnWidthString(columnWidths, column._id),
                 minWidth: '50px',
                 padding: '8px',
-                borderRight: '1px solid #d9d9d9'
+           
               }} />
-            ))}
+              );
+            })}
 
             {/* Empty cell for alignment */}
             <div style={{

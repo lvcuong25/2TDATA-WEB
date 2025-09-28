@@ -3,34 +3,59 @@ import Table from '../model/Table.js';
 import Column from '../model/Column.js';
 import Record from '../model/Record.js';
 import Database from '../model/Database.js';
+import BaseMember from '../model/BaseMember.js';
+import Organization from '../model/Organization.js';
+import { isSuperAdmin, hasDatabaseAccess, getUserDatabaseRole } from '../utils/permissionUtils.js';
 
 // Export database to Excel (all tables)
 export const exportDatabaseToExcel = async (req, res) => {
   try {
     const { databaseId } = req.params;
+    
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
     const userId = req.user._id;
     const siteId = req.siteId;
 
     // Get database information
-    const database = await Database.findOne({ _id: databaseId, userId, siteId });
+    const database = await Database.findById(databaseId);
+    
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
     }
 
+    // Check if user has access to this database
+    if (!isSuperAdmin(req.user)) {
+      const hasAccess = await hasDatabaseAccess(userId, databaseId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    }
+
     // Get all tables in the database
+
     const tables = await Table.find({ databaseId, userId, siteId });
+
     if (tables.length === 0) {
       return res.status(400).json({ message: 'No tables found in this database' });
     }
 
     // Create workbook
     const workbook = XLSX.utils.book_new();
+    const usedSheetNames = new Set(); // Track used sheet names to avoid duplicates
 
     // Process each table
     for (const table of tables) {
+      
       // Get columns for this table
       const columns = await Column.find({ tableId: table._id }).sort({ order: 1 });
-      if (columns.length === 0) continue;
+      
+      if (columns.length === 0) {
+        continue;
+      }
 
       // Get records for this table
       const records = await Record.find({ tableId: table._id });
@@ -51,24 +76,8 @@ export const exportDatabaseToExcel = async (req, res) => {
             return '';
           }
           
-          switch (col.dataType) {
-            case 'checkbox':
-              return value ? 'Yes' : 'No';
-            case 'date':
-            case 'datetime':
-              return value ? new Date(value).toLocaleDateString('vi-VN') : '';
-            case 'number':
-            case 'currency':
-              return typeof value === 'number' ? value : parseFloat(value) || 0;
-            case 'multi_select':
-              return Array.isArray(value) ? value.join(', ') : value;
-            case 'single_select':
-              return value;
-            case 'rating':
-              return typeof value === 'number' ? value : 0;
-            default:
-              return String(value);
-          }
+          // Since all data is now stored as text, just return the string value
+          return String(value);
         });
         excelData.push(row);
       });
@@ -82,8 +91,20 @@ export const exportDatabaseToExcel = async (req, res) => {
       }));
       worksheet['!cols'] = columnWidths;
 
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(workbook, worksheet, table.name);
+      // Add worksheet to workbook - ensure sheet name is within 31 char limit and unique
+      let sheetName = table.name.length > 31 ? table.name.substring(0, 31) : table.name;
+      
+      // Handle duplicate sheet names
+      let counter = 1;
+      while (usedSheetNames.has(sheetName)) {
+        const suffix = `_${counter}`;
+        const maxLength = 31 - suffix.length;
+        sheetName = (table.name.length > maxLength ? table.name.substring(0, maxLength) : table.name) + suffix;
+        counter++;
+      }
+      
+      usedSheetNames.add(sheetName);
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
     }
 
     // Generate Excel file buffer
@@ -97,7 +118,12 @@ export const exportDatabaseToExcel = async (req, res) => {
     res.send(excelBuffer);
   } catch (error) {
     console.error('Error exporting database to Excel:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -105,6 +131,12 @@ export const exportDatabaseToExcel = async (req, res) => {
 export const importExcelToDatabase = async (req, res) => {
   try {
     const { databaseId } = req.params;
+    
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
     const userId = req.user._id;
     const siteId = req.siteId;
     const { tableName, overwrite = false } = req.body;
@@ -115,16 +147,23 @@ export const importExcelToDatabase = async (req, res) => {
     }
 
     // Get database information
-    const database = await Database.findOne({ _id: databaseId, userId, siteId });
+    const database = await Database.findById(databaseId);
     if (!database) {
       return res.status(404).json({ message: 'Database not found' });
+    }
+
+    // Check if user has access to this database
+    if (!isSuperAdmin(req.user)) {
+      const hasAccess = await hasDatabaseAccess(userId, databaseId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     // Read Excel file
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetNames = workbook.SheetNames;
     
-    console.log(`Found ${sheetNames.length} sheets:`, sheetNames);
 
     if (sheetNames.length === 0) {
       return res.status(400).json({ message: 'Excel file has no sheets' });
@@ -139,7 +178,6 @@ export const importExcelToDatabase = async (req, res) => {
       const worksheet = workbook.Sheets[currentSheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-      console.log(`Processing sheet "${currentSheetName}" with ${jsonData.length} rows`);
 
       if (jsonData.length < 2) {
         allErrors.push(`Sheet "${currentSheetName}": Must have at least a header row and one data row`);
@@ -150,10 +188,8 @@ export const importExcelToDatabase = async (req, res) => {
       const excelHeaders = jsonData[0];
       const dataRows = jsonData.slice(1);
 
-      // Generate table name for this sheet
-      const finalTableName = sheetNames.length === 1 
-        ? (tableName || `Table_${new Date().getTime()}`)
-        : `${tableName || 'Sheet'}_${currentSheetName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      // Generate table name for this sheet - use only sheet name, no file name prefix
+      const finalTableName = currentSheetName || `Table_${new Date().getTime()}`;
 
       // Check if table already exists
       const existingTable = await Table.findOne({ 
@@ -203,79 +239,13 @@ export const importExcelToDatabase = async (req, res) => {
         }
         usedColumnNames.add(columnName);
 
-        // Analyze data to determine column type
+        // Import everything as text to preserve all data
         let dataType = 'text';
         let selectOptions = [];
-        const sampleValues = dataRows.slice(0, 50).map(row => row[i]).filter(val => val !== null && val !== undefined && val !== '');
-        
-        if (sampleValues.length > 0) {
-          const firstValue = sampleValues[0];
-          
-          // Check if it's a number
-          if (!isNaN(firstValue) && !isNaN(parseFloat(firstValue))) {
-            dataType = 'number';
-          }
-          // Check if it's a date
-          else if (new Date(firstValue).toString() !== 'Invalid Date' && !isNaN(new Date(firstValue).getTime())) {
-            dataType = 'date';
-          }
-          // Check if it's boolean-like
-          else if (['yes', 'no', 'true', 'false', '1', '0'].includes(String(firstValue).toLowerCase())) {
-            dataType = 'checkbox';
-          }
-          // Check if it's select options (limited unique values)
-          else {
-            // Check for multi-select patterns (comma or semicolon separated)
-            const hasMultiSelectPattern = sampleValues.some(val => 
-              String(val).includes(',') || String(val).includes(';') || String(val).includes('|')
-            );
-            
-            console.log(`  - Has multi-select pattern: ${hasMultiSelectPattern}`);
-            
-            if (hasMultiSelectPattern) {
-              // Extract all individual values from multi-select data
-              const allValues = [];
-              sampleValues.forEach(val => {
-                const strVal = String(val);
-                // Split by common separators
-                const parts = strVal.split(/[,;|]/).map(part => part.trim()).filter(part => part);
-                allValues.push(...parts);
-              });
-              
-              const uniqueValues = [...new Set(allValues)];
-              
-              if (uniqueValues.length >= 2 && uniqueValues.length <= 20) {
-                dataType = 'multi_select';
-                selectOptions = uniqueValues.map(val => ({ label: val, value: val }));
-              } else {
-                dataType = 'text';
-              }
-            } else {
-              // Single select detection
-              const uniqueValues = [...new Set(sampleValues.map(val => String(val).trim()))];
-              
-              // If we have limited unique values (2-20), treat as select
-              if (uniqueValues.length >= 2 && uniqueValues.length <= 20) {
-                // Check if values look like select options (not too long, not numbers)
-                const avgLength = uniqueValues.reduce((sum, val) => sum + val.length, 0) / uniqueValues.length;
-                const hasNumbers = uniqueValues.some(val => !isNaN(val) && !isNaN(parseFloat(val)));
-                
-                // If average length is reasonable and not all numbers, treat as select
-                if (avgLength <= 50 && !hasNumbers) {
-                  dataType = 'single_select';
-                  selectOptions = uniqueValues.map(val => ({ label: val, value: val }));
-                } else {
-                  dataType = 'text';
-                }
-              } else {
-                dataType = 'text';
-              }
-            }
-          }
-        }
 
         const columnData = {
           name: columnName,
+          key: columnName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '_'), // Generate key from name
           dataType,
           isRequired: false,
           order: i,
@@ -285,22 +255,8 @@ export const importExcelToDatabase = async (req, res) => {
           siteId
         };
 
-        // Add select options if it's a select type
-        if (dataType === 'single_select' && selectOptions.length > 0) {
-          columnData.singleSelectConfig = {
-            options: selectOptions.map(opt => opt.value),
-            defaultValue: ''
-          };
-        } else if (dataType === 'multi_select' && selectOptions.length > 0) {
-          columnData.multiSelectConfig = {
-            options: selectOptions.map(opt => opt.value),
-            defaultValue: []
-          };
-        }
+        // No special config needed - everything is text
 
-        console.log(`Column "${columnName}" detected as ${dataType} with ${selectOptions.length} options:`, selectOptions);
-        console.log(`  - Sample values:`, sampleValues.slice(0, 5));
-        console.log(`  - Unique values:`, [...new Set(sampleValues.map(val => String(val).trim()))].slice(0, 10));
 
         const column = new Column(columnData);
 
@@ -312,12 +268,9 @@ export const importExcelToDatabase = async (req, res) => {
       const importedRecords = [];
       const errors = [];
 
-      console.log(`Starting import of ${dataRows.length} rows for sheet "${currentSheetName}"`);
-      console.log('Columns created:', columns.map(c => ({ name: c.name, type: c.dataType })));
 
     for (let rowIndex = 0; rowIndex < dataRows.length; rowIndex++) {
       const row = dataRows[rowIndex];
-      console.log(`Processing row ${rowIndex + 1}:`, row);
       
       // Check if row has any meaningful data
       const hasRowData = row && row.some(cell => {
@@ -328,7 +281,6 @@ export const importExcelToDatabase = async (req, res) => {
       });
       
       if (!hasRowData) {
-        console.log(`Skipping empty row ${rowIndex + 1}:`, row);
         continue; // Skip empty rows
       }
 
@@ -340,7 +292,6 @@ export const importExcelToDatabase = async (req, res) => {
         const column = columns[i];
         const cellValue = row[i];
         
-        console.log(`Processing cell [${rowIndex + 1}, ${i}]: "${cellValue}" for column "${column.name}" (type: ${column.dataType})`);
         
         // Check if cell has meaningful data (not just whitespace)
         const hasValue = cellValue !== null && 
@@ -351,68 +302,17 @@ export const importExcelToDatabase = async (req, res) => {
         if (hasValue) {
           hasValidData = true;
           
-          // Convert value based on column data type
-          let convertedValue = cellValue;
+          // Convert everything to text to preserve original data
+          let convertedValue = String(cellValue);
           
-          switch (column.dataType) {
-            case 'number':
-              convertedValue = parseFloat(cellValue);
-              if (isNaN(convertedValue)) {
-                errors.push(`Row ${rowIndex + 2}: Invalid number value "${cellValue}" for column "${column.name}"`);
-                continue;
-              }
-              break;
-            case 'checkbox':
-              if (typeof cellValue === 'string') {
-                convertedValue = ['yes', 'true', '1'].includes(cellValue.toLowerCase());
-              } else {
-                convertedValue = Boolean(cellValue);
-              }
-              break;
-            case 'date':
-              if (cellValue instanceof Date) {
-                convertedValue = cellValue.toISOString();
-              } else if (typeof cellValue === 'string') {
-                const date = new Date(cellValue);
-                if (!isNaN(date.getTime())) {
-                  convertedValue = date.toISOString();
-                } else {
-                  errors.push(`Row ${rowIndex + 2}: Invalid date value "${cellValue}" for column "${column.name}"`);
-                  continue;
-                }
-              }
-              break;
-            case 'single_select':
-              // For single select, store the exact value from Excel
-              convertedValue = String(cellValue).trim();
-              console.log(`Single select value: "${convertedValue}" for column "${column.name}"`);
-              break;
-            case 'multi_select':
-              // For multi select, split by common separators and store as array
-              const strValue = String(cellValue).trim();
-              if (strValue.includes(',') || strValue.includes(';') || strValue.includes('|')) {
-                convertedValue = strValue.split(/[,;|]/).map(part => part.trim()).filter(part => part);
-              } else {
-                convertedValue = [strValue];
-              }
-              console.log(`Multi select value:`, convertedValue, `for column "${column.name}"`);
-              break;
-            default:
-              convertedValue = String(cellValue);
-          }
-          
-          console.log(`Converted value: "${cellValue}" -> "${convertedValue}" for column "${column.name}"`);
           recordData[column.name] = convertedValue;
         } else {
-          console.log(`Skipping empty cell [${rowIndex + 1}, ${i}] for column "${column.name}"`);
         }
       }
 
-      console.log(`Row ${rowIndex + 1} hasValidData: ${hasValidData}, recordData:`, recordData);
       
       if (hasValidData) {
         try {
-          console.log(`Saving record for row ${rowIndex + 1}:`, recordData);
           
           const record = new Record({
             tableId: newTable._id,
@@ -424,24 +324,14 @@ export const importExcelToDatabase = async (req, res) => {
           
           await record.save();
           importedRecords.push(record);
-          console.log(`Successfully saved record for row ${rowIndex + 1}`);
         } catch (saveError) {
           console.error(`Error saving record for row ${rowIndex + 1}:`, saveError);
           errors.push(`Row ${rowIndex + 2}: Failed to save record - ${saveError.message}`);
         }
       } else {
-        console.log(`No valid data found in row ${rowIndex + 1}`);
       }
     }
 
-      console.log(`Import completed for sheet "${currentSheetName}":`, {
-        tableId: newTable._id,
-        tableName: newTable.name,
-        importedCount: importedRecords.length,
-        totalRows: dataRows.length,
-        columnsCreated: columns.length,
-        errors: errors.length
-      });
 
       // Add result for this sheet
       importResults.push({
@@ -463,17 +353,16 @@ export const importExcelToDatabase = async (req, res) => {
     const totalRows = importResults.reduce((sum, result) => sum + result.totalRows, 0);
     const totalTables = importResults.length;
 
-    console.log('All sheets import completed:', {
-      totalSheets: sheetNames.length,
-      totalTables: totalTables,
-      totalImported: totalImported,
-      totalRows: totalRows,
-      totalErrors: allErrors.length
-    });
+
+    // Create detailed success message
+    const tableNames = importResults.map(result => result.tableName).join(', ');
+    const successMessage = totalTables > 0 
+      ? `Successfully imported ${totalImported} records into ${totalTables} table(s): ${tableNames}`
+      : 'No data was imported';
 
     res.json({
       success: true,
-      message: `Excel import completed: ${totalTables} tables created, ${totalImported} records imported`,
+      message: successMessage,
       data: {
         totalSheets: sheetNames.length,
         totalTables: totalTables,
@@ -481,7 +370,8 @@ export const importExcelToDatabase = async (req, res) => {
         totalRows: totalRows,
         totalErrors: allErrors.length,
         results: importResults,
-        errors: allErrors
+        errors: allErrors,
+        tableNames: tableNames
       }
     });
 

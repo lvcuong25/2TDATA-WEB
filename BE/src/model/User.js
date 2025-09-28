@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['super_admin', 'site_admin', 'user'],
+      enum: ['super_admin', 'site_admin', 'user', 'member'],
       default: 'user'
     },
     otp: {

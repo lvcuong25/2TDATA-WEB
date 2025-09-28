@@ -43,7 +43,7 @@ const DatabaseList = () => {
   });
 
   // Extract databases array from response
-  const databases = responseData?.data || [];
+  const databases = Array.isArray(responseData?.data) ? responseData.data : [];
 
   // Check user role in organization
   const userMember = currentOrganization?.members?.find(member => 

@@ -149,12 +149,12 @@ async function changeMemberRole(req, res, next) {
   }
 }
 
-routerMembers.post("/database/databases/:databaseId/members", canManageMembers(), addUserToBase);
+routerMembers.post("/databases/:databaseId/members", canManageMembers(), addUserToBase);
 
-routerMembers.patch("/database/databases/:databaseId/members/:userId",canManageMembers(), guardPerBaseUserLimit({defaultLimit:100}), changeMemberRole);
+routerMembers.patch("/databases/:databaseId/members/:userId",canManageMembers(), guardPerBaseUserLimit({defaultLimit:100}), changeMemberRole);
 
 /** GET: my role in this database */
-routerMembers.get("/database/databases/:databaseId/me", async (req, res, next) => {
+routerMembers.get("/databases/:databaseId/me", async (req, res, next) => {
   try {
     const { databaseId } = req.params;
     const userId = req.user?._id;
@@ -174,7 +174,7 @@ routerMembers.get("/database/databases/:databaseId/me", async (req, res, next) =
 });
 
 /** GET: list database members */
-routerMembers.get("/database/databases/:databaseId/members", canManageMembers(), async (req, res, next) => {
+routerMembers.get("/databases/:databaseId/members", canManageMembers(), async (req, res, next) => {
   try {
     const { databaseId } = req.params;
     const members = await BaseMember.find({ databaseId: databaseId })
@@ -202,10 +202,12 @@ routerMembers.get("/database/databases/:databaseId/members", canManageMembers(),
 });
 
 /** GET: organization users not yet added to database */
-routerMembers.get("/database/databases/:databaseId/available-users", async (req, res, next) => {
+routerMembers.get("/databases/:databaseId/available-users", async (req, res, next) => {
   try {
     const { databaseId } = req.params;
-    const siteId = req.user.site_id;
+    const siteId = req.user?.site_id;
+    
+    console.log('🔍 Available users request:', { databaseId, siteId, userId: req.user?._id });
     
     if (!siteId) {
       return res.status(400).json({ ok: false, error: "site_id_required" });
@@ -213,14 +215,22 @@ routerMembers.get("/database/databases/:databaseId/available-users", async (req,
 
     // Get database to find orgId
     const database = await Base.findById(databaseId).lean();
+    console.log('🔍 Database found:', { databaseId: database?._id, orgId: database?.orgId, name: database?.name });
+    
     if (!database) {
       return res.status(404).json({ ok: false, error: "database_not_found" });
     }
 
+    // Use database.orgId directly (should be organization._id)
+    const orgId = database.orgId;
+    console.log('🔍 Using orgId:', orgId);
+
     // Get organization to get members list
-    const organization = await Organization.findById(database.orgId)
+    const organization = await Organization.findById(orgId)
       .populate('members.user', '_id name email')
       .lean();
+    
+    console.log('🔍 Organization found:', { orgId, membersCount: organization?.members?.length });
     
     if (!organization) {
       return res.status(404).json({ ok: false, error: "organization_not_found" });
@@ -232,16 +242,42 @@ routerMembers.get("/database/databases/:databaseId/available-users", async (req,
       .lean();
     
     const existingUserIds = existingMembers.map(m => String(m.userId));
+    
+    console.log('🔍 Available users debug:', {
+      orgId,
+      organizationName: organization.name,
+      orgMembersCount: organization.members?.length || 0,
+      orgMembers: organization.members?.map(m => ({
+        userId: m.user?._id,
+        userName: m.user?.name,
+        userEmail: m.user?.email,
+        role: m.role
+      })) || [],
+      existingUserIds,
+      existingMembersCount: existingMembers.length
+    });
 
     // Filter organization users not yet added to database
     const availableUsers = organization.members
-      .filter(member => !existingUserIds.includes(String(member.user._id)))
+      .filter(member => {
+        const isNotAdded = !existingUserIds.includes(String(member.user._id));
+        console.log(`🔍 Filtering member:`, {
+          userId: member.user?._id,
+          userName: member.user?.name,
+          userEmail: member.user?.email,
+          isNotAdded,
+          existingUserIds
+        });
+        return isNotAdded;
+      })
       .map(member => ({
         _id: member.user._id,
         name: member.user.name,
         email: member.user.email,
         role: member.role // role in organization
       }));
+
+    console.log('🔍 Final available users:', availableUsers);
 
     return res.json({ ok: true, data: availableUsers });
   } catch (e) { 
