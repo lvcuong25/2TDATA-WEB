@@ -561,8 +561,11 @@ const TableDetail = () => {
 
   // Column reordering handlers
   const handleColumnDragStart = (e, dragIndex) => {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', dragIndex);
+    // Check if dataTransfer is available
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', dragIndex);
+    }
     
     setIsDragging(true);
     setDraggedColumn(dragIndex);
@@ -570,7 +573,9 @@ const TableDetail = () => {
 
   const handleColumnDragOver = (e, hoverIndex) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
     
     setDragOverColumn(hoverIndex);
   };
@@ -578,7 +583,14 @@ const TableDetail = () => {
   const handleColumnDrop = async (e, hoverIndex) => {
     e.preventDefault();
     
-    const dragIndex = parseInt(e.dataTransfer.getData('text/html'));
+    const dragIndex = e.dataTransfer ? parseInt(e.dataTransfer.getData('text/html')) : null;
+    
+    if (dragIndex === null || isNaN(dragIndex)) {
+      setIsDragging(false);
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
     
     if (dragIndex === hoverIndex) {
       setIsDragging(false);
@@ -587,8 +599,22 @@ const TableDetail = () => {
       return;
     }
 
-    // Reorder columns locally
-    const reorderedColumns = reorderColumns(visibleColumns, dragIndex, hoverIndex);
+    // Get original columns without applied order
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
+    const columnPermissions = columnPermissionsResponse?.data || [];
+    
+    const originalColumns = getVisibleColumns(
+      columns, 
+      fieldVisibility, 
+      showSystemFields, 
+      columnPermissions, 
+      currentUser, 
+      userRole
+    );
+    
+    // Reorder original columns
+    const reorderedColumns = reorderColumns(originalColumns, dragIndex, hoverIndex);
     const newColumnOrder = generateColumnOrders(reorderedColumns);
     
     setColumnOrder(newColumnOrder);

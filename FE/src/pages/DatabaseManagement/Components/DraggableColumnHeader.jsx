@@ -47,7 +47,10 @@ const DraggableColumnHeader = ({
     if (e.target.closest('.column-resize-handle')) {
       return; // Let resize handle handle the event
     }
-    
+    // Don't call onDragStart here - let the actual drag event handle it
+  };
+
+  const handleDragStart = (e) => {
     if (onDragStart) {
       onDragStart(e, dragIndex);
     }
@@ -107,6 +110,7 @@ const DraggableColumnHeader = ({
       ref={dragRef}
       draggable
       onMouseDown={handleMouseDown}
+      onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragEnd={handleDragEnd}
@@ -125,7 +129,6 @@ const DraggableColumnHeader = ({
         position: 'relative',
         borderTop: isDragOver ? '2px dashed #1890ff' : (column.isSystem ? '2px solid #52c41a' : 'none'),
         borderBottom: isDragOver ? '2px dashed #1890ff' : 'none',
-        borderLeft: isDragOver ? '2px dashed #1890ff' : 'none',
         cursor: isDragging ? 'grabbing' : 'grab',
         opacity: isDragging ? 0.5 : 1,
         transform: isDragging ? 'rotate(2deg)' : 'none',

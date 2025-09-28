@@ -228,9 +228,16 @@ export const shouldShowCompactContent = (columnWidths, columnId, threshold = 80)
  * @returns {Array} Reordered columns array
  */
 export const reorderColumns = (columns, dragIndex, hoverIndex) => {
-  const result = Array.from(columns);
-  const [removed] = result.splice(dragIndex, 1);
-  result.splice(hoverIndex, 0, removed);
+  const result = Array.from(columns).filter(column => column && column._id);
+  
+  // Only swap if indices are different and within bounds
+  if (dragIndex !== hoverIndex && 
+      dragIndex >= 0 && dragIndex < result.length && 
+      hoverIndex >= 0 && hoverIndex < result.length) {
+    // Swap the two columns
+    [result[dragIndex], result[hoverIndex]] = [result[hoverIndex], result[dragIndex]];
+  }
+  
   return result;
 };
 
@@ -240,10 +247,12 @@ export const reorderColumns = (columns, dragIndex, hoverIndex) => {
  * @returns {Array} Array of { columnId, order } objects
  */
 export const generateColumnOrders = (columns) => {
-  return columns.map((column, index) => ({
-    columnId: column._id,
-    order: index
-  }));
+  return columns
+    .filter(column => column && column._id) // Filter out undefined/null columns
+    .map((column, index) => ({
+      columnId: column._id,
+      order: index
+    }));
 };
 
 /**
