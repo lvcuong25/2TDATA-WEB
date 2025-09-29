@@ -4,7 +4,7 @@
 import mongoose from "mongoose";
 const ManualCellLockSchema = new mongoose.Schema(
   {
-    baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true }, tableId: { type: mongoose.Schema.Types.ObjectId, ref: "Table", required: true },
+    baseId: { type: mongoose.Schema.Types.ObjectId, ref: "Base", required: true }, tableId: { type: String, required: true }, // Changed to String to support both MongoDB ObjectId and PostgreSQL UUID
     // Lock trực tiếp theo cell (rowId + columnId) hoặc theo A1 range (khuyên FE gửi resolvedTargets)
     cells: [{ rowId: { type: mongoose.Schema.Types.ObjectId, ref: "Row" }, columnId: { type: mongoose.Schema.Types.ObjectId, ref: "Column" }, columnKey: String }],
     a1Ranges: [String],

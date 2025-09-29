@@ -1,0 +1,438 @@
+import { Table, Column, Record } from '../models/postgres/index.js';
+import { hybridDbManager } from '../config/hybrid-db.js';
+import Base from '../model/Base.js';
+import BaseMember from '../model/BaseMember.js';
+import { isSuperAdmin } from '../utils/permissionUtils.js';
+
+// Column Controllers for PostgreSQL
+export const createColumn = async (req, res) => {
+  try {
+    const { 
+      tableId, 
+      name, 
+      dataType, 
+      isRequired, 
+      isUnique, 
+      defaultValue,
+      checkboxConfig,
+      singleSelectConfig,
+      multiSelectConfig,
+      dateConfig,
+      formulaConfig,
+      currencyConfig,
+      percentConfig,
+      urlConfig,
+      phoneConfig,
+      timeConfig,
+      ratingConfig,
+      linkedTableConfig,
+      lookupConfig
+    } = req.body;
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ message: 'Column name is required' });
+    }
+
+    if (!dataType) {
+      return res.status(400).json({ message: 'Data type is required' });
+    }
+
+    if (!tableId) {
+      return res.status(400).json({ message: 'Table ID is required' });
+    }
+
+    // Verify table exists in PostgreSQL
+    const table = await Table.findByPk(tableId);
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user is a member of the database and has permission
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.database_id, 
+        userId 
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+
+      // Only owner and manager can create columns
+      if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
+        return res.status(403).json({ 
+          message: 'Access denied - only database owners and managers can create columns' 
+        });
+      }
+    }
+
+    // Check if column name already exists in this table
+    const existingColumn = await Column.findOne({
+      where: {
+        name: name.trim(),
+        table_id: tableId
+      }
+    });
+
+    if (existingColumn) {
+      return res.status(400).json({ 
+        message: 'Column name already exists in this table' 
+      });
+    }
+
+    // Generate key from name
+    const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+    // Get the next order number
+    const lastColumn = await Column.findOne({
+      where: { table_id: tableId },
+      order: [['order', 'DESC']]
+    });
+    const order = lastColumn ? lastColumn.order + 1 : 0;
+
+    // Create column in PostgreSQL
+    const newColumn = await Column.create({
+      name: name.trim(),
+      key: key,
+      type: 'string', // Default type
+      data_type: dataType,
+      table_id: tableId,
+      user_id: userId,
+      site_id: siteId,
+      is_required: isRequired || false,
+      is_unique: isUnique || false,
+      default_value: defaultValue,
+      checkbox_config: checkboxConfig,
+      single_select_config: singleSelectConfig,
+      multi_select_config: multiSelectConfig,
+      formula_config: formulaConfig,
+      date_config: dateConfig,
+      currency_config: currencyConfig,
+      percent_config: percentConfig,
+      url_config: urlConfig,
+      phone_config: phoneConfig,
+      time_config: timeConfig,
+      rating_config: ratingConfig,
+      linked_table_config: linkedTableConfig,
+      lookup_config: lookupConfig,
+      order: order
+    });
+
+    console.log(`✅ Column created in PostgreSQL: ${newColumn.name} (${newColumn.id})`);
+
+    res.status(201).json({
+      message: 'Column created successfully',
+      column: {
+        _id: newColumn.id,
+        name: newColumn.name,
+        key: newColumn.key,
+        type: newColumn.type,
+        dataType: newColumn.data_type,
+        tableId: newColumn.table_id,
+        userId: newColumn.user_id,
+        siteId: newColumn.site_id,
+        isRequired: newColumn.is_required,
+        isUnique: newColumn.is_unique,
+        defaultValue: newColumn.default_value,
+        checkboxConfig: newColumn.checkbox_config,
+        singleSelectConfig: newColumn.single_select_config,
+        multiSelectConfig: newColumn.multi_select_config,
+        formulaConfig: newColumn.formula_config,
+        dateConfig: newColumn.date_config,
+        currencyConfig: newColumn.currency_config,
+        percentConfig: newColumn.percent_config,
+        urlConfig: newColumn.url_config,
+        phoneConfig: newColumn.phone_config,
+        timeConfig: newColumn.time_config,
+        ratingConfig: newColumn.rating_config,
+        linkedTableConfig: newColumn.linked_table_config,
+        lookupConfig: newColumn.lookup_config,
+        order: newColumn.order,
+        createdAt: newColumn.created_at,
+        updatedAt: newColumn.updated_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating column:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};
+
+export const getColumns = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const userId = req.user._id;
+
+    if (!tableId) {
+      return res.status(400).json({ message: 'Table ID is required' });
+    }
+
+    // Verify table exists
+    const table = await Table.findByPk(tableId);
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user has access to this table
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.database_id, 
+        userId 
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    }
+
+    // Get columns from PostgreSQL
+    const columns = await Column.findAll({
+      where: {
+        table_id: tableId
+      },
+      order: [['order', 'ASC']]
+    });
+
+    // Transform to match frontend expected format
+    const transformedColumns = columns.map(column => ({
+      _id: column.id,
+      name: column.name,
+      key: column.key,
+      type: column.type,
+      dataType: column.data_type,
+      tableId: column.table_id,
+      userId: column.user_id,
+      siteId: column.site_id,
+      isRequired: column.is_required,
+      isUnique: column.is_unique,
+      defaultValue: column.default_value,
+      checkboxConfig: column.checkbox_config,
+      singleSelectConfig: column.single_select_config,
+      multiSelectConfig: column.multi_select_config,
+      formulaConfig: column.formula_config,
+      dateConfig: column.date_config,
+      currencyConfig: column.currency_config,
+      percentConfig: column.percent_config,
+      urlConfig: column.url_config,
+      phoneConfig: column.phone_config,
+      timeConfig: column.time_config,
+      ratingConfig: column.rating_config,
+      linkedTableConfig: column.linked_table_config,
+      lookupConfig: column.lookup_config,
+      order: column.order,
+      createdAt: column.created_at,
+      updatedAt: column.updated_at
+    }));
+
+    res.json({
+      message: 'Columns retrieved successfully',
+      columns: transformedColumns
+    });
+
+  } catch (error) {
+    console.error('Error getting columns:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};
+
+export const updateColumn = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const updateData = req.body;
+    const userId = req.user._id;
+
+    // Get column from PostgreSQL
+    const column = await Column.findByPk(columnId);
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    // Get table to check permissions
+    const table = await Table.findByPk(column.table_id);
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user has permission to update this column
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.database_id, 
+        userId 
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Only owner and manager can update columns
+      if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
+        return res.status(403).json({ 
+          message: 'Access denied - only database owners and managers can update columns' 
+        });
+      }
+    }
+
+    // Check if new name conflicts with existing columns
+    if (updateData.name && updateData.name.trim() !== column.name) {
+      const existingColumn = await Column.findOne({
+        where: {
+          name: updateData.name.trim(),
+          table_id: column.table_id,
+          id: { [require('sequelize').Op.ne]: columnId }
+        }
+      });
+
+      if (existingColumn) {
+        return res.status(400).json({ 
+          message: 'Column name already exists in this table' 
+        });
+      }
+    }
+
+    // Update column
+    const allowedFields = [
+      'name', 'dataType', 'isRequired', 'isUnique', 'defaultValue',
+      'checkboxConfig', 'singleSelectConfig', 'multiSelectConfig',
+      'formulaConfig', 'dateConfig', 'currencyConfig', 'percentConfig',
+      'urlConfig', 'phoneConfig', 'timeConfig', 'ratingConfig',
+      'linkedTableConfig', 'lookupConfig', 'order'
+    ];
+
+    const updateFields = {};
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        if (field === 'dataType') {
+          updateFields.data_type = updateData[field];
+        } else if (field === 'isRequired') {
+          updateFields.is_required = updateData[field];
+        } else if (field === 'isUnique') {
+          updateFields.is_unique = updateData[field];
+        } else if (field === 'defaultValue') {
+          updateFields.default_value = updateData[field];
+        } else if (field.endsWith('Config')) {
+          updateFields[field.replace(/([A-Z])/g, '_$1').toLowerCase()] = updateData[field];
+        } else {
+          updateFields[field] = updateData[field];
+        }
+      }
+    }
+
+    // Update key if name changed
+    if (updateData.name) {
+      updateFields.key = updateData.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    }
+
+    await column.update(updateFields);
+
+    console.log(`✅ Column updated in PostgreSQL: ${column.name} (${column.id})`);
+
+    res.json({
+      message: 'Column updated successfully',
+      column: {
+        _id: column.id,
+        name: column.name,
+        key: column.key,
+        type: column.type,
+        dataType: column.data_type,
+        tableId: column.table_id,
+        userId: column.user_id,
+        siteId: column.site_id,
+        isRequired: column.is_required,
+        isUnique: column.is_unique,
+        defaultValue: column.default_value,
+        checkboxConfig: column.checkbox_config,
+        singleSelectConfig: column.single_select_config,
+        multiSelectConfig: column.multi_select_config,
+        formulaConfig: column.formula_config,
+        dateConfig: column.date_config,
+        currencyConfig: column.currency_config,
+        percentConfig: column.percent_config,
+        urlConfig: column.url_config,
+        phoneConfig: column.phone_config,
+        timeConfig: column.time_config,
+        ratingConfig: column.rating_config,
+        linkedTableConfig: column.linked_table_config,
+        lookupConfig: column.lookup_config,
+        order: column.order,
+        createdAt: column.created_at,
+        updatedAt: column.updated_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating column:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};
+
+export const deleteColumn = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const userId = req.user._id;
+
+    // Get column from PostgreSQL
+    const column = await Column.findByPk(columnId);
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    // Get table to check permissions
+    const table = await Table.findByPk(column.table_id);
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user has permission to delete this column
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.database_id, 
+        userId 
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Only owner can delete columns
+      if (baseMember.role !== 'owner') {
+        return res.status(403).json({ 
+          message: 'Access denied - only database owners can delete columns' 
+        });
+      }
+    }
+
+    // Delete column
+    await column.destroy();
+
+    console.log(`✅ Column deleted from PostgreSQL: ${column.name} (${columnId})`);
+
+    res.json({
+      message: 'Column deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting column:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};

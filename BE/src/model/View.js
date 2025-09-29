@@ -2,9 +2,9 @@ import mongoose from 'mongoose';
 
 const viewSchema = new mongoose.Schema({
   tableId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Table',
-    required: true
+    type: String, // Changed to String to support both MongoDB ObjectId and PostgreSQL UUID
+    required: true,
+    index: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,

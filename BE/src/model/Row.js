@@ -4,7 +4,7 @@
 import mongoose from "mongoose";
 const RowSchema = new mongoose.Schema(
   {
-    tableId: { type: mongoose.Schema.Types.ObjectId, ref: "Table", required: true },
+    tableId: { type: String, required: true, index: true }, // Changed to String to support both MongoDB ObjectId and PostgreSQL UUID
     data: { type: Object, default: {} },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }
   },

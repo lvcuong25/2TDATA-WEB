@@ -37,7 +37,12 @@ import {
   getCompactHeaderStyle,
   getNormalHeaderStyle,
   initializeColumnWidths,
-  getColumnWidthString
+  getColumnWidthString,
+  reorderColumns,
+  generateColumnOrders,
+  saveColumnOrder,
+  loadColumnOrder,
+  applyColumnOrder
 } from './Utils/columnUtils.jsx';
 import {
   getOperatorOptions,
@@ -204,6 +209,7 @@ const TableDetail = () => {
     defaultValue: null
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
+  const [addColumnPosition, setAddColumnPosition] = useState(null);
   const [showEditColumn, setShowEditColumn] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
   const [showColumnPermissionModal, setShowColumnPermissionModal] = useState(false);
@@ -416,6 +422,14 @@ const TableDetail = () => {
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
 
+  // Column reordering state
+  const [columnOrder, setColumnOrder] = useState(() => {
+    return loadColumnOrder(tableId);
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedColumn, setDraggedColumn] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+
 
   // Handle clicking outside sort dropdown
   React.useEffect(() => {
@@ -544,6 +558,104 @@ const TableDetail = () => {
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Column reordering handlers
+  const handleColumnDragStart = (e, dragIndex) => {
+    // Check if dataTransfer is available
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', dragIndex);
+    }
+    
+    setIsDragging(true);
+    setDraggedColumn(dragIndex);
+  };
+
+  const handleColumnDragOver = (e, hoverIndex) => {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+    
+    setDragOverColumn(hoverIndex);
+  };
+
+  const handleColumnDrop = async (e, hoverIndex) => {
+    e.preventDefault();
+    
+    const dragIndex = e.dataTransfer ? parseInt(e.dataTransfer.getData('text/html')) : null;
+    
+    if (dragIndex === null || isNaN(dragIndex)) {
+      setIsDragging(false);
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+    
+    if (dragIndex === hoverIndex) {
+      setIsDragging(false);
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+
+    // Get original columns without applied order
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
+    const columnPermissions = columnPermissionsResponse?.data || [];
+    
+    const originalColumns = getVisibleColumns(
+      columns, 
+      fieldVisibility, 
+      showSystemFields, 
+      columnPermissions, 
+      currentUser, 
+      userRole
+    );
+    
+    // Reorder original columns
+    const reorderedColumns = reorderColumns(originalColumns, dragIndex, hoverIndex);
+    const newColumnOrder = generateColumnOrders(reorderedColumns);
+    
+    setColumnOrder(newColumnOrder);
+    saveColumnOrder(tableId, newColumnOrder);
+
+    // Update backend
+    try {
+      const response = await fetch(`/api/database/tables/${tableId}/columns/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          columnOrders: newColumnOrder
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reorder columns');
+      }
+
+      // Invalidate and refetch table structure to get updated order
+      queryClient.invalidateQueries(['tableStructure', tableId]);
+    } catch (error) {
+      console.error('Error reordering columns:', error);
+      // Revert local changes on error
+      const originalOrder = loadColumnOrder(tableId);
+      setColumnOrder(originalOrder);
+    }
+
+    setIsDragging(false);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  };
+
+  const handleColumnDragEnd = (e) => {
+    setIsDragging(false);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
   };
 
 
@@ -801,7 +913,48 @@ const TableDetail = () => {
     
     
     // safeLog('Frontend: Final columnData:', columnData);
-    addColumnMutation.mutate(columnData);
+    
+    // If adding column at specific position, use different API
+    if (addColumnPosition) {
+      const { position, referenceColumnId } = addColumnPosition;
+      const url = `/api/database/tables/${tableId}/columns/${position}/${referenceColumnId}`;
+      
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(columnData)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to create column at position');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Invalidate and refetch table structure
+        queryClient.invalidateQueries(['tableStructure', tableId]);
+        setShowAddColumn(false);
+        setAddColumnPosition(null);
+        setNewColumn({ 
+          name: '', 
+          dataType: 'text',
+          isRequired: false,
+          isUnique: false,
+          defaultValue: null,
+          filterRules: []
+        });
+      })
+      .catch(error => {
+        console.error('Error creating column at position:', error);
+        // Fallback to regular add column
+        addColumnMutation.mutate(columnData);
+      });
+    } else {
+      addColumnMutation.mutate(columnData);
+    }
   };
 
   const handleAddRow = () => {
@@ -1101,6 +1254,16 @@ const TableDetail = () => {
     deleteColumnMutation.mutate(columnId);
   };
 
+  const handleAddColumnLeft = (referenceColumn) => {
+    setShowAddColumn(true);
+    setAddColumnPosition({ position: 'left', referenceColumnId: referenceColumn._id });
+  };
+
+  const handleAddColumnRight = (referenceColumn) => {
+    setShowAddColumn(true);
+    setAddColumnPosition({ position: 'right', referenceColumnId: referenceColumn._id });
+  };
+
   const handleCellClick = (recordId, columnName, currentValue) => {
     // console.log('🔍 CELL CLICKED!', { recordId, columnName, currentValue });
     
@@ -1379,8 +1542,9 @@ const TableDetail = () => {
       userRole
     );
     
-    return result;
-  }, [columns, fieldVisibility, showSystemFields, columnPermissionsResponse, databaseMembersResponse]);
+    // Apply column order
+    return applyColumnOrder(result, columnOrder);
+  }, [columns, fieldVisibility, showSystemFields, columnPermissionsResponse, databaseMembersResponse, columnOrder]);
 
   // Debug effect for visible columns
   useEffect(() => {
@@ -1503,7 +1667,7 @@ const TableDetail = () => {
       return (
         <div style={{ margin: '0', padding: '0' }}>
           {/* Header */}
-          <div className="mb-6">
+          <div className="">
             <div className="flex justify-between items-center">
               <div>
                 {/* Description hidden for grid view */}
@@ -1623,10 +1787,20 @@ const TableDetail = () => {
             handleColumnPermission={handleColumnPermission}
             handleCellPermission={handleCellPermission}
             handleDeleteColumn={handleDeleteColumn}
+            handleAddColumnLeft={handleAddColumnLeft}
+            handleAddColumnRight={handleAddColumnRight}
             updateRecordMutation={updateRecordMutation}
             updateColumnMutation={updateColumnMutation}
             isResizing={isResizing}
             resizingColumn={resizingColumn}
+            // Column reordering props
+            isDragging={isDragging}
+            draggedColumn={draggedColumn}
+            dragOverColumn={dragOverColumn}
+            handleColumnDragStart={handleColumnDragStart}
+            handleColumnDragOver={handleColumnDragOver}
+            handleColumnDrop={handleColumnDrop}
+            handleColumnDragEnd={handleColumnDragEnd}
             // Utility functions
             getColumnWidthString={getColumnWidthString}
             getColumnHeaderStyle={getColumnHeaderStyle}
@@ -1674,10 +1848,14 @@ const TableDetail = () => {
           {/* Add Column Modal */}
           <AddColumnModal
             visible={showAddColumn}
-            onCancel={() => setShowAddColumn(false)}
+            onCancel={() => {
+              setShowAddColumn(false);
+              setAddColumnPosition(null);
+            }}
             onSubmit={handleAddColumn}
             newColumn={newColumn}
             setNewColumn={setNewColumn}
+            addColumnPosition={addColumnPosition}
             columns={columns}
             loading={addColumnMutation.isPending}
             currentTableId={tableId}

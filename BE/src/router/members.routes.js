@@ -149,12 +149,12 @@ async function changeMemberRole(req, res, next) {
   }
 }
 
-routerMembers.post("/database/databases/:databaseId/members", canManageMembers(), addUserToBase);
+routerMembers.post("/databases/:databaseId/members", canManageMembers(), addUserToBase);
 
-routerMembers.patch("/database/databases/:databaseId/members/:userId",canManageMembers(), guardPerBaseUserLimit({defaultLimit:100}), changeMemberRole);
+routerMembers.patch("/databases/:databaseId/members/:userId",canManageMembers(), guardPerBaseUserLimit({defaultLimit:100}), changeMemberRole);
 
 /** GET: my role in this database */
-routerMembers.get("/database/databases/:databaseId/me", async (req, res, next) => {
+routerMembers.get("/databases/:databaseId/me", async (req, res, next) => {
   try {
     const { databaseId } = req.params;
     const userId = req.user?._id;
@@ -174,7 +174,7 @@ routerMembers.get("/database/databases/:databaseId/me", async (req, res, next) =
 });
 
 /** GET: list database members */
-routerMembers.get("/database/databases/:databaseId/members", canManageMembers(), async (req, res, next) => {
+routerMembers.get("/databases/:databaseId/members", canManageMembers(), async (req, res, next) => {
   try {
     const { databaseId } = req.params;
     const members = await BaseMember.find({ databaseId: databaseId })
@@ -202,12 +202,12 @@ routerMembers.get("/database/databases/:databaseId/members", canManageMembers(),
 });
 
 /** GET: organization users not yet added to database */
-routerMembers.get("/database/databases/:databaseId/available-users", async (req, res, next) => {
+routerMembers.get("/databases/:databaseId/available-users", async (req, res, next) => {
   try {
     const { databaseId } = req.params;
-    const siteId = req.user.site_id;
+    const siteId = req.user?.site_id;
     
-    console.log('🔍 Available users request:', { databaseId, siteId, userId: req.user._id });
+    console.log('🔍 Available users request:', { databaseId, siteId, userId: req.user?._id });
     
     if (!siteId) {
       return res.status(400).json({ ok: false, error: "site_id_required" });

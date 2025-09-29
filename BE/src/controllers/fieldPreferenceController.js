@@ -6,10 +6,11 @@ const getFieldPreference = async (req, res) => {
   try {
     const { tableId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(tableId)) {
+    // Accept both MongoDB ObjectId and PostgreSQL UUID format
+    if (!tableId || (tableId.length !== 24 && !tableId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid table ID'
+        message: 'Invalid table ID format'
       });
     }
 
@@ -45,10 +46,11 @@ const saveFieldPreference = async (req, res) => {
     const { tableId } = req.params;
     const { fieldVisibility, showSystemFields } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(tableId)) {
+    // Accept both MongoDB ObjectId and PostgreSQL UUID format
+    if (!tableId || (tableId.length !== 24 && !tableId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid table ID'
+        message: 'Invalid table ID format'
       });
     }
 
@@ -98,10 +100,11 @@ const deleteFieldPreference = async (req, res) => {
   try {
     const { tableId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(tableId)) {
+    // Accept both MongoDB ObjectId and PostgreSQL UUID format
+    if (!tableId || (tableId.length !== 24 && !tableId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid table ID'
+        message: 'Invalid table ID format'
       });
     }
 

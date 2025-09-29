@@ -6,12 +6,15 @@ import Base from '../model/Base.js';
 import BaseMember from '../model/BaseMember.js';
 import Organization from '../model/Organization.js';
 import { isSuperAdmin, getUserDatabaseRole } from '../utils/permissionUtils.js';
+import { createMetabaseTable } from '../utils/metabaseTableCreator.js';
+// PostgreSQL imports
+import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
 
 // Table Controllers
 export const createTable = async (req, res) => {
   try {
     const { baseId, databaseId, name, description } = req.body;
-    const userId = req.user._id;
+    const userId = req.user?._id?.toString();
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Table name is required' });
@@ -51,23 +54,36 @@ export const createTable = async (req, res) => {
       }
     }
 
-    const existingTable = await Table.findOne({
-      name: name.trim(),
-      databaseId: actualBaseId
+    // Check if table exists in PostgreSQL
+    const existingTable = await PostgresTable.findOne({
+      where: {
+        name: name.trim(),
+        database_id: actualBaseId
+      }
     });
 
     if (existingTable) {
       return res.status(400).json({ message: 'Table with this name already exists in this base' });
     }
 
-    const table = new Table({
+    // Create table in PostgreSQL
+    const table = await PostgresTable.create({
       name: name.trim(),
       description: description || '',
-      databaseId: actualBaseId,
-      userId
+      database_id: actualBaseId,
+      user_id: userId,
+      site_id: req.siteId?.toString(),
+      table_access_rule: {
+        userIds: [],
+        allUsers: false,
+        access: []
+      },
+      column_access_rules: [],
+      record_access_rules: [],
+      cell_access_rules: []
     });
 
-    await table.save();
+    console.log(`✅ Table created in PostgreSQL: ${table.name} (${table.id})`);
 
     // Tạo default permissions cho tất cả members
     try {
@@ -99,10 +115,38 @@ export const createTable = async (req, res) => {
       // Không throw error để không ảnh hưởng đến việc tạo table
     }
 
+    // Tạo Metabase table tự động
+    try {
+      console.log(`🎯 Creating Metabase table for: ${table.name} (${table.id})`);
+      console.log('📋 Table object:', JSON.stringify(table, null, 2));
+      
+      const metabaseResult = await createMetabaseTable(table.id, table.name, base.organizationId?.toString());
+      console.log('🎯 Metabase result:', metabaseResult);
+      
+      if (metabaseResult.success) {
+        console.log(`✅ Metabase table created: ${metabaseResult.metabaseTableName}`);
+      } else {
+        console.error(`❌ Failed to create Metabase table: ${metabaseResult.error}`);
+      }
+    } catch (metabaseError) {
+      console.error('❌ Error creating Metabase table:', metabaseError);
+      console.error('❌ Error stack:', metabaseError.stack);
+      // Không throw error để không ảnh hưởng đến việc tạo table
+    }
+
     res.status(201).json({
       success: true,
       message: 'Table created successfully',
-      data: table
+      data: {
+        _id: table.id,
+        name: table.name,
+        description: table.description,
+        databaseId: table.database_id,
+        userId: table.user_id,
+        siteId: table.site_id,
+        createdAt: table.created_at,
+        updatedAt: table.updated_at
+      }
     });
   } catch (error) {
     console.error('Error creating table:', error);
@@ -113,7 +157,7 @@ export const createTable = async (req, res) => {
 export const getTables = async (req, res) => {
   try {
     const { databaseId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user?._id?.toString();
 
     if (!databaseId) {
       return res.status(400).json({ message: "Database ID is required" });
@@ -147,8 +191,50 @@ export const getTables = async (req, res) => {
       }
     }
 
-    const tables = await Table.find({ databaseId: databaseId })
-      .sort({ createdAt: -1 });
+    // Get tables from both MongoDB and PostgreSQL
+    const [mongoTables, postgresTables] = await Promise.all([
+      Table.find({ databaseId: databaseId }).sort({ createdAt: -1 }),
+      PostgresTable.findAll({
+        where: { database_id: databaseId },
+        order: [['created_at', 'DESC']]
+      })
+    ]);
+
+    // Transform PostgreSQL tables to match MongoDB format
+    const transformedPostgresTables = postgresTables.map(table => ({
+      _id: table.id,
+      name: table.name,
+      databaseId: table.database_id,
+      userId: table.user_id,
+      siteId: table.site_id,
+      description: table.description,
+      tableAccessRule: table.table_access_rule,
+      columnAccessRules: table.column_access_rules,
+      recordAccessRules: table.record_access_rules,
+      cellAccessRules: table.cell_access_rules,
+      createdAt: table.created_at,
+      updatedAt: table.updated_at
+    }));
+
+    // Combine tables from both sources
+    const allTables = [...mongoTables, ...transformedPostgresTables];
+
+    // Remove duplicates based on name (PostgreSQL takes precedence)
+    const uniqueTables = allTables.reduce((acc, current) => {
+      const existingIndex = acc.findIndex(table => table.name === current.name);
+      if (existingIndex === -1) {
+        acc.push(current);
+      } else {
+        // Replace with PostgreSQL version if it exists
+        if (current._id && !acc[existingIndex]._id.toString().includes('-')) {
+          acc[existingIndex] = current;
+        }
+      }
+      return acc;
+    }, []);
+
+    // Sort by creation date
+    const tables = uniqueTables.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // Filter tables based on user permissions
     let visibleTables = tables;
@@ -236,9 +322,25 @@ export const getTables = async (req, res) => {
     } // End of super admin check
     // For owners and managers, show all tables
 
+    // Transform PostgreSQL data to match frontend expected format
+    const transformedTables = visibleTables.map(table => ({
+      _id: table.id,
+      name: table.name,
+      description: table.description,
+      databaseId: table.database_id,
+      userId: table.user_id,
+      siteId: table.site_id,
+      tableAccessRule: table.table_access_rule,
+      columnAccessRules: table.column_access_rules,
+      recordAccessRules: table.record_access_rules,
+      cellAccessRules: table.cell_access_rules,
+      createdAt: table.created_at,
+      updatedAt: table.updated_at
+    }));
+
     res.status(200).json({
       success: true,
-      data: visibleTables
+      data: transformedTables
     });
   } catch (error) {
     console.error('Error fetching tables:', error);
@@ -249,13 +351,15 @@ export const getTables = async (req, res) => {
 export const getTableById = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const userId = req.user._id;
-    const siteId = req.siteId;
+    const userId = req.user?._id?.toString();
+    const siteId = req.siteId?.toString();
 
-    const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
+    const table = await PostgresTable.findOne({
+      where: {
+        id: tableId,
+        user_id: userId,
+        site_id: siteId
+      }
     });
 
     if (!table) {
@@ -264,7 +368,20 @@ export const getTableById = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: table
+      data: {
+        _id: table.id,
+        name: table.name,
+        description: table.description,
+        databaseId: table.database_id,
+        userId: table.user_id,
+        siteId: table.site_id,
+        tableAccessRule: table.table_access_rule,
+        columnAccessRules: table.column_access_rules,
+        recordAccessRules: table.record_access_rules,
+        cellAccessRules: table.cell_access_rules,
+        createdAt: table.created_at,
+        updatedAt: table.updated_at
+      }
     });
   } catch (error) {
     console.error('Error fetching table:', error);
@@ -276,7 +393,7 @@ export const updateTable = async (req, res) => {
   try {
     const { tableId } = req.params;
     const { name, description } = req.body;
-    const userId = req.user._id;
+    const userId = req.user?._id?.toString();
 
     const table = await Table.findOne({
       _id: tableId
@@ -340,40 +457,26 @@ export const updateTable = async (req, res) => {
 export const deleteTable = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user?._id?.toString();
 
-    const table = await Table.findOne({
-      _id: tableId
-    }).populate('databaseId');
+    // Use PostgreSQL Table model instead of MongoDB
+    const table = await PostgresTable.findByPk(tableId);
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    // Check if user is a member of this database and has permission to delete tables
-    // Super admin có quyền delete table trong mọi database
-    if (!isSuperAdmin(req.user)) {
-      const baseMember = await BaseMember.findOne({ 
-        databaseId: table.databaseId._id, 
-        userId 
+    // Check if user owns this table or is super admin
+    if (!req.user || (!isSuperAdmin(req.user) && table.user_id !== userId)) {
+      return res.status(403).json({ 
+        message: 'Access denied - you can only delete your own tables' 
       });
-
-      if (!baseMember) {
-        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
-      }
-
-      // Only owner and manager can delete tables
-      if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
-        return res.status(403).json({ 
-          message: 'Access denied - only database owners and managers can delete tables' 
-        });
-      }
     }
 
-    // Delete all related data (columns, records)
-    await Column.deleteMany({ tableId });
-    await Record.deleteMany({ tableId });
-    await Table.deleteOne({ _id: tableId });
+    // Delete all related data (columns, records) from PostgreSQL
+    await PostgresColumn.destroy({ where: { table_id: tableId } });
+    await PostgresRecord.destroy({ where: { table_id: tableId } });
+    await table.destroy();
 
     res.status(200).json({
       success: true,
@@ -389,7 +492,7 @@ export const copyTable = async (req, res) => {
   try {
     const { tableId } = req.params;
     const { name, description, targetDatabaseId } = req.body;
-    const userId = req.user._id;
+    const userId = req.user?._id?.toString();
 
     if (!name || name.trim() === '') {
       return res.status(400).json({ message: 'Table name is required' });

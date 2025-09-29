@@ -8,6 +8,9 @@ import Organization from '../model/Organization.js';
 import BaseMember from '../model/BaseMember.js';
 import exprEvalEngine from '../utils/exprEvalEngine.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
+// PostgreSQL imports
+import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
+import { updateMetabaseTable } from '../utils/metabaseTableCreator.js';
 
 
 // Helper function to calculate formula columns for records
@@ -95,8 +98,13 @@ const calculateLookupColumns = async (records, tableId) => {
             continue; // No linked record
           }
           
-          // Get the linked record
-          const linkedRecord = await Record.findById(linkedTableValue.recordId);
+          // Get the linked record (check both MongoDB and PostgreSQL)
+          const [mongoLinkedRecord, postgresLinkedRecord] = await Promise.all([
+            Record.findById(linkedTableValue.recordId),
+            PostgresRecord.findByPk(linkedTableValue.recordId)
+          ]);
+
+          const linkedRecord = mongoLinkedRecord || postgresLinkedRecord;
           if (!linkedRecord) {
             continue;
           }
@@ -159,20 +167,25 @@ export const createRecord = async (req, res) => {
       return res.status(400).json({ message: 'Data is required and must be an object' });
     }
 
-    // Verify table exists and user has access
-    const table = await Table.findOne({
-      _id: tableId
-    }).populate('databaseId');
+    // Verify table exists and user has access (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findOne({ _id: tableId }).populate('databaseId'),
+      PostgresTable.findByPk(tableId)
+    ]);
 
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
+
+    // Get database ID from either source
+    const databaseId = mongoTable ? mongoTable.databaseId._id : postgresTable.database_id;
 
     // Check if user is a member of the database
     // Super admin có quyền tạo record trong mọi database
     if (!isSuperAdmin(req.user)) {
       const baseMember = await BaseMember.findOne({
-        databaseId: table.databaseId._id,
+        databaseId: databaseId,
         userId
       });
 
@@ -396,21 +409,40 @@ export const createRecord = async (req, res) => {
       }
     }
 
-    const record = new Record({
-      tableId,
-      userId,
-      siteId,
+    // Create record in PostgreSQL
+    const record = await PostgresRecord.create({
+      table_id: tableId,
+      user_id: userId,
+      site_id: siteId,
       data: validatedData
     });
 
-    await record.save();
+    console.log(`✅ Record created in PostgreSQL: ${record.id}`);
+
+    // Update Metabase table
+    try {
+      const metabaseRecord = {
+        id: record.id,
+        table_id: record.table_id,
+        user_id: record.user_id,
+        site_id: record.site_id,
+        data: record.data,
+        created_at: record.created_at,
+        updated_at: record.updated_at
+      };
+      await updateMetabaseTable(tableId, metabaseRecord, 'insert');
+      console.log(`✅ Metabase table updated for record: ${record.id}`);
+    } catch (metabaseError) {
+      console.error('Metabase update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
 
     // Tạo default permission cho record
     const RecordPermission = (await import('../model/RecordPermission.js')).default;
     const defaultPermission = new RecordPermission({
-      recordId: record._id,
+      recordId: record.id,
       tableId: tableId,
-      databaseId: table.databaseId._id,
+      databaseId: databaseId,
       targetType: 'all_members',
       permissions: {
         canView: true
@@ -420,10 +452,21 @@ export const createRecord = async (req, res) => {
     });
     await defaultPermission.save();
 
+    // Transform PostgreSQL record to match expected format
+    const transformedRecord = {
+      _id: record.id,
+      tableId: record.table_id,
+      userId: record.user_id,
+      siteId: record.site_id,
+      data: record.data,
+      createdAt: record.created_at,
+      updatedAt: record.updated_at
+    };
+
     res.status(201).json({
       success: true,
       message: 'Record created successfully',
-      data: record
+      data: transformedRecord
     });
   } catch (error) {
     console.error('Error creating record:', error);
@@ -448,17 +491,30 @@ export const getRecords = async (req, res) => {
       return res.status(400).json({ message: "Table ID is required" });
     }
 
-    // Verify table exists and get its database info
-    const table = await Table.findOne({
-      _id: tableId
-    }).populate('databaseId');
+    // Verify table exists and get its database info (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findOne({ _id: tableId }).populate('databaseId'),
+      PostgresTable.findByPk(tableId)
+    ]);
 
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    // Check if table's database belongs to the organization
-    if (!table.databaseId || !table.databaseId.orgId) {
+    // Get database ID and orgId from either source
+    let databaseId, orgId;
+    if (mongoTable) {
+      databaseId = table.databaseId._id;
+      orgId = table.databaseId.orgId;
+    } else {
+      databaseId = postgresTable.database_id;
+      // For PostgreSQL, we need to get the database from MongoDB to find orgId
+      const database = await Database.findById(databaseId);
+      orgId = database?.orgId;
+    }
+
+    if (!orgId) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
@@ -608,12 +664,58 @@ export const getRecords = async (req, res) => {
       }
     }
 
-    const records = await Record.find(filterQuery)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(parseInt(limit));
+    // Get records from both MongoDB and PostgreSQL
+    const [mongoRecords, postgresRecords] = await Promise.all([
+      Record.find(filterQuery).sort(sortOptions).skip(skip).limit(parseInt(limit)),
+      PostgresRecord.findAll({
+        where: { table_id: tableId },
+        order: [['created_at', 'DESC']],
+        limit: parseInt(limit),
+        offset: skip
+      })
+    ]);
 
-    const totalRecords = await Record.countDocuments(filterQuery);
+    // Transform PostgreSQL records to match MongoDB format
+    const transformedPostgresRecords = postgresRecords.map(record => ({
+      _id: record.id,
+      tableId: record.table_id,
+      userId: record.user_id,
+      siteId: record.site_id,
+      data: record.data,
+      createdAt: record.created_at,
+      updatedAt: record.updated_at
+    }));
+
+    // Combine records from both sources
+    const allRecords = [...mongoRecords, ...transformedPostgresRecords];
+
+    // Remove duplicates based on data content (PostgreSQL takes precedence)
+    const uniqueRecords = allRecords.reduce((acc, current) => {
+      const existingIndex = acc.findIndex(record => 
+        JSON.stringify(record.data) === JSON.stringify(current.data) &&
+        record.tableId === current.tableId
+      );
+      if (existingIndex === -1) {
+        acc.push(current);
+      } else {
+        // Replace with PostgreSQL version if it exists
+        if (current._id && !acc[existingIndex]._id.toString().includes('-')) {
+          acc[existingIndex] = current;
+        }
+      }
+      return acc;
+    }, []);
+
+    // Sort combined records
+    const records = uniqueRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Get total count from both sources
+    const [mongoTotal, postgresTotal] = await Promise.all([
+      Record.countDocuments(filterQuery),
+      PostgresRecord.count({ where: { table_id: tableId } })
+    ]);
+    
+    const totalRecords = mongoTotal + postgresTotal;
 
     // Calculate formula and lookup columns
     const formulaEnhanced = await calculateFormulaColumns(records, tableId);

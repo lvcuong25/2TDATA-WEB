@@ -3,6 +3,9 @@ import Record from '../model/Record.js';
 import Table from '../model/Table.js';
 import User from '../model/User.js';
 import BaseMember from '../model/BaseMember.js';
+import { isSuperAdmin } from '../utils/permissionUtils.js';
+// PostgreSQL imports
+import { Table as PostgresTable, Record as PostgresRecord } from '../models/postgres/index.js';
 
 // Helper function để kiểm tra user có phải manager hoặc owner không
 const isManagerOrOwner = async (userId, databaseId) => {
@@ -27,14 +30,28 @@ export const createRecordPermission = async (req, res) => {
       return res.status(400).json({ message: 'Record ID is required' });
     }
 
-    // Kiểm tra record tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
+    // Kiểm tra record tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
+    }
+
     // Kiểm tra user có quyền set permission không
-    const hasPermission = await isManagerOrOwner(currentUserId, record.tableId.databaseId);
+    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can set permissions' 
@@ -64,8 +81,12 @@ export const createRecordPermission = async (req, res) => {
       }
     }
 
-    // Tạo tên mặc định cho permission
-    const table = await Table.findById(record.tableId._id);
+    // Tạo tên mặc định cho permission (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findById(record.tableId._id),
+      PostgresTable.findByPk(record.tableId._id)
+    ]);
+    const table = mongoTable || postgresTable;
     const recordIndex = await Record.countDocuments({ tableId: record.tableId._id, _id: { $lte: recordId } });
     const defaultName = `Record ${recordIndex} - ${table.name}`;
 
@@ -123,14 +144,28 @@ export const getRecordPermissions = async (req, res) => {
       return res.status(400).json({ message: 'Record ID is required' });
     }
 
-    // Kiểm tra record tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
+    // Kiểm tra record tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
 
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
+    }
+
     // Kiểm tra user có quyền xem quyền không
-    const hasPermission = await isManagerOrOwner(currentUserId, record.tableId.databaseId);
+    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can view permissions' 
@@ -167,8 +202,9 @@ export const getTableRecordPermissions = async (req, res) => {
       return res.status(400).json({ message: 'Table ID is required' });
     }
 
-    // Kiểm tra table tồn tại
-    const table = await Table.findById(tableId);
+    // Kiểm tra table tồn tại (using PostgreSQL)
+    const { Table: PostgresTable } = await import('../models/postgres/index.js');
+    const table = await PostgresTable.findByPk(tableId);
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
@@ -188,13 +224,22 @@ export const getTableRecordPermissions = async (req, res) => {
       }
     }
 
-    // Lấy tất cả records của table
-    const records = await Record.find({ tableId });
-    const recordIds = records.map(record => record._id);
+    // Lấy tất cả records của table từ cả MongoDB và PostgreSQL
+    const { Record: PostgresRecord } = await import('../models/postgres/index.js');
+    
+    const [mongoRecords, postgresRecords] = await Promise.all([
+      Record.find({ tableId }),
+      PostgresRecord.findAll({ where: { table_id: tableId } })
+    ]);
+    
+    // Combine record IDs from both sources
+    const mongoRecordIds = mongoRecords.map(record => record._id);
+    const postgresRecordIds = postgresRecords.map(record => record.id);
+    const allRecordIds = [...mongoRecordIds, ...postgresRecordIds];
 
     // Lấy tất cả quyền của tất cả records trong table
     const permissions = await RecordPermission.find({ 
-      recordId: { $in: recordIds } 
+      recordId: { $in: allRecordIds } 
     })
       .populate('userId', 'name email')
       .populate('createdBy', 'name email')
@@ -334,16 +379,30 @@ export const getUserRecordPermission = async (req, res) => {
       return res.status(400).json({ message: 'Record ID is required' });
     }
 
-    // Kiểm tra record tồn tại
-    const record = await Record.findById(recordId).populate('tableId');
+    // Kiểm tra record tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoRecord, postgresRecord] = await Promise.all([
+      Record.findById(recordId).populate('tableId'),
+      PostgresRecord.findByPk(recordId)
+    ]);
+
+    const record = mongoRecord || postgresRecord;
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
+    }
+
+    // Get database ID from either source
+    let databaseId;
+    if (mongoRecord) {
+      databaseId = mongoRecord.tableId.databaseId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
+      databaseId = postgresRecord.database_id;
     }
 
     // Lấy role của user trong database
     const baseMember = await BaseMember.findOne({
       userId: currentUserId,
-      databaseId: record.tableId.databaseId
+      databaseId: databaseId
     });
 
     if (!baseMember) {
