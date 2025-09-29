@@ -11,8 +11,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3004,
-        DATABASE_URL: 'mongodb://2tdata_p_user:2tdata_p%402024%21@localhost:27017/2TDATA-P?authSource=2TDATA-P',
-        DB_URI: 'mongodb://2tdata_p_user:2tdata_p%402024%21@localhost:27017/2TDATA-P?authSource=2TDATA-P',
+        DATABASE_URL: 'mongodb://localhost:27017/2TDATA-P',
+        DB_URI: 'mongodb://localhost:27017/2TDATA-P',
         SECRET_KEY: 'your-super-secret-jwt-key-change-this-in-production',
         JWT_SECRET: 'your-super-secret-jwt-key-change-this-in-production',
         SITE_ID: 'prod'

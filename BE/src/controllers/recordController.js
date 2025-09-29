@@ -438,19 +438,26 @@ export const createRecord = async (req, res) => {
     }
 
     // Tạo default permission cho record
-    const RecordPermission = (await import('../model/RecordPermission.js')).default;
-    const defaultPermission = new RecordPermission({
-      recordId: record.id,
-      tableId: tableId,
-      databaseId: databaseId,
-      targetType: 'all_members',
-      permissions: {
-        canView: true
-      },
-      createdBy: userId,
-      isDefault: true
-    });
-    await defaultPermission.save();
+
+    try {
+      const RecordPermission = (await import('../model/RecordPermission.js')).default;
+      const defaultPermission = new RecordPermission({
+        recordId: record._id,
+        tableId: tableId,
+        databaseId: table.databaseId._id,
+        targetType: 'all_members',
+        name: 'Default Permission',
+        canView: true,
+        canEdit: true,
+        createdBy: userId,
+        isDefault: true
+      });
+      await defaultPermission.save();
+    } catch (permissionError) {
+      console.warn('Failed to create default permission for record:', permissionError.message);
+      // Continue without failing the entire record creation
+    }
+
 
     // Transform PostgreSQL record to match expected format
     const transformedRecord = {
@@ -1199,20 +1206,22 @@ export const deleteMultipleRecords = async (req, res) => {
     }
 
     // Check if user is a member of the database for all records
-    const tableIds = [...new Set(records.map(r => r.tableId._id))];
-    const tables = await Table.find({ _id: { $in: tableIds } }).populate('databaseId');
-    
-    for (const table of tables) {
-      const baseMember = await BaseMember.findOne({
-        databaseId: table.databaseId._id,
-        userId
-      });
-
-      if (!baseMember) {
-        return res.status(403).json({ 
-          message: "Access denied - you are not a member of this database" 
+    // Super admin có quyền xóa record trong mọi database
+    if (!isSuperAdmin(req.user)) {
+      const tableIds = [...new Set(records.map(r => r.tableId._id))];
+      const tables = await Table.find({ _id: { $in: tableIds } }).populate('databaseId');
+      
+      for (const table of tables) {
+        const baseMember = await BaseMember.findOne({
+          databaseId: table.databaseId._id,
+          userId
         });
-      }
+
+        if (!baseMember) {
+          return res.status(403).json({ 
+            message: "Access denied - you are not a member of this database" 
+          });
+        }
 
       // Check if user has permission to delete records
       if (baseMember.role === 'member') {
@@ -1250,6 +1259,7 @@ export const deleteMultipleRecords = async (req, res) => {
           });
         }
       }
+    }
     }
 
     // Delete all comments associated with these records

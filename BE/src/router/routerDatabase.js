@@ -214,7 +214,7 @@ router.post("/records", createRecord);
 router.get("/tables/:tableId/records", getRecords);
 
 // Bulk delete routes - MUST come before :recordId routes
-router.delete("/records/bulk", deleteMultipleRecords);
+router.delete("/records/bulk", requireAuthWithCookie, deleteMultipleRecords);
 router.delete("/tables/:tableId/records/all", deleteAllRecords);
 
 // Individual record routes - MUST come after bulk routes
