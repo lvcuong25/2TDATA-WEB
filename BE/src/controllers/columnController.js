@@ -5,6 +5,8 @@ import Record from '../model/Record.js';
 import Organization from '../model/Organization.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
+// PostgreSQL imports
+import { Column as PostgresColumn, Table as PostgresTable, Record as PostgresRecord } from '../models/postgres/index.js';
 
 // Column Controllers
 export const createColumn = async (req, res) => {
@@ -45,20 +47,25 @@ export const createColumn = async (req, res) => {
       return res.status(400).json({ message: 'Table ID is required' });
     }
 
-    // Verify table exists and belongs to user
-    const table = await Table.findOne({
-      _id: tableId
-    }).populate('databaseId');
+    // Verify table exists and belongs to user (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findOne({ _id: tableId }).populate('databaseId'),
+      PostgresTable.findByPk(tableId)
+    ]);
 
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
+
+    // Get database ID from either source
+    const databaseId = mongoTable ? mongoTable.databaseId._id : postgresTable.database_id;
 
     // Check if user is a member of the database
     // Super admin có quyền tạo column trong mọi database
     if (!isSuperAdmin(req.user)) {
       const baseMember = await BaseMember.findOne({
-        databaseId: table.databaseId._id,
+        databaseId: databaseId,
         userId
       });
 
@@ -310,19 +317,43 @@ export const createColumn = async (req, res) => {
 
     // console.log('Column data to save:', columnData);
 
-    const column = new Column(columnData);
+    // Create column in PostgreSQL
+    const column = await PostgresColumn.create({
+      name: columnData.name,
+      key: columnData.key,
+      type: columnData.type,
+      table_id: tableId,
+      user_id: userId,
+      site_id: req.siteId?.toString(),
+      data_type: columnData.dataType,
+      is_required: columnData.isRequired || false,
+      is_unique: columnData.isUnique || false,
+      default_value: columnData.defaultValue,
+      checkbox_config: columnData.checkboxConfig,
+      single_select_config: columnData.singleSelectConfig,
+      multi_select_config: columnData.multiSelectConfig,
+      formula_config: columnData.formulaConfig,
+      date_config: columnData.dateConfig,
+      currency_config: columnData.currencyConfig,
+      percent_config: columnData.percentConfig,
+      url_config: columnData.urlConfig,
+      phone_config: columnData.phoneConfig,
+      time_config: columnData.timeConfig,
+      rating_config: columnData.ratingConfig,
+      linked_table_config: columnData.linkedTableConfig,
+      lookup_config: columnData.lookupConfig,
+      order: columnData.order || 0
+    });
 
-    // console.log('About to save column...');
-    await column.save();
-    // console.log('Column saved successfully:', column);
+    console.log(`✅ Column created in PostgreSQL: ${column.name} (${column.id})`);
 
     // Tạo default permission cho column
     try {
       const ColumnPermission = (await import('../model/ColumnPermission.js')).default;
       const defaultPermission = new ColumnPermission({
-        columnId: column._id,
+        columnId: column.id,
         tableId: tableId,
-        databaseId: table.databaseId._id,
+        databaseId: databaseId,
         targetType: 'all_members',
         name: column.name, // Thêm field name required
         canView: true,
@@ -337,10 +368,41 @@ export const createColumn = async (req, res) => {
       // Không throw error để không ảnh hưởng đến việc tạo column
     }
 
+    // Transform PostgreSQL column to match expected format
+    const transformedColumn = {
+      _id: column.id,
+      name: column.name,
+      key: column.key,
+      type: column.type,
+      tableId: column.table_id,
+      userId: column.user_id,
+      siteId: column.site_id,
+      dataType: column.data_type,
+      isRequired: column.is_required,
+      isUnique: column.is_unique,
+      defaultValue: column.default_value,
+      checkboxConfig: column.checkbox_config,
+      singleSelectConfig: column.single_select_config,
+      multiSelectConfig: column.multi_select_config,
+      formulaConfig: column.formula_config,
+      dateConfig: column.date_config,
+      currencyConfig: column.currency_config,
+      percentConfig: column.percent_config,
+      urlConfig: column.url_config,
+      phoneConfig: column.phone_config,
+      timeConfig: column.time_config,
+      ratingConfig: column.rating_config,
+      linkedTableConfig: column.linked_table_config,
+      lookupConfig: column.lookup_config,
+      order: column.order,
+      createdAt: column.created_at,
+      updatedAt: column.updated_at
+    };
+
     res.status(201).json({
       success: true,
       message: 'Column created successfully',
-      data: column
+      data: transformedColumn
     });
   } catch (error) {
     console.error('Error creating column:', error);
@@ -365,23 +427,37 @@ export const getColumns = async (req, res) => {
       return res.status(400).json({ message: "Table ID is required" });
     }
 
-    // Verify table exists and get its database info
-    const table = await Table.findOne({
-      _id: tableId
-    }).populate('baseId');
+    // Verify table exists and get its database info (check both MongoDB and PostgreSQL)
+    const [mongoTable, postgresTable] = await Promise.all([
+      Table.findOne({ _id: tableId }).populate('baseId'),
+      PostgresTable.findByPk(tableId)
+    ]);
 
+    const table = mongoTable || postgresTable;
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    // Check if table's database belongs to the organization
-    if (!table.databaseId || !table.databaseId.orgId) {
+    // Get database ID from either source
+    const databaseId = mongoTable ? mongoTable.databaseId : postgresTable.database_id;
+
+    // For PostgreSQL tables, we need to get the database info
+    let orgId;
+    if (mongoTable) {
+      orgId = table.databaseId?.orgId;
+    } else {
+      // For PostgreSQL, we need to get the database from MongoDB to find orgId
+      const database = await Database.findById(databaseId);
+      orgId = database?.orgId;
+    }
+
+    if (!orgId) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
     // Verify user is a member of the organization that owns this table's database
     const organization = await Organization.findOne({ 
-      _id: table.databaseId.orgId,
+      _id: orgId,
       'members.user': userId 
     });
     
@@ -389,12 +465,69 @@ export const getColumns = async (req, res) => {
       return res.status(403).json({ message: "Access denied - user is not a member of this database" });
     }
 
-    const columns = await Column.find({ tableId })
-      .sort({ order: 1 });
+    // Get columns from both MongoDB and PostgreSQL
+    const [mongoColumns, postgresColumns] = await Promise.all([
+      Column.find({ tableId }).sort({ order: 1 }),
+      PostgresColumn.findAll({
+        where: { table_id: tableId },
+        order: [['order', 'ASC']]
+      })
+    ]);
+
+    // Transform PostgreSQL columns to match MongoDB format
+    const transformedPostgresColumns = postgresColumns.map(column => ({
+      _id: column.id,
+      name: column.name,
+      key: column.key,
+      type: column.type,
+      tableId: column.table_id,
+      userId: column.user_id,
+      siteId: column.site_id,
+      dataType: column.data_type,
+      isRequired: column.is_required,
+      isUnique: column.is_unique,
+      defaultValue: column.default_value,
+      checkboxConfig: column.checkbox_config,
+      singleSelectConfig: column.single_select_config,
+      multiSelectConfig: column.multi_select_config,
+      formulaConfig: column.formula_config,
+      dateConfig: column.date_config,
+      currencyConfig: column.currency_config,
+      percentConfig: column.percent_config,
+      urlConfig: column.url_config,
+      phoneConfig: column.phone_config,
+      timeConfig: column.time_config,
+      ratingConfig: column.rating_config,
+      linkedTableConfig: column.linked_table_config,
+      lookupConfig: column.lookup_config,
+      order: column.order,
+      createdAt: column.created_at,
+      updatedAt: column.updated_at
+    }));
+
+    // Combine columns from both sources
+    const allColumns = [...mongoColumns, ...transformedPostgresColumns];
+
+    // Remove duplicates based on name (PostgreSQL takes precedence)
+    const uniqueColumns = allColumns.reduce((acc, current) => {
+      const existingIndex = acc.findIndex(column => column.name === current.name);
+      if (existingIndex === -1) {
+        acc.push(current);
+      } else {
+        // Replace with PostgreSQL version if it exists
+        if (current._id && !acc[existingIndex]._id.toString().includes('-')) {
+          acc[existingIndex] = current;
+        }
+      }
+      return acc;
+    }, []);
+
+    // Sort by order
+    uniqueColumns.sort((a, b) => (a.order || 0) - (b.order || 0));
 
     res.status(200).json({
       success: true,
-      data: columns
+      data: uniqueColumns
     });
   } catch (error) {
     console.error('Error fetching columns:', error);

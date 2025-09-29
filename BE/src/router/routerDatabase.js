@@ -186,10 +186,15 @@ router.delete("/databases/:databaseId", deleteDatabase);
 // router.post("/databases/:databaseId/copy", copyDatabase); // Function not implemented yet
 
 // Table routes
+
+
+
+
 router.post("/tables", requireAuthWithCookie, createTable);
 router.get("/databases/:databaseId/tables", getTables);
 router.get("/tables/:tableId", getTableById);
 router.put("/tables/:tableId", updateTable);
+
 router.delete("/tables/:tableId", deleteTable);
 router.post("/tables/:tableId/copy", copyTable);
 

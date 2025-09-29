@@ -2,8 +2,7 @@ import mongoose from 'mongoose';
 
 const fieldPreferenceSchema = new mongoose.Schema({
   tableId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Table',
+    type: String, // Changed to String to support both MongoDB ObjectId and PostgreSQL UUID
     required: true,
     index: true
   },
