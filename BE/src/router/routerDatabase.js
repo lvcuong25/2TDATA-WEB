@@ -18,7 +18,7 @@ import {
   updateTable,
   deleteTable,
   copyTable
-} from "../controllers/tableController.js";
+} from "../controllers/tableControllerPostgres.js";
 
 import {
   createColumn,
@@ -30,7 +30,7 @@ import {
   getLookupData,
   reorderColumns,
   createColumnAtPosition
-} from "../controllers/columnController.js";
+} from "../controllers/columnControllerPostgres.js";
 
 import {
   createRecord,
@@ -41,7 +41,7 @@ import {
   deleteMultipleRecords,
   deleteAllRecords,
   getTableStructure
-} from "../controllers/recordController.js";
+} from "../controllers/recordControllerPostgres.js";
 
 import {
   getCommentsByRecord,

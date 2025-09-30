@@ -1,7 +1,7 @@
 import XLSX from 'xlsx';
-import Table from '../model/Table.js';
-import Column from '../model/Column.js';
-import Record from '../model/Record.js';
+import Table from '../models/postgres/Table.js';
+import Column from '../models/postgres/Column.js';
+import Record from '../models/postgres/Record.js';
 import Database from '../model/Database.js';
 import BaseMember from '../model/BaseMember.js';
 import Organization from '../model/Organization.js';
@@ -17,8 +17,8 @@ export const exportDatabaseToExcel = async (req, res) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    const userId = req.user._id;
-    const siteId = req.siteId;
+    const userId = req.user._id.toString();
+    const siteId = req.siteId.toString();
 
     // Get database information
     const database = await Database.findById(databaseId);
@@ -36,8 +36,13 @@ export const exportDatabaseToExcel = async (req, res) => {
     }
 
     // Get all tables in the database
-
-    const tables = await Table.find({ databaseId, userId, siteId });
+    const tables = await Table.findAll({ 
+      where: { 
+        database_id: databaseId, 
+        user_id: userId, 
+        site_id: siteId 
+      }
+    });
 
     if (tables.length === 0) {
       return res.status(400).json({ message: 'No tables found in this database' });
@@ -51,14 +56,19 @@ export const exportDatabaseToExcel = async (req, res) => {
     for (const table of tables) {
       
       // Get columns for this table
-      const columns = await Column.find({ tableId: table._id }).sort({ order: 1 });
+      const columns = await Column.findAll({ 
+        where: { table_id: table.id },
+        order: [['order', 'ASC']]
+      });
       
       if (columns.length === 0) {
         continue;
       }
 
       // Get records for this table
-      const records = await Record.find({ tableId: table._id });
+      const records = await Record.findAll({ 
+        where: { table_id: table.id }
+      });
 
       // Prepare data for Excel
       const excelData = [];
@@ -137,8 +147,8 @@ export const importExcelToDatabase = async (req, res) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
     
-    const userId = req.user._id;
-    const siteId = req.siteId;
+    const userId = req.user._id.toString();
+    const siteId = req.siteId.toString();
     const { tableName, overwrite = false } = req.body;
 
     // Check if file was uploaded
@@ -188,15 +198,24 @@ export const importExcelToDatabase = async (req, res) => {
       const excelHeaders = jsonData[0];
       const dataRows = jsonData.slice(1);
 
-      // Generate table name for this sheet - use only sheet name, no file name prefix
-      const finalTableName = currentSheetName || `Table_${new Date().getTime()}`;
+      // Generate table name for this sheet - use provided tableName or sheet name
+      let finalTableName;
+      if (sheetNames.length === 1) {
+        // Single sheet: use provided tableName or sheet name
+        finalTableName = tableName || currentSheetName || `Table_${new Date().getTime()}`;
+      } else {
+        // Multiple sheets: use sheet name with optional prefix
+        finalTableName = tableName ? `${tableName}_${currentSheetName}` : currentSheetName || `Table_${new Date().getTime()}`;
+      }
 
       // Check if table already exists
       const existingTable = await Table.findOne({ 
-        name: finalTableName, 
-        databaseId, 
-        userId, 
-        siteId 
+        where: { 
+          name: finalTableName, 
+          database_id: databaseId, 
+          user_id: userId, 
+          site_id: siteId 
+        }
       });
 
       if (existingTable && !overwrite) {
@@ -206,21 +225,19 @@ export const importExcelToDatabase = async (req, res) => {
 
       // Delete existing table if overwrite
       if (existingTable && overwrite) {
-        await Column.deleteMany({ tableId: existingTable._id });
-        await Record.deleteMany({ tableId: existingTable._id });
-        await Table.deleteOne({ _id: existingTable._id });
+        await Column.destroy({ where: { table_id: existingTable.id } });
+        await Record.destroy({ where: { table_id: existingTable.id } });
+        await Table.destroy({ where: { id: existingTable.id } });
       }
 
       // Create new table for this sheet
-      const newTable = new Table({
+      const newTable = await Table.create({
         name: finalTableName,
         description: `Imported from Excel sheet "${currentSheetName}" on ${new Date().toLocaleDateString('vi-VN')}`,
-        databaseId,
-        userId,
-        siteId
+        database_id: databaseId,
+        user_id: userId,
+        site_id: siteId
       });
-
-      await newTable.save();
 
       // Create columns based on Excel headers for this sheet
       const columns = [];
@@ -246,21 +263,17 @@ export const importExcelToDatabase = async (req, res) => {
         const columnData = {
           name: columnName,
           key: columnName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '_'), // Generate key from name
-          dataType,
-          isRequired: false,
+          data_type: dataType,
+          is_required: false,
           order: i,
-          tableId: newTable._id,
-          databaseId: databaseId,
-          userId,
-          siteId
+          table_id: newTable.id,
+          user_id: userId,
+          site_id: siteId
         };
 
         // No special config needed - everything is text
 
-
-        const column = new Column(columnData);
-
-        await column.save();
+        const column = await Column.create(columnData);
         columns.push(column);
       }
 
@@ -314,15 +327,13 @@ export const importExcelToDatabase = async (req, res) => {
       if (hasValidData) {
         try {
           
-          const record = new Record({
-            tableId: newTable._id,
-            databaseId: databaseId,
+          const record = await Record.create({
+            table_id: newTable.id,
             data: recordData,
-            userId,
-            siteId
+            user_id: userId,
+            site_id: siteId
           });
           
-          await record.save();
           importedRecords.push(record);
         } catch (saveError) {
           console.error(`Error saving record for row ${rowIndex + 1}:`, saveError);
@@ -336,7 +347,7 @@ export const importExcelToDatabase = async (req, res) => {
       // Add result for this sheet
       importResults.push({
         sheetName: currentSheetName,
-        tableId: newTable._id,
+        tableId: newTable.id,
         tableName: newTable.name,
         importedCount: importedRecords.length,
         totalRows: dataRows.length,

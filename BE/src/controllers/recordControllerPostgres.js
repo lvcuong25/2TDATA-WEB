@@ -390,3 +390,240 @@ export const bulkCreateRecords = async (req, res) => {
     });
   }
 };
+
+export const getTableStructure = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const userId = req.user._id;
+
+    if (!tableId) {
+      return res.status(400).json({ message: "Table ID is required" });
+    }
+
+    // Verify table exists in PostgreSQL
+    const table = await Table.findByPk(tableId);
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user has access to this table
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.database_id, 
+        userId 
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: "Access denied - user is not a member of this database" });
+      }
+    }
+
+    // Get columns from PostgreSQL
+    const columns = await Column.findAll({
+      where: { table_id: tableId },
+      order: [['order', 'ASC']]
+    });
+
+    // Transform table to match expected format
+    const transformedTable = {
+      id: table.id,
+      name: table.name,
+      databaseId: table.database_id,
+      userId: table.user_id,
+      siteId: table.site_id,
+      description: table.description,
+      tableAccessRule: table.table_access_rule,
+      columnAccessRules: table.column_access_rules,
+      recordAccessRules: table.record_access_rules,
+      cellAccessRules: table.cell_access_rules,
+      createdAt: table.created_at,
+      updatedAt: table.updated_at
+    };
+
+    // Transform columns to match expected format
+    const transformedColumns = columns.map(column => ({
+      id: column.id,
+      name: column.name,
+      key: column.key,
+      type: column.type,
+      dataType: column.data_type,
+      isRequired: column.is_required,
+      isUnique: column.is_unique,
+      defaultValue: column.default_value,
+      order: column.order,
+      tableId: column.table_id,
+      userId: column.user_id,
+      siteId: column.site_id,
+      createdAt: column.created_at,
+      updatedAt: column.updated_at
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        table: transformedTable,
+        columns: transformedColumns
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting table structure:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const deleteAllRecords = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ 
+        message: "Authentication required. Please login first." 
+      });
+    }
+    
+    const userId = req.user._id;
+    const siteId = req.siteId;
+    
+    // Check siteId
+    if (!siteId) {
+      return res.status(400).json({ 
+        message: "Site context required" 
+      });
+    }
+
+    // Verify table exists
+    const table = await Table.findByPk(tableId);
+
+    if (!table) {
+      return res.status(404).json({ message: "Table not found" });
+    }
+
+    // Check if user is a member of the database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({
+        databaseId: table.database_id,
+        userId
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ 
+          message: "Access denied - you are not a member of this database" 
+        });
+      }
+
+      // Check if user has permission to delete records
+      if (baseMember.role === 'member') {
+        return res.status(403).json({ 
+          message: "Access denied - only owners and managers can delete all records" 
+        });
+      }
+    }
+
+    // Delete all records from PostgreSQL
+    const deletedCount = await Record.destroy({
+      where: { table_id: tableId }
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${deletedCount} records`,
+      deletedCount: deletedCount
+    });
+
+  } catch (error) {
+    console.error('Error deleting all records:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};
+
+export const deleteMultipleRecords = async (req, res) => {
+  try {
+    const { recordIds } = req.body;
+    
+    // Check authentication
+    if (!req.user) {
+      return res.status(401).json({ 
+        message: "Authentication required. Please login first." 
+      });
+    }
+    
+    const userId = req.user._id;
+    const siteId = req.siteId;
+    
+    // Check siteId
+    if (!siteId) {
+      return res.status(400).json({ 
+        message: "Site context required" 
+      });
+    }
+
+    if (!recordIds || !Array.isArray(recordIds) || recordIds.length === 0) {
+      return res.status(400).json({ message: "Record IDs array is required" });
+    }
+
+    // Verify all records exist and get their table info
+    const records = await Record.findAll({
+      where: { id: recordIds },
+      include: [{
+        model: Table,
+        as: 'table'
+      }]
+    });
+
+    if (records.length !== recordIds.length) {
+      return res.status(404).json({ 
+        message: "Some records not found" 
+      });
+    }
+
+    // Check if user is a member of the database for all records
+    if (!isSuperAdmin(req.user)) {
+      const tableIds = [...new Set(records.map(r => r.table_id))];
+      const tables = await Table.findAll({ where: { id: tableIds } });
+      
+      for (const table of tables) {
+        const baseMember = await BaseMember.findOne({
+          databaseId: table.database_id,
+          userId
+        });
+
+        if (!baseMember) {
+          return res.status(403).json({ 
+            message: "Access denied - you are not a member of this database" 
+          });
+        }
+
+        // Check if user has permission to delete records
+        if (baseMember.role === 'member') {
+          return res.status(403).json({ 
+            message: "Access denied - only owners and managers can delete records" 
+          });
+        }
+      }
+    }
+
+    // Delete records from PostgreSQL
+    const deletedCount = await Record.destroy({
+      where: { id: recordIds }
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${deletedCount} records`,
+      deletedCount: deletedCount
+    });
+
+  } catch (error) {
+    console.error('Error deleting multiple records:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};

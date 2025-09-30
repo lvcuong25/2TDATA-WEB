@@ -1,4 +1,4 @@
-import { Table, Column, Record } from '../models/postgres/index.js';
+import { Table, Column, Record, sequelize } from '../models/postgres/index.js';
 import { hybridDbManager } from '../config/hybrid-db.js';
 import Base from '../model/Base.js';
 import BaseMember from '../model/BaseMember.js';
@@ -430,6 +430,394 @@ export const deleteColumn = async (req, res) => {
 
   } catch (error) {
     console.error('Error deleting column:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};
+
+export const createColumnAtPosition = async (req, res) => {
+  try {
+    const { tableId, position, referenceColumnId } = req.params;
+    const { name, dataType, isRequired, isUnique, defaultValue } = req.body;
+    const userId = req.user._id;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ message: 'Column name is required' });
+    }
+
+    if (!dataType) {
+      return res.status(400).json({ message: 'Data type is required' });
+    }
+
+    if (!tableId) {
+      return res.status(400).json({ message: 'Table ID is required' });
+    }
+
+    if (!position || !['left', 'right'].includes(position)) {
+      return res.status(400).json({ message: 'Position must be "left" or "right"' });
+    }
+
+    if (!referenceColumnId) {
+      return res.status(400).json({ message: 'Reference column ID is required' });
+    }
+
+    // Verify table exists
+    const table = await Table.findByPk(tableId);
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user has access to this table
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({ 
+        databaseId: table.database_id, 
+        userId 
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+    }
+
+    // Get reference column to determine order
+    const referenceColumn = await Column.findByPk(referenceColumnId);
+    if (!referenceColumn) {
+      return res.status(404).json({ message: 'Reference column not found' });
+    }
+
+    // Calculate new order
+    let newOrder = referenceColumn.order;
+    if (position === 'right') {
+      newOrder += 1;
+    }
+
+    // Update order of existing columns
+    if (position === 'right') {
+      await Column.update(
+        { order: sequelize.literal('order + 1') },
+        { 
+          where: { 
+            table_id: tableId,
+            order: { [sequelize.Op.gte]: newOrder }
+          }
+        }
+      );
+    } else {
+      await Column.update(
+        { order: sequelize.literal('order + 1') },
+        { 
+          where: { 
+            table_id: tableId,
+            order: { [sequelize.Op.gt]: newOrder }
+          }
+        }
+      );
+    }
+
+    // Create new column
+    const newColumn = await Column.create({
+      name: name.trim(),
+      key: name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '_'),
+      data_type: dataType,
+      is_required: isRequired || false,
+      is_unique: isUnique || false,
+      default_value: defaultValue || null,
+      order: newOrder,
+      table_id: tableId,
+      user_id: userId,
+      site_id: table.site_id
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Column created successfully',
+      data: {
+        id: newColumn.id,
+        name: newColumn.name,
+        key: newColumn.key,
+        dataType: newColumn.data_type,
+        isRequired: newColumn.is_required,
+        isUnique: newColumn.is_unique,
+        defaultValue: newColumn.default_value,
+        order: newColumn.order,
+        tableId: newColumn.table_id,
+        userId: newColumn.user_id,
+        siteId: newColumn.site_id,
+        createdAt: newColumn.created_at,
+        updatedAt: newColumn.updated_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating column at position:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getColumnById = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    const column = await Column.findByPk(columnId);
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    // Check if user has access to this column's table
+    if (!isSuperAdmin(req.user)) {
+      const table = await Table.findByPk(column.table_id);
+      if (!table) {
+        return res.status(404).json({ message: 'Table not found' });
+      }
+
+      const baseMember = await BaseMember.findOne({
+        databaseId: table.database_id,
+        userId
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
+      }
+    }
+
+    // Transform to match expected format
+    const transformedColumn = {
+      id: column.id,
+      name: column.name,
+      key: column.key,
+      type: column.type,
+      dataType: column.data_type,
+      isRequired: column.is_required,
+      isUnique: column.is_unique,
+      defaultValue: column.default_value,
+      order: column.order,
+      tableId: column.table_id,
+      userId: column.user_id,
+      siteId: column.site_id,
+      createdAt: column.created_at,
+      updatedAt: column.updated_at
+    };
+
+    res.status(200).json({
+      success: true,
+      data: transformedColumn
+    });
+  } catch (error) {
+    console.error('Error fetching column:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getLinkedTableData = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { search, limit = 50, page = 1 } = req.query;
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    // Find the column
+    const column = await Column.findByPk(columnId);
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    if (column.data_type !== 'linked_table') {
+      return res.status(400).json({ message: 'Column is not a linked table type' });
+    }
+
+    if (!column.linked_table_config || !column.linked_table_config.linkedTableId) {
+      return res.status(400).json({ message: 'Linked table configuration not found' });
+    }
+
+    const linkedTableId = column.linked_table_config.linkedTableId;
+
+    // Build query for records
+    let whereClause = { table_id: linkedTableId };
+    
+    if (search) {
+      // For linked table, we'll search in the data JSONB field
+      whereClause = {
+        ...whereClause,
+        data: sequelize.where(
+          sequelize.fn('jsonb_to_text', sequelize.col('data')),
+          'ILIKE',
+          `%${search}%`
+        )
+      };
+    }
+
+    // Get records from PostgreSQL
+    const offset = (page - 1) * limit;
+    const records = await Record.findAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: offset,
+      order: [['created_at', 'DESC']]
+    });
+
+    const totalCount = await Record.count({ where: whereClause });
+
+    res.json({
+      success: true,
+      data: {
+        records: records.map(record => ({
+          id: record.id,
+          data: record.data,
+          createdAt: record.created_at,
+          updatedAt: record.updated_at
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: totalCount,
+          pages: Math.ceil(totalCount / limit)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching linked table data:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getLookupData = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { search, limit = 50, page = 1 } = req.query;
+    const userId = req.user._id;
+    const siteId = req.siteId;
+
+    // Find the column
+    const column = await Column.findByPk(columnId);
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    if (column.data_type !== 'lookup') {
+      return res.status(400).json({ message: 'Column is not a lookup type' });
+    }
+
+    if (!column.lookup_config || !column.lookup_config.linkedTableId) {
+      return res.status(400).json({ message: 'Lookup configuration not found' });
+    }
+
+    const linkedTableId = column.lookup_config.linkedTableId;
+    const displayField = column.lookup_config.displayField || 'name';
+
+    // Build query for records
+    let whereClause = { table_id: linkedTableId };
+    
+    if (search) {
+      // Search in the specific display field
+      whereClause = {
+        ...whereClause,
+        [`data.${displayField}`]: {
+          [sequelize.Op.iLike]: `%${search}%`
+        }
+      };
+    }
+
+    // Get records from PostgreSQL
+    const offset = (page - 1) * limit;
+    const records = await Record.findAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: offset,
+      order: [['created_at', 'DESC']]
+    });
+
+    const totalCount = await Record.count({ where: whereClause });
+
+    res.json({
+      success: true,
+      data: {
+        records: records.map(record => ({
+          id: record.id,
+          data: record.data,
+          createdAt: record.created_at,
+          updatedAt: record.updated_at
+        })),
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: totalCount,
+          pages: Math.ceil(totalCount / limit)
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching lookup data:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const reorderColumns = async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const { columnOrders } = req.body; // Array of { columnId, order }
+    const userId = req.user._id;
+
+    if (!tableId) {
+      return res.status(400).json({ message: 'Table ID is required' });
+    }
+
+    if (!columnOrders || !Array.isArray(columnOrders)) {
+      return res.status(400).json({ message: 'Column orders array is required' });
+    }
+
+    // Verify table exists
+    const table = await Table.findByPk(tableId);
+
+    if (!table) {
+      return res.status(404).json({ message: 'Table not found' });
+    }
+
+    // Check if user is a member of the database
+    if (!isSuperAdmin(req.user)) {
+      const baseMember = await BaseMember.findOne({
+        databaseId: table.database_id,
+        userId
+      });
+
+      if (!baseMember) {
+        return res.status(403).json({ 
+          message: "Access denied - you are not a member of this database" 
+        });
+      }
+
+      // Check if user has permission to reorder columns
+      if (baseMember.role === 'member') {
+        return res.status(403).json({ 
+          message: "Access denied - only owners and managers can reorder columns" 
+        });
+      }
+    }
+
+    // Update column orders in PostgreSQL
+    for (const { columnId, order } of columnOrders) {
+      await Column.update(
+        { order: order },
+        { where: { id: columnId, table_id: tableId } }
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Columns reordered successfully'
+    });
+
+  } catch (error) {
+    console.error('Error reordering columns:', error);
     res.status(500).json({ 
       message: 'Internal server error',
       error: error.message 
