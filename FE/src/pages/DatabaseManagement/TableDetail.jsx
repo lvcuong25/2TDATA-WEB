@@ -141,6 +141,18 @@ const TableDetail = () => {
       setShowEditColumn(false);
     }
   }, [tableId]);
+
+  // Reset sort, filter, and group rules when tableId changes
+  useEffect(() => {
+    setSortRules([]);
+    setShowSortDropdown(false);
+    setSortDropdownPosition({ x: 0, y: 0 });
+    setSortFieldSearch('');
+    setCurrentSortField('');
+    setFilterRules([]);
+    setGroupRules([]);
+    setExpandedGroups(new Set());
+  }, [tableId]);
   const navigate = useNavigate();
   const { 
     selectedRowKeys, 
@@ -1442,7 +1454,9 @@ const TableDetail = () => {
   };
 
   const handleUpdateSortRule = (index, field, order) => {
+    console.log('🔄 Frontend: handleUpdateSortRule called:', { index, field, order });
     const newRules = updateSortRule(sortRules, index, field, order);
+    console.log('🔄 Frontend: New sort rules:', newRules);
     setSortRules(newRules);
   };
 
