@@ -77,7 +77,13 @@ export const createRecord = async (req, res) => {
 export const getRecords = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { page = 1, limit = 50, sortBy = 'created_at', sortOrder = 'DESC' } = req.query;
+    const { 
+      page = 1, 
+      limit = 50, 
+      sortRules, 
+      filterRules, 
+      forceAscending = 'false' 
+    } = req.query;
     const userId = req.user._id;
 
     if (!tableId) {
@@ -103,15 +109,149 @@ export const getRecords = async (req, res) => {
       }
     }
 
+    // Parse sort rules
+    let parsedSortRules = [];
+    if (sortRules) {
+      try {
+        parsedSortRules = JSON.parse(sortRules);
+      } catch (error) {
+        console.error('Error parsing sort rules:', error);
+        parsedSortRules = [];
+      }
+    }
+
+    // Parse filter rules
+    let parsedFilterRules = [];
+    if (filterRules) {
+      try {
+        parsedFilterRules = JSON.parse(filterRules);
+      } catch (error) {
+        console.error('Error parsing filter rules:', error);
+        parsedFilterRules = [];
+      }
+    }
+
     // Calculate pagination
     const offset = (page - 1) * limit;
 
+    // Build order clause for PostgreSQL
+    let orderClause = [];
+    
+    if (parsedSortRules.length > 0) {
+      // Apply multiple sort rules
+      for (const rule of parsedSortRules) {
+        if (rule.field && rule.order) {
+          // Map sort field names to PostgreSQL column names
+          const sortFieldMap = {
+            'createdAt': 'created_at',
+            'updatedAt': 'updated_at',
+            'id': 'id',
+            '_id': 'id'
+          };
+          
+          const mappedSortBy = sortFieldMap[rule.field] || rule.field;
+          
+          if (sortFieldMap[rule.field]) {
+            // Sort by system fields
+            orderClause.push([mappedSortBy, rule.order.toUpperCase()]);
+          } else {
+            // Sort by data fields (JSONB)
+            const sequelize = (await import('../models/postgres/index.js')).sequelize;
+            
+            // For data fields, we need to handle different data types properly
+            // Use LPAD to ensure proper numeric sorting for numbers
+            orderClause.push([
+              sequelize.literal(`
+                CASE 
+                  WHEN data->>'${rule.field}' ~ '^[0-9]+\.?[0-9]*$' 
+                  THEN LPAD(data->>'${rule.field}', 20, '0')
+                  ELSE data->>'${rule.field}'
+                END
+              `), 
+              rule.order.toUpperCase()
+            ]);
+          }
+        }
+      }
+    } else {
+      // Default sorting by creation time
+      if (forceAscending === 'true') {
+        orderClause = [['created_at', 'ASC']]; // Ascending: oldest first, newest last
+      } else {
+        orderClause = [['created_at', 'DESC']]; // Descending: newest first, oldest last
+      }
+    }
+
+    // Build where clause for filtering
+    let whereClause = { table_id: tableId };
+    
+    if (parsedFilterRules.length > 0) {
+      const sequelize = (await import('../models/postgres/index.js')).sequelize;
+      const filterConditions = [];
+      
+      for (const rule of parsedFilterRules) {
+        if (rule.field && rule.operator && rule.value !== undefined) {
+          let condition;
+          
+          switch (rule.operator) {
+            case 'equals':
+              condition = sequelize.literal(`data->>'${rule.field}' = '${rule.value}'`);
+              break;
+            case 'not_equals':
+              condition = sequelize.literal(`data->>'${rule.field}' != '${rule.value}'`);
+              break;
+            case 'contains':
+              condition = sequelize.literal(`data->>'${rule.field}' ILIKE '%${rule.value}%'`);
+              break;
+            case 'not_contains':
+              condition = sequelize.literal(`data->>'${rule.field}' NOT ILIKE '%${rule.value}%'`);
+              break;
+            case 'starts_with':
+              condition = sequelize.literal(`data->>'${rule.field}' ILIKE '${rule.value}%'`);
+              break;
+            case 'ends_with':
+              condition = sequelize.literal(`data->>'${rule.field}' ILIKE '%${rule.value}'`);
+              break;
+            case 'is_empty':
+              condition = sequelize.literal(`(data->>'${rule.field}' IS NULL OR data->>'${rule.field}' = '')`);
+              break;
+            case 'is_not_empty':
+              condition = sequelize.literal(`(data->>'${rule.field}' IS NOT NULL AND data->>'${rule.field}' != '')`);
+              break;
+            case 'greater_than':
+              condition = sequelize.literal(`CAST(data->>'${rule.field}' AS NUMERIC) > ${rule.value}`);
+              break;
+            case 'less_than':
+              condition = sequelize.literal(`CAST(data->>'${rule.field}' AS NUMERIC) < ${rule.value}`);
+              break;
+            case 'greater_than_or_equal':
+              condition = sequelize.literal(`CAST(data->>'${rule.field}' AS NUMERIC) >= ${rule.value}`);
+              break;
+            case 'less_than_or_equal':
+              condition = sequelize.literal(`CAST(data->>'${rule.field}' AS NUMERIC) <= ${rule.value}`);
+              break;
+            default:
+              continue;
+          }
+          
+          if (condition) {
+            filterConditions.push(condition);
+          }
+        }
+      }
+      
+      if (filterConditions.length > 0) {
+        whereClause = {
+          ...whereClause,
+          [sequelize.Op.and]: filterConditions
+        };
+      }
+    }
+
     // Get records from PostgreSQL
     const { count, rows: records } = await Record.findAndCountAll({
-      where: {
-        table_id: tableId
-      },
-      order: [[sortBy, sortOrder.toUpperCase()]],
+      where: whereClause,
+      order: orderClause,
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -124,12 +264,15 @@ export const getRecords = async (req, res) => {
       siteId: record.site_id,
       data: record.data,
       createdAt: record.created_at,
-      updatedAt: record.updated_at
+      updatedAt: record.updated_at,
+      // Add camelCase versions for frontend compatibility
+      created_at: record.created_at,
+      updated_at: record.updated_at
     }));
 
     res.json({
-      message: 'Records retrieved successfully',
-      records: transformedRecords,
+      success: true,
+      data: transformedRecords,
       pagination: {
         total: count,
         page: parseInt(page),
