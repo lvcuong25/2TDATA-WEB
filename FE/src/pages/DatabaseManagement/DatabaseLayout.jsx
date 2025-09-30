@@ -563,6 +563,8 @@ const DatabaseLayout = () => {
       toast.success('Database deleted successfully');
       queryClient.invalidateQueries(['databases']);
       queryClient.invalidateQueries(['allTables']);
+      // Redirect to database list after successful deletion
+      navigate('/database');
     },
     onError: (error) => {
       console.error('Error deleting database:', error);

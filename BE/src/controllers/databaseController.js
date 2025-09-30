@@ -3,6 +3,11 @@ import User from '../model/User.js';
 import BaseMember from '../model/BaseMember.js';
 import BaseRole from '../model/BaseRole.js';
 import { isSuperAdmin, hasDatabaseAccess, getUserDatabaseRole, canManageDatabase } from '../utils/permissionUtils.js';
+import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
+import TablePermission from '../model/TablePermission.js';
+import ColumnPermission from '../model/ColumnPermission.js';
+import RecordPermission from '../model/RecordPermission.js';
+import CellPermission from '../model/CellPermission.js';
 
 // Create database
 export const createDatabase = async (req, res) => {
@@ -206,7 +211,11 @@ export const updateDatabase = async (req, res) => {
 export const deleteDatabase = async (req, res) => {
   try {
     const { databaseId } = req.params;
-    const currentUserId = req.user._id;
+    const currentUserId = req.user?._id;
+    
+    if (!currentUserId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
 
     const database = await Database.findById(databaseId);
     
@@ -226,10 +235,30 @@ export const deleteDatabase = async (req, res) => {
       }
     }
 
-    // Delete all related BaseMember entries
+    // Delete all related data in cascade order
+    
+    // 1. Delete all records first (to avoid foreign key constraints)
+    const tables = await PostgresTable.findAll({ where: { database_id: databaseId } });
+    for (const table of tables) {
+      // Delete all records in this table
+      await PostgresRecord.destroy({ where: { table_id: table.id } });
+      // Delete all columns in this table
+      await PostgresColumn.destroy({ where: { table_id: table.id } });
+    }
+    
+    // 2. Delete all tables
+    await PostgresTable.destroy({ where: { database_id: databaseId } });
+    
+    // 3. Delete all permissions related to this database
+    await TablePermission.deleteMany({ 'databaseId._id': databaseId });
+    await ColumnPermission.deleteMany({ 'databaseId._id': databaseId });
+    await RecordPermission.deleteMany({ 'databaseId._id': databaseId });
+    await CellPermission.deleteMany({ 'databaseId._id': databaseId });
+    
+    // 4. Delete all related BaseMember entries
     await BaseMember.deleteMany({ databaseId: databaseId });
     
-    // Delete the database
+    // 5. Finally delete the database
     await Database.findByIdAndDelete(databaseId);
     
     res.status(200).json({ success: true, message: 'Database deleted successfully' });

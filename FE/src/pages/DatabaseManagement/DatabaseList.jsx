@@ -121,6 +121,7 @@ const DatabaseList = () => {
     onSuccess: () => {
       toast.success('Database deleted successfully');
       queryClient.invalidateQueries(['databases']);
+      // Note: No redirect needed here since we're already on the database list page
     },
     onError: (error) => {
       console.error('Error deleting database:', error);
