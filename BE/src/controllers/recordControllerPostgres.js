@@ -237,9 +237,12 @@ export const getRecords = async (req, res) => {
     const { 
       page = 1, 
       limit = 50, 
-      sortRules, 
-      filterRules, 
-      forceAscending = 'false' 
+      sortBy = 'created_at', 
+      sortOrder = 'DESC',
+      sortField,
+      sortDirection = 'asc',
+      sortRules,
+      forceAscending
     } = req.query;
     const userId = req.user._id;
 
@@ -266,155 +269,122 @@ export const getRecords = async (req, res) => {
       }
     }
 
-    // Parse sort rules
+    // Get columns to determine data types for sorting
+    const columns = await Column.findAll({
+      where: { table_id: tableId },
+      order: [['order', 'ASC']]
+    });
+
+    // Transform columns to match expected format
+    const transformedColumns = columns.map(column => ({
+      id: column.id,
+      name: column.name,
+      key: column.key,
+      dataType: column.data_type,
+      order: column.order
+    }));
+
+    // Calculate pagination
+    const offset = (page - 1) * limit;
+
+    // Parse sort rules if provided
     let parsedSortRules = [];
     if (sortRules) {
       try {
         parsedSortRules = JSON.parse(sortRules);
+        console.log('📊 Parsed sort rules:', parsedSortRules);
       } catch (error) {
         console.error('Error parsing sort rules:', error);
         parsedSortRules = [];
       }
     }
 
-    // Parse filter rules
-    let parsedFilterRules = [];
-    if (filterRules) {
-      try {
-        parsedFilterRules = JSON.parse(filterRules);
-      } catch (error) {
-        console.error('Error parsing filter rules:', error);
-        parsedFilterRules = [];
-      }
-    }
-
-    // Calculate pagination
-    const offset = (page - 1) * limit;
-
-    // Build order clause for PostgreSQL
-    let orderClause = [];
+    // Determine primary sort field and direction
+    let primarySortField = sortField;
+    let primarySortDirection = sortDirection;
     
     if (parsedSortRules.length > 0) {
-      // Apply multiple sort rules
-      for (const rule of parsedSortRules) {
-        if (rule.field && rule.order) {
-          // Map sort field names to PostgreSQL column names
-          const sortFieldMap = {
-            'createdAt': 'created_at',
-            'updatedAt': 'updated_at',
-            'id': 'id',
-            '_id': 'id'
-          };
-          
-          const mappedSortBy = sortFieldMap[rule.field] || rule.field;
-          
-          if (sortFieldMap[rule.field]) {
-            // Sort by system fields
-            orderClause.push([mappedSortBy, rule.order.toUpperCase()]);
-          } else {
-            // Sort by data fields (JSONB)
-            const sequelize = (await import('../models/postgres/index.js')).sequelize;
-            
-            // For data fields, we need to handle different data types properly
-            // Use LPAD to ensure proper numeric sorting for numbers
-            orderClause.push([
-              sequelize.literal(`
-                CASE 
-                  WHEN data->>'${rule.field}' ~ '^[0-9]+\.?[0-9]*$' 
-                  THEN LPAD(data->>'${rule.field}', 20, '0')
-                  ELSE data->>'${rule.field}'
-                END
-              `), 
-              rule.order.toUpperCase()
-            ]);
-          }
-        }
-      }
+      // Use the first sort rule as primary
+      const firstRule = parsedSortRules[0];
+      primarySortField = firstRule.field;
+      primarySortDirection = firstRule.order === 'desc' ? 'desc' : 'asc';
+      console.log('🎯 Using sort rule:', { field: primarySortField, direction: primarySortDirection });
+    } else if (forceAscending === 'true') {
+      // Default to ascending when no sort rules and forceAscending is true
+      primarySortField = 'created_at';
+      primarySortDirection = 'asc';
+      console.log('🔄 Using force ascending:', { field: primarySortField, direction: primarySortDirection });
     } else {
-      // Default sorting by creation time
-      if (forceAscending === 'true') {
-        orderClause = [['created_at', 'ASC']]; // Ascending: oldest first, newest last
-      } else {
-        orderClause = [['created_at', 'DESC']]; // Descending: newest first, oldest last
-      }
+      console.log('📋 Using default sort:', { field: primarySortField, direction: primarySortDirection });
     }
 
-    // Build where clause for filtering
-    let whereClause = { table_id: tableId };
+    // Determine if we need to sort by data field or system field
+    const isDataField = primarySortField && primarySortField !== 'created_at' && primarySortField !== 'updated_at' && primarySortField !== '_id';
     
-    if (parsedFilterRules.length > 0) {
-      const sequelize = (await import('../models/postgres/index.js')).sequelize;
-      const filterConditions = [];
+    let records, count;
+    
+    if (isDataField) {
+      // For data fields, try to use PostgreSQL JSONB sorting first
+      const column = transformedColumns.find(col => col.name === primarySortField || col.key === primarySortField);
       
-      for (const rule of parsedFilterRules) {
-        if (rule.field && rule.operator && rule.value !== undefined) {
-          let condition;
-          
-          switch (rule.operator) {
-            case 'equals':
-              condition = sequelize.literal(`data->>'${rule.field}' = '${rule.value}'`);
-              break;
-            case 'not_equals':
-              condition = sequelize.literal(`data->>'${rule.field}' != '${rule.value}'`);
-              break;
-            case 'contains':
-              condition = sequelize.literal(`data->>'${rule.field}' ILIKE '%${rule.value}%'`);
-              break;
-            case 'not_contains':
-              condition = sequelize.literal(`data->>'${rule.field}' NOT ILIKE '%${rule.value}%'`);
-              break;
-            case 'starts_with':
-              condition = sequelize.literal(`data->>'${rule.field}' ILIKE '${rule.value}%'`);
-              break;
-            case 'ends_with':
-              condition = sequelize.literal(`data->>'${rule.field}' ILIKE '%${rule.value}'`);
-              break;
-            case 'is_empty':
-              condition = sequelize.literal(`(data->>'${rule.field}' IS NULL OR data->>'${rule.field}' = '')`);
-              break;
-            case 'is_not_empty':
-              condition = sequelize.literal(`(data->>'${rule.field}' IS NOT NULL AND data->>'${rule.field}' != '')`);
-              break;
-            case 'greater_than':
-              condition = sequelize.literal(`CAST(data->>'${rule.field}' AS NUMERIC) > ${rule.value}`);
-              break;
-            case 'less_than':
-              condition = sequelize.literal(`CAST(data->>'${rule.field}' AS NUMERIC) < ${rule.value}`);
-              break;
-            case 'greater_than_or_equal':
-              condition = sequelize.literal(`CAST(data->>'${rule.field}' AS NUMERIC) >= ${rule.value}`);
-              break;
-            case 'less_than_or_equal':
-              condition = sequelize.literal(`CAST(data->>'${rule.field}' AS NUMERIC) <= ${rule.value}`);
-              break;
-            default:
-              continue;
-          }
-          
-          if (condition) {
-            filterConditions.push(condition);
-          }
-        }
-      }
-      
-      if (filterConditions.length > 0) {
-        whereClause = {
-          ...whereClause,
-          [sequelize.Op.and]: filterConditions
-        };
-      }
-    }
+      if (column && ['number', 'currency', 'percent', 'rating'].includes(column.dataType)) {
+        // For numeric types, use PostgreSQL JSONB numeric sorting
+        const result = await Record.findAndCountAll({
+          where: { table_id: tableId },
+          order: [
+            [sequelize.literal(`(data->>'${primarySortField}')::numeric`), 
+             primarySortDirection.toUpperCase()]
+          ],
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        });
+        
+        count = result.count;
+        records = result.rows.map(record => ({
+          _id: record.id,
+          tableId: record.table_id,
+          userId: record.user_id,
+          siteId: record.site_id,
+          data: record.data,
+          createdAt: record.created_at,
+          updatedAt: record.updated_at
+        }));
+      } else if (column && ['date', 'datetime'].includes(column.dataType)) {
+        // For date types, use PostgreSQL JSONB date sorting
+        const result = await Record.findAndCountAll({
+          where: { table_id: tableId },
+          order: [
+            [sequelize.literal(`(data->>'${primarySortField}')::timestamp`), 
+             primarySortDirection.toUpperCase()]
+          ],
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        });
+        
+        count = result.count;
+        records = result.rows.map(record => ({
+          _id: record.id,
+          tableId: record.table_id,
+          userId: record.user_id,
+          siteId: record.site_id,
+          data: record.data,
+          createdAt: record.created_at,
+          updatedAt: record.updated_at
+        }));
+      } else {
+        // For text and other types, use PostgreSQL JSONB text sorting
+        const result = await Record.findAndCountAll({
+          where: { table_id: tableId },
+          order: [
+            [sequelize.literal(`data->>'${primarySortField}'`), 
+             primarySortDirection.toUpperCase()]
+          ],
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        });
 
-    // Get records from PostgreSQL
-    const { count, rows: records } = await Record.findAndCountAll({
-      where: whereClause,
-      order: orderClause,
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
-
-    // Transform records to match expected format
-    const transformedRecords = records.map(record => ({
+        count = result.count;
+        records = result.rows.map(record => ({
       _id: record.id,
       tableId: record.table_id,
       userId: record.user_id,
@@ -423,10 +393,31 @@ export const getRecords = async (req, res) => {
       createdAt: record.created_at,
       updatedAt: record.updated_at
     }));
+      }
+    } else {
+      // For system fields, use database sorting
+      const result = await Record.findAndCountAll({
+        where: { table_id: tableId },
+        order: [[primarySortField || sortBy || 'created_at', primarySortDirection.toUpperCase()]],
+        limit: parseInt(limit),
+        offset: parseInt(offset)
+      });
+      
+      count = result.count;
+      records = result.rows.map(record => ({
+        _id: record.id,
+        tableId: record.table_id,
+        userId: record.user_id,
+        siteId: record.site_id,
+        data: record.data,
+        createdAt: record.created_at,
+        updatedAt: record.updated_at
+      }));
+    }
 
     res.json({
-      success: true,
-      data: transformedRecords,
+      message: 'Records retrieved successfully',
+      records: records,
       pagination: {
         total: count,
         page: parseInt(page),
