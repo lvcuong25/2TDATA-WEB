@@ -208,6 +208,7 @@ export const getRecordsByTableIdSimple = async (req, res) => {
     console.log('📋 Query executed with order:', orderClause);
     console.log('📊 Records count:', count, 'Returned:', records.length);
 
+
     // Transform PostgreSQL data to match frontend expected format
     const transformedRecords = records.map(record => ({
       _id: record.id,

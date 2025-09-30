@@ -33,6 +33,9 @@ const Record = sequelize.define('Record', {
   }
 }, {
   tableName: 'records',
+  timestamps: true, // Enable automatic timestamps
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     {
       fields: ['table_id', 'created_at']
