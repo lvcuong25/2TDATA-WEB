@@ -394,6 +394,14 @@ const TableDetail = () => {
     deleteAllRecordsMutation,
     updateColumnMutation,
     deleteColumnMutation,
+    // Permission checks
+    canViewTable,
+    canEditStructure,
+    canEditData,
+    canAddData,
+    canAddView,
+    canEditView,
+    tablePermissionsLoading,
   } = useTableData(tableId, databaseId, sortRules, filterRules, isFilterActive, tableContext, modalCallbacks);
 
   // Load group preferences from backend when data is available
@@ -1740,6 +1748,12 @@ const TableDetail = () => {
             toggleFieldVisibility={toggleFieldVisibility}
             toggleSystemFields={toggleSystemFields}
             getAllColumnsWithSystem={getAllColumnsWithSystem}
+            // Permission checks
+            canEditStructure={canEditStructure}
+            canAddData={canAddData}
+            canEditData={canEditData}
+            canAddView={canAddView}
+            canEditView={canEditView}
             getVisibleColumns={getVisibleColumns}
             allColumnsWithSystem={allColumnsWithSystem}
             fieldSearch={fieldSearch}
@@ -1847,6 +1861,9 @@ const TableDetail = () => {
             // Permission props
             cellPermissions={cellPermissionsResponse?.data || []}
             currentUser={JSON.parse(localStorage.getItem('user') || '{}')}
+            canEditStructure={canEditStructure}
+            canAddData={canAddData}
+            canEditData={canEditData}
             userRole={getUserDatabaseRole(databaseMembersResponse?.data || [], JSON.parse(localStorage.getItem('user') || '{}'))}
             // Debug props
             cellPermissionsResponse={cellPermissionsResponse}

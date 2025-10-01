@@ -6,7 +6,8 @@ import {
   updateTablePermission,
   deleteTablePermission,
   getUserTablePermissions,
-  getDatabaseMembers
+  getDatabaseMembers,
+  getAvailablePermissionTargets
 } from '../controllers/permissionController.js';
 
 const router = Router();
@@ -17,11 +18,12 @@ router.use(requireAuthWithCookie);
 // Table Permission Routes
 router.post('/tables/:tableId/permissions', createTablePermission);
 router.get('/tables/:tableId/permissions', getTablePermissions);
+router.get('/tables/:tableId/available-targets', getAvailablePermissionTargets);
 router.put('/permissions/:permissionId', updateTablePermission);
 router.delete('/permissions/:permissionId', deleteTablePermission);
 router.get('/tables/:tableId/user-permissions', getUserTablePermissions);
 
 // Database Members Routes
-router.get('/databases/:databaseId/members', getDatabaseMembers);
+router.get('/database/databases/:databaseId/members', getDatabaseMembers);
 
 export default router;

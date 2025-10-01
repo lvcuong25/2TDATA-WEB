@@ -1,0 +1,161 @@
+# ===========================================
+# 2TDATA-WEB Backend Environment Variables Template
+# Copy this file to .env and update the values
+# ===========================================
+
+# ===========================================
+# DATABASE CONFIGURATION
+# ===========================================
+# Database system selection
+USE_POSTGRES=true
+USE_MONGO=true
+
+# PostgreSQL Configuration
+POSTGRES_DB=2tdata_postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+
+# MongoDB connection string
+DB_URI=mongodb://localhost:27017/2TDATA-P
+MONGODB_URI=mongodb://localhost:27017/2TDATA-P
+
+# ===========================================
+# SERVER CONFIGURATION
+# ===========================================
+# Server port
+PORT=3004
+
+# Environment mode (development, production, test)
+NODE_ENV=development
+
+# ===========================================
+# AUTHENTICATION & SECURITY
+# ===========================================
+# JWT Configuration
+SECRET_KEY="your_secret_key_here"
+JWT_SECRET="your_secret_key_here"
+JWT_EXPIRES_IN=24h
+
+# Security
+BCRYPT_SALT_ROUNDS=12
+
+# ===========================================
+# DOMAIN & CORS CONFIGURATION
+# ===========================================
+# Main domain for production
+MAIN_DOMAIN=yourdomain.com
+DEFAULT_DOMAIN=localhost:3006
+
+# Frontend URL
+FRONTEND_URL=http://localhost:3006
+
+# Allowed origins for CORS (comma-separated)
+ALLOWED_ORIGINS=http://localhost:3006,https://yourdomain.com
+
+# ===========================================
+# METABASE CONFIGURATION (Optional)
+# ===========================================
+# Metabase URL for analytics
+METABASE_URL=http://localhost:3000
+METABASE_USERNAME=admin@yourdomain.com
+METABASE_PASSWORD=your_metabase_password
+
+# ===========================================
+# FILE UPLOAD CONFIGURATION
+# ===========================================
+# Maximum file size for uploads (in bytes)
+MAX_FILE_SIZE=20971520
+
+# Upload directory
+UPLOAD_DIR=./uploads
+
+# ===========================================
+# EMAIL CONFIGURATION
+# ===========================================
+# Email configuration for OTP and notifications
+SEND_OTP_EMAIL="your_email_here"
+SEND_OTP_EMAIL_PASSWORD="your_email_app_password"
+
+# ===========================================
+# REDIS CONFIGURATION (Optional)
+# ===========================================
+# Redis connection for caching and sessions
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password
+
+# ===========================================
+# LOGGING CONFIGURATION
+# ===========================================
+# Log level (error, warn, info, debug)
+LOG_LEVEL=info
+
+# ===========================================
+# RATE LIMITING
+# ===========================================
+# Rate limiting configuration
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# ===========================================
+# PRODUCTION SPECIFIC SETTINGS
+# ===========================================
+# SSL/TLS configuration
+SSL_CERT_PATH=/path/to/ssl/cert.pem
+SSL_KEY_PATH=/path/to/ssl/private.key
+
+# Trust proxy (for reverse proxy setups)
+TRUST_PROXY=true
+
+# ===========================================
+# MONITORING & HEALTH CHECKS
+# ===========================================
+# Health check endpoint
+HEALTH_CHECK_PATH=/api/health
+
+# ===========================================
+# DEVELOPMENT SETTINGS
+# ===========================================
+# Enable debug mode
+DEBUG=true
+
+# Enable detailed error logging
+VERBOSE_ERRORS=true
+
+# ===========================================
+# PRODUCTION ENVIRONMENT EXAMPLE
+# ===========================================
+# For production deployment, use these values:
+
+# NODE_ENV=production
+# PORT=3004
+# DB_URI=mongodb://prod_user:secure_password@prod_mongodb_host:27017/2TDATA_PROD
+# JWT_SECRET=very_long_and_secure_jwt_secret_key_for_production_use_only
+# MAIN_DOMAIN=yourdomain.com
+# FRONTEND_URL=https://yourdomain.com
+# ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+# TRUST_PROXY=true
+# LOG_LEVEL=warn
+# DEBUG=false
+# VERBOSE_ERRORS=false
+
+# ===========================================
+# NOTES FOR PRODUCTION DEPLOYMENT
+# ===========================================
+# 1. Change all default passwords and secrets
+# 2. Use strong, unique JWT secrets (at least 32 characters)
+# 3. Set NODE_ENV=production
+# 4. Use HTTPS in production
+# 5. Configure proper CORS origins
+# 6. Set up proper logging and monitoring
+# 7. Use environment-specific database credentials
+# 8. Configure SSL certificates
+# 9. Set up proper backup strategies
+# 10. Configure rate limiting appropriately
+# 11. Use environment variables for sensitive data
+# 12. Set up proper error handling and logging
+# 13. Configure reverse proxy (nginx/apache)
+# 14. Set up process manager (PM2)
+# 15. Configure health checks and monitoring

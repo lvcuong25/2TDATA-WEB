@@ -77,6 +77,41 @@ export const createTable = async (req, res) => {
     });
 
     // Create metabase table
+    // Tạo default permissions cho tất cả members
+    try {
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      const mongoose = (await import('mongoose')).default;
+      
+      const defaultPermission = new TablePermission({
+        tableId: newTable.id, // Use actual table UUID
+        databaseId: new mongoose.Types.ObjectId(actualBaseId), // Convert to ObjectId
+        targetType: 'all_members',
+        name: newTable.name, // Thêm field name required
+        permissions: {
+          canView: true,
+          canEditStructure: true, // Default: bật tất cả quyền cho tất cả thành viên
+          canEditData: true,
+          canAddData: true,
+          isHidden: false
+        },
+        viewPermissions: {
+          canView: true,
+          canAddView: true, // Default: bật tất cả quyền cho tất cả thành viên
+          canEditView: true, // Default: bật tất cả quyền cho tất cả thành viên
+          isHidden: false
+        },
+        createdBy: new mongoose.Types.ObjectId(userId), // Convert to ObjectId
+        isDefault: true, // Đánh dấu là permission mặc định
+        note: 'Default permission created automatically when table was created (postgres)'
+      });
+
+      await defaultPermission.save();
+      console.log('✅ Default table permission created successfully (postgres)');
+    } catch (permissionError) {
+      console.error('❌ Error creating default table permission (postgres):', permissionError);
+      // Không throw error để không ảnh hưởng đến việc tạo table
+    }
+
     try {
       await createMetabaseTable(newTable.id, name.trim(), base.organizationId?.toString());
     } catch (metabaseError) {

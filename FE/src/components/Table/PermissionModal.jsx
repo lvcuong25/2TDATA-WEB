@@ -28,7 +28,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axiosConfig from '../../api/axiosConfig';
 import { toast } from 'react-toastify';
 
-const { TabPane } = Tabs;
+// const { TabPane } = Tabs; // Deprecated, using items prop instead
 const { Option } = Select;
 
 const PermissionModal = ({ 
@@ -45,34 +45,81 @@ const PermissionModal = ({
   const [permissionsData, setPermissionsData] = useState([]);
   const queryClient = useQueryClient();
 
-  // Lấy danh sách thành viên database
-  const { data: membersResponse, isLoading: membersLoading } = useQuery({
-    queryKey: ['database-members', databaseId],
+  // Lấy danh sách users/roles có thể tạo quyền (chưa có quyền)
+  const { data: availableTargetsResponse, isLoading: availableTargetsLoading } = useQuery({
+    queryKey: ['available-permission-targets', tableId],
     queryFn: async () => {
-      const response = await axiosConfig.get(`/permissions/database/databases/${databaseId}/members`);
+      const response = await axiosConfig.get(`/permissions/tables/${tableId}/available-targets`);
       return response.data;
     },
-    enabled: !!databaseId && visible
+    enabled: !!tableId && visible
   });
   
-  // Extract members array from response
-  const members = membersResponse?.data || [];
+  // Extract available targets from response
+  const availableUsers = availableTargetsResponse?.data?.users || [];
+  const availableRoles = availableTargetsResponse?.data?.roles || [];
+  const canCreateAllMembers = availableTargetsResponse?.data?.canCreateAllMembers || false;
 
   // Lấy danh sách quyền hiện tại
   const { data: permissions, isLoading: permissionsLoading } = useQuery({
     queryKey: ['table-permissions', tableId],
     queryFn: async () => {
+      console.log('🔍 PermissionModal - fetching permissions for tableId:', tableId);
       const response = await axiosConfig.get(`/permissions/tables/${tableId}/permissions`);
-      console.log('PermissionModal - permissions loaded:', response.data.data);
-      return response.data.data;
+      console.log('🔍 PermissionModal - full response:', response);
+      console.log('🔍 PermissionModal - response.data:', response.data);
+      console.log('🔍 PermissionModal - response.data.data:', response.data.data);
+      console.log('🔍 PermissionModal - response.data.data type:', typeof response.data.data);
+      console.log('🔍 PermissionModal - response.data.data isArray:', Array.isArray(response.data.data));
+      // Ensure we always return an array
+      const result = Array.isArray(response.data.data) ? response.data.data : [];
+      console.log('🔍 PermissionModal - returning result:', result);
+      console.log('🔍 PermissionModal - result type:', typeof result);
+      console.log('🔍 PermissionModal - result isArray:', Array.isArray(result));
+      return result;
     },
-    enabled: !!tableId && visible
+    enabled: !!tableId && visible,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    onSuccess: (data) => {
+      console.log('🔍 PermissionModal - query onSuccess:', data);
+    },
+    onError: (error) => {
+      console.error('🔍 PermissionModal - query onError:', error);
+    }
   });
 
   // Initialize permissionsData when permissions are loaded
   useEffect(() => {
+    console.log('🔍 PermissionModal - useEffect permissions:', {
+      permissions,
+      isArray: Array.isArray(permissions),
+      length: permissions?.length,
+      tableId,
+      visible,
+      enabled: !!tableId && visible
+    });
+    
+    // Handle both array and object responses
+    let permissionsArray = [];
+    
     if (permissions) {
-      const initializedPermissions = permissions.map(permission => {
+      if (Array.isArray(permissions)) {
+        // Direct array response
+        permissionsArray = permissions;
+      } else if (permissions.data && Array.isArray(permissions.data)) {
+        // Object with data property containing array
+        permissionsArray = permissions.data;
+      } else if (permissions.success && permissions.data && Array.isArray(permissions.data)) {
+        // Full API response format
+        permissionsArray = permissions.data;
+      }
+    }
+    
+    console.log('🔍 PermissionModal - processed permissionsArray:', permissionsArray);
+    
+    if (permissionsArray.length > 0) {
+      const initializedPermissions = permissionsArray.map(permission => {
         return {
           ...permission,
           viewPermissions: permission.viewPermissions || {
@@ -82,9 +129,13 @@ const PermissionModal = ({
           }
         };
       });
+      console.log('🔍 PermissionModal - setting permissionsData:', initializedPermissions);
       setPermissionsData(initializedPermissions);
+    } else {
+      console.log('🔍 PermissionModal - not setting permissionsData, permissionsArray empty:', permissionsArray);
+      setPermissionsData([]);
     }
-  }, [permissions]);
+  }, [permissions, tableId, visible]);
 
   // Reset permissionsData when modal closes
   useEffect(() => {
@@ -311,13 +362,19 @@ const PermissionModal = ({
       footer={null}
       destroyOnClose
     >
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane tab="Tạo quyền mới" key="create">
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-          >
+      <Tabs 
+        activeKey={activeTab} 
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'create',
+            label: 'Tạo quyền mới',
+            children: (
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={handleSubmit}
+              >
             <Form.Item
               name="name"
               label="Tên quyền"
@@ -345,21 +402,52 @@ const PermissionModal = ({
                 value={targetType}
                 onChange={setTargetType}
                 placeholder="Chọn đối tượng phân quyền"
+                loading={availableTargetsLoading}
+                disabled={availableUsers.length === 0 && availableRoles.length === 0 && !canCreateAllMembers}
               >
-                <Option value="specific_user">
-                  <Space>
-                    <UserOutlined />
-                    <span>Thành viên cụ thể</span>
-                  </Space>
-                </Option>
-                <Option value="specific_role">
-                  <Space>
-                    <CrownOutlined />
-                    <span>Vai trò cụ thể</span>
-                  </Space>
-                </Option>
+                {availableUsers.length > 0 && (
+                  <Option value="specific_user">
+                    <Space>
+                      <UserOutlined />
+                      <span>Thành viên cụ thể ({availableUsers.length} người có thể chọn)</span>
+                    </Space>
+                  </Option>
+                )}
+                {availableRoles.length > 0 && (
+                  <Option value="specific_role">
+                    <Space>
+                      <CrownOutlined />
+                      <span>Vai trò cụ thể ({availableRoles.length} vai trò có thể chọn)</span>
+                    </Space>
+                  </Option>
+                )}
+                {canCreateAllMembers && (
+                  <Option value="all_members">
+                    <Space>
+                      <TeamOutlined />
+                      <span>Tất cả thành viên</span>
+                    </Space>
+                  </Option>
+                )}
+                {!availableTargetsLoading && availableUsers.length === 0 && availableRoles.length === 0 && !canCreateAllMembers && (
+                  <Option value="" disabled>
+                    <Space>
+                      <span style={{ color: '#999' }}>Không có đối tượng nào có thể phân quyền</span>
+                    </Space>
+                  </Option>
+                )}
               </Select>
             </Form.Item>
+
+            {!availableTargetsLoading && availableUsers.length === 0 && availableRoles.length === 0 && !canCreateAllMembers && (
+              <Alert
+                message="Không có đối tượng nào có thể phân quyền"
+                description="Tất cả thành viên và vai trò đã có quyền hoặc không thể phân quyền theo quy tắc hệ thống."
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
 
             {targetType === 'specific_user' && (
               <Form.Item
@@ -371,26 +459,21 @@ const PermissionModal = ({
                   value={selectedUser}
                   onChange={setSelectedUser}
                   placeholder="Chọn thành viên"
-                  loading={membersLoading}
+                  loading={availableTargetsLoading}
+                  disabled={availableUsers.length === 0}
                 >
-                  {members?.map(member => {
-                    // Skip if member or userId is undefined
-                    if (!member || !member.userId) {
-                      return null;
-                    }
-                    return (
-                      <Option key={member.userId._id} value={member.userId._id}>
-                        <Space>
-                          <UserOutlined />
-                          <span>{member.userId.name || member.userId.email || 'Unknown User'}</span>
-                          <span style={{ color: '#999' }}>
-                            ({member.role === 'owner' ? 'Chủ sở hữu' : 
-                             member.role === 'manager' ? 'Quản lý' : 'Thành viên'})
-                          </span>
-                        </Space>
-                      </Option>
-                    );
-                  })}
+                  {availableUsers?.map(user => (
+                    <Option key={user._id} value={user._id}>
+                      <Space>
+                        <UserOutlined />
+                        <span>{user.name || user.email || 'Unknown User'}</span>
+                        <span style={{ color: '#999' }}>
+                          ({user.role === 'owner' ? 'Chủ sở hữu' : 
+                           user.role === 'manager' ? 'Quản lý' : 'Thành viên'})
+                        </span>
+                      </Space>
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             )}
@@ -405,19 +488,17 @@ const PermissionModal = ({
                   value={selectedRole}
                   onChange={setSelectedRole}
                   placeholder="Chọn vai trò"
+                  loading={availableTargetsLoading}
+                  disabled={availableRoles.length === 0}
                 >
-                  <Option value="member">
-                    <Space>
-                      <UserOutlined />
-                      <span>Thành viên</span>
-                    </Space>
-                  </Option>
-                  <Option value="manager">
-                    <Space>
-                      <CrownOutlined />
-                      <span>Quản lý</span>
-                    </Space>
-                  </Option>
+                  {availableRoles?.map(role => (
+                    <Option key={role.role} value={role.role}>
+                      <Space>
+                        <CrownOutlined />
+                        <span>{role.displayName}</span>
+                      </Space>
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             )}
@@ -533,11 +614,21 @@ const PermissionModal = ({
               </Space>
             </Form.Item>
           </Form>
-        </TabPane>
-
-        <TabPane tab="Quản lý quyền" key="manage">
+            )
+          },
+          {
+            key: 'manage',
+            label: 'Quản lý quyền',
+            children: (
           <Spin spinning={permissionsLoading}>
             <Space direction="vertical" style={{ width: '100%' }}>
+              {console.log('🔍 PermissionModal - rendering permissionsData:', {
+                permissionsData,
+                length: permissionsData?.length,
+                isLoading: permissionsLoading,
+                permissions,
+                permissionsLength: permissions?.length
+              })}
               {permissionsData?.map(permission => (
                 <Card key={permission._id} size="small">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -664,7 +755,7 @@ const PermissionModal = ({
                 </Card>
               ))}
               
-              {permissions?.length === 0 && (
+              {!permissionsLoading && permissionsData?.length === 0 && (
                 <Alert
                   message="Chưa có quyền nào được thiết lập"
                   description="Sử dụng tab 'Tạo quyền mới' để thiết lập quyền cho table này."
@@ -674,8 +765,10 @@ const PermissionModal = ({
               )}
             </Space>
           </Spin>
-        </TabPane>
-      </Tabs>
+            )
+          }
+        ]}
+      />
     </Modal>
   );
 };

@@ -54,8 +54,8 @@ app.use("/api", (req, res, next) => {
         '/api/auth/reset-password',
         '/api/auth',
         '/api/service/check-assign-user',
-        '/api/iframe/n8n/upsert',
-        '/api/database/databases' // Database endpoints including available-users
+        '/api/iframe/n8n/upsert'
+        // Removed '/api/database/databases' - available-users endpoint needs authentication
     ];
     
     if (skipRoutes.some(route => req.path.startsWith(route))) {
