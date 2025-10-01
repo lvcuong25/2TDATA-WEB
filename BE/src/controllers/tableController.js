@@ -9,6 +9,7 @@ import { isSuperAdmin, getUserDatabaseRole } from '../utils/permissionUtils.js';
 import { createMetabaseTable } from '../utils/metabaseTableCreator.js';
 // PostgreSQL imports
 import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
+import { Op } from 'sequelize';
 
 // Table Controllers
 export const createTable = async (req, res) => {
@@ -36,22 +37,34 @@ export const createTable = async (req, res) => {
 
     // Check if user is a member of this database and has permission to create tables
     // Super admin có quyền tạo table trong mọi database
+    
     if (!isSuperAdmin(req.user)) {
       const baseMember = await BaseMember.findOne({ 
         databaseId: actualBaseId, 
         userId 
       });
 
+      console.log('  baseMember found:', baseMember ? 'Yes' : 'No');
+      if (baseMember) {
+        console.log('  baseMember.role:', baseMember.role);
+      }
+
       if (!baseMember) {
+        console.log('❌ Access denied - not a member of this database');
         return res.status(403).json({ message: 'Access denied - you are not a member of this database' });
       }
 
       // Only owner and manager can create tables
       if (baseMember.role !== 'owner' && baseMember.role !== 'manager') {
+        console.log('❌ Access denied - insufficient permissions to create tables');
         return res.status(403).json({ 
           message: 'Access denied - only database owners and managers can create tables' 
         });
       }
+      
+      console.log('✅ Permission check passed - user can create tables');
+    } else {
+      console.log('✅ Super admin - bypassing permission check');
     }
 
     // Check if table exists in PostgreSQL
@@ -88,30 +101,35 @@ export const createTable = async (req, res) => {
     // Tạo default permissions cho tất cả members
     try {
       const TablePermission = (await import('../model/TablePermission.js')).default;
+      const mongoose = (await import('mongoose')).default;
+      
       const defaultPermission = new TablePermission({
-        tableId: table._id,
-        databaseId: actualBaseId,
+        tableId: table.id, // Use actual table UUID
+        databaseId: new mongoose.Types.ObjectId(actualBaseId), // Convert to ObjectId
         targetType: 'all_members',
         name: table.name, // Thêm field name required
         permissions: {
           canView: true,
-          canEditStructure: true,
+          canEditStructure: true, // Default: bật tất cả quyền cho tất cả thành viên
           canEditData: true,
-          canAddData: true
+          canAddData: true,
+          isHidden: false
         },
         viewPermissions: {
           canView: true,
-          canAddView: true,
-          canEditView: true
+          canAddView: true, // Default: bật tất cả quyền cho tất cả thành viên
+          canEditView: true, // Default: bật tất cả quyền cho tất cả thành viên
+          isHidden: false
         },
-        createdBy: userId,
-        isDefault: true // Đánh dấu là permission mặc định
+        createdBy: new mongoose.Types.ObjectId(userId), // Convert to ObjectId
+        isDefault: true, // Đánh dấu là permission mặc định
+        note: 'Default permission created automatically when table was created'
       });
 
       await defaultPermission.save();
-      // console.log('Default table permission created successfully');
+      console.log('✅ Default table permission created successfully');
     } catch (permissionError) {
-      console.error('Error creating default table permission:', permissionError);
+      console.error('❌ Error creating default table permission:', permissionError);
       // Không throw error để không ảnh hưởng đến việc tạo table
     }
 
@@ -324,18 +342,18 @@ export const getTables = async (req, res) => {
 
     // Transform PostgreSQL data to match frontend expected format
     const transformedTables = visibleTables.map(table => ({
-      _id: table.id,
+      _id: table._id || table.id,
       name: table.name,
       description: table.description,
-      databaseId: table.database_id,
-      userId: table.user_id,
-      siteId: table.site_id,
-      tableAccessRule: table.table_access_rule,
-      columnAccessRules: table.column_access_rules,
-      recordAccessRules: table.record_access_rules,
-      cellAccessRules: table.cell_access_rules,
-      createdAt: table.created_at,
-      updatedAt: table.updated_at
+      databaseId: table.databaseId || table.database_id,
+      userId: table.userId || table.user_id,
+      siteId: table.siteId || table.site_id,
+      tableAccessRule: table.tableAccessRule || table.table_access_rule,
+      columnAccessRules: table.columnAccessRules || table.column_access_rules,
+      recordAccessRules: table.recordAccessRules || table.record_access_rules,
+      cellAccessRules: table.cellAccessRules || table.cell_access_rules,
+      createdAt: table.createdAt || table.created_at,
+      updatedAt: table.updatedAt || table.updated_at
     }));
 
     res.status(200).json({
@@ -395,9 +413,7 @@ export const updateTable = async (req, res) => {
     const { name, description } = req.body;
     const userId = req.user?._id?.toString();
 
-    const table = await Table.findOne({
-      _id: tableId
-    }).populate('databaseId');
+    const table = await PostgresTable.findByPk(tableId);
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
@@ -407,7 +423,7 @@ export const updateTable = async (req, res) => {
     // Super admin có quyền update table trong mọi database
     if (!isSuperAdmin(req.user)) {
       const baseMember = await BaseMember.findOne({ 
-        databaseId: table.databaseId._id, 
+        databaseId: table.database_id, 
         userId 
       });
 
@@ -424,10 +440,12 @@ export const updateTable = async (req, res) => {
     }
 
     if (name && name.trim() !== '') {
-      const existingTable = await Table.findOne({
-        name: name.trim(),
-        databaseId: table.databaseId._id,
-        _id: { $ne: tableId }
+      const existingTable = await PostgresTable.findOne({
+        where: {
+          name: name.trim(),
+          database_id: table.database_id,
+          id: { [Op.ne]: tableId }
+        }
       });
 
       if (existingTable) {
@@ -443,10 +461,26 @@ export const updateTable = async (req, res) => {
 
     await table.save();
 
+    // Transform to match expected format
+    const transformedTable = {
+      _id: table.id,
+      name: table.name,
+      databaseId: table.database_id,
+      userId: table.user_id,
+      siteId: table.site_id,
+      description: table.description,
+      tableAccessRule: table.table_access_rule,
+      columnAccessRules: table.column_access_rules,
+      recordAccessRules: table.record_access_rules,
+      cellAccessRules: table.cell_access_rules,
+      createdAt: table.created_at,
+      updatedAt: table.updated_at
+    };
+
     res.status(200).json({
       success: true,
       message: 'Table updated successfully',
-      data: table
+      data: transformedTable
     });
   } catch (error) {
     console.error('Error updating table:', error);
@@ -639,30 +673,35 @@ export const copyTable = async (req, res) => {
     // Tạo default permissions cho table mới
     try {
       const TablePermission = (await import('../model/TablePermission.js')).default;
+      const mongoose = (await import('mongoose')).default;
+      
       const defaultPermission = new TablePermission({
-        tableId: newTable._id,
-        databaseId: targetDatabaseId,
+        tableId: newTable.id, // Use actual table UUID
+        databaseId: new mongoose.Types.ObjectId(targetDatabaseId), // Convert to ObjectId
         targetType: 'all_members',
         name: newTable.name, // Thêm field name required
         permissions: {
           canView: true,
-          canEditStructure: true,
+          canEditStructure: true, // Default: bật tất cả quyền cho tất cả thành viên
           canEditData: true,
-          canAddData: true
+          canAddData: true,
+          isHidden: false
         },
         viewPermissions: {
           canView: true,
-          canAddView: true,
-          canEditView: true
+          canAddView: true, // Default: bật tất cả quyền cho tất cả thành viên
+          canEditView: true, // Default: bật tất cả quyền cho tất cả thành viên
+          isHidden: false
         },
-        createdBy: userId,
-        isDefault: true
+        createdBy: new mongoose.Types.ObjectId(userId), // Convert to ObjectId
+        isDefault: true,
+        note: 'Default permission created automatically when table was copied'
       });
 
       await defaultPermission.save();
-      // console.log('Default table permission created successfully for copied table');
+      console.log('✅ Default table permission created successfully for copied table');
     } catch (permissionError) {
-      console.error('Error creating default table permission for copied table:', permissionError);
+      console.error('❌ Error creating default table permission for copied table:', permissionError);
       // Không throw error để không ảnh hưởng đến việc copy table
     }
 

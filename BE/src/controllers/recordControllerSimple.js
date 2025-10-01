@@ -1,6 +1,8 @@
 import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord, sequelize } from '../models/postgres/index.js';
 import { Op } from 'sequelize';
 import { updateMetabaseTable } from '../utils/metabaseTableCreator.js';
+import Table from '../model/Table.js';
+import Column from '../model/Column.js';
 
 // Simple Record Controllers that use PostgreSQL
 export const createRecordSimple = async (req, res) => {
@@ -379,8 +381,25 @@ export const getTableStructureSimple = async (req, res) => {
 
     // Get table from PostgreSQL
     const table = await PostgresTable.findByPk(tableId);
+    
     if (!table) {
-      return res.status(404).json({ message: 'Table not found' });
+      // Fallback to MongoDB if not found in PostgreSQL
+      const mongoTable = await Table.findOne({ name: 'PostgresX' }).populate('databaseId');
+      
+      if (!mongoTable) {
+        return res.status(404).json({ message: 'Table not found in both PostgreSQL and MongoDB' });
+      }
+      
+      // Get columns from MongoDB
+      const columns = await Column.find({ tableId: mongoTable._id }).sort({ order: 1 });
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          table: mongoTable,
+          columns: columns
+        }
+      });
     }
 
     // Get columns from PostgreSQL

@@ -96,6 +96,12 @@ async function changeMemberRole(req, res, next) {
       return res.status(400).json({ ok: false, error: "cannot_change_own_role" });
     }
     
+    // Debug logs
+    console.log('🔍 changeMemberRole debug:');
+    console.log('  currentUserMember.role:', currentUserMember.role, typeof currentUserMember.role);
+    console.log('  targetMember.role:', targetMember.role, typeof targetMember.role);
+    console.log('  new role:', role, typeof role);
+    
     // Check permissions based on current user's role
     if (currentUserMember.role === "member") {
       return res.status(403).json({ ok: false, error: "members_cannot_manage_roles" });
@@ -106,9 +112,27 @@ async function changeMemberRole(req, res, next) {
       return res.status(403).json({ ok: false, error: "managers_cannot_change_owner_role" });
     }
     
+    // Manager cannot change other managers' roles
+    if (currentUserMember.role === "manager" && targetMember.role === "manager") {
+      console.log('🔍 Blocking manager from changing another manager role');
+      console.log('  currentUserMember.role:', currentUserMember.role, typeof currentUserMember.role);
+      console.log('  targetMember.role:', targetMember.role, typeof targetMember.role);
+      console.log('  currentUserMember.role === "manager":', currentUserMember.role === "manager");
+      console.log('  targetMember.role === "manager":', targetMember.role === "manager");
+      return res.status(403).json({ ok: false, error: "managers_cannot_change_other_managers_role" });
+    }
+    
+    // Debug: Check if we reach this point
+    console.log('🔍 Passed manager restriction checks');
+    
     // Manager cannot promote anyone to owner
     if (currentUserMember.role === "manager" && role === "owner") {
       return res.status(403).json({ ok: false, error: "managers_cannot_promote_to_owner" });
+    }
+    
+    // Manager cannot promote anyone to manager
+    if (currentUserMember.role === "manager" && role === "manager") {
+      return res.status(403).json({ ok: false, error: "managers_cannot_promote_to_manager" });
     }
     
     // Only owner can change owner role
@@ -128,7 +152,7 @@ async function changeMemberRole(req, res, next) {
         // If there's already an owner and it's not the target user, demote current owner to manager
         if (currentOwner.userId !== userId) {
           await BaseMember.findOneAndUpdate(
-            { baseId: databaseId, userId: currentOwner.userId }, 
+            { databaseId: databaseId, userId: currentOwner.userId }, 
             { role: "manager" }
           );
         }
@@ -137,7 +161,7 @@ async function changeMemberRole(req, res, next) {
     
     // Update the member role
     const updated = await BaseMember.findOneAndUpdate(
-      { baseId: databaseId, userId }, 
+      { databaseId: databaseId, userId }, 
       { role: role }, 
       { new: true }
     );
@@ -205,7 +229,7 @@ routerMembers.get("/databases/:databaseId/members", canManageMembers(), async (r
 routerMembers.get("/databases/:databaseId/available-users", async (req, res, next) => {
   try {
     const { databaseId } = req.params;
-    const siteId = req.user?.site_id;
+    const siteId = req.siteId || req.user?.site_id;
     
     console.log('🔍 Available users request:', { databaseId, siteId, userId: req.user?._id });
     
@@ -226,11 +250,26 @@ routerMembers.get("/databases/:databaseId/available-users", async (req, res, nex
     console.log('🔍 Using orgId:', orgId);
 
     // Get organization to get members list
-    const organization = await Organization.findById(orgId)
+    let organization = await Organization.findById(orgId)
       .populate('members.user', '_id name email')
       .lean();
     
     console.log('🔍 Organization found:', { orgId, membersCount: organization?.members?.length });
+    
+    // If no organization found and orgId is siteId (super admin case), 
+    // get all organizations in this site
+    if (!organization && orgId === siteId) {
+      console.log('🔍 No organization found, getting all organizations in site:', siteId);
+      const organizations = await Organization.find({ site_id: siteId })
+        .populate('members.user', '_id name email')
+        .lean();
+      
+      if (organizations.length > 0) {
+        // Use the first organization or combine all members
+        organization = organizations[0];
+        console.log('🔍 Using first organization:', { orgId: organization._id, name: organization.name });
+      }
+    }
     
     if (!organization) {
       return res.status(404).json({ ok: false, error: "organization_not_found" });

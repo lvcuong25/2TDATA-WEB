@@ -216,6 +216,31 @@ const MemberManagement = () => {
     }
   };
 
+  // Get current user's role in this database
+  const getCurrentUserRole = () => {
+    if (!currentUser || !membersData?.data) return null;
+    const currentUserMember = membersData.data.find(member => member.user._id === currentUser._id);
+    return currentUserMember?.role;
+  };
+
+  // Check if current user can edit a specific member's role
+  const canEditMemberRole = (targetMember) => {
+    const currentUserRole = getCurrentUserRole();
+    
+    // Owner can edit anyone except themselves
+    if (currentUserRole === 'owner') {
+      return targetMember.user._id !== currentUser._id;
+    }
+    
+    // Manager can only edit members, not other managers or owners
+    if (currentUserRole === 'manager') {
+      return targetMember.role === 'member';
+    }
+    
+    // Members cannot edit anyone
+    return false;
+  };
+
   // Available users are already filtered by the API
   const availableUsers = orgUsersData?.data || [];
 
@@ -251,34 +276,39 @@ const MemberManagement = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="Edit Role">
-            <Button 
-              icon={<EditOutlined />} 
-              onClick={() => handleEditMember(record)}
-              disabled={record.role?.toLowerCase() === 'owner'}
-            />
-          </Tooltip>
-          <Tooltip title="Remove Member">
-            <Popconfirm
-              title="Are you sure you want to remove this member?"
-              description="This action cannot be undone."
-              onConfirm={() => handleDeleteMember(record)}
-              okText="Yes, Remove"
-              cancelText="Cancel"
-              disabled={record.role?.toLowerCase() === 'owner'}
-            >
+      render: (_, record) => {
+        const canEdit = canEditMemberRole(record);
+        const canDelete = record.role?.toLowerCase() !== 'owner' && getCurrentUserRole() === 'owner';
+        
+        return (
+          <Space>
+            <Tooltip title={canEdit ? "Edit Role" : "Cannot edit this member's role"}>
               <Button 
-                danger
-                icon={<DeleteOutlined />} 
-                disabled={record.role?.toLowerCase() === 'owner'}
-                loading={deleteMemberMutation.isLoading}
+                icon={<EditOutlined />} 
+                onClick={() => handleEditMember(record)}
+                disabled={!canEdit}
               />
-            </Popconfirm>
-          </Tooltip>
-        </Space>
-      ),
+            </Tooltip>
+            <Tooltip title={canDelete ? "Remove Member" : "Cannot remove this member"}>
+              <Popconfirm
+                title="Are you sure you want to remove this member?"
+                description="This action cannot be undone."
+                onConfirm={() => handleDeleteMember(record)}
+                okText="Yes, Remove"
+                cancelText="Cancel"
+                disabled={!canDelete}
+              >
+                <Button 
+                  danger
+                  icon={<DeleteOutlined />} 
+                  disabled={!canDelete}
+                  loading={deleteMemberMutation.isLoading}
+                />
+              </Popconfirm>
+            </Tooltip>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -487,18 +517,52 @@ const MemberManagement = () => {
               placeholder="Choose a new role for this member"
               loading={rolesLoading}
             >
-              {rolesData?.data?.map(role => (
-                <Option key={role.role} value={role.role}>
-                  <Tag 
-                    icon={getRoleIcon(role.role)} 
-                    color={getRoleColor(role.role)}
-                    style={{ marginRight: '8px' }}
+              {rolesData?.data?.map(role => {
+                const currentUserRole = getCurrentUserRole();
+                const targetMember = editingMember;
+                
+                // Filter available roles based on current user's permissions
+                let canSelectRole = true;
+                let reason = '';
+                
+                if (currentUserRole === 'manager') {
+                  // Manager cannot promote anyone to owner or manager
+                  if (role.role === 'owner' || role.role === 'manager') {
+                    canSelectRole = false;
+                    reason = 'Managers cannot promote to owner or manager';
+                  }
+                }
+                
+                if (currentUserRole === 'owner' && targetMember?.user._id === currentUser._id) {
+                  // Owner cannot change their own role
+                  canSelectRole = false;
+                  reason = 'Cannot change your own role';
+                }
+                
+                return (
+                  <Option 
+                    key={role.role} 
+                    value={role.role}
+                    disabled={!canSelectRole}
                   >
-                    {role.name}
-                  </Tag>
-                  {role.canManageDatabase ? '(Có thể quản lý Database)' : '(Chỉ đọc)'}
-                </Option>
-              ))}
+                    <div>
+                      <Tag 
+                        icon={getRoleIcon(role.role)} 
+                        color={getRoleColor(role.role)}
+                        style={{ marginRight: '8px' }}
+                      >
+                        {role.name}
+                      </Tag>
+                      {role.canManageDatabase ? '(Có thể quản lý Database)' : '(Chỉ đọc)'}
+                      {!canSelectRole && (
+                        <div style={{ fontSize: '12px', color: '#ff4d4f', marginTop: '4px' }}>
+                          {reason}
+                        </div>
+                      )}
+                    </div>
+                  </Option>
+                );
+              })}
             </Select>
           </Form.Item>
           

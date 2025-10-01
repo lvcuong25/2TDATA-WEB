@@ -1,5 +1,6 @@
 import { Table as PostgresTable, Column as PostgresColumn } from '../models/postgres/index.js';
 import { createMetabaseTable } from '../utils/metabaseTableCreator.js';
+import { Op } from 'sequelize';
 
 // Simple Column Controllers that use PostgreSQL
 export const createColumnSimple = async (req, res) => {
@@ -219,6 +220,8 @@ export const getColumnsByTableIdSimple = async (req, res) => {
 
 export const updateColumnSimple = async (req, res) => {
   try {
+    console.log('🔍 updateColumnSimple called with columnId:', req.params.columnId);
+    console.log('🔍 updateColumnSimple req.body:', req.body);
     const { columnId } = req.params;
     const {
       name, dataType, isRequired, isUnique, defaultValue, order,
@@ -351,6 +354,7 @@ export const updateColumnSimple = async (req, res) => {
 
 export const deleteColumnSimple = async (req, res) => {
   try {
+    console.log('🔍 deleteColumnSimple called with columnId:', req.params.columnId);
     const { columnId } = req.params;
     const userId = req.user?._id?.toString() || '68341e4d3f86f9c7ae46e962';
 

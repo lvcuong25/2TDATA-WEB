@@ -34,6 +34,63 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     setAllRecords 
   } = context;
 
+  // Fetch table permissions
+  const { data: tablePermissionsResponse, isLoading: tablePermissionsLoading } = useQuery({
+    queryKey: ['table-permissions', tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/permissions/tables/${tableId}/permissions`);
+      return response.data;
+    },
+    enabled: !!tableId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Extract table permissions for current user
+  const tablePermissions = tablePermissionsResponse?.data || [];
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  // Helper function to check table permission
+  const checkTablePermission = (permission) => {
+    if (!currentUser._id) return false;
+    
+    // Check if user is owner or manager (they have all permissions by default)
+    // This should be checked against database membership, but for now we'll use a simple check
+    // TODO: Add proper role checking
+    
+    // Check specific user permissions first
+    const specificUserPermission = tablePermissions.find(p => 
+      p.targetType === 'specific_user' && 
+      p.userId?._id === currentUser._id && 
+      p.permissions?.[permission] === true
+    );
+    if (specificUserPermission) return true;
+    
+    // Check specific role permissions
+    const specificRolePermission = tablePermissions.find(p => 
+      p.targetType === 'specific_role' && 
+      p.role === 'member' && // Assuming current user is member
+      p.permissions?.[permission] === true
+    );
+    if (specificRolePermission) return true;
+    
+    // Check all members permissions
+    const allMembersPermission = tablePermissions.find(p => 
+      p.targetType === 'all_members' && 
+      p.permissions?.[permission] === true
+    );
+    if (allMembersPermission) return true;
+    
+    return false;
+  };
+
+  // Permission checks
+  const canViewTable = checkTablePermission('canView');
+  const canEditStructure = checkTablePermission('canEditStructure');
+  const canEditData = checkTablePermission('canEditData');
+  const canAddData = checkTablePermission('canAddData');
+  const canAddView = checkTablePermission('canAddView');
+  const canEditView = checkTablePermission('canEditView');
+
   // Fetch group preferences from backend
   const { data: groupPreferenceResponse } = useQuery({
     queryKey: ['groupPreference', tableId],
@@ -397,6 +454,7 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     recordPermissionsResponse,
     cellPermissionsResponse,
     databaseMembersResponse,
+    tablePermissionsResponse,
     isLoading,
     error,
     
@@ -411,6 +469,15 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     deleteAllRecordsMutation,
     updateColumnMutation,
     deleteColumnMutation,
+    
+    // Permission checks
+    canViewTable,
+    canEditStructure,
+    canEditData,
+    canAddData,
+    canAddView,
+    canEditView,
+    tablePermissionsLoading,
     
     // Query client for manual invalidation
     queryClient
