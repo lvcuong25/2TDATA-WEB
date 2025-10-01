@@ -54,7 +54,8 @@ const AddColumnModal = ({
   columns,
   loading,
   currentTableId = null,
-  currentDatabaseId = null
+  currentDatabaseId = null,
+  addColumnPosition = null
 }) => {
   const handleDataTypeChange = (value) => {
     setNewColumn({ 

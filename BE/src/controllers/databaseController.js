@@ -8,27 +8,39 @@ import { isSuperAdmin, hasDatabaseAccess, getUserDatabaseRole, canManageDatabase
 export const createDatabase = async (req, res) => {
   try {
     const { name, description } = req.body;
-    const currentUserId = req.user._id;
-    const siteId = req.siteId; // Get site ID from middleware
+    const currentUserId = req.user?._id || '68d6b5ad6b97091804aa87c9'; // Default user ID for testing
+    const siteId = req.siteId || '68cbdf9729510ea44d90a8e9'; // Default site ID for testing
+
 
     // Find organization where current user is a member
     const Organization = (await import('../model/Organization.js')).default;
-    const organization = await Organization.findOne({ 
-      site_id: siteId,
-      'members.user': currentUserId 
-    });
-    
-    if (!organization) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Organization not found for this user' 
+    let organization = null;
+    let orgId = null;
+
+    // For super admin, allow creating database without organization
+    if (isSuperAdmin(req.user)) {
+      // Super admin can create database with siteId as orgId
+      orgId = siteId;
+    } else {
+      // Regular users must be in an organization to create database
+      organization = await Organization.findOne({ 
+        site_id: siteId,
+        'members.user': currentUserId 
       });
+      
+      if (!organization) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Organization not found for this user' 
+        });
+      }
+      orgId = organization._id;
     }
 
     // Create database with required fields
     const database = new Database({
       name,
-      orgId: organization._id, // Use organization._id as orgId
+      orgId: orgId, // Use organization._id as orgId or siteId for super admin
       ownerId: currentUserId
     });
 
@@ -259,37 +271,19 @@ export const getDatabaseMembers = async (req, res) => {
     // console.log(`🔍 BaseMembers found:`, baseMembers);
     
     // Check if current user has access to this database (super admin có quyền truy cập tất cả)
-    console.log(`🔍 User role check:`, {
-      userId: currentUserId,
-      userRole: req.user.role,
-      isSuperAdmin: isSuperAdmin(req.user)
-    });
     
     if (!isSuperAdmin(req.user)) {
-      console.log(`🔍 Checking access for user:`, {
-        currentUserId,
-        currentUserIdType: typeof currentUserId,
-        baseMembersCount: baseMembers.length,
-        baseMembers: baseMembers.map(m => ({
-          userId: m.userId?._id,
-          userIdType: typeof m.userId?._id,
-          role: m.role
-        }))
-      });
 
       const userMember = baseMembers.find(member => 
         member.userId._id.toString() === currentUserId.toString()
       );
 
-      console.log(`🔍 User member found:`, userMember);
 
       // Allow access if user is a member (owner, manager, or member)
       if (!userMember) {
-        console.log(`🔍 Access denied - user not found in members`);
         return res.status(403).json({ message: 'Access denied to this database' });
       }
     } else {
-      console.log(`🔍 Super admin access granted - bypassing member check`);
     }
 
     // Return members with populated user data
@@ -381,6 +375,73 @@ export const updateUserRole = async (req, res) => {
     console.error('Error updating user role:', error);
     res.status(500).json({ 
       message: 'Internal server error',
+      error: error.message 
+    });
+  }
+};
+// Remove member from database
+export const removeDatabaseMember = async (req, res) => {
+  try {
+    const { databaseId, memberId } = req.params;
+    const currentUserId = req.user._id;
+    
+    // DEBUG: Log user info
+    console.log('🔍 DEBUG removeDatabaseMember:');
+    console.log('  - Current user ID:', currentUserId);
+    console.log('  - Current user email:', req.user.email);
+    console.log('  - Current user role:', req.user.role);
+    console.log('  - isSuperAdmin result:', isSuperAdmin(req.user));
+    
+    // Check if current user has permission to remove members
+    if (!isSuperAdmin(req.user)) {
+      console.log('  ❌ Not super admin, checking database role...');
+      
+      // Check if user is database owner or has admin role
+      const database = await Database.findById(databaseId);
+      if (!database) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Database not found' 
+        });
+      }
+      
+      const currentUserRole = await getUserDatabaseRole(currentUserId, databaseId);
+      console.log('  - User database role:', currentUserRole?.name || 'none');
+      
+      if (!currentUserRole || (currentUserRole.name !== 'owner' && currentUserRole.name !== 'admin')) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Permission denied. Only owner, admin or super admin can remove members' 
+        });
+      }
+    } else {
+      console.log('  ✅ User is super admin, permission granted');
+    }
+    
+    // Remove member from BaseMember collection
+    const result = await BaseMember.findOneAndDelete({
+      databaseId: databaseId,
+      userId: memberId
+    });
+    
+    if (!result) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Member not found in this database' 
+      });
+    }
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Member removed successfully',
+      data: result 
+    });
+    
+  } catch (error) {
+    console.error('Error removing database member:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error', 
       error: error.message 
     });
   }

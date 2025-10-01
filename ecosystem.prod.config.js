@@ -3,7 +3,7 @@ module.exports = {
     {
       name: '2tdata-be-prod',
       script: './src/app.js',
-      cwd: '/opt/remo-homepage/2TDATA-WEB-TEST/BE',
+      cwd: '/home/dbuser/2TDATA-WEB-dev/BE',
       instances: 1,
       autorestart: true,
       watch: false,
