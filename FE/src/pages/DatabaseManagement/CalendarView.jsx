@@ -42,7 +42,6 @@ import { getDataTypeIcon, getDataTypeColor } from './Utils/dataTypeUtils';
 import dayjs from 'dayjs';
 import axiosInstance from '../../utils/axiosInstance-cookie-only';
 import { CreateRecordModal, EditRecordModal } from './Modals';
-import RecordDetailModal from './Calendar/RecordDetailModal';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -58,8 +57,6 @@ const CalendarView = () => {
   const [viewType, setViewType] = useState('month');
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [showRecordModal, setShowRecordModal] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
   const [draggedEvent, setDraggedEvent] = useState(null);
   const [showCreateRecordModal, setShowCreateRecordModal] = useState(false);
   const [selectedDateForNewRecord, setSelectedDateForNewRecord] = useState(null);
@@ -139,8 +136,10 @@ const CalendarView = () => {
 
   // Handle edit record
   const handleEditRecord = (record) => {
+    console.log('🔍 handleEditRecord called with:', record);
     setRecordToEdit(record);
     setShowEditRecordModal(true);
+    console.log('🔍 showEditRecordModal set to true, recordToEdit:', record);
   };
 
   // Handle edit record success
@@ -260,36 +259,32 @@ const CalendarView = () => {
 
   // Function to get the best display text for an event
   const getEventDisplayText = (event, maxLength = 20) => {
-    if (!event.data) return 'Event';
+    // Try multiple data sources
+    const recordData = event.data || event.dataValues?.data || {};
     
-    // Priority order for display text
-    const priorityFields = [
-      'Full Name', 'Name', 'Title', 'Tên', 'Tên đầy đủ',
-      'Email', 'E-mail', 'Email Address',
-      'Phone', 'Số điện thoại', 'Phone Number',
-      'Position', 'Chức vụ', 'Job Title',
-      'T CD', 'CD', 'Code', 'Mã',
-      'Company', 'Công ty', 'Organization'
-    ];
-    
-    // Find the first available field from priority list
-    for (const field of priorityFields) {
-      if (event.data[field] && String(event.data[field]).trim()) {
-        const text = String(event.data[field]).trim();
-        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-      }
+    if (!recordData || Object.keys(recordData).length === 0) {
+      return 'Event';
     }
     
-    // If no priority field found, use the first non-empty field
-    for (const [key, value] of Object.entries(event.data)) {
+    // Get the first column from tableColumns (sorted by order)
+    const columns = Array.isArray(tableColumns) ? tableColumns : (tableColumns?.data || Object.values(tableColumns || {}));
+    const firstColumn = columns?.find(col => col.order === 0) || columns?.[0];
+    
+    if (firstColumn && recordData[firstColumn.name]) {
+      const text = String(recordData[firstColumn.name]).trim();
+      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    }
+    
+    // Fallback: Use the first non-empty field from record data
+    for (const [key, value] of Object.entries(recordData)) {
       if (value && String(value).trim() && key !== '_id') {
         const text = String(value).trim();
         return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
       }
     }
     
-    // Fallback to ID
-    return event._id?.slice(-4) || 'Event';
+    // Final fallback to ID
+    return event._id?.slice(-4) || event.id?.slice(-4) || 'Event';
   };
 
   // Custom day view component
@@ -318,8 +313,7 @@ const CalendarView = () => {
                   key={event._id}
                   className="day-event bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => {
-                    setSelectedRecord(event);
-                    setShowRecordModal(true);
+                    handleEditRecord(event);
                   }}
                 >
                   <div className="flex items-start justify-between">
@@ -353,16 +347,6 @@ const CalendarView = () => {
                           </div>
                         )}
                       </div>
-                    </div>
-                    <div className="ml-4">
-                      <Button
-                        type="text"
-                        icon={<EditOutlined />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditRecord(event);
-                        }}
-                      />
                     </div>
                   </div>
                 </div>
@@ -460,8 +444,7 @@ const CalendarView = () => {
                           className="week-event text-xs p-1 rounded cursor-pointer bg-blue-500 text-white truncate"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedRecord(event);
-                            setShowRecordModal(true);
+                            handleEditRecord(event);
                           }}
                         >
                           {getEventDisplayText(event, 15)}
@@ -551,8 +534,7 @@ const CalendarView = () => {
                   className="calendar-month-event"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedRecord(event);
-                    setShowRecordModal(true);
+                    handleEditRecord(event);
                   }}
                   style={{
                     backgroundColor: '#1890ff',
@@ -639,8 +621,7 @@ const CalendarView = () => {
                   onDragStart={(e) => handleDragStart(e, event)}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedRecord(event);
-                    setShowRecordModal(true);
+                    handleEditRecord(event);
                   }}
                   style={{
                     backgroundColor: '#1890ff',
@@ -992,17 +973,6 @@ const CalendarView = () => {
         </Card>
       </div>
 
-      {/* Record Detail Modal */}
-      <RecordDetailModal
-        open={showRecordModal}
-        onCancel={() => {
-          setShowRecordModal(false);
-          setSelectedRecord(null);
-        }}
-        record={selectedRecord}
-        tableColumns={tableColumns}
-        onEdit={handleEditRecord}
-      />
 
       {/* Create Record Modal */}
       <CreateRecordModal
@@ -1019,6 +989,12 @@ const CalendarView = () => {
       />
 
       {/* Edit Record Modal */}
+      {console.log('🔍 Rendering EditRecordModal with:', {
+        showEditRecordModal,
+        recordToEdit,
+        tableId,
+        hasTableColumns: !!tableColumns
+      })}
       <EditRecordModal
         open={showEditRecordModal}
         onCancel={() => {

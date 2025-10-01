@@ -62,6 +62,17 @@ const EditRecordModal = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
+
+  // Debug logging
+  console.log('🔍 EditRecordModal Debug:', {
+    open,
+    record,
+    tableId,
+    tableColumns,
+    hasRecord: !!record,
+    recordData: record?.data,
+    tableColumnsData: tableColumns?.data
+  });
   
   // Comment functionality state
   const [activeTab, setActiveTab] = useState('comments');
@@ -74,21 +85,45 @@ const EditRecordModal = ({
 
   // Reset form when modal opens/closes or record changes
   useEffect(() => {
+    console.log('🔍 EditRecordModal useEffect triggered:', {
+      open,
+      hasRecord: !!record,
+      recordData: record?.data,
+      hasTableColumns: !!tableColumns,
+      tableColumnsData: tableColumns?.data
+    });
+
     if (open && record) {
       // Fetch comments when modal opens
       fetchCommentsMutation.mutate();
       // Convert record data to form values
       const formValues = {};
-      Object.entries(record.data || {}).forEach(([key, value]) => {
+      
+      // Get record data from multiple possible locations
+      const recordData = record.data || record.dataValues?.data || {};
+      console.log('🔍 Record data extraction:', {
+        recordData,
+        recordDataKeys: Object.keys(recordData),
+        hasRecordData: !!recordData,
+        recordDataFrom: record.data ? 'record.data' : record.dataValues?.data ? 'record.dataValues.data' : 'none'
+      });
+      
+      Object.entries(recordData).forEach(([key, value]) => {
+        console.log('🔍 Processing field:', { key, value, type: typeof value });
+        
         // Convert date/time strings to dayjs objects
         if (value && typeof value === 'string') {
           const columns = Array.isArray(tableColumns) ? tableColumns : (tableColumns?.data || Object.values(tableColumns || {}));
           const column = columns.find(col => col.name === key);
+          console.log('🔍 Found column for', key, ':', column);
+          
           if (column?.dataType === 'date' || column?.dataType === 'datetime') {
             try {
               formValues[key] = dayjs(value);
+              console.log('🔍 Converted date field:', key, 'to:', formValues[key]);
             } catch {
               formValues[key] = value;
+              console.log('🔍 Date conversion failed for:', key, 'keeping original:', value);
             }
           } else if (column?.dataType === 'time') {
             try {
@@ -97,21 +132,38 @@ const EditRecordModal = ({
               const timeParts = value.split(':');
               if (timeParts.length === 2) {
                 formValues[key] = today.hour(parseInt(timeParts[0])).minute(parseInt(timeParts[1])).second(0);
+                console.log('🔍 Converted time field:', key, 'to:', formValues[key]);
               } else {
                 formValues[key] = value;
+                console.log('🔍 Time conversion failed for:', key, 'keeping original:', value);
               }
             } catch {
               formValues[key] = value;
+              console.log('🔍 Time conversion failed for:', key, 'keeping original:', value);
             }
           } else {
             formValues[key] = value;
+            console.log('🔍 Regular field:', key, '=', value);
           }
         } else {
           formValues[key] = value;
+          console.log('🔍 Non-string field:', key, '=', value);
         }
       });
       
-      form.setFieldsValue(formValues);
+      console.log('🔍 Final formValues:', formValues);
+      
+      // Force set form values with a delay to ensure form is ready
+      setTimeout(() => {
+        form.setFieldsValue(formValues);
+        console.log('🔍 Form values set with timeout');
+        
+        // Also try to set individual fields
+        Object.entries(formValues).forEach(([key, value]) => {
+          form.setFieldValue(key, value);
+          console.log('🔍 Set individual field:', key, '=', value);
+        });
+      }, 100);
     }
   }, [open, record, form, tableColumns]);
 
@@ -259,6 +311,39 @@ const EditRecordModal = ({
 
   const handleSubmit = async (values) => {
     try {
+      console.log('🔍 handleSubmit called with:', {
+        values,
+        record,
+        recordKeys: Object.keys(record || {}),
+        recordId: record?._id || record?.id,
+        hasRecordId: !!(record?._id || record?.id),
+        recordIdType: typeof (record?._id || record?.id)
+      });
+
+      // Get record ID - try multiple possible locations
+      const recordId = record?._id || record?.id || record?.dataValues?.id || record?.dataValues?._id;
+      console.log('🔍 Record ID extraction:', {
+        recordId,
+        recordIdType: typeof recordId,
+        recordIdValue: recordId,
+        dataValuesId: record?.dataValues?.id,
+        dataValuesUnderscoreId: record?.dataValues?._id
+      });
+      
+      if (!recordId) {
+        console.error('🔍 No record ID found:', {
+          record,
+          recordKeys: Object.keys(record || {}),
+          dataValuesKeys: Object.keys(record?.dataValues || {}),
+          hasId: 'id' in (record || {}),
+          hasUnderscoreId: '_id' in (record || {}),
+          hasDataValuesId: 'id' in (record?.dataValues || {}),
+          hasDataValuesUnderscoreId: '_id' in (record?.dataValues || {})
+        });
+        message.error('Record ID not found');
+        return;
+      }
+
       // Convert date/time values to appropriate format
       const processedValues = { ...values };
       Object.keys(processedValues).forEach(key => {
@@ -275,14 +360,15 @@ const EditRecordModal = ({
         }
       });
 
+      console.log('🔍 Submitting with recordId:', recordId, 'data:', processedValues);
 
       await updateRecordMutation.mutateAsync({
-        recordId: record._id,
+        recordId: recordId,
         data: processedValues
       });
     } catch (error) {
       // Error is handled by mutation
-      console.error('Update failed:', error);
+      console.error('🔍 handleSubmit error:', error);
     }
   };
 
@@ -517,6 +603,14 @@ const EditRecordModal = ({
                  })
                  ?.map((column, index) => {
                   const { name, dataType, isRequired, description } = column;
+                  
+                  // Debug logging for form fields
+                  console.log('🔍 Rendering form field:', {
+                    name,
+                    dataType,
+                    isRequired,
+                    recordDataValue: record?.data?.[name]
+                  });
                   
                 return (
                   <div key={column._id || index} className="mb-6">

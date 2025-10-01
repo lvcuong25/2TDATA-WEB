@@ -26,6 +26,16 @@ const RecordDetailModal = ({
 }) => {
   if (!record) return null;
 
+  // Debug logging
+  console.log('🔍 RecordDetailModal Debug:', {
+    record: record,
+    recordData: record.data,
+    tableColumns: tableColumns,
+    tableColumnsData: tableColumns?.data,
+    recordDataKeys: Object.keys(record.data || {}),
+    tableColumnNames: tableColumns?.data?.map(col => col.name) || []
+  });
+
   // Get icon for data type (using centralized function)
   const getIconForDataType = (dataType) => {
     // Override for long_text to use text icon
@@ -197,28 +207,82 @@ const RecordDetailModal = ({
         className="record-detail-modal"
         destroyOnClose
       >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
+        <div style={{ padding: '16px' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <Title level={4}>Record Data Debug</Title>
+            <Text>Record ID: {record._id}</Text>
+            <Text>Has data: {record.data ? 'Yes' : 'No'}</Text>
+            <Text>Data keys: {Object.keys(record.data || {}).join(', ')}</Text>
+            <Text>Table columns loaded: {tableColumns ? 'Yes' : 'No'}</Text>
+            <Text>Table columns count: {tableColumns?.data?.length || 0}</Text>
+          </div>
+          
+          <div style={{ marginBottom: '16px' }}>
+            <Title level={5}>Raw Record Data:</Title>
+            <pre style={{ backgroundColor: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+              {JSON.stringify(record.data, null, 2)}
+            </pre>
+          </div>
+          
+          <div style={{ marginBottom: '16px' }}>
+            <Title level={5}>Table Columns:</Title>
+            <pre style={{ backgroundColor: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+              {JSON.stringify(tableColumns?.data?.map(col => ({ name: col.name, dataType: col.dataType })), null, 2)}
+            </pre>
+          </div>
+          
+          <div>
+            <Title level={5}>Formatted Fields:</Title>
             {Object.entries(record.data || {})
               .filter(([key, value]) => {
                 const column = tableColumns?.data?.find(col => col.name === key);
                 const dataType = column?.dataType || 'text';
-                // Ẩn các field lookup và formula
-                return !['lookup', 'linked_table', 'formula'].includes(dataType);
+                // Ẩn các field lookup và formula - TẠM THỜI COMMENT ĐỂ DEBUG
+                // return !['lookup', 'linked_table', 'formula'].includes(dataType);
+                return true; // Show all fields for debugging
               })
               .map(([key, value]) => {
                 const column = tableColumns?.data?.find(col => col.name === key);
                 const dataType = column?.dataType || 'text';
+                
+                // Debug logging for each field
+                console.log('🔍 Field Debug:', {
+                  key,
+                  value,
+                  column,
+                  dataType,
+                  foundColumn: !!column
+                });
                 return (
-                  <div key={String(key)} className="flex items-start">
-                  <div className="w-6 h-6 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
-                    {getIconForDataType(dataType)}
-                  </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-gray-600 mb-1">
-                        {String(key)}
+                  <div key={String(key)} style={{ 
+                    display: 'flex', 
+                    alignItems: 'flex-start', 
+                    marginBottom: '12px',
+                    padding: '8px',
+                    border: '1px solid #e8e8e8',
+                    borderRadius: '4px'
+                  }}>
+                    <div style={{ 
+                      width: '24px', 
+                      height: '24px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      marginRight: '12px',
+                      flexShrink: 0
+                    }}>
+                      {getIconForDataType(dataType)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '500', 
+                        color: '#666',
+                        marginBottom: '4px'
+                      }}>
+                        {String(key)} ({dataType})
                       </div>
-                      <div className="text-sm text-gray-800">
+                      <div style={{ fontSize: '14px', color: '#333' }}>
                         {formatFieldValue(value, dataType)}
                       </div>
                     </div>
