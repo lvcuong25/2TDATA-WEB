@@ -14,6 +14,8 @@ import {
   deleteRecordSimple,
   getTableStructureSimple 
 } from '../controllers/recordControllerSimple.js';
+import { deleteMultipleRecords } from '../controllers/recordControllerPostgres.js';
+import { authAndSiteDetectionMiddleware } from '../middlewares/authAndSiteDetection.js';
 
 const router = Router();
 
@@ -30,6 +32,11 @@ router.delete('/columns/:columnId', deleteColumnSimple);
 // Record routes
 router.post('/records', createRecordSimple);
 router.get('/tables/:tableId/records', getRecordsByTableIdSimple);
+
+// Bulk delete route - MUST come before :recordId route
+router.delete('/records/bulk', authAndSiteDetectionMiddleware, deleteMultipleRecords);
+
+// Individual record routes - MUST come after bulk routes
 router.get('/records/:recordId', getRecordByIdSimple);
 router.put('/records/:recordId', updateRecordSimple);
 router.delete('/records/:recordId', deleteRecordSimple);
