@@ -63,16 +63,6 @@ const EditRecordModal = ({
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
-  // Debug logging
-  console.log('🔍 EditRecordModal Debug:', {
-    open,
-    record,
-    tableId,
-    tableColumns,
-    hasRecord: !!record,
-    recordData: record?.data,
-    tableColumnsData: tableColumns?.data
-  });
   
   // Comment functionality state
   const [activeTab, setActiveTab] = useState('comments');
@@ -85,13 +75,6 @@ const EditRecordModal = ({
 
   // Reset form when modal opens/closes or record changes
   useEffect(() => {
-    console.log('🔍 EditRecordModal useEffect triggered:', {
-      open,
-      hasRecord: !!record,
-      recordData: record?.data,
-      hasTableColumns: !!tableColumns,
-      tableColumnsData: tableColumns?.data
-    });
 
     if (open && record) {
       // Fetch comments when modal opens
@@ -101,29 +84,19 @@ const EditRecordModal = ({
       
       // Get record data from multiple possible locations
       const recordData = record.data || record.dataValues?.data || {};
-      console.log('🔍 Record data extraction:', {
-        recordData,
-        recordDataKeys: Object.keys(recordData),
-        hasRecordData: !!recordData,
-        recordDataFrom: record.data ? 'record.data' : record.dataValues?.data ? 'record.dataValues.data' : 'none'
-      });
       
       Object.entries(recordData).forEach(([key, value]) => {
-        console.log('🔍 Processing field:', { key, value, type: typeof value });
         
         // Convert date/time strings to dayjs objects
         if (value && typeof value === 'string') {
           const columns = Array.isArray(tableColumns) ? tableColumns : (tableColumns?.data || Object.values(tableColumns || {}));
           const column = columns.find(col => col.name === key);
-          console.log('🔍 Found column for', key, ':', column);
           
           if (column?.dataType === 'date' || column?.dataType === 'datetime') {
             try {
               formValues[key] = dayjs(value);
-              console.log('🔍 Converted date field:', key, 'to:', formValues[key]);
             } catch {
               formValues[key] = value;
-              console.log('🔍 Date conversion failed for:', key, 'keeping original:', value);
             }
           } else if (column?.dataType === 'time') {
             try {
@@ -132,7 +105,6 @@ const EditRecordModal = ({
               const timeParts = value.split(':');
               if (timeParts.length === 2) {
                 formValues[key] = today.hour(parseInt(timeParts[0])).minute(parseInt(timeParts[1])).second(0);
-                console.log('🔍 Converted time field:', key, 'to:', formValues[key]);
               } else {
                 formValues[key] = value;
                 console.log('🔍 Time conversion failed for:', key, 'keeping original:', value);
