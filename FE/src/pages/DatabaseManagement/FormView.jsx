@@ -177,6 +177,17 @@ const FormView = () => {
   
   // Watch all form values for formula dependencies
   const formValues = Form.useWatch([], form) || {};
+
+  // Force refetch when component mounts to ensure fresh data
+  useEffect(() => {
+    if (viewId && tableId) {
+      queryClient.invalidateQueries(['view', viewId]);
+      queryClient.invalidateQueries(['tableStructure', tableId]);
+      queryClient.refetchQueries(['view', viewId]);
+      queryClient.refetchQueries(['tableStructure', tableId]);
+    }
+  }, [viewId, tableId, queryClient]);
+
   const [formConfig, setFormConfig] = useState({
     backgroundColor: '#fef7f0',
     hideBranding: false,
@@ -217,7 +228,10 @@ const FormView = () => {
       const response = await axiosInstance.get(`/database/views/${viewId}`);
       return response.data.data;
     },
-    enabled: !!viewId
+    enabled: !!viewId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0
   });
 
   // Fetch table structure for form fields
@@ -227,7 +241,10 @@ const FormView = () => {
       const response = await axiosInstance.get(`/database/tables/${tableId}/structure`);
       return response.data.data;
     },
-    enabled: !!tableId
+    enabled: !!tableId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0
   });
 
   // Update view mutation
@@ -257,7 +274,7 @@ const FormView = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      toast.success(`Biểu mẫu đã được gửi thành công! Record ID: ${data.data?._id || 'N/A'}`);
+      toast.success(`Biểu mẫu đã được gửi thành công! Record ID: ${data.data?.id || data.data?._id || 'N/A'}`);
       form.resetFields();
       
       // Invalidate records query to refresh data
@@ -291,7 +308,7 @@ const FormView = () => {
       tableStructure.columns
         .filter(column => !['lookup', 'formula'].includes(column.dataType))
         .forEach(column => {
-          initialVisibility[column._id] = true; // Default to visible
+          initialVisibility[column.id || column._id] = true; // Default to visible
         });
       setFieldVisibility(initialVisibility);
     }
@@ -439,7 +456,7 @@ const FormView = () => {
     }
     
     // Call API to update column
-    axiosInstance.put(`/database/columns/${column._id}`, updatedColumnData)
+    axiosInstance.put(`/database/columns/${column.id || column._id}`, updatedColumnData)
       .then(() => {
         toast.success('Option đã được thêm thành công!');
         queryClient.invalidateQueries(['tableStructure', tableId]);
@@ -485,7 +502,7 @@ const FormView = () => {
       tableStructure.columns
         .filter(column => !['lookup', 'formula'].includes(column.dataType))
         .forEach(column => {
-          newVisibility[column._id] = checked;
+          newVisibility[column.id || column._id] = checked;
         });
       setFieldVisibility(newVisibility);
     }
@@ -503,10 +520,10 @@ const FormView = () => {
       const visibleFields = tableStructure.columns
         .filter(column => !['lookup', 'formula'].includes(column.dataType))
         .filter(column => {
-          if (column._id === columnId) {
+          if ((column.id || column._id) === columnId) {
             return checked;
           }
-          return fieldVisibility[column._id] !== false;
+          return fieldVisibility[column.id || column._id] !== false;
         });
       
       const totalFields = tableStructure.columns.filter(column => !['lookup', 'formula'].includes(column.dataType)).length;
@@ -658,11 +675,11 @@ const FormView = () => {
                           return false;
                         }
                         // Only show fields that are visible (selected)
-                        return fieldVisibility[column._id] !== false;
+                        return fieldVisibility[column.id || column._id] !== false;
                       })
                       .map((column) => (
                     <Form.Item
-                      key={column._id}
+                      key={column.id || column._id}
                       label={
                         <div style={{ 
                           fontSize: '14px', 
@@ -1160,7 +1177,7 @@ const FormView = () => {
 
                   <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
                     {getFilteredFormFields(tableStructure?.columns)?.map((column) => (
-                      <div key={column._id} style={{ 
+                      <div key={column.id || column._id} style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
                         marginBottom: '8px',
@@ -1172,8 +1189,8 @@ const FormView = () => {
                         <DragOutlined style={{ marginRight: '8px', color: '#8c8c8c' }} />
                         <Switch 
                           size="small" 
-                          checked={fieldVisibility[column._id] !== false}
-                          onChange={(checked) => handleFieldVisibilityToggle(column._id, checked)}
+                          checked={fieldVisibility[column.id || column._id] !== false}
+                          onChange={(checked) => handleFieldVisibilityToggle(column.id || column._id, checked)}
                           style={{ marginRight: '12px' }} 
                         />
                         <div style={{ 

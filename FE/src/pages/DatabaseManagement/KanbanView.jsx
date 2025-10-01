@@ -86,6 +86,16 @@ const KanbanView = () => {
   const { databaseId, tableId, viewId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // Force refetch when component mounts to ensure fresh data
+  useEffect(() => {
+    if (viewId && tableId) {
+      queryClient.invalidateQueries(['kanbanConfig', tableId]);
+      queryClient.invalidateQueries({ queryKey: ['kanbanData', tableId], exact: false });
+      queryClient.refetchQueries(['kanbanConfig', tableId]);
+      queryClient.refetchQueries({ queryKey: ['kanbanData', tableId], exact: false });
+    }
+  }, [viewId, tableId, queryClient]);
   
   // State for Kanban
   const [stackByField, setStackByField] = useState('');
@@ -132,6 +142,9 @@ const KanbanView = () => {
       return response.data;
     },
     enabled: !!tableId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0
   });
 
   // Fetch Kanban data with sort and filter parameters
@@ -163,6 +176,9 @@ const KanbanView = () => {
       return response.data;
     },
     enabled: !!tableId && !!stackByField,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0
   });
 
   // Initialize stackBy field when config is loaded

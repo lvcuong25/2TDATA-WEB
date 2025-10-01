@@ -16,6 +16,16 @@ import axiosInstance from '../../../utils/axiosInstance-cookie-only';
  */
 export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilterActive, context, modalCallbacks) => {
   const queryClient = useQueryClient();
+
+  // Force refetch when component mounts to ensure fresh data
+  useEffect(() => {
+    if (tableId) {
+      queryClient.invalidateQueries(['tableStructure', tableId]);
+      queryClient.invalidateQueries({ queryKey: ['tableRecords', tableId], exact: false });
+      queryClient.refetchQueries(['tableStructure', tableId]);
+      queryClient.refetchQueries({ queryKey: ['tableRecords', tableId], exact: false });
+    }
+  }, [tableId, queryClient]);
   const { 
     selectedRowKeys, 
     setSelectedRowKeys, 
@@ -86,6 +96,9 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       return response.data;
     },
     enabled: !!tableId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0
   });
 
   // Fetch table records
@@ -109,6 +122,9 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       return response.data;
     },
     enabled: !!tableId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0,
   });
 
   // Add column mutation

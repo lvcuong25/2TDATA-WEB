@@ -140,9 +140,11 @@ const EditRecordModal = ({
   // Comment mutation
   const addCommentMutation = useMutation({
     mutationFn: async (commentData) => {
-      const response = await axiosInstance.post(`/database/records/${record._id}/comments`, {
+      const recordId = record._id || record.id;
+      console.log('🔍 Adding comment for record:', recordId);
+      const response = await axiosInstance.post(`/database/records/${recordId}/comments`, {
         text: commentData.text,
-        recordId: record._id,
+        recordId: recordId,
         tableId: tableId
       });
       return response.data;
@@ -161,7 +163,10 @@ const EditRecordModal = ({
   // Fetch comments mutation
   const fetchCommentsMutation = useMutation({
     mutationFn: async () => {
-      const response = await axiosInstance.get(`/database/records/${record._id}/comments`);
+      console.log('🔍 Fetching comments for record:', record._id, record.id);
+      const recordId = record._id || record.id;
+      const response = await axiosInstance.get(`/database/records/${recordId}/comments`);
+      console.log('🔍 Comments response:', response.data);
       return response.data;
     },
     onSuccess: (data) => {

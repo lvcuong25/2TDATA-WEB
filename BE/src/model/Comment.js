@@ -7,13 +7,11 @@ const commentSchema = new mongoose.Schema({
     trim: true
   },
   recordId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Record',
+    type: String,
     required: true
   },
   tableId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Table',
+    type: String,
     required: true
   },
   author: {
