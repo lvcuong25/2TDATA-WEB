@@ -1195,9 +1195,23 @@ export const deleteMultipleRecords = async (req, res) => {
     }
 
     // Verify all records exist and get their table info
-    const records = await Record.find({
-      _id: { $in: recordIds }
-    }).populate('tableId');
+    // Try PostgreSQL first (more likely for new records)
+    const { Record: PostgresRecord } = await import('../models/postgres/index.js');
+    let records = await PostgresRecord.findAll({
+      where: {
+        id: recordIds
+      },
+      raw: true
+    });
+
+    let isPostgres = records.length > 0;
+
+    // If not found in PostgreSQL, try MongoDB
+    if (!isPostgres) {
+      records = await Record.find({
+        _id: { $in: recordIds }
+      }).populate('tableId');
+    }
 
     if (records.length !== recordIds.length) {
       return res.status(404).json({ 
@@ -1208,8 +1222,29 @@ export const deleteMultipleRecords = async (req, res) => {
     // Check if user is a member of the database for all records
     // Super admin có quyền xóa record trong mọi database
     if (!isSuperAdmin(req.user)) {
-      const tableIds = [...new Set(records.map(r => r.tableId._id))];
-      const tables = await Table.find({ _id: { $in: tableIds } }).populate('databaseId');
+      let tableIds;
+      let tables;
+
+      if (isPostgres) {
+        // Get unique table IDs from PostgreSQL records
+        tableIds = [...new Set(records.map(r => r.table_id))];
+        // Get tables from PostgreSQL
+        const { Table: PostgresTable } = await import('../models/postgres/index.js');
+        const postgresTables = await PostgresTable.findAll({
+          where: {
+            id: tableIds
+          },
+          raw: true
+        });
+        tables = postgresTables.map(t => ({
+          _id: t.id,
+          databaseId: { _id: t.database_id }
+        }));
+      } else {
+        // MongoDB records
+        tableIds = [...new Set(records.map(r => r.tableId._id))];
+        tables = await Table.find({ _id: { $in: tableIds } }).populate('databaseId');
+      }
       
       for (const table of tables) {
         const baseMember = await BaseMember.findOne({
@@ -1263,17 +1298,37 @@ export const deleteMultipleRecords = async (req, res) => {
     }
 
     // Delete all comments associated with these records
-    await Comment.deleteMany({ recordId: { $in: recordIds } });
+    if (isPostgres) {
+      // For PostgreSQL records, comments might not exist or be in different format
+      // Skip comment deletion for now as PostgreSQL records don't have MongoDB comments
+      console.log('🔍 Skipping comment deletion for PostgreSQL records');
+    } else {
+      // For MongoDB records, delete comments normally
+      await Comment.deleteMany({ recordId: { $in: recordIds } });
+    }
     
     // Delete all records
-    const result = await Record.deleteMany({
-      _id: { $in: recordIds }
-    });
+    let deletedCount;
+    if (isPostgres) {
+      // Delete PostgreSQL records
+      const deleteResult = await PostgresRecord.destroy({
+        where: {
+          id: recordIds
+        }
+      });
+      deletedCount = deleteResult;
+    } else {
+      // Delete MongoDB records
+      const result = await Record.deleteMany({
+        _id: { $in: recordIds }
+      });
+      deletedCount = result.deletedCount;
+    }
 
     res.status(200).json({
       success: true,
-      message: `${result.deletedCount} records and associated comments deleted successfully`,
-      deletedCount: result.deletedCount
+      message: `${deletedCount} records and associated comments deleted successfully`,
+      deletedCount: deletedCount
     });
   } catch (error) {
     console.error("Error deleting multiple records:", error);

@@ -103,7 +103,13 @@ const TableHeader = ({
   rowHeightSettings,
   onRowHeightChange,
   // Column actions
-  handleEditColumn
+  handleEditColumn,
+  // Permission checks
+  canEditStructure,
+  canAddData,
+  canEditData,
+  canAddView,
+  canEditView
 }) => {
   return (
     <div style={{
@@ -284,8 +290,9 @@ const TableHeader = ({
                   icon={<PlusOutlined />}
                   size="small"
                   onClick={() => setShowAddColumn(true)}
+                  disabled={!canEditStructure}
                   style={{ 
-                    color: '#1890ff',
+                    color: canEditStructure ? '#1890ff' : '#d9d9d9',
                     fontSize: '12px'
                   }}
                 >

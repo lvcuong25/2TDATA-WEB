@@ -92,7 +92,6 @@ router.use(locksRouter);
 router.use(columnsReadRouter);
 router.use("/tables", tableRouter);
 router.use("/postgres", postgresRoutes); // PostgreSQL routes for data models
-router.use("/database", tableRoutesSimple); // Simple PostgreSQL routes for testing
 router.use(columnPermsRouter);
 router.use(rolesPermsRouter);
 router.use("/permissions", permissionRouter);
@@ -106,6 +105,7 @@ router.use("/organization", routerOrganization);
 // Mount members and roles routes under /database first to avoid conflicts
 router.use("/database", membersRouter);
 router.use("/database", baseRolesRouter);
-router.use("/database", routerDatabase);
+router.use("/database", tableRoutesSimple); // Simple PostgreSQL routes for testing (fallback)
+router.use("/database", routerDatabase); // Database routes with permission checks
 router.use("/test", testRouter);
 export default router;

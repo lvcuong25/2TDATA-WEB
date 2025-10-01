@@ -280,7 +280,11 @@ const TableBody = ({
   currentUser,
   userRole,
   cellPermissionsResponse,
-  addDebugLog
+  addDebugLog,
+  // Table permission checks
+  canEditStructure,
+  canAddData,
+  canEditData
 }) => {
   // Debug userRole
   console.log('🚨 TABLEBODY userRole:', userRole, 'type:', typeof userRole);
@@ -570,20 +574,23 @@ const TableBody = ({
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Tooltip title={`Add record to ${group.rules[0].field}: ${String(group.values[0] || '(empty)')}`}>
+                    <Tooltip title={canAddData ? `Add record to ${group.rules[0].field}: ${String(group.values[0] || '(empty)')}` : 'No permission to add records'}>
                       <Button
                         type="text"
                         size="small"
                         icon={<PlusOutlined />}
+                        disabled={!canAddData}
                         style={{
-                          color: '#52c41a',
+                          color: canAddData ? '#52c41a' : '#d9d9d9',
                           fontSize: '12px',
                           padding: '2px 4px',
                           minWidth: 'auto'
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAddRowToGroup(group.values, group.rules);
+                          if (canAddData) {
+                            handleAddRowToGroup(group.values, group.rules);
+                          }
                         }}
                       />
                     </Tooltip>
@@ -1743,13 +1750,22 @@ const TableBody = ({
                   <div style={{
                     display: 'flex',
                     borderBottom: '1px solid #d9d9d9',
-                    backgroundColor: '#fafafa',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
+                    backgroundColor: canAddData ? '#fafafa' : '#f5f5f5',
+                    cursor: canAddData ? 'pointer' : 'not-allowed',
+                    transition: 'background-color 0.2s',
+                    opacity: canAddData ? 1 : 0.6
                   }}
-                    onClick={() => handleAddRowToGroup(String(group.values), group.rules)}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
+                    onClick={canAddData ? () => handleAddRowToGroup(String(group.values), group.rules) : undefined}
+                    onMouseEnter={(e) => {
+                      if (canAddData) {
+                        e.currentTarget.style.backgroundColor = '#f0f0f0';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (canAddData) {
+                        e.currentTarget.style.backgroundColor = '#fafafa';
+                      }
+                    }}
                   >
                     {/* Checkbox and Index Column */}
                     <div style={{
@@ -2889,13 +2905,22 @@ const TableBody = ({
           <div style={{
             display: 'flex',
             borderBottom: '1px solid #d9d9d9',
-            backgroundColor: '#fafafa',
-            cursor: 'pointer',
-            transition: 'background-color 0.2s'
+            backgroundColor: canAddData ? '#fafafa' : '#f5f5f5',
+            cursor: canAddData ? 'pointer' : 'not-allowed',
+            transition: 'background-color 0.2s',
+            opacity: canAddData ? 1 : 0.6
           }}
-            onClick={handleAddRow}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
+            onClick={canAddData ? handleAddRow : undefined}
+            onMouseEnter={(e) => {
+              if (canAddData) {
+                e.currentTarget.style.backgroundColor = '#f0f0f0';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (canAddData) {
+                e.currentTarget.style.backgroundColor = '#fafafa';
+              }
+            }}
           >
             {/* Checkbox and Index Column */}
             <div style={{
@@ -2909,7 +2934,7 @@ const TableBody = ({
             }}>
               <PlusOutlined
                 style={{
-                  color: '#1890ff',
+                  color: canAddData ? '#1890ff' : '#d9d9d9',
                   fontSize: '16px',
                   fontWeight: 'bold'
                 }}
