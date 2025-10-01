@@ -14,8 +14,12 @@ import {
   deleteRecordSimple,
   getTableStructureSimple 
 } from '../controllers/recordControllerSimple.js';
+
 import { deleteMultipleRecords } from '../controllers/recordController.js';
 import { checkTableViewPermission, checkTablePermission } from '../middlewares/checkTablePermission.js';
+
+import { authAndSiteDetectionMiddleware } from '../middlewares/authAndSiteDetection.js';
+
 
 const router = Router();
 
@@ -30,11 +34,13 @@ router.put('/columns/:columnId', checkTablePermission('canEditStructure'), updat
 router.delete('/columns/:columnId', checkTablePermission('canEditStructure'), deleteColumnSimple);
 
 // Record routes
+
 router.post('/records', checkTablePermission('canAddData'), createRecordSimple);
 router.get('/tables/:tableId/records', checkTableViewPermission, getRecordsByTableIdSimple);
 
 // Bulk delete route - MUST come before :recordId routes
 router.delete('/records/bulk', deleteMultipleRecords);
+
 
 router.get('/records/:recordId', getRecordByIdSimple);
 router.put('/records/:recordId', checkTablePermission('canEditData'), updateRecordSimple);

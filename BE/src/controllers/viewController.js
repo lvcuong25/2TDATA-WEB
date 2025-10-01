@@ -32,13 +32,36 @@ export const createView = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.user.site_id?._id || req.site?._id;
 
-    // Verify table exists and get its database info (check both MongoDB and PostgreSQL)
-    const [mongoTable, postgresTable] = await Promise.all([
-      Table.findById(tableId).populate('databaseId'),
-      PostgresTable.findByPk(tableId)
-    ]);
+    // Determine if tableId is MongoDB ObjectId or PostgreSQL UUID
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(tableId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(tableId);
 
-    const table = mongoTable || postgresTable;
+    let table = null;
+    let databaseId = null;
+
+    if (isMongoId) {
+      table = await Table.findById(tableId).populate('databaseId');
+      if (table) {
+        databaseId = table.databaseId._id;
+      }
+    } else if (isUuid) {
+      table = await PostgresTable.findByPk(tableId);
+      if (table) {
+        databaseId = table.database_id;
+      }
+    } else {
+      // Fallback: try both databases
+      const [mongoTable, postgresTable] = await Promise.all([
+        Table.findById(tableId).populate('databaseId').catch(() => null),
+        PostgresTable.findByPk(tableId).catch(() => null)
+      ]);
+
+      table = mongoTable || postgresTable;
+      if (table) {
+        databaseId = table.databaseId?._id || table.database_id;
+      }
+    }
+
     if (!table) {
       return res.status(404).json({
         success: false,
@@ -46,28 +69,36 @@ export const createView = async (req, res) => {
       });
     }
 
-    // Check if user is a member of the database
-    const baseMember = await BaseMember.findOne({
-      databaseId: table.database_id,
-      userId
-    });
-
-    if (!baseMember) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied - you are not a member of this database'
+    // Check if user is super_admin
+    const isSuperAdmin = req.user.role === 'super_admin';
+    
+    // Check if user is a member of the database (skip for super_admin)
+    let baseMember = null;
+    if (!isSuperAdmin) {
+      baseMember = await BaseMember.findOne({
+        databaseId: databaseId,
+        userId
       });
+
+      if (!baseMember) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied - you are not a member of this database'
+        });
+      }
     }
 
     // Check if user has permission to add views
     console.log('ViewController - createView - checking permissions:', {
       userId,
-      userRole: baseMember.role,
+      userRole: baseMember?.role || 'super_admin',
       tableId,
-      baseMember: baseMember
+      baseMember: baseMember,
+      isSuperAdmin
     });
 
-    if (baseMember.role === 'member') {
+    // Skip permission check for super_admin
+    if (!isSuperAdmin && baseMember && baseMember.role === 'member') {
       // For members, check table permissions
       const TablePermission = (await import('../model/TablePermission.js')).default;
       
@@ -126,9 +157,9 @@ export const createView = async (req, res) => {
         });
       }
     } else {
-      console.log('ViewController - createView - user is owner/manager, bypassing permission check');
+      console.log('ViewController - createView - user is owner/manager/super_admin, bypassing permission check');
     }
-    // Owners and managers can always add views
+    // Owners, managers, and super_admins can always add views
 
     // Check if view name already exists for this table and user
     const existingView = await View.findOne({
@@ -203,9 +234,36 @@ export const getViews = async (req, res) => {
 
     const userId = req.user._id?.toString();
 
-    // Verify table exists and get its database info (using PostgreSQL)
-    const { Table: PostgresTable } = await import('../models/postgres/index.js');
-    const table = await PostgresTable.findByPk(tableId);
+    // Determine if tableId is MongoDB ObjectId or PostgreSQL UUID
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(tableId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(tableId);
+
+    let table = null;
+    let databaseId = null;
+
+    if (isMongoId) {
+      table = await Table.findById(tableId).populate('databaseId');
+      if (table) {
+        databaseId = table.databaseId._id;
+      }
+    } else if (isUuid) {
+      table = await PostgresTable.findByPk(tableId);
+      if (table) {
+        databaseId = table.database_id;
+      }
+    } else {
+      // Fallback: try both databases
+      const [mongoTable, postgresTable] = await Promise.all([
+        Table.findById(tableId).populate('databaseId').catch(() => null),
+        PostgresTable.findByPk(tableId).catch(() => null)
+      ]);
+
+      table = mongoTable || postgresTable;
+      if (table) {
+        databaseId = table.databaseId?._id || table.database_id;
+      }
+    }
+
     if (!table) {
       return res.status(404).json({
         success: false,
@@ -213,17 +271,23 @@ export const getViews = async (req, res) => {
       });
     }
 
-    // Check if user is a member of the database
-    const baseMember = await BaseMember.findOne({
-      databaseId: table.database_id,
-      userId
-    });
-
-    if (!baseMember) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied - you are not a member of this database'
+    // Check if user is super_admin
+    const isSuperAdmin = req.user.role === 'super_admin';
+    
+    // Check if user is a member of the database (skip for super_admin)
+    let baseMember = null;
+    if (!isSuperAdmin) {
+      baseMember = await BaseMember.findOne({
+        databaseId: databaseId,
+        userId
       });
+
+      if (!baseMember) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied - you are not a member of this database'
+        });
+      }
     }
 
     // Get all views for this table
@@ -231,8 +295,8 @@ export const getViews = async (req, res) => {
       .populate('tableId', 'name description')
       .sort({ order: 1, createdAt: -1 });
 
-    // For members, filter views based on permissions
-    if (baseMember.role === 'member') {
+    // For members, filter views based on permissions (skip for super_admin)
+    if (!isSuperAdmin && baseMember && baseMember.role === 'member') {
       const TablePermission = (await import('../model/TablePermission.js')).default;
       
       const tablePermissions = await TablePermission.find({
@@ -483,81 +547,93 @@ export const deleteView = async (req, res) => {
       });
     }
 
-    // Check if user is a member of the database
-    const baseMember = await BaseMember.findOne({
-      databaseId: view.tableId.databaseId,
-      userId
-    });
-
-    if (!baseMember) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied - you are not a member of this database'
+    // Check if user is super_admin
+    const isSuperAdmin = req.user.role === 'super_admin';
+    
+    // Check if user is a member of the database (skip for super_admin)
+    let baseMember = null;
+    if (!isSuperAdmin) {
+      baseMember = await BaseMember.findOne({
+        databaseId: view.tableId.databaseId,
+        userId
       });
+
+      if (!baseMember) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied - you are not a member of this database'
+        });
+      }
     }
 
     // Check if user has permission to delete views
     console.log('ViewController - deleteView - checking permissions:', {
       userId,
-      userRole: baseMember.role,
+      userRole: baseMember?.role || 'super_admin',
       tableId: view.tableId._id,
-      baseMember: baseMember
+      baseMember: baseMember,
+      isSuperAdmin
     });
 
-    if (baseMember.role === 'member') {
-      // For members, check table permissions
-      const TablePermission = (await import('../model/TablePermission.js')).default;
-      
-      const tablePermissions = await TablePermission.find({
-        tableId: view.tableId._id,
-        $or: [
-          { targetType: 'all_members' },
-          { targetType: 'specific_user', userId: userId },
-          { targetType: 'specific_role', role: baseMember.role }
-        ]
-      });
+    // Skip permission check for super_admin
+    if (!isSuperAdmin) {
+      if (baseMember && baseMember.role === 'member') {
+        // For members, check table permissions
+        const TablePermission = (await import('../model/TablePermission.js')).default;
+        
+        const tablePermissions = await TablePermission.find({
+          tableId: view.tableId._id,
+          $or: [
+            { targetType: 'all_members' },
+            { targetType: 'specific_user', userId: userId },
+            { targetType: 'specific_role', role: baseMember.role }
+          ]
+        });
 
-      console.log('ViewController - deleteView - found permissions:', tablePermissions);
+        console.log('ViewController - deleteView - found permissions:', tablePermissions);
 
-      let canEditView = false;
-      
-      // Sort permissions by priority: specific_user > specific_role > all_members
-      const sortedPermissions = tablePermissions.sort((a, b) => {
-        const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
-        return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
-      });
-      
-      // Check permissions in priority order
-      for (const perm of sortedPermissions) {
-        console.log('ViewController - deleteView - checking permission:', {
-          permissionId: perm._id,
-          targetType: perm.targetType,
-          viewPermissions: perm.viewPermissions
+        let canEditView = false;
+        
+        // Sort permissions by priority: specific_user > specific_role > all_members
+        const sortedPermissions = tablePermissions.sort((a, b) => {
+          const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+          return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
         });
         
-        if (perm.viewPermissions && perm.viewPermissions.canEditView !== undefined) {
-          canEditView = perm.viewPermissions.canEditView;
-          console.log('ViewController - deleteView - permission found, stopping at:', {
+        // Check permissions in priority order
+        for (const perm of sortedPermissions) {
+          console.log('ViewController - deleteView - checking permission:', {
+            permissionId: perm._id,
             targetType: perm.targetType,
-            canEditView: canEditView
+            viewPermissions: perm.viewPermissions
           });
-          break; // Stop at first permission found (highest priority)
+          
+          if (perm.viewPermissions && perm.viewPermissions.canEditView !== undefined) {
+            canEditView = perm.viewPermissions.canEditView;
+            console.log('ViewController - deleteView - permission found, stopping at:', {
+              targetType: perm.targetType,
+              canEditView: canEditView
+            });
+            break; // Stop at first permission found (highest priority)
+          }
         }
-      }
 
-      console.log('ViewController - deleteView - canEditView result:', canEditView);
+        console.log('ViewController - deleteView - canEditView result:', canEditView);
 
-      if (!canEditView) {
-        console.log('ViewController - deleteView - access denied');
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied - you do not have permission to delete views in this table'
-        });
+        if (!canEditView) {
+          console.log('ViewController - deleteView - access denied');
+          return res.status(403).json({
+            success: false,
+            message: 'Access denied - you do not have permission to delete views in this table'
+          });
+        }
+      } else {
+        console.log('ViewController - deleteView - user is owner/manager, bypassing permission check');
       }
     } else {
-      console.log('ViewController - deleteView - user is owner/manager, bypassing permission check');
+      console.log('ViewController - deleteView - user is super_admin, bypassing all checks');
     }
-    // Owners and managers can always delete views
+    // Owners, managers, and super_admins can always delete views
 
     await View.findByIdAndDelete(viewId);
 

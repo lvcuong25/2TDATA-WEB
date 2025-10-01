@@ -200,12 +200,52 @@ export const getCalendarData = async (req, res) => {
       });
     }
     
-    // Verify table exists and belongs to user
-    const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+    // Check if tableId is MongoDB ObjectId or PostgreSQL UUID
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(tableId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(tableId);
+    
+    let table = null;
+    let columns = [];
+    
+    if (isMongoId) {
+      // MongoDB ObjectId
+      table = await Table.findOne({
+        _id: tableId,
+        userId,
+        siteId
+      });
+      if (table) {
+        columns = await Column.find({ tableId }).sort({ order: 1 });
+      }
+    } else if (isUuid) {
+      // PostgreSQL UUID - import and use PostgreSQL models
+      const { Table: PostgresTable, Column: PostgresColumn } = await import('../models/postgres/index.js');
+      table = await PostgresTable.findByPk(tableId);
+      if (table) {
+        columns = await PostgresColumn.findAll({ 
+          where: { table_id: tableId },
+          order: [['order', 'ASC']]
+        });
+      }
+    } else {
+      // Try both if format is unclear
+      const { Table: PostgresTable, Column: PostgresColumn } = await import('../models/postgres/index.js');
+      const [mongoTable, postgresTable] = await Promise.all([
+        Table.findOne({ _id: tableId, userId, siteId }).catch(() => null),
+        PostgresTable.findByPk(tableId).catch(() => null)
+      ]);
+      
+      if (mongoTable) {
+        table = mongoTable;
+        columns = await Column.find({ tableId }).sort({ order: 1 });
+      } else if (postgresTable) {
+        table = postgresTable;
+        columns = await PostgresColumn.findAll({ 
+          where: { table_id: tableId },
+          order: [['order', 'ASC']]
+        });
+      }
+    }
     
     if (!table) {
       return res.status(404).json({
@@ -214,13 +254,12 @@ export const getCalendarData = async (req, res) => {
       });
     }
     
-    // Get all columns for this table
-    const columns = await Column.find({ tableId }).sort({ order: 1 });
-    
     // Find columns that can be used for Calendar (date, datetime)
-    const eligibleColumns = columns.filter(col => 
-      ['date', 'datetime'].includes(col.dataType)
-    );
+    // Handle both MongoDB and PostgreSQL column formats
+    const eligibleColumns = columns.filter(col => {
+      const dataType = col.dataType || col.data_type || col.type;
+      return ['date', 'datetime'].includes(dataType);
+    });
     
     if (eligibleColumns.length === 0) {
       return res.json({
@@ -244,28 +283,93 @@ export const getCalendarData = async (req, res) => {
       });
     }
     
-    // Get all records for this table
-    let records = await Record.find({ tableId, userId, siteId }).sort({ createdAt: -1 });
+    // Get all records for this table - handle both MongoDB and PostgreSQL
+    let records = [];
+    if (isMongoId) {
+      // MongoDB ObjectId
+      records = await Record.find({ tableId, userId, siteId }).sort({ createdAt: -1 });
+    } else if (isUuid) {
+      // PostgreSQL UUID
+      const { Record: PostgresRecord } = await import('../models/postgres/index.js');
+      records = await PostgresRecord.findAll({ 
+        where: { table_id: tableId },
+        order: [['created_at', 'DESC']]
+      });
+    } else {
+      // Try both if format is unclear
+      const { Record: PostgresRecord } = await import('../models/postgres/index.js');
+      const [mongoRecords, postgresRecords] = await Promise.all([
+        Record.find({ tableId, userId, siteId }).sort({ createdAt: -1 }).catch(() => []),
+        PostgresRecord.findAll({ 
+          where: { table_id: tableId },
+          order: [['created_at', 'DESC']]
+        }).catch(() => [])
+      ]);
+      records = [...mongoRecords, ...postgresRecords];
+    }
     
     // Filter records that have valid date values
+    console.log('🔍 Calendar API Debug:', {
+      totalRecords: records.length,
+      dateColumnName: dateColumn.name,
+      sampleRecord: records[0]?.data,
+      dateValueInSample: records[0]?.data?.[dateColumn.name]
+    });
+    
     const calendarRecords = records.filter(record => {
       const dateValue = record.data?.[dateColumn.name];
-      return dateValue && !isNaN(new Date(dateValue).getTime());
+      const isValid = dateValue && !isNaN(new Date(dateValue).getTime());
+      console.log('🔍 Record filter:', {
+        recordId: record._id || record.id,
+        dateValue,
+        isValid,
+        recordData: record.data
+      });
+      return isValid;
     });
+    
+    console.log('🔍 Filtered calendar records:', calendarRecords.length);
 
     // Get date range for the current view
     const { start, end } = getDateRange(viewType, currentDate);
     
+    console.log('🔍 Date range debug:', {
+      viewType,
+      currentDate,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      startDate: start.toDateString(),
+      endDate: end.toDateString()
+    });
+    
     // Group records by date
     const eventsByDate = {};
+    let eventsInRange = 0;
     
     calendarRecords.forEach(record => {
       const recordData = record.toObject ? record.toObject() : record;
+      
+      // Ensure we preserve the record ID
+      if (!recordData._id && !recordData.id) {
+        recordData._id = record._id || record.id;
+      }
+      
       const dateValue = recordData.data?.[dateColumn.name];
       const eventDate = new Date(dateValue);
       
+      console.log('🔍 Event date check:', {
+        recordId: recordData._id || recordData.id,
+        dateValue,
+        eventDate: eventDate.toISOString(),
+        eventDateString: eventDate.toDateString(),
+        inRange: eventDate >= start && eventDate < end,
+        start: start.toISOString(),
+        end: end.toISOString()
+      });
+      
       // Check if event is within the current view range
       if (eventDate >= start && eventDate < end) {
+        eventsInRange++;
         const dateKey = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD format
         
         if (!eventsByDate[dateKey]) {
@@ -279,6 +383,8 @@ export const getCalendarData = async (req, res) => {
         });
       }
     });
+    
+    console.log('🔍 Events in range:', eventsInRange, 'out of', calendarRecords.length);
     
     // Sort events within each date
     Object.keys(eventsByDate).forEach(dateKey => {
@@ -331,12 +437,52 @@ export const getCalendarConfig = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.siteId;
     
-    // Verify table exists and belongs to user
-    const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+    // Check if tableId is MongoDB ObjectId or PostgreSQL UUID
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(tableId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(tableId);
+    
+    let table = null;
+    let columns = [];
+    
+    if (isMongoId) {
+      // MongoDB ObjectId
+      table = await Table.findOne({
+        _id: tableId,
+        userId,
+        siteId
+      });
+      if (table) {
+        columns = await Column.find({ tableId }).sort({ order: 1 });
+      }
+    } else if (isUuid) {
+      // PostgreSQL UUID - import and use PostgreSQL models
+      const { Table: PostgresTable, Column: PostgresColumn } = await import('../models/postgres/index.js');
+      table = await PostgresTable.findByPk(tableId);
+      if (table) {
+        columns = await PostgresColumn.findAll({ 
+          where: { table_id: tableId },
+          order: [['order', 'ASC']]
+        });
+      }
+    } else {
+      // Try both if format is unclear
+      const { Table: PostgresTable, Column: PostgresColumn } = await import('../models/postgres/index.js');
+      const [mongoTable, postgresTable] = await Promise.all([
+        Table.findOne({ _id: tableId, userId, siteId }).catch(() => null),
+        PostgresTable.findByPk(tableId).catch(() => null)
+      ]);
+      
+      if (mongoTable) {
+        table = mongoTable;
+        columns = await Column.find({ tableId }).sort({ order: 1 });
+      } else if (postgresTable) {
+        table = postgresTable;
+        columns = await PostgresColumn.findAll({ 
+          where: { table_id: tableId },
+          order: [['order', 'ASC']]
+        });
+      }
+    }
     
     if (!table) {
       return res.status(404).json({
@@ -345,13 +491,12 @@ export const getCalendarConfig = async (req, res) => {
       });
     }
     
-    // Get all columns for this table
-    const columns = await Column.find({ tableId }).sort({ order: 1 });
-    
     // Find columns that can be used for Calendar (date, datetime)
-    const eligibleColumns = columns.filter(col => 
-      ['date', 'datetime'].includes(col.dataType)
-    );
+    // Handle both MongoDB and PostgreSQL column formats
+    const eligibleColumns = columns.filter(col => {
+      const dataType = col.dataType || col.data_type || col.type;
+      return ['date', 'datetime'].includes(dataType);
+    });
     
     if (eligibleColumns.length === 0) {
       return res.json({

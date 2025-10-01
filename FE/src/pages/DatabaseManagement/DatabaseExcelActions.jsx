@@ -119,10 +119,10 @@ const DatabaseExcelActions = ({
       
       // Show import results
       if (data.errors && data.errors.length > 0) {
-        toast.warning(`Import completed with ${data.errors.length} errors. ${data.importedCount} records imported successfully.`);
+        toast.warning(`Import completed with ${data.errors.length} errors. ${data.totalImported} records imported successfully.`);
         console.log('Import errors:', data.errors);
       } else {
-        toast.success(`Successfully created table "${data.tableName}" with ${data.importedCount} records!`);
+        toast.success(`Successfully created ${data.totalTables} table(s) with ${data.totalImported} records!`);
       }
 
       // Close modal and reset state

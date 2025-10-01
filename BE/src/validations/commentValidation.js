@@ -14,10 +14,18 @@ export const createCommentValidation = Joi.object({
       'any.required': 'Comment text is required'
     }),
   tableId: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+    .custom((value, helpers) => {
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      
+      if (mongoIdRegex.test(value) || uuidRegex.test(value)) {
+        return value;
+      }
+      return helpers.error('string.pattern.base');
+    })
     .required()
     .messages({
-      'string.pattern.base': 'Invalid table ID format',
+      'string.pattern.base': 'Invalid table ID format - must be MongoDB ObjectId or UUID',
       'any.required': 'Table ID is required'
     })
 });
@@ -51,10 +59,18 @@ export const commentIdValidation = Joi.object({
 // Validation for record ID parameter
 export const recordIdValidation = Joi.object({
   recordId: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+    .custom((value, helpers) => {
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+      
+      if (mongoIdRegex.test(value) || uuidRegex.test(value)) {
+        return value;
+      }
+      return helpers.error('string.pattern.base');
+    })
     .required()
     .messages({
-      'string.pattern.base': 'Invalid record ID format',
+      'string.pattern.base': 'Invalid record ID format - must be MongoDB ObjectId or UUID',
       'any.required': 'Record ID is required'
     })
 });

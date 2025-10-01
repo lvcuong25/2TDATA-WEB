@@ -1,6 +1,8 @@
 import Table from '../model/Table.js';
 import Record from '../model/Record.js';
 import Column from '../model/Column.js';
+// PostgreSQL imports
+import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
 
 // Helper function to apply filters to records
 const applyFilters = (records, filters, columns) => {
@@ -167,12 +169,58 @@ export const getKanbanData = async (req, res) => {
       });
     }
     
-    // Verify table exists and belongs to user
-    const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+    // Determine if tableId is MongoDB ObjectId or PostgreSQL UUID
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(tableId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(tableId);
+
+    let table = null;
+    let columns = [];
+
+    if (isMongoId) {
+      // MongoDB table lookup
+      table = await Table.findOne({
+        _id: tableId,
+        userId,
+        siteId
+      });
+      
+      if (table) {
+        columns = await Column.find({ tableId }).sort({ order: 1 });
+      }
+    } else if (isUuid) {
+      // PostgreSQL table lookup
+      table = await PostgresTable.findByPk(tableId);
+      
+      if (table) {
+        columns = await PostgresColumn.findAll({
+          where: { table_id: tableId },
+          order: [['order', 'ASC']]
+        });
+      }
+    } else {
+      // Fallback: try both databases
+      const [mongoTable, postgresTable] = await Promise.all([
+        Table.findOne({
+          _id: tableId,
+          userId,
+          siteId
+        }).catch(() => null),
+        PostgresTable.findByPk(tableId).catch(() => null)
+      ]);
+
+      table = mongoTable || postgresTable;
+      
+      if (table) {
+        if (mongoTable) {
+          columns = await Column.find({ tableId }).sort({ order: 1 });
+        } else {
+          columns = await PostgresColumn.findAll({
+            where: { table_id: tableId },
+            order: [['order', 'ASC']]
+          });
+        }
+      }
+    }
     
     if (!table) {
       return res.status(404).json({
@@ -181,13 +229,11 @@ export const getKanbanData = async (req, res) => {
       });
     }
     
-    // Get all columns for this table
-    const columns = await Column.find({ tableId }).sort({ order: 1 });
-    
     // Find columns that can be used for Kanban (single_select, multi_select)
-    const eligibleColumns = columns.filter(col => 
-      ['single_select', 'select'].includes(col.dataType)
-    );
+    const eligibleColumns = columns.filter(col => {
+      const dataType = col.dataType || col.data_type; // Support both MongoDB and PostgreSQL field names
+      return ['single_select', 'select'].includes(dataType);
+    });
     
     if (eligibleColumns.length === 0) {
       return res.json({
@@ -219,10 +265,34 @@ export const getKanbanData = async (req, res) => {
       availableValues = stackByColumn.singleSelectConfig.options;
     } else if (stackByColumn.multiSelectConfig && stackByColumn.multiSelectConfig.options) {
       availableValues = stackByColumn.multiSelectConfig.options;
+    } else if (stackByColumn.single_select_config && stackByColumn.single_select_config.options) {
+      // PostgreSQL format
+      availableValues = stackByColumn.single_select_config.options;
+    } else if (stackByColumn.multi_select_config && stackByColumn.multi_select_config.options) {
+      // PostgreSQL format
+      availableValues = stackByColumn.multi_select_config.options;
     }
     
     // Get all records for this table
-    let records = await Record.find({ tableId, userId, siteId }).sort({ createdAt: -1 });
+    let records = [];
+    if (isMongoId) {
+      records = await Record.find({ tableId, userId, siteId }).sort({ createdAt: -1 });
+    } else if (isUuid) {
+      records = await PostgresRecord.findAll({
+        where: { table_id: tableId },
+        order: [['created_at', 'DESC']]
+      });
+    } else {
+      // Fallback: try both databases
+      const [mongoRecords, postgresRecords] = await Promise.all([
+        Record.find({ tableId, userId, siteId }).sort({ createdAt: -1 }).catch(() => []),
+        PostgresRecord.findAll({
+          where: { table_id: tableId },
+          order: [['created_at', 'DESC']]
+        }).catch(() => [])
+      ]);
+      records = mongoRecords.length > 0 ? mongoRecords : postgresRecords;
+    }
 
     // Parse filters if they come as string
     let parsedFilters = {};
@@ -398,19 +468,42 @@ export const updateRecordColumn = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.siteId;
     
-    if (!recordId || !newColumnValue || !stackByField) {
+    if (!recordId || recordId === 'undefined' || !newColumnValue || !stackByField) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: recordId, newColumnValue, stackByField'
       });
     }
     
-    // Find the record
-    const record = await Record.findOne({
-      _id: recordId,
-      userId,
-      siteId
-    });
+    // Determine if recordId is MongoDB ObjectId or PostgreSQL UUID
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(recordId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(recordId);
+
+    let record = null;
+
+    if (isMongoId) {
+      // MongoDB record lookup
+      record = await Record.findOne({
+        _id: recordId,
+        userId,
+        siteId
+      });
+    } else if (isUuid) {
+      // PostgreSQL record lookup
+      record = await PostgresRecord.findByPk(recordId);
+    } else {
+      // Fallback: try both databases
+      const [mongoRecord, postgresRecord] = await Promise.all([
+        Record.findOne({
+          _id: recordId,
+          userId,
+          siteId
+        }).catch(() => null),
+        PostgresRecord.findByPk(recordId).catch(() => null)
+      ]);
+
+      record = mongoRecord || postgresRecord;
+    }
     
     if (!record) {
       return res.status(404).json({
@@ -423,8 +516,33 @@ export const updateRecordColumn = async (req, res) => {
     const updatedData = { ...record.data };
     updatedData[stackByField] = newColumnValue === 'Uncategorized' ? null : newColumnValue;
     
-    record.data = updatedData;
-    await record.save();
+    if (isMongoId) {
+      // MongoDB update
+      record.data = updatedData;
+      await record.save();
+    } else if (isUuid) {
+      // PostgreSQL update
+      await PostgresRecord.update(
+        { data: updatedData },
+        { where: { id: recordId } }
+      );
+      // Fetch updated record
+      record = await PostgresRecord.findByPk(recordId);
+    } else {
+      // Fallback: try both databases
+      if (record._id) {
+        // MongoDB record
+        record.data = updatedData;
+        await record.save();
+      } else {
+        // PostgreSQL record
+        await PostgresRecord.update(
+          { data: updatedData },
+          { where: { id: recordId } }
+        );
+        record = await PostgresRecord.findByPk(recordId);
+      }
+    }
     
     res.json({
       success: true,
@@ -548,12 +666,58 @@ export const getKanbanConfig = async (req, res) => {
     const userId = req.user._id;
     const siteId = req.siteId;
     
-    // Verify table exists and belongs to user
-    const table = await Table.findOne({
-      _id: tableId,
-      userId,
-      siteId
-    });
+    // Determine if tableId is MongoDB ObjectId or PostgreSQL UUID
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(tableId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(tableId);
+
+    let table = null;
+    let columns = [];
+
+    if (isMongoId) {
+      // MongoDB table lookup
+      table = await Table.findOne({
+        _id: tableId,
+        userId,
+        siteId
+      });
+      
+      if (table) {
+        columns = await Column.find({ tableId }).sort({ order: 1 });
+      }
+    } else if (isUuid) {
+      // PostgreSQL table lookup
+      table = await PostgresTable.findByPk(tableId);
+      
+      if (table) {
+        columns = await PostgresColumn.findAll({
+          where: { table_id: tableId },
+          order: [['order', 'ASC']]
+        });
+      }
+    } else {
+      // Fallback: try both databases
+      const [mongoTable, postgresTable] = await Promise.all([
+        Table.findOne({
+          _id: tableId,
+          userId,
+          siteId
+        }).catch(() => null),
+        PostgresTable.findByPk(tableId).catch(() => null)
+      ]);
+
+      table = mongoTable || postgresTable;
+      
+      if (table) {
+        if (mongoTable) {
+          columns = await Column.find({ tableId }).sort({ order: 1 });
+        } else {
+          columns = await PostgresColumn.findAll({
+            where: { table_id: tableId },
+            order: [['order', 'ASC']]
+          });
+        }
+      }
+    }
     
     if (!table) {
       return res.status(404).json({
@@ -562,13 +726,11 @@ export const getKanbanConfig = async (req, res) => {
       });
     }
     
-    // Get all columns for this table
-    const columns = await Column.find({ tableId }).sort({ order: 1 });
-    
     // Find columns that can be used for Kanban (single_select, multi_select)
-    const eligibleColumns = columns.filter(col => 
-      ['single_select', 'select'].includes(col.dataType)
-    );
+    const eligibleColumns = columns.filter(col => {
+      const dataType = col.dataType || col.data_type; // Support both MongoDB and PostgreSQL field names
+      return ['single_select', 'select'].includes(dataType);
+    });
     
     if (eligibleColumns.length === 0) {
       return res.json({
@@ -591,6 +753,12 @@ export const getKanbanConfig = async (req, res) => {
       availableValues = defaultStackBy.singleSelectConfig.options;
     } else if (defaultStackBy.multiSelectConfig && defaultStackBy.multiSelectConfig.options) {
       availableValues = defaultStackBy.multiSelectConfig.options;
+    } else if (defaultStackBy.single_select_config && defaultStackBy.single_select_config.options) {
+      // PostgreSQL format
+      availableValues = defaultStackBy.single_select_config.options;
+    } else if (defaultStackBy.multi_select_config && defaultStackBy.multi_select_config.options) {
+      // PostgreSQL format
+      availableValues = defaultStackBy.multi_select_config.options;
     }
     
     res.json({

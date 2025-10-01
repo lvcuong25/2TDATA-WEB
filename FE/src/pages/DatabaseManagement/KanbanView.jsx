@@ -86,6 +86,16 @@ const KanbanView = () => {
   const { databaseId, tableId, viewId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // Force refetch when component mounts to ensure fresh data
+  useEffect(() => {
+    if (viewId && tableId) {
+      queryClient.invalidateQueries(['kanbanConfig', tableId]);
+      queryClient.invalidateQueries({ queryKey: ['kanbanData', tableId], exact: false });
+      queryClient.refetchQueries(['kanbanConfig', tableId]);
+      queryClient.refetchQueries({ queryKey: ['kanbanData', tableId], exact: false });
+    }
+  }, [viewId, tableId, queryClient]);
   
   // State for Kanban
   const [stackByField, setStackByField] = useState('');
@@ -132,6 +142,9 @@ const KanbanView = () => {
       return response.data;
     },
     enabled: !!tableId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0
   });
 
   // Fetch Kanban data with sort and filter parameters
@@ -163,6 +176,9 @@ const KanbanView = () => {
       return response.data;
     },
     enabled: !!tableId && !!stackByField,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0
   });
 
   // Initialize stackBy field when config is loaded
@@ -260,7 +276,7 @@ const KanbanView = () => {
 
     // Update record column
     updateRecordColumnMutation.mutate({
-      recordId: draggedCard._id,
+      recordId: draggedCard.id || draggedCard._id,
       newColumnValue: newValue,
       stackByField: stackByField
     });
@@ -495,7 +511,7 @@ const KanbanView = () => {
 
   const confirmDelete = () => {
     if (recordToDelete) {
-      deleteRecordMutation.mutate(recordToDelete._id);
+      deleteRecordMutation.mutate(recordToDelete.id || recordToDelete._id);
       setShowDeleteConfirmModal(false);
       setRecordToDelete(null);
     }
@@ -616,7 +632,7 @@ const KanbanView = () => {
                   placeholder="Select field to stack by"
                 >
                   {kanbanConfig.eligibleColumns
-                    .filter(column => column.dataType === 'single_select' || column.dataType === 'select')
+                    .filter(column => column.data_type === 'single_select' || column.data_type === 'select')
                     .map(column => (
                       <Option key={column.name} value={column.name}>
                         {column.name}
@@ -800,7 +816,7 @@ const KanbanView = () => {
                     {column.records.map((record) => (
                       <div className="relative">
                         <Card
-                          key={record._id}
+                          key={record.id || record._id}
                           size="small"
                           className="cursor-move hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 rounded-lg bg-white group"
                           bodyStyle={{ padding: '16px' }}
@@ -848,13 +864,13 @@ const KanbanView = () => {
                                 const firstField = Object.entries(record.data || {})
                                   .filter(([key]) => visibleFields[key])
                                   .slice(0, 1)[0];
-                                return firstField ? formatFieldValue(firstField[1], tableColumns?.data?.find(col => col.name === firstField[0])?.dataType || 'text') : 'Record';
+                                return firstField ? formatFieldValue(firstField[1], tableColumns?.data?.find(col => col.name === firstField[0])?.data_type || tableColumns?.data?.find(col => col.name === firstField[0])?.dataType || 'text') : 'Record';
                               })()}>
                                 {(() => {
                                   const firstField = Object.entries(record.data || {})
                                     .filter(([key]) => visibleFields[key])
                                     .slice(0, 1)[0];
-                                  return firstField ? formatFieldValue(firstField[1], tableColumns?.data?.find(col => col.name === firstField[0])?.dataType || 'text') : 'Record';
+                                  return firstField ? formatFieldValue(firstField[1], tableColumns?.data?.find(col => col.name === firstField[0])?.data_type || tableColumns?.data?.find(col => col.name === firstField[0])?.dataType || 'text') : 'Record';
                                 })()}
                               </Text>
                             </div>
@@ -867,7 +883,7 @@ const KanbanView = () => {
                               .slice(1, 7) // Skip first field (used as title), show next 6 fields
                               .map(([key, value]) => {
                                 const column = tableColumns?.data?.find(col => col.name === key);
-                                const dataType = column?.dataType || 'text';
+                                const dataType = column?.data_type || column?.dataType || 'text';
                                 return (
                                   <div key={key} className="flex items-center py-1">
                                     <div className="w-5 h-5 flex items-center justify-center mr-3 flex-shrink-0">
@@ -1036,7 +1052,7 @@ const KanbanView = () => {
                               <div className="p-2">
                                 <div className="font-medium text-gray-800">{column.name}</div>
                                 <div className="text-xs text-gray-500 mt-1">
-                                  Type: {column.dataType}
+                                  Type: {column.data_type || column.dataType}
                                 </div>
                                 {column.description && (
                                   <div className="text-xs text-gray-500 mt-1">
@@ -1061,11 +1077,11 @@ const KanbanView = () => {
                       placement="bottomLeft"
                     >
                       <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-200 transition-colors">
-                        {getFieldIcon(column.dataType)}
+                        {getFieldIcon(column.data_type || column.dataType)}
                       </div>
                     </Dropdown>
                     <span className="text-sm text-gray-700">{column.name}</span>
-                    {column.dataType === 'linked_table' && (
+                    {(column.data_type || column.dataType) === 'linked_table' && (
                       <RightOutlined className="text-gray-400 text-xs" />
                     )}
                   </div>

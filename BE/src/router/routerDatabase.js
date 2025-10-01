@@ -19,7 +19,7 @@ import {
   updateTable,
   deleteTable,
   copyTable
-} from "../controllers/tableController.js";
+} from "../controllers/tableControllerPostgres.js";
 
 import {
   createColumn,
@@ -29,9 +29,12 @@ import {
   deleteColumn,
   getLinkedTableData,
   getLookupData,
-  reorderColumns,
+  reorderColumns
+} from "../controllers/columnControllerPostgres.js";
+
+import {
   createColumnAtPosition
-} from "../controllers/columnController.js";
+} from "../controllers/columnControllerPostgres.js";
 
 import {
   createRecord,
@@ -42,7 +45,7 @@ import {
   deleteMultipleRecords,
   deleteAllRecords,
   getTableStructure
-} from "../controllers/recordController.js";
+} from "../controllers/recordControllerPostgres.js";
 
 import {
   getCommentsByRecord,
@@ -215,7 +218,7 @@ router.post("/records", createRecord);
 router.get("/tables/:tableId/records", getRecords);
 
 // Bulk delete routes - MUST come before :recordId routes
-router.delete("/records/bulk", requireAuthWithCookie, deleteMultipleRecords);
+router.delete("/records/bulk", authAndSiteDetectionMiddleware, deleteMultipleRecords);
 router.delete("/tables/:tableId/records/all", deleteAllRecords);
 
 // Individual record routes - MUST come after bulk routes

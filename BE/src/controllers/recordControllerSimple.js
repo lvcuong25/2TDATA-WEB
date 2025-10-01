@@ -1,4 +1,4 @@
-import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
+import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord, sequelize } from '../models/postgres/index.js';
 import { Op } from 'sequelize';
 import { updateMetabaseTable } from '../utils/metabaseTableCreator.js';
 import Table from '../model/Table.js';
@@ -73,6 +73,8 @@ export const getRecordsByTableIdSimple = async (req, res) => {
     const { page = 1, limit = 50, sortRules, filterRules } = req.query;
     const userId = req.user?._id?.toString() || '68341e4d3f86f9c7ae46e962';
 
+    console.log('🔍 Records request:', { tableId, sortRules, filterRules, page, limit });
+
     const table = await PostgresTable.findByPk(tableId);
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
@@ -94,13 +96,103 @@ export const getRecordsByTableIdSimple = async (req, res) => {
       }
     }
 
+    // Get columns to determine data types for sorting
+    const columns = await PostgresColumn.findAll({
+      where: { table_id: tableId },
+      order: [['order', 'ASC']]
+    });
+
     // Build order clause for sorting
     let orderClause = [['created_at', 'ASC']];
     if (sortRules) {
       try {
         const parsedSorts = JSON.parse(sortRules);
+        console.log('📊 Parsed sort rules:', parsedSorts);
+        
         if (parsedSorts.length > 0) {
-          orderClause = parsedSorts.map(sort => [sort.field, sort.direction.toUpperCase()]);
+          const firstSort = parsedSorts[0];
+          const sortField = firstSort.field;
+          // Frontend sends 'order' instead of 'direction'
+          const sortDirection = (firstSort.direction || firstSort.order || 'asc').toUpperCase();
+          console.log('🔍 Debug sort direction:', { 
+            original: firstSort.direction, 
+            order: firstSort.order, 
+            processed: sortDirection 
+          });
+          
+          // Check if it's a data field (not system field)
+          if (sortField !== 'created_at' && sortField !== 'updated_at' && sortField !== '_id') {
+            // Find the column to determine data type
+            const column = columns.find(col => col.name === sortField || col.key === sortField);
+            
+            if (column) {
+              const dataType = column.data_type;
+              console.log('🎯 Sorting by data field:', { field: sortField, dataType, direction: sortDirection });
+              
+              // Use appropriate JSONB sorting based on data type
+              if (['number', 'currency', 'percent', 'rating'].includes(dataType)) {
+                // Handle empty strings and invalid numeric values by using CASE statement
+                // Empty strings will be sorted last (after valid numbers)
+                orderClause = [[sequelize.literal(`
+                  CASE 
+                    WHEN data->>'${sortField}' = '' THEN 1
+                    WHEN data->>'${sortField}' IS NULL THEN 1
+                    ELSE 0
+                  END
+                `), 'ASC'], [sequelize.literal(`
+                  CASE 
+                    WHEN data->>'${sortField}' = '' OR data->>'${sortField}' IS NULL THEN NULL
+                    ELSE (data->>'${sortField}')::numeric
+                  END
+                `), sortDirection]];
+              } else if (['date', 'datetime', 'created_time', 'last_edited_time'].includes(dataType)) {
+                // Handle empty strings and invalid date values
+                orderClause = [[sequelize.literal(`
+                  CASE 
+                    WHEN data->>'${sortField}' = '' THEN 1
+                    WHEN data->>'${sortField}' IS NULL THEN 1
+                    ELSE 0
+                  END
+                `), 'ASC'], [sequelize.literal(`
+                  CASE 
+                    WHEN data->>'${sortField}' = '' OR data->>'${sortField}' IS NULL THEN NULL
+                    ELSE (data->>'${sortField}')::timestamp
+                  END
+                `), sortDirection]];
+              } else if (['time', 'year'].includes(dataType)) {
+                // Handle time and year as numeric values
+                orderClause = [[sequelize.literal(`
+                  CASE 
+                    WHEN data->>'${sortField}' = '' THEN 1
+                    WHEN data->>'${sortField}' IS NULL THEN 1
+                    ELSE 0
+                  END
+                `), 'ASC'], [sequelize.literal(`
+                  CASE 
+                    WHEN data->>'${sortField}' = '' OR data->>'${sortField}' IS NULL THEN NULL
+                    ELSE (data->>'${sortField}')::numeric
+                  END
+                `), sortDirection]];
+              } else {
+                // For text and other types (text, long_text, single_select, multi_select, checkbox, url, email, phone, attachment, formula, rollup, lookup, linked_table)
+                // Use unicode collation for proper alphabetical sorting
+                // Empty strings will be sorted last
+                orderClause = [[sequelize.literal(`
+                  CASE 
+                    WHEN data->>'${sortField}' = '' THEN 1
+                    WHEN data->>'${sortField}' IS NULL THEN 1
+                    ELSE 0
+                  END
+                `), 'ASC'], [sequelize.literal(`data->>'${sortField}' COLLATE "en_US.utf8"`), sortDirection]];
+              }
+            } else {
+              // Fallback to text sorting if column not found
+              orderClause = [[sequelize.literal(`data->>'${sortField}' COLLATE "en_US.utf8"`), sortDirection]];
+            }
+          } else {
+            // System field sorting
+            orderClause = [[sortField, sortDirection]];
+          }
         }
       } catch (error) {
         console.error('Error parsing sort rules:', error);
@@ -114,6 +206,10 @@ export const getRecordsByTableIdSimple = async (req, res) => {
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
+
+    console.log('📋 Query executed with order:', orderClause);
+    console.log('📊 Records count:', count, 'Returned:', records.length);
+
 
     // Transform PostgreSQL data to match frontend expected format
     const transformedRecords = records.map(record => ({

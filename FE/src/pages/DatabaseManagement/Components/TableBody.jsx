@@ -323,44 +323,25 @@ const TableBody = ({
 
   // Helper function to check if cell can be edited
   const isCellEditableByPermission = (recordId, columnId) => {
-    console.log('🔍 isCellEditableByPermission called:', {
-      recordId,
-      columnId,
-      cellPermissions: cellPermissions?.length || 0,
-      cellPermissionsResponse: cellPermissionsResponse,
-      currentUser: currentUser?._id,
-      userRole
-    });
     
     
     if (!cellPermissions || !currentUser || !userRole) {
-      console.log('🔍 Missing permission data, defaulting to editable');
       return true; // Default to editable if no permission data
     }
     
     const result = canEditCell(cellPermissions, recordId, columnId, currentUser, userRole);
-    console.log('🔍 isCellEditableByPermission result:', result);
     return result;
   };
 
   // Helper function to check if current editing cell can be edited
   const canEditCurrentCell = () => {
-    console.log('🔍 canEditCurrentCell called:', {
-      editingCell: editingCell,
-      hasColumn: !!editingCell?.column,
-      hasColumnId: !!editingCell?.column?._id,
-      recordId: editingCell?.recordId,
-      columnId: editingCell?.column?._id
-    });
     
     
     if (!editingCell || !editingCell.column || !editingCell.column._id) {
-      console.log('🔍 canEditCurrentCell: Missing editingCell data, returning false');
       return false;
     }
     
     const result = isCellEditableByPermission(editingCell.recordId, editingCell.column._id);
-    console.log('🔍 canEditCurrentCell result:', result);
     return result;
   };
 
@@ -479,7 +460,7 @@ const TableBody = ({
           {/* Data Columns */}
           {visibleColumns.map((column, index) => (
             <DraggableColumnHeader
-              key={column._id}
+              key={column.id || column._id}
               column={column}
               columnWidths={columnWidths}
               sortRules={[]}

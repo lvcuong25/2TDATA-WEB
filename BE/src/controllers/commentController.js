@@ -12,12 +12,23 @@ export const getCommentsByRecord = async (req, res) => {
     const { recordId } = req.params;
 
     // Verify record exists (check both MongoDB and PostgreSQL)
-    const [mongoRecord, postgresRecord] = await Promise.all([
-      Record.findById(recordId),
-      PostgresRecord.findByPk(recordId)
-    ]);
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(recordId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(recordId);
 
-    const record = mongoRecord || postgresRecord;
+    let record = null;
+    if (isMongoId) {
+      record = await Record.findById(recordId);
+    } else if (isUuid) {
+      record = await PostgresRecord.findByPk(recordId);
+    } else {
+      // Try both if format is unclear
+      const [mongoRecord, postgresRecord] = await Promise.all([
+        Record.findById(recordId).catch(() => null),
+        PostgresRecord.findByPk(recordId).catch(() => null)
+      ]);
+      record = mongoRecord || postgresRecord;
+    }
+
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
@@ -49,7 +60,9 @@ export const createComment = async (req, res) => {
   try {
     const { recordId } = req.params;
     const { text, tableId } = req.body;
-    const userId = req.user?.id; // Assuming user is attached to request from auth middleware
+    const userId = req.user?._id || req.user?.id; // Assuming user is attached to request from auth middleware
+    
+    // console.log('🔍 Create Comment Debug:', { recordId, text, tableId, userId, user: req.user });
 
     // Validate input
     const { error } = createCommentValidation.validate({ text, tableId });
@@ -61,34 +74,59 @@ export const createComment = async (req, res) => {
     }
 
     // Verify record exists (check both MongoDB and PostgreSQL)
-    const [mongoRecord, postgresRecord] = await Promise.all([
-      Record.findById(recordId),
-      PostgresRecord.findByPk(recordId)
-    ]);
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(recordId);
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(recordId);
 
-    const record = mongoRecord || postgresRecord;
+    let record = null;
+    if (isMongoId) {
+      record = await Record.findById(recordId);
+    } else if (isUuid) {
+      record = await PostgresRecord.findByPk(recordId);
+    } else {
+      // Try both if format is unclear
+      const [mongoRecord, postgresRecord] = await Promise.all([
+        Record.findById(recordId).catch(() => null),
+        PostgresRecord.findByPk(recordId).catch(() => null)
+      ]);
+      record = mongoRecord || postgresRecord;
+    }
+
     if (!record) {
       return res.status(404).json({ message: 'Record not found' });
     }
 
     // Verify table exists (check both MongoDB and PostgreSQL)
-    const [mongoTable, postgresTable] = await Promise.all([
-      Table.findById(tableId),
-      PostgresTable.findByPk(tableId)
-    ]);
+    const isTableMongoId = /^[0-9a-fA-F]{24}$/.test(tableId);
+    const isTableUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(tableId);
 
-    const table = mongoTable || postgresTable;
+    let table = null;
+    if (isTableMongoId) {
+      table = await Table.findById(tableId);
+    } else if (isTableUuid) {
+      table = await PostgresTable.findByPk(tableId);
+    } else {
+      // Try both if format is unclear
+      const [mongoTable, postgresTable] = await Promise.all([
+        Table.findById(tableId).catch(() => null),
+        PostgresTable.findByPk(tableId).catch(() => null)
+      ]);
+      table = mongoTable || postgresTable;
+    }
+
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
     // Get user information
+    // console.log('🔍 Looking for user with ID:', userId);
     const user = await User.findById(userId);
+    // console.log('🔍 User found:', user ? 'YES' : 'NO');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Create comment
+    // console.log('🔍 Creating comment with data:', { text: text.trim(), recordId, tableId, author: userId, authorName: user.name });
     const comment = new Comment({
       text: text.trim(),
       recordId,
@@ -97,10 +135,14 @@ export const createComment = async (req, res) => {
       authorName: user.name
     });
 
+    // console.log('🔍 Saving comment...');
     await comment.save();
+    // console.log('🔍 Comment saved successfully:', comment._id);
 
     // Populate author information for response
+    // console.log('🔍 Populating author information...');
     await comment.populate('author', 'name email');
+    // console.log('🔍 Author populated:', comment.author);
 
     // Format response
     const formattedComment = {
@@ -112,7 +154,12 @@ export const createComment = async (req, res) => {
       updatedAt: comment.updatedAt
     };
 
-    res.status(201).json(formattedComment);
+    // console.log('🔍 Sending response:', formattedComment);
+    res.status(201).json({
+      success: true,
+      message: 'Comment created successfully',
+      data: formattedComment
+    });
   } catch (error) {
     console.error('Error creating comment:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -124,7 +171,7 @@ export const updateComment = async (req, res) => {
   try {
     const { commentId } = req.params;
     const { text } = req.body;
-    const userId = req.user?.id;
+    const userId = req.user?._id || req.user?.id;
 
     // Validate input
     const { error } = updateCommentValidation.validate({ text });
@@ -142,7 +189,7 @@ export const updateComment = async (req, res) => {
     }
 
     // Check if user is the author
-    if (comment.author.toString() !== userId) {
+    if (comment.author.toString() !== userId.toString()) {
       return res.status(403).json({ message: 'You can only edit your own comments' });
     }
 
@@ -175,7 +222,7 @@ export const updateComment = async (req, res) => {
 export const deleteComment = async (req, res) => {
   try {
     const { commentId } = req.params;
-    const userId = req.user?.id;
+    const userId = req.user?._id || req.user?.id;
 
     // Find comment
     const comment = await Comment.findById(commentId);
@@ -184,7 +231,7 @@ export const deleteComment = async (req, res) => {
     }
 
     // Check if user is the author
-    if (comment.author.toString() !== userId) {
+    if (comment.author.toString() !== userId.toString()) {
       return res.status(403).json({ message: 'You can only delete your own comments' });
     }
 

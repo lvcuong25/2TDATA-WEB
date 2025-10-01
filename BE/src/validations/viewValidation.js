@@ -5,8 +5,15 @@ export const createViewValidation = [
   body('tableId')
     .notEmpty()
     .withMessage('Table ID is required')
-    .isMongoId()
-    .withMessage('Invalid table ID format'),
+    .custom((value) => {
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+      if (mongoIdRegex.test(value) || uuidRegex.test(value)) {
+        return true;
+      }
+      throw new Error('Invalid table ID format - must be MongoDB ObjectId or UUID');
+    }),
 
   body('name')
     .notEmpty()
@@ -91,6 +98,13 @@ export const copyViewValidation = [
   body('targetTableId')
     .notEmpty()
     .withMessage('Target table ID is required')
-    .isMongoId()
-    .withMessage('Invalid target table ID format')
+    .custom((value) => {
+      const mongoIdRegex = /^[0-9a-fA-F]{24}$/;
+      const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+      if (mongoIdRegex.test(value) || uuidRegex.test(value)) {
+        return true;
+      }
+      throw new Error('Invalid target table ID format - must be MongoDB ObjectId or UUID');
+    })
 ];
