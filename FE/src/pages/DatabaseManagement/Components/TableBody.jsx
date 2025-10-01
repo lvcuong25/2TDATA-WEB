@@ -475,7 +475,7 @@ const TableBody = ({
           {/* Data Columns */}
           {visibleColumns.map((column, index) => (
             <DraggableColumnHeader
-              key={column._id}
+              key={column.id || column._id}
               column={column}
               columnWidths={columnWidths}
               sortRules={[]}

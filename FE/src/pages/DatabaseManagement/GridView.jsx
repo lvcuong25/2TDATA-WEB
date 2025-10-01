@@ -1053,7 +1053,9 @@ const GridView = () => {
         selectAll={selectAll}
         setShowAddColumn={setShowAddColumn}
         handleEditColumn={() => {}}
-        handleDeleteColumn={() => {}}
+        handleDeleteColumn={(columnId, columnName) => {
+          deleteColumnMutation.mutate(columnId);
+        }}
         updateRecordMutation={updateRecordMutation}
         updateColumnMutation={updateColumnMutation}
         isResizing={isResizing}
