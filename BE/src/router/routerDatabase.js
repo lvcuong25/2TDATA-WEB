@@ -28,7 +28,10 @@ import {
   deleteColumn,
   getLinkedTableData,
   getLookupData,
-  reorderColumns,
+  reorderColumns
+} from "../controllers/columnControllerPostgres.js";
+
+import {
   createColumnAtPosition
 } from "../controllers/columnControllerPostgres.js";
 

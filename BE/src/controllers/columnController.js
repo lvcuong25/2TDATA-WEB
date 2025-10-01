@@ -1187,9 +1187,21 @@ export const createColumnAtPosition = async (req, res) => {
     }
 
     // Verify table exists and belongs to user
-    const table = await Table.findOne({
+    // Try to find table by _id first, if fails try by other fields
+    let table = await Table.findOne({
       _id: tableId
     }).populate('databaseId');
+    
+    // If not found by _id, try to find by other possible fields
+    if (!table) {
+      // Check if tableId might be a different field
+      table = await Table.findOne({
+        $or: [
+          { name: tableId },
+          { _id: tableId }
+        ]
+      }).populate('databaseId');
+    }
 
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });

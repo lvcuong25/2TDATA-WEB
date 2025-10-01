@@ -1,4 +1,5 @@
 import { Table, Column, Record, sequelize } from '../models/postgres/index.js';
+import { Op } from 'sequelize';
 import { hybridDbManager } from '../config/hybrid-db.js';
 import Base from '../model/Base.js';
 import BaseMember from '../model/BaseMember.js';
@@ -489,33 +490,26 @@ export const createColumnAtPosition = async (req, res) => {
     }
 
     // Calculate new order
-    let newOrder = referenceColumn.order;
-    if (position === 'right') {
-      newOrder += 1;
+    let newOrder;
+    if (position === 'left') {
+      // Insert to the left of reference column
+      newOrder = referenceColumn.order;
+    } else {
+      // Insert to the right of reference column
+      newOrder = referenceColumn.order + 1;
     }
 
-    // Update order of existing columns
-    if (position === 'right') {
-      await Column.update(
-        { order: sequelize.literal('order + 1') },
-        { 
-          where: { 
-            table_id: tableId,
-            order: { [sequelize.Op.gte]: newOrder }
-          }
+    // Update order of existing columns that need to be shifted
+    // All columns with order >= newOrder need to be shifted right by 1
+    await Column.update(
+      { order: sequelize.literal('"order" + 1') },
+      { 
+        where: { 
+          table_id: tableId,
+          order: { [Op.gte]: newOrder }
         }
-      );
-    } else {
-      await Column.update(
-        { order: sequelize.literal('order + 1') },
-        { 
-          where: { 
-            table_id: tableId,
-            order: { [sequelize.Op.gt]: newOrder }
-          }
-        }
-      );
-    }
+      }
+    );
 
     // Create new column
     const newColumn = await Column.create({
@@ -527,7 +521,7 @@ export const createColumnAtPosition = async (req, res) => {
       default_value: defaultValue || null,
       order: newOrder,
       table_id: tableId,
-      user_id: userId,
+      user_id: userId.toString(), // Convert ObjectId to string
       site_id: table.site_id
     });
 
