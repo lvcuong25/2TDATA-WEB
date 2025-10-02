@@ -124,6 +124,77 @@ export const createColumn = async (req, res) => {
 
     console.log(`✅ Column created in PostgreSQL: ${newColumn.name} (${newColumn.id})`);
 
+    // If this is a formula column, calculate values for all existing records
+    if (dataType === 'formula' && formulaConfig) {
+      console.log(`🧮 New formula column created, calculating values for all records in table ${tableId}`);
+      
+      try {
+        // Import formula calculation function
+        const { evaluateFormula } = await import('../utils/formulaEngine.js');
+        
+        // Get all columns for this table
+        const allColumns = await Column.findAll({
+          where: { table_id: tableId },
+          order: [['order', 'ASC']]
+        });
+        
+        // Get all records for this table
+        const records = await Record.findAll({
+          where: { table_id: tableId }
+        });
+        
+        console.log(`📊 Found ${records.length} records to calculate formula for`);
+        
+        // Transform columns for formula engine
+        const transformedColumns = allColumns.map(col => ({
+          id: col.id,
+          name: col.name,
+          key: col.key,
+          dataType: col.data_type,
+          order: col.order,
+          formulaConfig: col.formula_config
+        }));
+        
+        let updatedCount = 0;
+        
+        // Calculate formula for each record
+        for (const record of records) {
+          const updatedData = { ...record.data };
+          let hasChanges = false;
+          
+          // Calculate formula for this new column
+          try {
+            const formulaValue = evaluateFormula(
+              formulaConfig.formula,
+              record.data || {},
+              transformedColumns
+            );
+            
+            if (updatedData[newColumn.name] !== formulaValue) {
+              updatedData[newColumn.name] = formulaValue;
+              hasChanges = true;
+              console.log(`🧮 ${newColumn.name}: ${record.data?.[newColumn.name]} → ${formulaValue}`);
+            }
+          } catch (error) {
+            console.error(`❌ Error calculating formula for ${newColumn.name}:`, error.message);
+            updatedData[newColumn.name] = null;
+            hasChanges = true;
+          }
+          
+          // Update record if there are changes
+          if (hasChanges) {
+            await record.update({ data: updatedData });
+            updatedCount++;
+          }
+        }
+        
+        console.log(`🎉 Calculated formula for ${updatedCount} records with new column`);
+        
+      } catch (error) {
+        console.error('❌ Error calculating formula for new column:', error.message);
+      }
+    }
+
     res.status(201).json({
       message: 'Column created successfully',
       column: {
@@ -339,6 +410,77 @@ export const updateColumn = async (req, res) => {
     await column.update(updateFields);
 
     console.log(`✅ Column updated in PostgreSQL: ${column.name} (${column.id})`);
+
+    // If this is a formula column and formula config changed, recalculate all records
+    if (updateData.dataType === 'formula' && updateData.formulaConfig) {
+      console.log(`🧮 Formula column updated, recalculating all records for table ${column.table_id}`);
+      
+      try {
+        // Import formula calculation function
+        const { evaluateFormula } = await import('../utils/formulaEngine.js');
+        
+        // Get all columns for this table
+        const allColumns = await Column.findAll({
+          where: { table_id: column.table_id },
+          order: [['order', 'ASC']]
+        });
+        
+        // Get all records for this table
+        const records = await Record.findAll({
+          where: { table_id: column.table_id }
+        });
+        
+        console.log(`📊 Found ${records.length} records to recalculate`);
+        
+        // Transform columns for formula engine
+        const transformedColumns = allColumns.map(col => ({
+          id: col.id,
+          name: col.name,
+          key: col.key,
+          dataType: col.data_type,
+          order: col.order,
+          formulaConfig: col.formula_config
+        }));
+        
+        let updatedCount = 0;
+        
+        // Recalculate each record
+        for (const record of records) {
+          const updatedData = { ...record.data };
+          let hasChanges = false;
+          
+          // Calculate formula for this column
+          try {
+            const formulaValue = evaluateFormula(
+              updateData.formulaConfig.formula,
+              record.data || {},
+              transformedColumns
+            );
+            
+            if (updatedData[column.name] !== formulaValue) {
+              updatedData[column.name] = formulaValue;
+              hasChanges = true;
+              console.log(`🧮 ${column.name}: ${record.data?.[column.name]} → ${formulaValue}`);
+            }
+          } catch (error) {
+            console.error(`❌ Error calculating formula for ${column.name}:`, error.message);
+            updatedData[column.name] = null;
+            hasChanges = true;
+          }
+          
+          // Update record if there are changes
+          if (hasChanges) {
+            await record.update({ data: updatedData });
+            updatedCount++;
+          }
+        }
+        
+        console.log(`🎉 Recalculated ${updatedCount} records with new formula`);
+        
+      } catch (error) {
+        console.error('❌ Error recalculating formula records:', error.message);
+      }
+    }
 
     res.json({
       message: 'Column updated successfully',
