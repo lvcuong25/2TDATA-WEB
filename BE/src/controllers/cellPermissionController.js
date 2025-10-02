@@ -253,10 +253,13 @@ export const getTableCellPermissions = async (req, res) => {
     // Lấy tất cả records và columns của table từ cả MongoDB và PostgreSQL
     const { Record: PostgresRecord, Column: PostgresColumn } = await import('../models/postgres/index.js');
     
+    // Check if tableId is a valid MongoDB ObjectId (24 hex chars) or UUID (36 chars)
+    const isMongoObjectId = /^[0-9a-fA-F]{24}$/.test(tableId);
+    
     const [mongoRecords, postgresRecords, mongoColumns, postgresColumns] = await Promise.all([
-      Record.find({ tableId }),
+      isMongoObjectId ? Record.find({ tableId }) : Promise.resolve([]),
       PostgresRecord.findAll({ where: { table_id: tableId } }),
-      Column.find({ tableId }),
+      isMongoObjectId ? Column.find({ tableId }) : Promise.resolve([]),
       PostgresColumn.findAll({ where: { table_id: tableId } })
     ]);
     
