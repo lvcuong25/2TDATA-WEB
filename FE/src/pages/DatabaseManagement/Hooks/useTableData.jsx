@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../utils/axiosInstance-cookie-only';
+import { isSuperAdmin } from '../Utils/permissionUtils.jsx';
 
 /**
  * Custom hook for managing table data fetching and mutations
@@ -52,6 +53,11 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
   // Helper function to check table permission
   const checkTablePermission = (permission) => {
     if (!currentUser._id) return false;
+    
+    // Super admin có tất cả quyền
+    if (isSuperAdmin(currentUser)) {
+      return true;
+    }
     
     // Check if user is owner or manager (they have all permissions by default)
     // This should be checked against database membership, but for now we'll use a simple check
