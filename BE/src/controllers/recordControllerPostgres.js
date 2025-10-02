@@ -3,6 +3,75 @@ import { hybridDbManager } from '../config/hybrid-db.js';
 import Base from '../model/Base.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
+import { evaluateFormula } from '../utils/formulaEngine.js';
+
+// Helper function to calculate formula columns for records
+const calculateFormulaColumns = async (records, tableId) => {
+  try {
+    console.log(`🔍 Starting formula calculation for table ${tableId} with ${records.length} records`);
+    
+    // Get all columns for this table
+    const columns = await Column.findAll({
+      where: { table_id: tableId },
+      order: [['order', 'ASC']]
+    });
+    
+    const formulaColumns = columns.filter(col => col.data_type === 'formula' && col.formula_config);
+    console.log(`📋 Found ${formulaColumns.length} formula columns:`, formulaColumns.map(col => col.name));
+    
+    if (formulaColumns.length === 0) {
+      console.log('⚠️ No formula columns found, returning original records');
+      return records; // No formula columns, return as is
+    }
+    
+    // Transform columns to match expected format
+    const transformedColumns = columns.map(column => ({
+      id: column.id,
+      name: column.name,
+      key: column.key,
+      dataType: column.data_type,
+      order: column.order,
+      formulaConfig: column.formula_config
+    }));
+    
+    // Calculate formula values for each record
+    const enhancedRecords = records.map(record => {
+      const enhancedRecord = { ...record };
+      
+      // Calculate each formula column
+      formulaColumns.forEach(formulaColumn => {
+        try {
+          const formulaValue = evaluateFormula(
+            formulaColumn.formula_config.formula,
+            enhancedRecord.data || {},
+            transformedColumns
+          );
+          
+          // Add calculated value to record data
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          const oldValue = enhancedRecord.data[formulaColumn.name];
+          enhancedRecord.data[formulaColumn.name] = formulaValue;
+          
+          console.log(`🧮 Formula ${formulaColumn.name}: ${oldValue} → ${formulaValue}`);
+          
+        } catch (error) {
+          console.error(`Error calculating formula for column ${formulaColumn.name}:`, error);
+          // Set error value or null for failed calculations
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[formulaColumn.name] = null;
+        }
+      });
+      
+      return enhancedRecord;
+    });
+    
+    return enhancedRecords;
+    
+  } catch (error) {
+    console.error('Error calculating formula columns:', error);
+    return records; // Return original records if calculation fails
+  }
+};
 
 // Helper function to apply sorting to records based on data types
 const applySorting = (records, sortConfig, columns) => {
@@ -209,16 +278,20 @@ export const createRecord = async (req, res) => {
 
     console.log(`✅ Record created in PostgreSQL: ${newRecord.id}`);
 
+    // Calculate formula columns for new record
+    const enhancedRecords = await calculateFormulaColumns([newRecord], tableId);
+    const enhancedRecord = enhancedRecords[0];
+
     res.status(201).json({
       message: 'Record created successfully',
       record: {
-        _id: newRecord.id,
-        tableId: newRecord.table_id,
-        userId: newRecord.user_id,
-        siteId: newRecord.site_id,
-        data: newRecord.data,
-        createdAt: newRecord.created_at,
-        updatedAt: newRecord.updated_at
+        _id: enhancedRecord.id,
+        tableId: enhancedRecord.table_id,
+        userId: enhancedRecord.user_id,
+        siteId: enhancedRecord.site_id,
+        data: enhancedRecord.data,
+        createdAt: enhancedRecord.created_at,
+        updatedAt: enhancedRecord.updated_at
       }
     });
 
@@ -415,9 +488,14 @@ export const getRecords = async (req, res) => {
       }));
     }
 
+    // Calculate formula columns for all records
+    console.log(`🧮 Calculating formula columns for ${records.length} records in table ${tableId}`);
+    const enhancedRecords = await calculateFormulaColumns(records, tableId);
+    console.log(`✅ Formula calculation completed for ${enhancedRecords.length} records`);
+
     res.json({
       message: 'Records retrieved successfully',
-      records: records,
+      records: enhancedRecords,
       pagination: {
         total: count,
         page: parseInt(page),
@@ -466,16 +544,20 @@ export const getRecordById = async (req, res) => {
       }
     }
 
+    // Calculate formula columns for single record
+    const enhancedRecords = await calculateFormulaColumns([record], record.table_id);
+    const enhancedRecord = enhancedRecords[0];
+
     res.json({
       message: 'Record retrieved successfully',
       record: {
-        _id: record.id,
-        tableId: record.table_id,
-        userId: record.user_id,
-        siteId: record.site_id,
-        data: record.data,
-        createdAt: record.created_at,
-        updatedAt: record.updated_at
+        _id: enhancedRecord.id,
+        tableId: enhancedRecord.table_id,
+        userId: enhancedRecord.user_id,
+        siteId: enhancedRecord.site_id,
+        data: enhancedRecord.data,
+        createdAt: enhancedRecord.created_at,
+        updatedAt: enhancedRecord.updated_at
       }
     });
 
@@ -527,23 +609,35 @@ export const updateRecord = async (req, res) => {
       }
     }
 
-    // Update record
+    // Update record with initial data
     await record.update({
       data: data || record.data
     });
 
     console.log(`✅ Record updated in PostgreSQL: ${record.id}`);
 
+    // Calculate formula columns for updated record and save back to database
+    const enhancedRecords = await calculateFormulaColumns([record], record.table_id);
+    const enhancedRecord = enhancedRecords[0];
+    
+    // Update record again with calculated formula values
+    if (enhancedRecord.data !== record.data) {
+      await record.update({
+        data: enhancedRecord.data
+      });
+      console.log(`🧮 Formula values calculated and saved for record: ${record.id}`);
+    }
+
     res.json({
       message: 'Record updated successfully',
       record: {
-        _id: record.id,
-        tableId: record.table_id,
-        userId: record.user_id,
-        siteId: record.site_id,
-        data: record.data,
-        createdAt: record.created_at,
-        updatedAt: record.updated_at
+        _id: enhancedRecord.id,
+        tableId: enhancedRecord.table_id,
+        userId: enhancedRecord.user_id,
+        siteId: enhancedRecord.site_id,
+        data: enhancedRecord.data,
+        createdAt: enhancedRecord.created_at,
+        updatedAt: enhancedRecord.updated_at
       }
     });
 
@@ -657,9 +751,12 @@ export const bulkCreateRecords = async (req, res) => {
 
     console.log(`✅ ${createdRecords.length} records created in PostgreSQL`);
 
+    // Calculate formula columns for all created records
+    const enhancedRecords = await calculateFormulaColumns(createdRecords, tableId);
+
     res.status(201).json({
       message: `${createdRecords.length} records created successfully`,
-      records: createdRecords.map(record => ({
+      records: enhancedRecords.map(record => ({
         _id: record.id,
         tableId: record.table_id,
         userId: record.user_id,

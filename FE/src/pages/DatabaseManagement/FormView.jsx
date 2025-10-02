@@ -810,7 +810,7 @@ const FormView = () => {
                           ))}
                         </Select>
                       )}
-                      {column.dataType === 'multiselect' && (
+                      {column.dataType === 'multi_select' && (
                         <Select 
                           mode="multiple"
                           placeholder={`Chọn ${column.name.toLowerCase()}`} 
@@ -820,9 +820,16 @@ const FormView = () => {
                             minHeight: '40px'
                           }}
                         >
-                          {column.options?.map((option) => (
-                            <Select.Option key={option} value={option}>{option}</Select.Option>
-                          ))}
+                          {(column.multiSelectConfig?.options || []).map((option) => {
+                            // Handle both string and object options
+                            const optionValue = typeof option === 'object' ? (option.id || option.name) : option;
+                            const optionLabel = typeof option === 'object' ? option.name : option;
+                            return (
+                              <Select.Option key={optionValue} value={optionValue}>
+                                {optionLabel}
+                              </Select.Option>
+                            );
+                          })}
                         </Select>
                       )}
                       {column.dataType === 'currency' && (
@@ -1051,7 +1058,7 @@ const FormView = () => {
                             <Select.Option key={option} value={option}>{option}</Select.Option>
                           ))}
                         </Select>
-                      ) : !['text', 'number', 'email', 'date', 'boolean', 'checkbox', 'phone', 'textarea', 'select', 'multiselect', 'currency', 'url', 'time', 'datetime', 'formula', 'lookup', 'linked_table', 'rating'].includes(column.dataType) && (
+                      ) : !['text', 'number', 'email', 'date', 'boolean', 'checkbox', 'phone', 'textarea', 'select', 'multi_select', 'currency', 'url', 'time', 'datetime', 'formula', 'lookup', 'linked_table', 'rating'].includes(column.dataType) && (
                         <Input 
                           placeholder={`Nhập ${column.name.toLowerCase()}`} 
                           size="large"

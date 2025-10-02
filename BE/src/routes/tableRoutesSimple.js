@@ -15,7 +15,7 @@ import {
   getTableStructureSimple 
 } from '../controllers/recordControllerSimple.js';
 
-import { deleteMultipleRecords } from '../controllers/recordController.js';
+import { deleteMultipleRecords } from '../controllers/recordControllerPostgres.js';
 import { checkTableViewPermission, checkTablePermission } from '../middlewares/checkTablePermission.js';
 
 import { authAndSiteDetectionMiddleware } from '../middlewares/authAndSiteDetection.js';

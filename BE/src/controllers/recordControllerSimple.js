@@ -3,6 +3,75 @@ import { Op } from 'sequelize';
 import { updateMetabaseTable } from '../utils/metabaseTableCreator.js';
 import Table from '../model/Table.js';
 import Column from '../model/Column.js';
+import { evaluateFormula } from '../utils/formulaEngine.js';
+
+// Helper function to calculate formula columns for records
+const calculateFormulaColumns = async (records, tableId) => {
+  try {
+    console.log(`🔍 Starting formula calculation for table ${tableId} with ${records.length} records`);
+    
+    // Get all columns for this table
+    const columns = await PostgresColumn.findAll({
+      where: { table_id: tableId },
+      order: [['order', 'ASC']]
+    });
+    
+    const formulaColumns = columns.filter(col => col.data_type === 'formula' && col.formula_config);
+    console.log(`📋 Found ${formulaColumns.length} formula columns:`, formulaColumns.map(col => col.name));
+    
+    if (formulaColumns.length === 0) {
+      console.log('⚠️ No formula columns found, returning original records');
+      return records; // No formula columns, return as is
+    }
+    
+    // Transform columns to match expected format
+    const transformedColumns = columns.map(column => ({
+      id: column.id,
+      name: column.name,
+      key: column.key,
+      dataType: column.data_type,
+      order: column.order,
+      formulaConfig: column.formula_config
+    }));
+    
+    // Calculate formula values for each record
+    const enhancedRecords = records.map(record => {
+      const enhancedRecord = { ...record };
+      
+      // Calculate each formula column
+      formulaColumns.forEach(formulaColumn => {
+        try {
+          const formulaValue = evaluateFormula(
+            formulaColumn.formula_config.formula,
+            enhancedRecord.data || {},
+            transformedColumns
+          );
+          
+          // Add calculated value to record data
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          const oldValue = enhancedRecord.data[formulaColumn.name];
+          enhancedRecord.data[formulaColumn.name] = formulaValue;
+          
+          console.log(`🧮 Formula ${formulaColumn.name}: ${oldValue} → ${formulaValue}`);
+          
+        } catch (error) {
+          console.error(`Error calculating formula for column ${formulaColumn.name}:`, error);
+          // Set error value or null for failed calculations
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[formulaColumn.name] = null;
+        }
+      });
+      
+      return enhancedRecord;
+    });
+    
+    return enhancedRecords;
+    
+  } catch (error) {
+    console.error('Error calculating formula columns:', error);
+    return records; // Return original records if calculation fails
+  }
+};
 
 // Simple Record Controllers that use PostgreSQL
 export const createRecordSimple = async (req, res) => {
@@ -222,9 +291,14 @@ export const getRecordsByTableIdSimple = async (req, res) => {
       updatedAt: record.updated_at
     }));
 
+    // Calculate formula columns for all records
+    console.log(`🧮 Calculating formula columns for ${transformedRecords.length} records in table ${tableId}`);
+    const enhancedRecords = await calculateFormulaColumns(transformedRecords, tableId);
+    console.log(`✅ Formula calculation completed for ${enhancedRecords.length} records`);
+
     res.status(200).json({
       success: true,
-      data: transformedRecords,
+      data: enhancedRecords,
       pagination: {
         total: count,
         page: parseInt(page),
@@ -294,6 +368,18 @@ export const updateRecordSimple = async (req, res) => {
     });
 
     console.log(`✅ Record updated in PostgreSQL: ${record.id}`);
+
+    // Calculate formula columns for updated record and save back to database
+    const enhancedRecords = await calculateFormulaColumns([record], record.table_id);
+    const enhancedRecord = enhancedRecords[0];
+    
+    // Update record again with calculated formula values
+    if (enhancedRecord.data !== record.data) {
+      await record.update({
+        data: enhancedRecord.data
+      });
+      console.log(`🧮 Formula values calculated and saved for record: ${record.id}`);
+    }
 
     // Update Metabase table
     try {

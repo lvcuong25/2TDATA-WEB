@@ -1524,11 +1524,16 @@ const TableBody = ({
                                               </div>
                                             )}
                                           >
-                                            {options.map((option, index) => (
-                                              <Option key={index} value={option}>
-                                                {String(option || '')}
-                                              </Option>
-                                            ))}
+                                            {options.map((option, index) => {
+                                              // Handle both string and object options
+                                              const optionValue = typeof option === 'object' ? (option.id || option.name) : option;
+                                              const optionLabel = typeof option === 'object' ? option.name : option;
+                                              return (
+                                                <Option key={index} value={optionValue}>
+                                                  {String(optionLabel || '')}
+                                                </Option>
+                                              );
+                                            })}
                                           </Select>
                                         );
                                       })()
@@ -2675,11 +2680,16 @@ const TableBody = ({
                                             </div>
                                           )}
                                         >
-                                          {options.map((option, index) => (
-                                            <Option key={index} value={option}>
-                                              {String(option || '')}
-                                            </Option>
-                                          ))}
+                                          {options.map((option, index) => {
+                                            // Handle both string and object options
+                                            const optionValue = typeof option === 'object' ? (option.id || option.name) : option;
+                                            const optionLabel = typeof option === 'object' ? option.name : option;
+                                            return (
+                                              <Option key={index} value={optionValue}>
+                                                {String(optionLabel || '')}
+                                              </Option>
+                                            );
+                                          })}
                                         </Select>
                                       );
                                     })()

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDateForDisplay, formatDateForInput } from '../../utils/dateFormatter.js';
 import AddColumnModal from './Components/AddColumnModal';
 import EditColumnModal from './Components/EditColumnModal';
@@ -35,7 +36,11 @@ import {
   getCompactHeaderStyle,
   getNormalHeaderStyle,
   initializeColumnWidths,
-  getColumnWidthString
+  getColumnWidthString,
+  reorderColumns,
+  generateColumnOrders,
+  saveColumnOrder,
+  loadColumnOrder
 } from './Utils/columnUtils.jsx';
 import {
   getOperatorOptions,
@@ -101,6 +106,7 @@ const { Text } = Typography;
 
 const GridView = () => {
   const { databaseId, tableId, viewId } = useParams();
+  const queryClient = useQueryClient();
   
   // Safe console.log helper
   const safeLog = (...args) => {
@@ -194,6 +200,7 @@ const GridView = () => {
     defaultValue: null
   });
   const [showAddColumn, setShowAddColumn] = useState(false);
+  const [addColumnPosition, setAddColumnPosition] = useState(null);
   const [showEditColumn, setShowEditColumn] = useState(false);
   const [editingColumn, setEditingColumn] = useState(null);
   const [editingCell, setEditingCell] = useState(null);
@@ -354,6 +361,14 @@ const GridView = () => {
   const [resizingColumn, setResizingColumn] = useState(null);
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
+
+  // Column reordering state
+  const [columnOrder, setColumnOrder] = useState(() => {
+    return loadColumnOrder(tableId);
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedColumn, setDraggedColumn] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
 
   // Handle clicking outside sort dropdown
   React.useEffect(() => {
@@ -846,6 +861,305 @@ const GridView = () => {
     addRecordMutation.mutate(recordData);
   };
 
+  // Handle Add Column - similar to TableDetail
+  const handleAddColumn = (e) => {
+    e.preventDefault();
+    
+    // Auto-generate name if empty
+    let finalName = newColumn.name.trim();
+    if (!finalName) {
+      switch (newColumn.dataType) {
+        case 'text':
+          finalName = 'Text';
+          break;
+        case 'number':
+          finalName = 'Number';
+          break;
+        case 'date':
+          finalName = 'Date';
+          break;
+        case 'year':
+          finalName = 'Year';
+          break;
+        case 'checkbox':
+          finalName = 'Checkbox';
+          break;
+        case 'single_select':
+          finalName = 'Single Select';
+          break;
+        case 'multi_select':
+          finalName = 'Multi Select';
+          break;
+        case 'formula':
+          finalName = 'Formula';
+          break;
+        case 'currency':
+          finalName = 'Currency';
+          break;
+        case 'percent':
+          finalName = 'Percent';
+          break;
+        case 'phone':
+          finalName = 'Phone';
+          break;
+        case 'time':
+          finalName = 'Time';
+          break;
+        case 'rating':
+          finalName = 'Rating';
+          break;
+        case 'linked_table':
+          // Use the connected table name if available
+          if (newColumn.linkedTableConfig?.linkedTableName) {
+            finalName = newColumn.linkedTableConfig.linkedTableName;
+          } else {
+            finalName = 'Linked Table';
+          }
+          break;
+        case 'lookup':
+          // Use the lookup column name if available
+          if (newColumn.lookupConfig?.lookupColumnName && newColumn.lookupConfig?.linkedTableName) {
+            finalName = `${newColumn.lookupConfig.lookupColumnName} (from ${newColumn.lookupConfig.linkedTableName})`;
+          } else if (newColumn.lookupConfig?.linkedTableName) {
+            finalName = `Lookup (${newColumn.lookupConfig.linkedTableName})`;
+          } else {
+            finalName = 'Lookup';
+          }
+          break;
+        default:
+          finalName = 'New Column';
+      }
+      
+      // Check if column name already exists and add number suffix
+      let counter = 1;
+      let originalName = finalName;
+      while (columns.some(col => col.name === finalName)) {
+        finalName = `${originalName} ${counter}`;
+        counter++;
+      }
+    }
+    
+    // Prepare column data based on data type
+    const columnData = {
+      name: finalName,
+      dataType: newColumn.dataType,
+      tableId: tableId,
+      databaseId: databaseId,
+      isRequired: newColumn.isRequired || false,
+      isUnique: newColumn.isUnique || false,
+      defaultValue: newColumn.defaultValue
+    };
+    
+    // Add checkbox configuration if data type is checkbox
+    if (newColumn.dataType === 'checkbox') {
+      columnData.checkboxConfig = newColumn.checkboxConfig;
+    }
+    
+    // Add single select configuration if data type is single_select
+    if (newColumn.dataType === 'single_select') {
+      columnData.singleSelectConfig = newColumn.singleSelectConfig;
+    }
+    
+    // Add multi select configuration if data type is multi_select
+    if (newColumn.dataType === 'multi_select') {
+      columnData.multiSelectConfig = newColumn.multiSelectConfig;
+    }
+    
+    // Add date configuration if data type is date
+    if (newColumn.dataType === 'date') {
+      columnData.dateConfig = newColumn.dateConfig;
+    }
+
+    // Add formula configuration if data type is formula
+    if (newColumn.dataType === 'formula') {
+      columnData.formulaConfig = newColumn.formulaConfig;
+    }
+    
+    // Add currency configuration if data type is currency
+    if (newColumn.dataType === 'currency') {
+      columnData.currencyConfig = newColumn.currencyConfig;
+      // Add default value for currency
+      columnData.defaultValue = newColumn.defaultValue !== null && newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0;
+    }
+    
+    // Add percent configuration if data type is percent
+    if (newColumn.dataType === 'percent') {
+      columnData.percentConfig = newColumn.percentConfig;
+    }
+    
+    // Add URL configuration if data type is url
+    if (newColumn.dataType === 'url') {
+      columnData.urlConfig = newColumn.urlConfig;
+    }
+    
+    // Phone data type doesn't need special config
+    if (newColumn.dataType === 'phone') {
+      // Phone doesn't need special config
+    }
+    
+    // Time data type
+    if (newColumn.dataType === 'time') {
+      columnData.timeConfig = newColumn.timeConfig;
+    }
+    
+    // Rating data type
+    if (newColumn.dataType === 'rating') {
+      columnData.ratingConfig = newColumn.ratingConfig;
+    }
+    
+    // Add linked table configuration if data type is linked_table
+    if (newColumn.dataType === 'linked_table') {
+      columnData.linkedTableConfig = newColumn.linkedTableConfig;
+    }
+    
+    // Add lookup configuration if data type is lookup
+    if (newColumn.dataType === 'lookup') {
+      columnData.lookupConfig = newColumn.lookupConfig;
+    }
+    
+    console.log('Adding new column with data:', columnData);
+    
+    // If adding column at specific position, use different API
+    if (addColumnPosition) {
+      const { position, referenceColumnId } = addColumnPosition;
+      const url = `/api/database/tables/${tableId}/columns/${position}/${referenceColumnId}`;
+      
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(columnData)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to create column at position');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Invalidate and refetch table structure
+        queryClient.invalidateQueries(['tableStructure', tableId]);
+        setShowAddColumn(false);
+        setAddColumnPosition(null);
+        setNewColumn({ 
+          name: '', 
+          dataType: 'text',
+          isRequired: false,
+          isUnique: false,
+          defaultValue: null,
+          filterRules: []
+        });
+      })
+      .catch(error => {
+        console.error('Error creating column at position:', error);
+        // Fallback to regular add column
+        addColumnMutation.mutate(columnData);
+      });
+    } else {
+      // Use the addColumnMutation from useTableData hook
+      addColumnMutation.mutate(columnData);
+    }
+  };
+
+  // Handle Add Column Left
+  const handleAddColumnLeft = (referenceColumn) => {
+    setShowAddColumn(true);
+    setAddColumnPosition({ position: 'left', referenceColumnId: referenceColumn._id });
+  };
+
+  // Handle Add Column Right
+  const handleAddColumnRight = (referenceColumn) => {
+    setShowAddColumn(true);
+    setAddColumnPosition({ position: 'right', referenceColumnId: referenceColumn._id });
+  };
+
+  // Column reordering handlers
+  const handleColumnDragStart = (e, dragIndex) => {
+    // Check if dataTransfer is available
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', dragIndex);
+    }
+    
+    setIsDragging(true);
+    setDraggedColumn(dragIndex);
+  };
+
+  const handleColumnDragOver = (e, hoverIndex) => {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+    
+    setDragOverColumn(hoverIndex);
+  };
+
+  const handleColumnDrop = async (e, hoverIndex) => {
+    e.preventDefault();
+    
+    const dragIndex = e.dataTransfer ? parseInt(e.dataTransfer.getData('text/html')) : null;
+    
+    if (dragIndex === null || isNaN(dragIndex)) {
+      setIsDragging(false);
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+    
+    if (dragIndex === hoverIndex) {
+      setIsDragging(false);
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+    
+    setIsDragging(false);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+    
+    // Get original columns (not filtered by visibility)
+    const originalColumns = columns;
+    
+    // Reorder original columns
+    const reorderedColumns = reorderColumns(originalColumns, dragIndex, hoverIndex);
+    const newColumnOrder = generateColumnOrders(reorderedColumns);
+    
+    setColumnOrder(newColumnOrder);
+    saveColumnOrder(tableId, newColumnOrder);
+
+    // Update backend
+    try {
+      const response = await fetch(`/api/database/tables/${tableId}/columns/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ columnOrders: newColumnOrder })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reorder columns');
+      }
+
+      // Invalidate and refetch table structure to get updated order
+      queryClient.invalidateQueries(['tableStructure', tableId]);
+    } catch (error) {
+      console.error('Error reordering columns:', error);
+      // Revert local changes on error
+      const originalOrder = loadColumnOrder(tableId);
+      setColumnOrder(originalOrder);
+    }
+  };
+
+  const handleColumnDragEnd = (e) => {
+    setIsDragging(false);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  };
+
   const tableStructure = tableStructureResponse?.data;
   const table = tableStructure?.table;
   const columns = tableStructure?.columns || [];
@@ -1056,10 +1370,20 @@ const GridView = () => {
         handleDeleteColumn={(columnId, columnName) => {
           deleteColumnMutation.mutate(columnId);
         }}
+        handleAddColumnLeft={handleAddColumnLeft}
+        handleAddColumnRight={handleAddColumnRight}
         updateRecordMutation={updateRecordMutation}
         updateColumnMutation={updateColumnMutation}
         isResizing={isResizing}
         resizingColumn={resizingColumn}
+        // Column reordering props
+        isDragging={isDragging}
+        draggedColumn={draggedColumn}
+        dragOverColumn={dragOverColumn}
+        handleColumnDragStart={handleColumnDragStart}
+        handleColumnDragOver={handleColumnDragOver}
+        handleColumnDrop={handleColumnDrop}
+        handleColumnDragEnd={handleColumnDragEnd}
         // Utility functions
         getColumnWidthString={getColumnWidthString}
         getColumnHeaderStyle={getColumnHeaderStyle}
@@ -1100,14 +1424,18 @@ const GridView = () => {
       {/* Add Column Modal */}
       <AddColumnModal
         visible={showAddColumn}
-        onCancel={() => setShowAddColumn(false)}
-        onSubmit={() => {}}
+        onCancel={() => {
+          setShowAddColumn(false);
+          setAddColumnPosition(null);
+        }}
+        onSubmit={handleAddColumn}
         newColumn={newColumn}
         setNewColumn={setNewColumn}
         columns={columns}
         loading={addColumnMutation.isPending}
         currentTableId={tableId}
         currentDatabaseId={databaseId}
+        addColumnPosition={addColumnPosition}
       />
 
       {/* Edit Column Modal */}

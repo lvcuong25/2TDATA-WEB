@@ -881,17 +881,17 @@ export const getLinkedTableData = async (req, res) => {
     // Get total count for pagination
     const totalCount = await Record.countDocuments(query);
 
-    // console.log('🔍 Backend: Query and Records:', {
-    //   query: query,
-    //   recordsCount: records.length,
-    //   totalCount: totalCount,
-    //   firstRecord: records[0] ? {
-    //     _id: records[0]._id,
-    //     tableId: records[0].tableId,
-    //     data: records[0].data,
-    //     dataKeys: Object.keys(records[0].data || {})
-    //   } : null
-    // });
+    console.log('🔍 Backend: Query and Records:', {
+      query: query,
+      recordsCount: records.length,
+      totalCount: totalCount,
+      firstRecord: records[0] ? {
+        _id: records[0]._id,
+        tableId: records[0].tableId,
+        data: records[0].data,
+        dataKeys: Object.keys(records[0].data || {})
+      } : null
+    });
 
     // Get linked table info
     const linkedTable = await Table.findOne({ _id: linkedTableId });
@@ -942,20 +942,20 @@ export const getLinkedTableData = async (req, res) => {
       };
     });
 
-    // console.log('🔍 Backend: All records data:', records.map(record => ({
-    //   _id: record._id,
-    //   tableId: record.tableId,
-    //   data: record.data,
-    //   dataKeys: Object.keys(record.data || {}),
-    //   dataEntries: Object.entries(record.data || {}).map(([key, val]) => ({ key, value: val }))
-    // })));
+    console.log('🔍 Backend: All records data:', records.map(record => ({
+      _id: record._id,
+      tableId: record.tableId,
+      data: record.data,
+      dataKeys: Object.keys(record.data || {}),
+      dataEntries: Object.entries(record.data || {}).map(([key, val]) => ({ key, value: val }))
+    })));
 
-    // console.log('🔍 Backend: Transformed options:', options.map(option => ({
-    //   value: option.value,
-    //   label: option.label,
-    //   data: option.data,
-    //   dataKeys: Object.keys(option.data || {})
-    // })));
+    console.log('🔍 Backend: Transformed options:', options.map(option => ({
+      value: option.value,
+      label: option.label,
+      data: option.data,
+      dataKeys: Object.keys(option.data || {})
+    })));
 
     res.status(200).json({
       success: true,
