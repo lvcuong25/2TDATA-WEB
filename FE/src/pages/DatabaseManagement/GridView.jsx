@@ -36,7 +36,11 @@ import {
   getCompactHeaderStyle,
   getNormalHeaderStyle,
   initializeColumnWidths,
-  getColumnWidthString
+  getColumnWidthString,
+  reorderColumns,
+  generateColumnOrders,
+  saveColumnOrder,
+  loadColumnOrder
 } from './Utils/columnUtils.jsx';
 import {
   getOperatorOptions,
@@ -357,6 +361,14 @@ const GridView = () => {
   const [resizingColumn, setResizingColumn] = useState(null);
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
+
+  // Column reordering state
+  const [columnOrder, setColumnOrder] = useState(() => {
+    return loadColumnOrder(tableId);
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedColumn, setDraggedColumn] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
 
   // Handle clicking outside sort dropdown
   React.useEffect(() => {
@@ -1063,6 +1075,91 @@ const GridView = () => {
     setAddColumnPosition({ position: 'right', referenceColumnId: referenceColumn._id });
   };
 
+  // Column reordering handlers
+  const handleColumnDragStart = (e, dragIndex) => {
+    // Check if dataTransfer is available
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', dragIndex);
+    }
+    
+    setIsDragging(true);
+    setDraggedColumn(dragIndex);
+  };
+
+  const handleColumnDragOver = (e, hoverIndex) => {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+    
+    setDragOverColumn(hoverIndex);
+  };
+
+  const handleColumnDrop = async (e, hoverIndex) => {
+    e.preventDefault();
+    
+    const dragIndex = e.dataTransfer ? parseInt(e.dataTransfer.getData('text/html')) : null;
+    
+    if (dragIndex === null || isNaN(dragIndex)) {
+      setIsDragging(false);
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+    
+    if (dragIndex === hoverIndex) {
+      setIsDragging(false);
+      setDraggedColumn(null);
+      setDragOverColumn(null);
+      return;
+    }
+    
+    setIsDragging(false);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+    
+    // Get original columns (not filtered by visibility)
+    const originalColumns = columns;
+    
+    // Reorder original columns
+    const reorderedColumns = reorderColumns(originalColumns, dragIndex, hoverIndex);
+    const newColumnOrder = generateColumnOrders(reorderedColumns);
+    
+    setColumnOrder(newColumnOrder);
+    saveColumnOrder(tableId, newColumnOrder);
+
+    // Update backend
+    try {
+      const response = await fetch(`/api/database/tables/${tableId}/columns/reorder`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ columnOrders: newColumnOrder })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reorder columns');
+      }
+
+      // Invalidate and refetch table structure to get updated order
+      queryClient.invalidateQueries(['tableStructure', tableId]);
+    } catch (error) {
+      console.error('Error reordering columns:', error);
+      // Revert local changes on error
+      const originalOrder = loadColumnOrder(tableId);
+      setColumnOrder(originalOrder);
+    }
+  };
+
+  const handleColumnDragEnd = (e) => {
+    setIsDragging(false);
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+  };
+
   const tableStructure = tableStructureResponse?.data;
   const table = tableStructure?.table;
   const columns = tableStructure?.columns || [];
@@ -1279,6 +1376,14 @@ const GridView = () => {
         updateColumnMutation={updateColumnMutation}
         isResizing={isResizing}
         resizingColumn={resizingColumn}
+        // Column reordering props
+        isDragging={isDragging}
+        draggedColumn={draggedColumn}
+        dragOverColumn={dragOverColumn}
+        handleColumnDragStart={handleColumnDragStart}
+        handleColumnDragOver={handleColumnDragOver}
+        handleColumnDrop={handleColumnDrop}
+        handleColumnDragEnd={handleColumnDragEnd}
         // Utility functions
         getColumnWidthString={getColumnWidthString}
         getColumnHeaderStyle={getColumnHeaderStyle}
