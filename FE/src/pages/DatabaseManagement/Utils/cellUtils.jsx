@@ -209,7 +209,9 @@ export const validateCellValue = (value, column) => {
     case 'single_select':
       if (value && value !== '') {
         const options = column.singleSelectConfig?.options || [];
-        if (!options.includes(value)) {
+        // Handle both string and object options
+        const validOptions = options.map(opt => typeof opt === 'object' ? (opt.id || opt.name) : opt);
+        if (!validOptions.includes(value)) {
           return { isValid: false, error: 'Must be one of the available options' };
         }
       }
@@ -218,7 +220,9 @@ export const validateCellValue = (value, column) => {
     case 'multi_select':
       if (Array.isArray(value) && value.length > 0) {
         const options = column.multiSelectConfig?.options || [];
-        const invalidOptions = value.filter(v => !options.includes(v));
+        // Handle both string and object options
+        const validOptions = options.map(opt => typeof opt === 'object' ? (opt.id || opt.name) : opt);
+        const invalidOptions = value.filter(v => !validOptions.includes(v));
         if (invalidOptions.length > 0) {
           return { isValid: false, error: 'All values must be from available options' };
         }
@@ -340,7 +344,8 @@ export const formatCellValueForDisplay = (value, column) => {
 
     case 'multi_select':
       if (Array.isArray(value) && value.length > 0) {
-        return value.join(', ');
+        // Handle both string and object values
+        return value.map(v => typeof v === 'object' ? v.name : v).join(', ');
       }
       return '';
 
@@ -680,7 +685,8 @@ export const formatCellValueForExport = (value, column) => {
   switch (dataType) {
     case 'multi_select':
       if (Array.isArray(value) && value.length > 0) {
-        return value.join('; ');
+        // Handle both string and object values
+        return value.map(v => typeof v === 'object' ? v.name : v).join('; ');
       }
       return '';
 

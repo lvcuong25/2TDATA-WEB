@@ -800,21 +800,63 @@ export const getLinkedTableData = async (req, res) => {
 
     const totalCount = await Record.count({ where: whereClause });
 
+    // Get linked table info
+    const linkedTable = await Table.findByPk(linkedTableId);
+
+    // Get columns of the linked table
+    const linkedTableColumns = await Column.findAll({
+      where: { table_id: linkedTableId },
+      order: [['order', 'ASC']]
+    });
+
+    // Transform records to options format
+    const options = records.map((record, index) => {
+      // Try to get the display column value as label
+      let label = `Record ${index + 1}`;
+      if (record.data && Object.keys(record.data).length > 0) {
+        // Use displayColumnId from config if available
+        const displayColumnId = column.linked_table_config?.displayColumnId;
+        if (displayColumnId && record.data[displayColumnId]) {
+          label = String(record.data[displayColumnId]);
+        } else {
+          // Get the first column that has data
+          const firstColumn = linkedTableColumns[0];
+          if (firstColumn && record.data[firstColumn.name]) {
+            label = String(record.data[firstColumn.name]);
+          } else {
+            // Fallback to any available data
+            const dataKeys = Object.keys(record.data);
+            const firstDataKey = dataKeys.find(key => record.data[key] && String(record.data[key]).trim());
+            if (firstDataKey) {
+              label = String(record.data[firstDataKey]);
+            }
+          }
+        }
+      }
+      
+      return {
+        value: record.id,
+        label: String(label),
+        recordId: record.id,
+        data: record.data
+      };
+    });
+
     res.json({
       success: true,
       data: {
-        records: records.map(record => ({
-          id: record.id,
-          data: record.data,
-          createdAt: record.created_at,
-          updatedAt: record.updated_at
-        })),
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: totalCount,
-          pages: Math.ceil(totalCount / limit)
-        }
+        options,
+        totalCount,
+        linkedTable: linkedTable ? {
+          _id: linkedTable.id,
+          name: linkedTable.name
+        } : null,
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          _id: col.id,
+          name: col.name,
+          dataType: col.data_type,
+          order: col.order
+        }))
       }
     });
 

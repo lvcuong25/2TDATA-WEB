@@ -131,14 +131,30 @@ const LinkedTableSelectModal = ({
   const handleItemClick = (item) => {
     if (!column || !record) return;
     
-    // Add item immediately and update database
-    const newSelectedItems = [...selectedItems, item];
+    // Check if item is already selected
+    const isAlreadySelected = selectedItems.some(selected => selected.value === item.value);
+    
+    let newSelectedItems;
+    if (isAlreadySelected) {
+      // Remove item if already selected
+      newSelectedItems = selectedItems.filter(selected => selected.value !== item.value);
+    } else {
+      // Add item if not selected
+      if (column.linkedTableConfig?.allowMultiple) {
+        // For multiple selection, add to existing items
+        newSelectedItems = [...selectedItems, item];
+      } else {
+        // For single selection, replace with new item
+        newSelectedItems = [item];
+      }
+    }
+    
     setSelectedItems(newSelectedItems);
     
     // Update record data immediately
     const selectedValues = column.linkedTableConfig?.allowMultiple 
       ? newSelectedItems 
-      : newSelectedItems[0];
+      : newSelectedItems[0] || null;
 
     const updatedData = {
       ...record.data,
@@ -150,7 +166,7 @@ const LinkedTableSelectModal = ({
       data: updatedData
     }, {
       onSuccess: () => {
-        safeLog('✅ Item added successfully');
+        safeLog('✅ Item selection updated successfully');
         // Don't close modal, just update the selection
       }
     });

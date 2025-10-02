@@ -302,9 +302,16 @@ const FUNCTIONS = {
  * @param {Array} columns - Array of column definitions
  * @returns {*} The calculated result
  */
-export const evaluateFormula = (formula, recordData, columns) => {
+export const evaluateFormula = (formula, recordData, columns, depth = 0) => {
+  // Prevent infinite loops by limiting recursion depth
+  const maxDepth = 5;
+  if (depth > maxDepth) {
+    console.error(`❌ Maximum recursion depth (${maxDepth}) exceeded for formula: ${formula}`);
+    return '';
+  }
+
   try {
-    console.log('🔍 Evaluating formula:', formula);
+    console.log(`🔍 Evaluating formula (depth ${depth}):`, formula);
     console.log('📊 Record data:', recordData);
     
     // Replace column references with actual values
@@ -361,10 +368,30 @@ export const evaluateFormula = (formula, recordData, columns) => {
     
     // Replace function calls with actual function calls
     for (const [funcName, func] of Object.entries(FUNCTIONS)) {
-      const regex = new RegExp(`\\b${funcName}\\s*\\(([^)]*)\\)`, 'gi');
-      processedFormula = processedFormula.replace(regex, (match, args) => {
-        try {
-          console.log(`🔧 Processing function ${funcName} with args:`, args);
+      // Use a more sophisticated regex to handle nested parentheses
+      const regex = new RegExp(`\\b${funcName}\\s*\\(`, 'gi');
+      let match;
+      while ((match = regex.exec(processedFormula)) !== null) {
+        const startPos = match.index + match[0].length;
+        let parenCount = 1;
+        let endPos = startPos;
+        
+        // Find the matching closing parenthesis
+        while (endPos < processedFormula.length && parenCount > 0) {
+          if (processedFormula[endPos] === '(') {
+            parenCount++;
+          } else if (processedFormula[endPos] === ')') {
+            parenCount--;
+          }
+          endPos++;
+        }
+        
+        if (parenCount === 0) {
+          const args = processedFormula.substring(startPos, endPos - 1);
+          const fullMatch = processedFormula.substring(match.index, endPos);
+          
+          try {
+            console.log(`🔧 Processing function ${funcName} with args:`, args);
           
           // Handle mathematical expressions in arguments
           let argValues;
@@ -380,11 +407,12 @@ export const evaluateFormula = (formula, recordData, columns) => {
               argValues = [args];
             }
           } else {
-            // Parse arguments more carefully to handle quoted strings
+            // Parse arguments more carefully to handle quoted strings and nested functions
             argValues = [];
             let currentArg = '';
             let inQuotes = false;
             let quoteChar = '';
+            let parenCount = 0;
             
             for (let i = 0; i < args.length; i++) {
               const char = args[i];
@@ -397,7 +425,13 @@ export const evaluateFormula = (formula, recordData, columns) => {
                 inQuotes = false;
                 quoteChar = '';
                 currentArg += char;
-              } else if (char === ',' && !inQuotes) {
+              } else if (char === '(' && !inQuotes) {
+                parenCount++;
+                currentArg += char;
+              } else if (char === ')' && !inQuotes) {
+                parenCount--;
+                currentArg += char;
+              } else if (char === ',' && !inQuotes && parenCount === 0) {
                 // End of argument
                 const trimmed = currentArg.trim();
                 if (trimmed !== '') {
@@ -408,7 +442,13 @@ export const evaluateFormula = (formula, recordData, columns) => {
                   } else if (!isNaN(Number(trimmed))) {
                     argValues.push(Number(trimmed));
                   } else {
-                    argValues.push(trimmed);
+                    // For nested functions, evaluate them recursively
+                    if (trimmed.includes('(') && trimmed.includes(')')) {
+                      const nestedResult = evaluateFormula(trimmed, recordData, columns, depth + 1);
+                      argValues.push(nestedResult);
+                    } else {
+                      argValues.push(trimmed);
+                    }
                   }
                 }
                 currentArg = '';
@@ -426,21 +466,32 @@ export const evaluateFormula = (formula, recordData, columns) => {
               } else if (!isNaN(Number(trimmed))) {
                 argValues.push(Number(trimmed));
               } else {
-                argValues.push(trimmed);
+                // For nested functions, evaluate them recursively
+                if (trimmed.includes('(') && trimmed.includes(')')) {
+                  const nestedResult = evaluateFormula(trimmed, recordData, columns, depth + 1);
+                  argValues.push(nestedResult);
+                } else {
+                  argValues.push(trimmed);
+                }
               }
             }
           }
           
-          console.log(`📊 Function ${funcName} arguments:`, argValues);
-          const result = func(...argValues);
-          console.log(`✅ Function ${funcName} result:`, result);
-          
-          return result;
-        } catch (error) {
-          console.error(`❌ Error in function ${funcName}:`, error);
-          return match; // Keep original if parsing fails
+            console.log(`📊 Function ${funcName} arguments:`, argValues);
+            const result = func(...argValues);
+            console.log(`✅ Function ${funcName} result:`, result);
+            
+            // Replace the function call with its result
+            processedFormula = processedFormula.substring(0, match.index) + result + processedFormula.substring(endPos);
+            
+            // Reset regex to start from beginning since we modified the string
+            regex.lastIndex = 0;
+          } catch (error) {
+            console.error(`❌ Error in function ${funcName}:`, error);
+            // Continue to next match
+          }
         }
-      });
+      }
     }
     
     console.log('🏁 Final result:', processedFormula);

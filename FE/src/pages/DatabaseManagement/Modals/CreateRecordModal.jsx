@@ -263,9 +263,12 @@ const CreateRecordModal = ({
           : (singleSelectConfig?.options || options || []);
         return (
           <Select {...commonProps} allowClear>
-            {singleOptions.map(option => (
-              <Option key={option} value={option}>{option}</Option>
-            ))}
+            {singleOptions.map(option => {
+              // Handle both string and object options
+              const optionValue = typeof option === 'object' ? (option.id || option.name) : option;
+              const optionLabel = typeof option === 'object' ? option.name : option;
+              return <Option key={optionValue} value={optionValue}>{optionLabel}</Option>;
+            })}
           </Select>
         );
       
@@ -273,9 +276,12 @@ const CreateRecordModal = ({
         const multiOptions = multiSelectConfig?.options || options || [];
         return (
           <Select {...commonProps} mode="multiple" allowClear>
-            {multiOptions.map(option => (
-              <Option key={option} value={option}>{option}</Option>
-            ))}
+            {multiOptions.map(option => {
+              // Handle both string and object options
+              const optionValue = typeof option === 'object' ? (option.id || option.name) : option;
+              const optionLabel = typeof option === 'object' ? option.name : option;
+              return <Option key={optionValue} value={optionValue}>{optionLabel}</Option>;
+            })}
           </Select>
         );
       
