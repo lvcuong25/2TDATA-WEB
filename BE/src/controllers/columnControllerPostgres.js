@@ -5,6 +5,52 @@ import Base from '../model/Base.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
 
+// Helper function to convert value to date type
+const convertValueToDateType = (value, dataType) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const stringValue = String(value).trim();
+  
+  // Try to parse date, including Excel serial numbers
+  let dateValue;
+  const numValue = parseFloat(stringValue);
+  
+  // Check if it's an Excel serial number (range: 25569-100000)
+  if (!isNaN(numValue) && numValue > 25569 && numValue < 100000) {
+    // Convert Excel serial number to date
+    // Excel serial number 25569 = 1970-01-01
+    // Excel epoch is 1900-01-01, but we need to account for the leap year bug
+    const excelEpoch = new Date(1900, 0, 1);
+    dateValue = new Date(excelEpoch.getTime() + (numValue - 2) * 24 * 60 * 60 * 1000);
+    
+    console.log(`📅 Converting Excel serial ${numValue} to date: ${dateValue.toISOString()}`);
+  } else {
+    // Try to parse as regular date string
+    dateValue = new Date(stringValue);
+  }
+  
+  if (isNaN(dateValue.getTime())) {
+    console.log(`❌ Could not parse date: ${stringValue}`);
+    return stringValue; // Return original if can't parse
+  }
+  
+  if (dataType === 'year') {
+    const year = dateValue.getFullYear();
+    console.log(`📅 Converting to year: ${year}`);
+    return year;
+  } else if (dataType === 'datetime') {
+    const isoString = dateValue.toISOString();
+    console.log(`📅 Converting to datetime: ${isoString}`);
+    return isoString;
+  } else {
+    const dateOnly = dateValue.toISOString().split('T')[0];
+    console.log(`📅 Converting to date: ${dateOnly}`);
+    return dateOnly; // Date only
+  }
+};
+
 // Column Controllers for PostgreSQL
 export const createColumn = async (req, res) => {
   try {
@@ -479,6 +525,45 @@ export const updateColumn = async (req, res) => {
         
       } catch (error) {
         console.error('❌ Error recalculating formula records:', error.message);
+      }
+    }
+
+    // If data type changed to date/datetime/year, convert existing data
+    if (updateData.dataType && ['date', 'datetime', 'year'].includes(updateData.dataType) && 
+        column.data_type !== updateData.dataType) {
+      console.log(`📅 Data type changed to ${updateData.dataType}, converting existing data for column ${column.name}`);
+      
+      try {
+        // Get all records for this table
+        const records = await Record.findAll({
+          where: { table_id: column.table_id }
+        });
+        
+        console.log(`📊 Found ${records.length} records to convert`);
+        
+        let updatedCount = 0;
+        
+        // Convert each record
+        for (const record of records) {
+          const updatedData = { ...record.data };
+          const currentValue = record.data?.[column.name];
+          
+          if (currentValue !== null && currentValue !== undefined && currentValue !== '') {
+            let convertedValue = convertValueToDateType(currentValue, updateData.dataType);
+            
+            if (convertedValue !== currentValue) {
+              updatedData[column.name] = convertedValue;
+              await record.update({ data: updatedData });
+              updatedCount++;
+              console.log(`📅 ${column.name}: ${currentValue} → ${convertedValue}`);
+            }
+          }
+        }
+        
+        console.log(`🎉 Converted ${updatedCount} records to ${updateData.dataType} format`);
+        
+      } catch (error) {
+        console.error('❌ Error converting date records:', error.message);
       }
     }
 
