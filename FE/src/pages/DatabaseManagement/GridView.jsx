@@ -306,6 +306,169 @@ const GridView = () => {
     }
   };
 
+  const handleEditColumn = (column) => {
+    console.log('🔍 GridView handleEditColumn called with column:', column);
+    console.log('🔍 Column lookupConfig:', column.lookupConfig);
+    console.log('🔍 Column lookup_config:', column.lookup_config);
+    
+    setEditingColumn({
+      _id: column._id,
+      name: column.name,
+      dataType: column.dataType,
+      defaultValue: column.defaultValue !== undefined ? column.defaultValue : (column.dataType === 'currency' ? 0 : null),
+      checkboxConfig: column.checkboxConfig || {
+        icon: 'check-circle',
+        color: '#52c41a',
+        defaultValue: false
+      },
+      singleSelectConfig: column.singleSelectConfig || {
+        options: [],
+        defaultValue: ''
+      },
+      multiSelectConfig: column.multiSelectConfig || {
+        options: [],
+        defaultValue: []
+      },
+      dateConfig: column.dateConfig || {
+        format: 'DD/MM/YYYY'
+      },
+      formulaConfig: column.formulaConfig || {
+        formula: '',
+        resultType: 'number',
+        dependencies: [],
+        description: ''
+      },
+      currencyConfig: column.currencyConfig || {
+        currency: 'USD',
+        symbol: '$',
+        position: 'before',
+        decimalPlaces: 2,
+        thousandsSeparator: ',',
+        decimalSeparator: '.'
+      },
+      percentConfig: column.percentConfig || {
+        displayFormat: 'percentage',
+        displayAsProgress: false,
+        defaultValue: 0
+      },
+      urlConfig: column.urlConfig || {
+        protocol: 'https'
+      },
+      phoneConfig: column.phoneConfig || {
+        // Phone doesn't need special config, but we include it for consistency
+      },
+      timeConfig: column.timeConfig || {
+        format: '24'
+      },
+      ratingConfig: column.ratingConfig || {
+        maxStars: 5,
+        icon: 'star',
+        color: '#faad14',
+        defaultValue: 0
+      },
+      linkedTableConfig: column.linkedTableConfig || {
+        linkedTableId: null,
+        allowMultiple: false,
+        defaultValue: null,
+        filterRules: []
+      },
+      lookupConfig: column.lookupConfig || column.lookup_config || {
+        linkedTableId: null,
+        lookupColumnId: null,
+        linkedTableName: null,
+        lookupColumnName: null
+      }
+    });
+    setShowEditColumn(true);
+  };
+
+  const handleEditColumnSubmit = (e) => {
+    e.preventDefault();
+    if (!editingColumn || !editingColumn.name.trim()) {
+      return;
+    }
+    
+    // Prepare column data based on data type
+    const columnData = {
+        name: editingColumn.name,
+        dataType: editingColumn.dataType,
+        ...(editingColumn.defaultValue !== null && editingColumn.defaultValue !== undefined ? { defaultValue: editingColumn.defaultValue } : {})
+    };
+    
+    // Add checkbox configuration if data type is checkbox
+    if (editingColumn.dataType === 'checkbox') {
+      columnData.checkboxConfig = editingColumn.checkboxConfig;
+    }
+    
+    // Add single select configuration if data type is single_select
+    if (editingColumn.dataType === 'single_select') {
+      columnData.singleSelectConfig = editingColumn.singleSelectConfig;
+    }
+    
+    // Add multi select configuration if data type is multi_select
+    if (editingColumn.dataType === 'multi_select') {
+      columnData.multiSelectConfig = editingColumn.multiSelectConfig;
+    }
+    
+    // Add date configuration if data type is date
+    if (editingColumn.dataType === 'date') {
+      columnData.dateConfig = editingColumn.dateConfig;
+    }
+
+    // Add formula configuration if data type is formula
+    if (editingColumn.dataType === 'formula') {
+      columnData.formulaConfig = editingColumn.formulaConfig;
+    }
+    
+    // Add currency configuration if data type is currency
+    if (editingColumn.dataType === 'currency') {
+      columnData.currencyConfig = editingColumn.currencyConfig;
+      columnData.defaultValue = editingColumn.defaultValue !== null && editingColumn.defaultValue !== undefined ? editingColumn.defaultValue : 0;
+    }
+    
+    // Add percent configuration if data type is percent
+    if (editingColumn.dataType === 'percent') {
+      columnData.percentConfig = editingColumn.percentConfig;
+    }
+    
+    // Add URL configuration if data type is url
+    if (editingColumn.dataType === 'url') {
+      columnData.urlConfig = editingColumn.urlConfig;
+    }
+    
+    // Time data type
+    if (editingColumn.dataType === 'time') {
+      columnData.timeConfig = editingColumn.timeConfig;
+    }
+    
+    // Rating data type
+    if (editingColumn.dataType === 'rating') {
+      columnData.ratingConfig = editingColumn.ratingConfig;
+    }
+    
+    // Add linked table configuration if data type is linked_table
+    if (editingColumn.dataType === 'linked_table') {
+      columnData.linkedTableConfig = editingColumn.linkedTableConfig;
+    }
+    
+    // Add lookup configuration if data type is lookup
+    if (editingColumn.dataType === 'lookup') {
+      columnData.lookupConfig = editingColumn.lookupConfig;
+      console.log('🔍 GridView: Editing lookup column:', {
+        editingColumn: editingColumn,
+        columnData: columnData,
+        lookupConfig: editingColumn.lookupConfig
+      });
+    }
+    
+    console.log('🔍 GridView: Final columnData being sent to API:', columnData);
+    
+    updateColumnMutation.mutate({
+      columnId: editingColumn._id,
+      columnData
+    });
+  };
+
   const {
     groupPreferenceResponse,
     fieldPreferenceResponse,
@@ -1165,6 +1328,17 @@ const GridView = () => {
   const columns = tableStructure?.columns || [];
   const allRecords = recordsResponse?.data || [];
 
+  // Debug log to check columns data
+  console.log('🔍 GridView columns loaded:', columns);
+  columns.forEach((column, index) => {
+    console.log(`🔍 Column ${index + 1}:`, {
+      name: column.name,
+      dataType: column.dataType,
+      lookupConfig: column.lookupConfig,
+      lookup_config: column.lookup_config
+    });
+  });
+
   // Handle clicking outside multi-select dropdown and cell selection
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -1366,7 +1540,7 @@ const GridView = () => {
         handleSelectAll={handleSelectAll}
         selectAll={selectAll}
         setShowAddColumn={setShowAddColumn}
-        handleEditColumn={() => {}}
+        handleEditColumn={handleEditColumn}
         handleDeleteColumn={(columnId, columnName) => {
           deleteColumnMutation.mutate(columnId);
         }}
@@ -1445,13 +1619,13 @@ const GridView = () => {
           setShowEditColumn(false);
           setEditingColumn(null);
         }}
-        onSubmit={() => {}}
+        onSubmit={handleEditColumnSubmit}
         editingColumn={editingColumn}
         setEditingColumn={setEditingColumn}
         columns={columns}
         loading={updateColumnMutation.isPending}
         currentTableId={tableId}
-        currentDatabaseId={databaseId}
+        currentDatabaseId={databaseId || null}
       />
     </div>
   );

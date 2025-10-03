@@ -132,9 +132,6 @@ const LinkedTableConfigSimple = ({
             </div>
           ) : (
             <div>
-              <div style={{ fontSize: '10px', color: '#666', marginBottom: '4px' }}>
-                Debug: {filteredTables.length} tables available
-              </div>
               <Select
                 value={selectedTableId}
                 onChange={handleTableChange}
@@ -177,21 +174,6 @@ const LinkedTableConfigSimple = ({
           </div>
         </div>
 
-        {/* Configuration Summary */}
-        {selectedTable && (
-          <Card size="small" style={{ backgroundColor: '#f6ffed', border: '1px solid #b7eb8f' }}>
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
-              <Text strong style={{ color: '#389e0d' }}>Configuration Summary</Text>
-              <div style={{ fontSize: '12px' }}>
-                <div><Text strong>Source Table:</Text> {selectedTable.name}</div>
-                <div><Text strong>Multiple Selection:</Text> {config?.allowMultiple ? 'Yes' : 'No'}</div>
-                <div style={{ color: '#52c41a', marginTop: '8px' }}>
-                  <Text type="success">✅ Ready to use! Column configuration will be handled automatically.</Text>
-                </div>
-              </div>
-            </Space>
-          </Card>
-        )}
 
         {/* Warning for same table */}
         {currentTableId && selectedTableId === currentTableId && (

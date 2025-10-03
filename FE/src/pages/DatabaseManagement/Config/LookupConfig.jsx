@@ -1,12 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Select, Form, Alert, Spin } from 'antd';
-import { DatabaseOutlined, LinkOutlined, CheckOutlined } from '@ant-design/icons';
+import { 
+  DatabaseOutlined, 
+  LinkOutlined, 
+  CheckOutlined, 
+  SearchOutlined,
+  FontSizeOutlined,
+  NumberOutlined,
+  CalendarOutlined,
+  MailOutlined,
+  GlobalOutlined
+} from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import axiosInstance from '../../../axios/axiosInstance';
 
 const { Option } = Select;
 
 const LookupConfig = ({ config, onChange, currentTableId, currentDatabaseId, availableTables = [] }) => {
+  // Debug log to check config
+  console.log('🔍 LookupConfig received config:', config);
+  console.log('🔍 LookupConfig currentTableId:', currentTableId);
+  console.log('🔍 LookupConfig currentDatabaseId:', currentDatabaseId);
+  
   const [selectedTableId, setSelectedTableId] = useState(config?.linkedTableId || null);
   const [selectedColumnId, setSelectedColumnId] = useState(config?.lookupColumnId || null);
 
@@ -98,19 +113,21 @@ const LookupConfig = ({ config, onChange, currentTableId, currentDatabaseId, ava
     switch (dataType) {
       case 'string':
       case 'text':
-        return 'T';
+        return <FontSizeOutlined style={{ color: '#1890ff' }} />;
       case 'number':
-        return '#';
+        return <NumberOutlined style={{ color: '#52c41a' }} />;
       case 'date':
-        return '📅';
+        return <CalendarOutlined style={{ color: '#fa8c16' }} />;
       case 'email':
-        return '@';
+        return <MailOutlined style={{ color: '#722ed1' }} />;
       case 'url':
-        return '🔗';
+        return <GlobalOutlined style={{ color: '#13c2c2' }} />;
       case 'linked_table':
-        return '🔗';
+        return <LinkOutlined style={{ color: '#722ed1' }} />;
+      case 'lookup':
+        return <SearchOutlined style={{ color: '#13c2c2' }} />;
       default:
-        return 'T';
+        return <FontSizeOutlined style={{ color: '#1890ff' }} />;
     }
   };
 
@@ -160,11 +177,12 @@ const LookupConfig = ({ config, onChange, currentTableId, currentDatabaseId, ava
               <Option key={column._id} value={column._id}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ 
-                    fontSize: '12px', 
-                    fontWeight: 'bold',
-                    color: '#666',
+                    fontSize: '14px',
                     minWidth: '16px',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
                     {getColumnIcon(column.dataType)}
                   </span>
@@ -198,15 +216,6 @@ const LookupConfig = ({ config, onChange, currentTableId, currentDatabaseId, ava
         />
       )}
 
-      {/* Configuration Summary */}
-      {selectedTableId && selectedColumnId && (
-        <Alert
-          message="Lookup Configuration"
-          description={`This column will display "${availableColumns.find(c => c._id === selectedColumnId)?.name}" from the "${filteredTables.find(t => t._id === selectedTableId)?.name}" table.`}
-          type="info"
-          style={{ marginTop: '16px' }}
-        />
-      )}
     </div>
   );
 };

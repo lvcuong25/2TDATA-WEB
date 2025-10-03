@@ -10,7 +10,7 @@ import {
   Radio
 } from 'antd';
 import {
-  FieldBinaryOutlined,
+  FontSizeOutlined,
   NumberOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
@@ -27,7 +27,8 @@ import {
   PercentageOutlined,
   PhoneOutlined,
   FieldTimeOutlined,
-  StarOutlined
+  StarOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
@@ -39,6 +40,7 @@ import UrlConfig from '../Config/UrlConfig';
 import TimeConfig from '../Config/TimeConfig';
 import RatingConfig from '../Config/RatingConfig';
 import LinkedTableConfig from '../Config/LinkedTableConfig';
+import LookupConfig from '../Config/LookupConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -51,9 +53,14 @@ const EditColumnModal = ({
   setEditingColumn,
   columns,
   loading,
-  currentTableId = null
+  currentTableId = null,
+  currentDatabaseId = null
 }) => {
   if (!editingColumn) return null;
+
+  // Debug log to check column data
+  console.log('🔍 EditColumnModal received editingColumn:', editingColumn);
+  console.log('🔍 Lookup config:', editingColumn.lookupConfig);
 
   return (
     <Modal
@@ -82,7 +89,7 @@ const EditColumnModal = ({
             >
               <Option value="text">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FieldBinaryOutlined style={{ color: '#1890ff' }} />
+                  <FontSizeOutlined style={{ color: '#1890ff' }} />
                   <span>Text</span>
                 </div>
               </Option>
@@ -179,6 +186,13 @@ const EditColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LinkOutlined style={{ color: '#722ed1' }} />
                   <span>Linked Table</span>
+                </div>
+              </Option>
+              
+              <Option value="lookup">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <SearchOutlined style={{ color: '#13c2c2' }} />
+                  <span>Lookup</span>
                 </div>
               </Option>
               
@@ -428,6 +442,19 @@ const EditColumnModal = ({
               onChange={(config) => setEditingColumn({
                 ...editingColumn,
                 linkedTableConfig: config
+              })}
+              currentTableId={currentTableId}
+              currentDatabaseId={currentDatabaseId}
+            />
+          )}
+
+          {/* Lookup Configuration */}
+          {editingColumn.dataType === 'lookup' && (
+            <LookupConfig
+              config={editingColumn.lookupConfig}
+              onChange={(config) => setEditingColumn({
+                ...editingColumn,
+                lookupConfig: config
               })}
               currentTableId={currentTableId}
               currentDatabaseId={currentDatabaseId}

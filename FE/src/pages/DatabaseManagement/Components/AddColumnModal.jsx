@@ -10,7 +10,7 @@ import {
   Radio
 } from 'antd';
 import {
-  FieldBinaryOutlined,
+  FontSizeOutlined,
   NumberOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
@@ -93,7 +93,7 @@ const AddColumnModal = ({
             >
               <Option value="text">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FieldBinaryOutlined style={{ color: '#1890ff' }} />
+                  <FontSizeOutlined style={{ color: '#1890ff' }} />
                   <span>Text</span>
                 </div>
               </Option>
