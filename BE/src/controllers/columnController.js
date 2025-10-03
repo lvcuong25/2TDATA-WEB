@@ -368,6 +368,16 @@ export const createColumn = async (req, res) => {
       // Không throw error để không ảnh hưởng đến việc tạo column
     }
 
+    // Update Metabase table structure with new column
+    try {
+      const { createMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      await createMetabaseTable(column.table_id, table.name, null, databaseId);
+      console.log(`✅ Metabase table structure updated with new column: ${column.name}`);
+    } catch (metabaseError) {
+      console.error('Metabase table structure update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
+
     // Transform PostgreSQL column to match expected format
     const transformedColumn = {
       _id: column.id,
@@ -816,6 +826,16 @@ export const updateColumn = async (req, res) => {
     // Save the column
     await column.save();
 
+    // Update Metabase table structure
+    try {
+      const { createMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      await createMetabaseTable(column.tableId, null, null, column.tableId);
+      console.log(`✅ Metabase table structure updated for column: ${column.name}`);
+    } catch (metabaseError) {
+      console.error('Metabase table structure update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
+
     res.status(200).json({
       success: true,
       message: 'Column updated successfully',
@@ -1011,6 +1031,16 @@ export const deleteColumn = async (req, res) => {
 
     // Then delete column metadata
     await Column.deleteOne({ _id: columnId });
+
+    // Update Metabase table structure
+    try {
+      const { createMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      await createMetabaseTable(tableId, null, null, tableId);
+      console.log(`✅ Metabase table structure updated after deleting column: ${columnName}`);
+    } catch (metabaseError) {
+      console.error('Metabase table structure update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
 
     // console.log(`Successfully deleted column "${columnName}" and removed data from all records`);
 

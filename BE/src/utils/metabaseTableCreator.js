@@ -2,14 +2,16 @@ import { sequelize, Table, Column, Record } from '../models/postgres/index.js';
 import TableMongo from '../model/Table.js';
 import ColumnMongo from '../model/Column.js';
 import RecordMongo from '../model/Record.js';
+import { getDatabaseSchema } from '../services/schemaManager.js';
 
 /**
  * Create a Metabase-optimized table for a given table
  * @param {string} tableId - The table ID (can be from MongoDB or PostgreSQL)
  * @param {string} tableName - The table name
  * @param {string} organizationId - The organization ID for metabase sync
+ * @param {string} databaseId - The database ID to determine schema
  */
-export async function createMetabaseTable(tableId, tableName, organizationId) {
+export async function createMetabaseTable(tableId, tableName, organizationId, databaseId = null) {
   try {
     console.log(`🎯 Creating Metabase table for: ${tableName} (${tableId})`);
     
@@ -111,6 +113,20 @@ export async function createMetabaseTable(tableId, tableName, organizationId) {
       return acc;
     }, []);
     
+    // Get database schema name
+    let schemaName = 'public'; // Default to public schema
+    if (databaseId) {
+      const dbSchema = await getDatabaseSchema(databaseId);
+      if (dbSchema) {
+        schemaName = dbSchema;
+        console.log(`📁 Using schema: ${schemaName}`);
+      } else {
+        console.log(`⚠️ No schema found for database ${databaseId}, using public schema`);
+      }
+    } else {
+      console.log(`⚠️ No databaseId provided, using public schema`);
+    }
+    
     // Generate safe table name for Metabase
     const safeTableName = `metabase_${tableName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${tableId.slice(-8)}`;
     
@@ -174,6 +190,14 @@ export async function createMetabaseTable(tableId, tableName, organizationId) {
         dataFields.add(column.name);
       }
     });
+    
+    // If no data fields found from records or columns, create a basic structure
+    if (dataFields.size === 0) {
+      console.log('📝 No data fields found, creating basic table structure');
+      // Add some basic fields that are commonly used
+      dataFields.add('name');
+      dataFields.add('description');
+    }
 
     const dataFieldsArray = Array.from(dataFields);
     console.log(`📊 Data fields found: ${dataFieldsArray.join(', ')}`);
@@ -198,15 +222,79 @@ export async function createMetabaseTable(tableId, tableName, organizationId) {
 
     createTableSQL += '\n    )';
 
-    // Drop table if exists
-    await sequelize.query(`DROP TABLE IF EXISTS "${safeTableName}" CASCADE`);
+    // Check if table already exists
+    const [existingTable] = await sequelize.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = '${schemaName}' 
+      AND table_name = '${safeTableName}'
+    `);
     
-    // Create table
-    await sequelize.query(createTableSQL);
-    console.log(`✅ Created Metabase table: ${safeTableName}`);
+    if (existingTable.length > 0) {
+      console.log(`📝 Metabase table already exists, updating structure...`);
+      
+      // Get existing columns
+      const [existingColumns] = await sequelize.query(`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_schema = '${schemaName}' 
+        AND table_name = '${safeTableName}'
+        AND column_name NOT IN ('id', 'table_id', 'user_id', 'site_id', 'created_at', 'updated_at')
+      `);
+      
+      const existingColumnNames = existingColumns.map(col => col.column_name);
+      
+      // Handle column changes: add new, remove old, rename if needed
+      const newFieldNames = dataFieldsArray.map(field => field.replace(/[^a-zA-Z0-9_]/g, '_'));
+      
+      // Add new columns that don't exist
+      for (const field of dataFieldsArray) {
+        const safeFieldName = field.replace(/[^a-zA-Z0-9_]/g, '_');
+        if (!existingColumnNames.includes(safeFieldName)) {
+          const column = uniqueColumns.find(col => col.name === field);
+          const dataType = column ? column.dataType : 'text';
+          const pgType = mapMetabaseColumnType(dataType);
+          
+          try {
+            await sequelize.query(`
+              ALTER TABLE "${schemaName}"."${safeTableName}" 
+              ADD COLUMN "${safeFieldName}" ${pgType}
+            `);
+            console.log(`   ✅ Added column: ${safeFieldName} (${pgType})`);
+          } catch (alterError) {
+            console.log(`   ⚠️ Could not add column ${safeFieldName}: ${alterError.message}`);
+          }
+        }
+      }
+      
+      // Remove columns that no longer exist in the new structure
+      for (const existingColumn of existingColumns) {
+        const columnName = existingColumn.column_name;
+        if (!newFieldNames.includes(columnName)) {
+          try {
+            await sequelize.query(`
+              ALTER TABLE "${schemaName}"."${safeTableName}" 
+              DROP COLUMN IF EXISTS "${columnName}"
+            `);
+            console.log(`   🗑️ Removed column: ${columnName}`);
+          } catch (dropError) {
+            console.log(`   ⚠️ Could not drop column ${columnName}: ${dropError.message}`);
+          }
+        }
+      }
+      
+      console.log(`✅ Updated Metabase table structure: ${schemaName}.${safeTableName}`);
+    } else {
+      // Drop table if exists (with schema) - just in case
+      await sequelize.query(`DROP TABLE IF EXISTS "${schemaName}"."${safeTableName}" CASCADE`);
+      
+      // Create table in the specified schema
+      await sequelize.query(createTableSQL.replace(`CREATE TABLE "${safeTableName}"`, `CREATE TABLE "${schemaName}"."${safeTableName}"`));
+      console.log(`✅ Created Metabase table: ${schemaName}.${safeTableName}`);
+    }
 
-    // Insert records if any
-    if (uniqueRecords.length > 0) {
+    // Insert records if any (only for new tables)
+    if (uniqueRecords.length > 0 && existingTable.length === 0) {
       console.log(`📦 Migrating ${uniqueRecords.length} records...`);
       
       for (const record of uniqueRecords) {
@@ -260,30 +348,40 @@ export async function createMetabaseTable(tableId, tableName, organizationId) {
           val
         ).join(', ');
 
-        const insertSQL = `INSERT INTO "${safeTableName}" (${columnsList}) VALUES (${valuesList})`;
+        const insertSQL = `INSERT INTO "${schemaName}"."${safeTableName}" (${columnsList}) VALUES (${valuesList})`;
         await sequelize.query(insertSQL);
       }
       
-      console.log(`✅ Migrated ${uniqueRecords.length} records to ${safeTableName}`);
+      console.log(`✅ Migrated ${uniqueRecords.length} records to ${schemaName}.${safeTableName}`);
+    } else if (uniqueRecords.length > 0 && existingTable.length > 0) {
+      console.log(`📝 Skipping record migration for existing table (${uniqueRecords.length} records already exist)`);
     }
 
-    // Create indexes (replace dashes with underscores for index names)
-    const safeIndexName = safeTableName.replace(/-/g, '_');
-    const indexQueries = [
-      `CREATE INDEX idx_${safeIndexName}_table_id ON "${safeTableName}" (table_id)`,
-      `CREATE INDEX idx_${safeIndexName}_user_id ON "${safeTableName}" (user_id)`,
-      `CREATE INDEX idx_${safeIndexName}_site_id ON "${safeTableName}" (site_id)`
-    ];
+    // Create indexes only for new tables (replace dashes with underscores for index names)
+    if (existingTable.length === 0) {
+      const safeIndexName = safeTableName.replace(/-/g, '_');
+      const indexQueries = [
+        `CREATE INDEX idx_${safeIndexName}_table_id ON "${schemaName}"."${safeTableName}" (table_id)`,
+        `CREATE INDEX idx_${safeIndexName}_user_id ON "${schemaName}"."${safeTableName}" (user_id)`,
+        `CREATE INDEX idx_${safeIndexName}_site_id ON "${schemaName}"."${safeTableName}" (site_id)`
+      ];
 
-    for (const indexQuery of indexQueries) {
-      await sequelize.query(indexQuery);
+      for (const indexQuery of indexQueries) {
+        try {
+          await sequelize.query(indexQuery);
+        } catch (indexError) {
+          console.log(`   ⚠️ Could not create index: ${indexError.message}`);
+        }
+      }
+      
+      console.log(`✅ Created indexes for ${schemaName}.${safeTableName}`);
     }
-    
-    console.log(`✅ Created indexes for ${safeTableName}`);
 
     return {
       success: true,
       metabaseTableName: safeTableName,
+      schemaName: schemaName,
+      fullTableName: `${schemaName}.${safeTableName}`,
       dataFields: dataFieldsArray,
       recordCount: uniqueRecords.length,
       columnCount: uniqueColumns.length
@@ -304,8 +402,9 @@ export async function createMetabaseTable(tableId, tableName, organizationId) {
  * @param {Object} record - The record object
  * @param {string} operation - 'insert', 'update', or 'delete'
  * @param {Array} columns - Array of column objects (optional)
+ * @param {string} databaseId - The database ID to determine schema (optional)
  */
-export async function updateMetabaseTable(tableId, record, operation = 'insert', columns = []) {
+export async function updateMetabaseTable(tableId, record, operation = 'insert', columns = [], databaseId = null) {
   try {
     // Format value for Metabase insertion
     function formatValueForMetabase(value, dataType) {
@@ -328,26 +427,41 @@ export async function updateMetabaseTable(tableId, record, operation = 'insert',
           return String(value);
       }
     }
-    // Find the Metabase table name
+    
+    // Get database schema name
+    let schemaName = 'public'; // Default to public schema
+    if (databaseId) {
+      const dbSchema = await getDatabaseSchema(databaseId);
+      if (dbSchema) {
+        schemaName = dbSchema;
+        console.log(`📁 Using schema: ${schemaName}`);
+      } else {
+        console.log(`⚠️ No schema found for database ${databaseId}, using public schema`);
+      }
+    } else {
+      console.log(`⚠️ No databaseId provided, using public schema`);
+    }
+    
+    // Find the Metabase table name in the specified schema
     const [results] = await sequelize.query(`
       SELECT table_name 
       FROM information_schema.tables 
-      WHERE table_schema = 'public' 
+      WHERE table_schema = '${schemaName}' 
       AND table_name LIKE 'metabase_%' 
       AND table_name LIKE '%_${tableId.slice(-8)}'
     `);
 
     if (results.length === 0) {
-      console.log(`⚠️ No Metabase table found for table ID: ${tableId}`);
+      console.log(`⚠️ No Metabase table found for table ID: ${tableId} in schema: ${schemaName}`);
       return { success: false, message: 'No Metabase table found' };
     }
 
     const metabaseTableName = results[0].table_name;
-    console.log(`🔄 Updating Metabase table: ${metabaseTableName} (${operation})`);
+    console.log(`🔄 Updating Metabase table: ${schemaName}.${metabaseTableName} (${operation})`);
 
     if (operation === 'delete') {
-      await sequelize.query(`DELETE FROM "${metabaseTableName}" WHERE id = '${record.id}'`);
-      console.log(`✅ Deleted record from ${metabaseTableName}`);
+      await sequelize.query(`DELETE FROM "${schemaName}"."${metabaseTableName}" WHERE id = '${record.id}'`);
+      console.log(`✅ Deleted record from ${schemaName}.${metabaseTableName}`);
     } else {
       // For insert/update, we need to get the full record data
       let fullRecord = record;
@@ -467,17 +581,22 @@ export async function updateMetabaseTable(tableId, record, operation = 'insert',
         .join(', ');
       
       const upsertSQL = `
-        INSERT INTO "${metabaseTableName}" (${columnsList}) 
+        INSERT INTO "${schemaName}"."${metabaseTableName}" (${columnsList}) 
         VALUES (${valuesList})
         ON CONFLICT (id) 
         DO UPDATE SET ${updateClause}
       `;
       
       await sequelize.query(upsertSQL);
-      console.log(`✅ ${operation === 'insert' ? 'Inserted' : 'Updated'} record in ${metabaseTableName}`);
+      console.log(`✅ ${operation === 'insert' ? 'Inserted' : 'Updated'} record in ${schemaName}.${metabaseTableName}`);
     }
 
-    return { success: true, metabaseTableName };
+    return { 
+      success: true, 
+      metabaseTableName,
+      schemaName,
+      fullTableName: `${schemaName}.${metabaseTableName}`
+    };
 
   } catch (error) {
     console.error(`❌ Error updating Metabase table:`, error);

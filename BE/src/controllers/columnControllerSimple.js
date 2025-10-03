@@ -1,4 +1,4 @@
-import { Table as PostgresTable, Column as PostgresColumn } from '../models/postgres/index.js';
+import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
 import { createMetabaseTable } from '../utils/metabaseTableCreator.js';
 import { Op } from 'sequelize';
 
@@ -109,6 +109,9 @@ export const createColumnSimple = async (req, res) => {
 
     console.log(`✅ Column created in PostgreSQL: ${newColumn.name} (${newColumn.data_type})`);
 
+
+    // Update Metabase table structure with new column
+
     // Add default value to existing records for the new column
     const { Record } = await import('../models/postgres/index.js');
     const existingRecords = await Record.findAll({
@@ -178,12 +181,16 @@ export const createColumnSimple = async (req, res) => {
     }
 
     // Recreate Metabase table with new column
+
     try {
-      const metabaseResult = await createMetabaseTable(tableId, table.name, 'column-added');
+      // Get database ID from table to determine schema
+      const databaseId = table.database_id;
+      
+      const metabaseResult = await createMetabaseTable(tableId, table.name, 'column-added', databaseId);
       if (metabaseResult.success) {
-        console.log(`✅ Metabase table recreated with new column: ${newColumn.name}`);
+        console.log(`✅ Metabase table updated with new column: ${newColumn.name}`);
       } else {
-        console.error('Metabase table recreation failed:', metabaseResult.error);
+        console.error('Metabase table update failed:', metabaseResult.error);
       }
     } catch (metabaseError) {
       console.error('Metabase update failed:', metabaseError);
@@ -376,9 +383,142 @@ export const updateColumnSimple = async (req, res) => {
       updateData.type = mapDataTypeToColumnType(dataType);
     }
 
+    // If column name was changed, update all records FIRST before changing column metadata
+    if (name && name.trim() !== column.name) {
+      const oldColumnName = column.name;
+      const newColumnName = name.trim();
+      
+      console.log(`📝 Updating records: renaming column key from "${oldColumnName}" to "${newColumnName}"`);
+      
+      // Find all records that have data for the old column name
+      const records = await PostgresRecord.findAll({
+        where: { table_id: column.table_id }
+      });
+      
+      let updatedCount = 0;
+      for (const record of records) {
+        if (record.data && record.data[oldColumnName] !== undefined) {
+          const oldValue = record.data[oldColumnName];
+          
+          // Create new data object
+          const newData = { ...record.data };
+          delete newData[oldColumnName];
+          newData[newColumnName] = oldValue;
+          
+          await record.update({ data: newData });
+          updatedCount++;
+        }
+      }
+      
+      console.log(`✅ Successfully renamed column key in ${updatedCount} records from "${oldColumnName}" to "${newColumnName}"`);
+    }
+
+    // If column data type was changed, validate and convert existing data
+    if (dataType && dataType !== column.data_type) {
+      const oldDataType = column.data_type;
+      const newDataType = dataType;
+      
+      console.log(`📝 Updating records: changing column type from "${oldDataType}" to "${newDataType}"`);
+      
+      // Find all records that have data for this column
+      const records = await PostgresRecord.findAll({
+        where: { table_id: column.table_id }
+      });
+      
+      let convertedCount = 0;
+      let invalidCount = 0;
+      
+      for (const record of records) {
+        if (record.data && record.data[column.name] !== undefined) {
+          const value = record.data[column.name];
+          
+          if (value === '' || value === null || value === undefined) {
+            // Empty values are OK
+            continue;
+          }
+          
+          let newValue = value;
+          let isValid = true;
+          
+          // Convert data based on new type
+          switch (newDataType) {
+            case 'number':
+            case 'currency':
+            case 'percent':
+            case 'rating':
+              const numValue = Number(value);
+              if (isNaN(numValue)) {
+                console.log(`   ⚠️ Invalid number value: "${value}" in record ${record.id}`);
+                invalidCount++;
+                isValid = false;
+              } else {
+                newValue = numValue;
+              }
+              break;
+              
+            case 'date':
+            case 'datetime':
+              // Try to parse date
+              const dateValue = new Date(value);
+              if (isNaN(dateValue.getTime())) {
+                console.log(`   ⚠️ Invalid date value: "${value}" in record ${record.id}`);
+                invalidCount++;
+                isValid = false;
+              } else {
+                newValue = dateValue.toISOString();
+              }
+              break;
+              
+            case 'checkbox':
+              // Convert to boolean
+              if (typeof value === 'string') {
+                newValue = value.toLowerCase() === 'true' || value === '1';
+              } else {
+                newValue = Boolean(value);
+              }
+              break;
+              
+            case 'formula':
+              // For formula columns, we need to calculate the value
+              if (formulaConfig && formulaConfig.formula) {
+                // Simple formula evaluation (you'd replace this with a proper formula engine)
+                newValue = 'Calculated Value'; // Placeholder
+              }
+              break;
+              
+            default:
+              // For text and other types, keep as string
+              newValue = String(value);
+          }
+          
+          if (isValid) {
+            const newData = { ...record.data };
+            newData[column.name] = newValue;
+            await record.update({ data: newData });
+            convertedCount++;
+          }
+        }
+      }
+      
+      console.log(`✅ Converted ${convertedCount} values to new type`);
+      if (invalidCount > 0) {
+        console.log(`   ⚠️ ${invalidCount} values could not be converted to new type`);
+      }
+    }
+
     await column.update(updateData);
 
     console.log(`✅ Column updated in PostgreSQL: ${column.name} (${column.id})`);
+
+
+    // Update Metabase table structure
+    try {
+      const { createMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      await createMetabaseTable(column.table_id, table.name, null, table.database_id);
+      console.log(`✅ Metabase table structure updated for column: ${column.name}`);
+    } catch (metabaseError) {
+      console.error('Metabase table structure update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
 
     // If default value changed, update existing records that have empty/null values
     if (defaultValue !== undefined && defaultValue !== column.default_value) {
@@ -429,6 +569,7 @@ export const updateColumnSimple = async (req, res) => {
           console.log(`✅ Updated percent default value for record ${record.id}: ${column.name} = ${percentConfig.defaultValue}`);
         }
       }
+
     }
 
     res.status(200).json({
@@ -487,6 +628,31 @@ export const deleteColumnSimple = async (req, res) => {
       return res.status(404).json({ message: 'Associated table not found' });
     }
 
+
+    const columnName = column.name;
+    const tableId = column.table_id;
+
+    // Remove the column data from all records in this table first
+    console.log(`📝 Removing column data from all records: "${columnName}"`);
+    
+    const records = await PostgresRecord.findAll({
+      where: { table_id: tableId }
+    });
+    
+    let updatedCount = 0;
+    for (const record of records) {
+      if (record.data && record.data[columnName] !== undefined) {
+        const newData = { ...record.data };
+        delete newData[columnName];
+        
+        await record.update({ data: newData });
+        updatedCount++;
+      }
+    }
+    
+    console.log(`✅ Successfully removed column data from ${updatedCount} records`);
+
+
     // Import Record model for data cleanup
     const { Record } = await import('../models/postgres/index.js');
 
@@ -507,9 +673,20 @@ export const deleteColumnSimple = async (req, res) => {
     }
 
     // Delete the column
+
     await column.destroy();
 
-    console.log(`✅ Column deleted from PostgreSQL: ${column.name} (${column.id})`);
+    console.log(`✅ Column deleted from PostgreSQL: ${columnName} (${column.id})`);
+
+    // Update Metabase table structure
+    try {
+      const { createMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      await createMetabaseTable(tableId, table.name, null, table.database_id);
+      console.log(`✅ Metabase table structure updated after deleting column: ${columnName}`);
+    } catch (metabaseError) {
+      console.error('Metabase table structure update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
 
     // Recreate Metabase table without the deleted column
     try {

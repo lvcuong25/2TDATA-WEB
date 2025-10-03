@@ -171,7 +171,7 @@ const PermissionModal = ({
   const updatePermissionMutation = useMutation({
     mutationFn: async ({ permissionId, data }) => {
       console.log('PermissionModal - updatePermissionMutation - sending:', { permissionId, data });
-      const response = await axiosConfig.put(`/permissions/permissions/${permissionId}`, data);
+        const response = await axiosConfig.put(`/permissions/tables/permissions/${permissionId}`, data);
       console.log('PermissionModal - updatePermissionMutation - response:', response.data);
       return response.data;
     },
@@ -218,7 +218,7 @@ const PermissionModal = ({
   // Xóa quyền
   const deletePermissionMutation = useMutation({
     mutationFn: async (permissionId) => {
-      const response = await axiosConfig.delete(`/permissions/permissions/${permissionId}`);
+        const response = await axiosConfig.delete(`/permissions/tables/permissions/${permissionId}`);
       return response.data;
     },
     onSuccess: (data, permissionId) => {
