@@ -24,7 +24,8 @@ import {
   AppstoreOutlined,
   ExpandOutlined,
   ZoomInOutlined,
-  LockOutlined
+  LockOutlined,
+  MailOutlined
 } from '@ant-design/icons';
 import DraggableColumnHeader from './DraggableColumnHeader';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
@@ -897,6 +898,31 @@ const TableBody = ({
                                     }}
                                   />
                                 );
+                              } else if (dataType === 'email') {
+                                return (
+                                  <Input
+                                    type="email"
+                                    value={cellValue}
+                                    onChange={(e) => {
+                                      if (!canEditCurrentCell()) {
+                                        console.log('🔍 Permission denied: Cannot edit email cell');
+                                        return;
+                                      }
+                                      setCellValue(e.target.value);
+                                    }}
+                                    onPressEnter={handleCellSave}
+                                    onBlur={handleCellSave}
+                                    autoFocus
+                                    size="small"
+                                    placeholder="Enter email address"
+                                    disabled={!canEditCurrentCell()}
+                                    style={{
+                                      width: '100%',
+                                      border: '1px solid #d9d9d9',
+                                      borderRadius: '4px'
+                                    }}
+                                  />
+                                );
                               } else if (dataType === 'phone') {
                                 return (
                                   <Input
@@ -1362,7 +1388,7 @@ const TableBody = ({
                                   isEditable: isCellEditableByPermission(record._id, column._id)
                                 });
                                 
-                                if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || !isCellEditableByPermission(record._id, column._id)) {
+                                if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || column.dataType === 'json' || !isCellEditableByPermission(record._id, column._id)) {
                                   console.log('🔍 Cell click blocked by conditions');
                                   return;
                                 }
@@ -1563,6 +1589,58 @@ const TableBody = ({
                                           color="#1890ff"
                                           height="6px"
                                         />
+                                      ) : column.dataType === 'percent' ? (
+                                        (() => {
+                                          const numValue = Number(String(value)) || 0;
+                                          const displayFormat = column.percentConfig?.displayFormat || 'percentage';
+                                          
+                                          if (displayFormat === 'decimal') {
+                                            // Display as decimal (e.g., 0.25 for 25%)
+                                            return (numValue / 100).toFixed(2);
+                                          } else {
+                                            // Display as percentage (e.g., 25%)
+                                            return `${numValue}%`;
+                                          }
+                                        })()
+                                      ) : column.dataType === 'json' ? (
+                                        (() => {
+                                          try {
+                                            if (!value || value === '') {
+                                              return <span style={{ color: '#999', fontStyle: 'italic' }}>Empty JSON</span>;
+                                            }
+                                            
+                                            // Try to parse and format JSON
+                                            const jsonValue = typeof value === 'string' ? JSON.parse(value) : value;
+                                            const formattedJson = JSON.stringify(jsonValue, null, 2);
+                                            
+                                            return (
+                                              <div style={{ 
+                                                fontFamily: 'monospace', 
+                                                fontSize: '12px',
+                                                backgroundColor: '#f5f5f5',
+                                                padding: '4px 8px',
+                                                borderRadius: '4px',
+                                                border: '1px solid #d9d9d9',
+                                                maxWidth: '200px',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                              }}>
+                                                {formattedJson.length > 50 ? `${formattedJson.substring(0, 50)}...` : formattedJson}
+                                              </div>
+                                            );
+                                          } catch (error) {
+                                            return (
+                                              <div style={{ 
+                                                color: '#ff4d4f',
+                                                fontFamily: 'monospace',
+                                                fontSize: '12px'
+                                              }}>
+                                                Invalid JSON
+                                              </div>
+                                            );
+                                          }
+                                        })()
                                       ) : column.dataType === 'linked_table' ?
                                         (() => {
                                           const linkedValue = value;
@@ -2024,6 +2102,42 @@ const TableBody = ({
                               }}
                             />
                           );
+                        } else if (dataType === 'email') {
+                          return (
+                            <Input
+                              type="email"
+                              value={cellValue}
+                              onChange={(e) => {
+                                if (!canEditCurrentCell()) {
+                                  console.log('🔍 Permission denied: Cannot edit email cell (grouped)');
+                                  return;
+                                }
+                                setCellValue(e.target.value);
+                              }}
+                              onPressEnter={handleCellSave}
+                              onBlur={handleCellSave}
+                              autoFocus
+                              size="small"
+                              placeholder="Enter email address"
+                              disabled={!canEditCurrentCell()}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                                padding: '0',
+                                margin: '0',
+                                borderRadius: '0',
+                                backgroundColor: 'transparent',
+                                boxShadow: 'none',
+                                fontSize: 'inherit',
+                                position: 'absolute',
+                                top: '0',
+                                left: '0',
+                                right: '0',
+                                bottom: '0'
+                              }}
+                            />
+                          );
                         } else if (dataType === 'phone') {
                           return (
                             <Input
@@ -2397,7 +2511,7 @@ const TableBody = ({
                             isEditable: isCellEditableByPermission(record._id, column._id)
                           });
                           
-                          if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || !isCellEditableByPermission(record._id, column._id)) {
+                          if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || column.dataType === 'json' || !isCellEditableByPermission(record._id, column._id)) {
                             console.log('🔍 Cell click blocked by conditions (grouped)');
                             return;
                           }
@@ -2456,7 +2570,20 @@ const TableBody = ({
                                 return displayUrl;
                               })()
                               : column.dataType === 'email' && value ?
-                                value
+                                <a 
+                                  href={`mailto:${value}`} 
+                                  style={{ 
+                                    color: '#1890ff', 
+                                    textDecoration: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MailOutlined style={{ fontSize: '12px' }} />
+                                  {value}
+                                </a>
                                 : column.dataType === 'phone' && value ?
                                   value
                                   : column.dataType === 'time' && value ?
@@ -2724,6 +2851,58 @@ const TableBody = ({
                                         color="#1890ff"
                                         height="6px"
                                       />
+                                    ) : column.dataType === 'percent' ? (
+                                      (() => {
+                                        const numValue = Number(String(value)) || 0;
+                                        const displayFormat = column.percentConfig?.displayFormat || 'percentage';
+                                        
+                                        if (displayFormat === 'decimal') {
+                                          // Display as decimal (e.g., 0.25 for 25%)
+                                          return (numValue / 100).toFixed(2);
+                                        } else {
+                                          // Display as percentage (e.g., 25%)
+                                          return `${numValue}%`;
+                                        }
+                                      })()
+                                    ) : column.dataType === 'json' ? (
+                                      (() => {
+                                        try {
+                                          if (!value || value === '') {
+                                            return <span style={{ color: '#999', fontStyle: 'italic' }}>Empty JSON</span>;
+                                          }
+                                          
+                                          // Try to parse and format JSON
+                                          const jsonValue = typeof value === 'string' ? JSON.parse(value) : value;
+                                          const formattedJson = JSON.stringify(jsonValue, null, 2);
+                                          
+                                          return (
+                                            <div style={{ 
+                                              fontFamily: 'monospace', 
+                                              fontSize: '12px',
+                                              backgroundColor: '#f5f5f5',
+                                              padding: '4px 8px',
+                                              borderRadius: '4px',
+                                              border: '1px solid #d9d9d9',
+                                              maxWidth: '200px',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis',
+                                              whiteSpace: 'nowrap'
+                                            }}>
+                                              {formattedJson.length > 50 ? `${formattedJson.substring(0, 50)}...` : formattedJson}
+                                            </div>
+                                          );
+                                        } catch (error) {
+                                          return (
+                                            <div style={{ 
+                                              color: '#ff4d4f',
+                                              fontFamily: 'monospace',
+                                              fontSize: '12px'
+                                            }}>
+                                              Invalid JSON
+                                            </div>
+                                          );
+                                        }
+                                      })()
                                     ) : column.dataType === 'linked_table' ?
                                       (() => {
                                         const linkedValue = value;

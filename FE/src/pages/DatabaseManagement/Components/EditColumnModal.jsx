@@ -10,7 +10,7 @@ import {
   Radio
 } from 'antd';
 import {
-  FieldBinaryOutlined,
+  FontSizeOutlined,
   NumberOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
@@ -27,7 +27,8 @@ import {
   PercentageOutlined,
   PhoneOutlined,
   FieldTimeOutlined,
-  StarOutlined
+  StarOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import SingleSelectConfig from '../Config/SingleSelectConfig';
 import MultiSelectConfig from '../Config/MultiSelectConfig';
@@ -39,6 +40,7 @@ import UrlConfig from '../Config/UrlConfig';
 import TimeConfig from '../Config/TimeConfig';
 import RatingConfig from '../Config/RatingConfig';
 import LinkedTableConfig from '../Config/LinkedTableConfig';
+import LookupConfig from '../Config/LookupConfig';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -51,9 +53,14 @@ const EditColumnModal = ({
   setEditingColumn,
   columns,
   loading,
-  currentTableId = null
+  currentTableId = null,
+  currentDatabaseId = null
 }) => {
   if (!editingColumn) return null;
+
+  // Debug log to check column data
+  console.log('🔍 EditColumnModal received editingColumn:', editingColumn);
+  console.log('🔍 Lookup config:', editingColumn.lookupConfig);
 
   return (
     <Modal
@@ -77,12 +84,55 @@ const EditColumnModal = ({
             <Text strong>Loại trường</Text>
             <Select
               value={editingColumn.dataType}
-              onChange={(value) => setEditingColumn({ ...editingColumn, dataType: value })}
+              onChange={(value) => {
+                // Auto-generate column name based on data type if name is empty or default
+                const getDefaultColumnName = (dataType) => {
+                  switch (dataType) {
+                    case 'text': return 'Text';
+                    case 'number': return 'Number';
+                    case 'date': return 'Date';
+                    case 'email': return 'Email';
+                    case 'url': return 'URL';
+                    case 'phone': return 'Phone';
+                    case 'checkbox': return 'Checkbox';
+                    case 'single_select': return 'Single Select';
+                    case 'multi_select': return 'Multi Select';
+                    case 'currency': return 'Currency';
+                    case 'percent': return 'Percent';
+                    case 'rating': return 'Rating';
+                    case 'time': return 'Time';
+                    case 'formula': return 'Formula';
+                    case 'linked_table': return 'Linked Table';
+                    case 'lookup': return 'Lookup';
+                    case 'json': return 'JSON';
+                    default: return 'New Column';
+                  }
+                };
+
+                const shouldUpdateName = !editingColumn.name || editingColumn.name === 'New Column' || editingColumn.name === '';
+                let newName = shouldUpdateName ? getDefaultColumnName(value) : editingColumn.name;
+                
+                // Check if column name already exists and add number suffix
+                if (shouldUpdateName) {
+                  let counter = 1;
+                  let originalName = newName;
+                  while (columns.some(col => col.name === newName && col._id !== editingColumn._id)) {
+                    newName = `${originalName} ${counter}`;
+                    counter++;
+                  }
+                }
+
+                setEditingColumn({ 
+                  ...editingColumn, 
+                  dataType: value,
+                  name: newName
+                });
+              }}
               style={{ width: '100%' }}
             >
               <Option value="text">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FieldBinaryOutlined style={{ color: '#1890ff' }} />
+                  <FontSizeOutlined style={{ color: '#1890ff' }} />
                   <span>Text</span>
                 </div>
               </Option>
@@ -179,6 +229,13 @@ const EditColumnModal = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LinkOutlined style={{ color: '#722ed1' }} />
                   <span>Linked Table</span>
+                </div>
+              </Option>
+              
+              <Option value="lookup">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <SearchOutlined style={{ color: '#13c2c2' }} />
+                  <span>Lookup</span>
                 </div>
               </Option>
               
@@ -428,6 +485,19 @@ const EditColumnModal = ({
               onChange={(config) => setEditingColumn({
                 ...editingColumn,
                 linkedTableConfig: config
+              })}
+              currentTableId={currentTableId}
+              currentDatabaseId={currentDatabaseId}
+            />
+          )}
+
+          {/* Lookup Configuration */}
+          {editingColumn.dataType === 'lookup' && (
+            <LookupConfig
+              config={editingColumn.lookupConfig}
+              onChange={(config) => setEditingColumn({
+                ...editingColumn,
+                lookupConfig: config
               })}
               currentTableId={currentTableId}
               currentDatabaseId={currentDatabaseId}

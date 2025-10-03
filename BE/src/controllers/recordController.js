@@ -28,6 +28,13 @@ const calculateFormulaColumns = async (records, tableId) => {
     const enhancedRecords = records.map(record => {
       const enhancedRecord = record.toObject ? record.toObject() : record;
       
+      // Ensure data is properly copied to preserve original structure
+      if (enhancedRecord.data) {
+        enhancedRecord.data = { ...enhancedRecord.data };
+      } else {
+        enhancedRecord.data = {};
+      }
+      
       // Calculate each formula column
       formulaColumns.forEach(formulaColumn => {
         try {
@@ -37,7 +44,7 @@ const calculateFormulaColumns = async (records, tableId) => {
             columns
           );
           
-          // Add calculated value to record data
+          // Add calculated value to record data (preserve existing data)
           if (!enhancedRecord.data) enhancedRecord.data = {};
           enhancedRecord.data[formulaColumn.name] = formulaValue;
           

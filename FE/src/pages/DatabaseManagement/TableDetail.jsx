@@ -703,6 +703,17 @@ const TableDetail = () => {
   const columns = tableStructure?.columns || [];
   const allRecords = recordsResponse?.data || [];
 
+  // Debug log to check columns data
+  console.log('🔍 TableDetail columns loaded:', columns);
+  columns.forEach((column, index) => {
+    console.log(`🔍 Column ${index + 1}:`, {
+      name: column.name,
+      dataType: column.dataType,
+      lookupConfig: column.lookupConfig,
+      lookup_config: column.lookup_config
+    });
+  });
+
   // Handle clicking outside multi-select dropdown and cell selection
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -954,8 +965,9 @@ const TableDetail = () => {
         return response.json();
       })
       .then(data => {
-        // Invalidate and refetch table structure
+        // Invalidate and refetch table structure and records
         queryClient.invalidateQueries(['tableStructure', tableId]);
+        queryClient.invalidateQueries(['records', tableId]);
         setShowAddColumn(false);
         setAddColumnPosition(null);
         setNewColumn({ 
@@ -1084,6 +1096,10 @@ const TableDetail = () => {
   };
 
   const handleEditColumn = (column) => {
+    console.log('🔍 handleEditColumn called with column:', column);
+    console.log('🔍 Column lookupConfig:', column.lookupConfig);
+    console.log('🔍 Column lookup_config:', column.lookup_config);
+    
     setEditingColumn({
       _id: column._id,
       name: column.name,
@@ -1144,6 +1160,12 @@ const TableDetail = () => {
         allowMultiple: false,
         defaultValue: null,
         filterRules: []
+      },
+      lookupConfig: column.lookupConfig || column.lookup_config || {
+        linkedTableId: null,
+        lookupColumnId: null,
+        linkedTableName: null,
+        lookupColumnName: null
       }
     });
     setShowEditColumn(true);
@@ -1263,6 +1285,17 @@ const TableDetail = () => {
       // });
     }
     
+    // Add lookup configuration if data type is lookup
+    if (editingColumn.dataType === 'lookup') {
+      columnData.lookupConfig = editingColumn.lookupConfig;
+      console.log('🔍 Frontend: Editing lookup column:', {
+        editingColumn: editingColumn,
+        columnData: columnData,
+        lookupConfig: editingColumn.lookupConfig
+      });
+    }
+    
+    console.log('🔍 Final columnData being sent to API:', columnData);
     
     updateColumnMutation.mutate({
       columnId: editingColumn._id,
@@ -1906,7 +1939,7 @@ const TableDetail = () => {
             columns={columns}
             loading={updateColumnMutation.isPending}
             currentTableId={tableId}
-            currentDatabaseId={databaseId}
+            currentDatabaseId={databaseId || null}
           />
 
           {/* Column Permission Modal */}
