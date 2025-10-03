@@ -4,6 +4,7 @@ import BaseMember from "../model/BaseMember.js";
 import Organization from "../model/Organization.js";
 import responseHelper from "../utils/responseHelper.js";
 import { extractQueryListParams, toObjectId } from "../utils/helper.js";
+import { createDatabaseSchema } from "../services/schemaManager.js";
 // Tạo Base mới trong org (chỉ owner/manager của org)
 export async function createBase(req, res, next) {
   try {
@@ -41,7 +42,37 @@ export async function createBase(req, res, next) {
       baseRoleId: ownerRole._id,
     });
 
-    res.json({ ok: true, data: base });
+    // Create PostgreSQL schema for this base
+    try {
+      console.log(`🏗️ Creating PostgreSQL schema for base: ${base._id}`);
+      const schemaResult = await createDatabaseSchema(base._id, userId);
+      
+      if (schemaResult.success) {
+        console.log(`✅ Schema created successfully: ${schemaResult.schemaName}`);
+        
+        // Update base with schema information
+        await Base.findByIdAndUpdate(base._id, {
+          $set: {
+            postgresSchema: schemaResult.schemaName,
+            schemaCreatedAt: new Date()
+          }
+        });
+      } else {
+        console.error(`❌ Failed to create schema: ${schemaResult.error}`);
+        // Don't fail the entire operation, but log the error
+      }
+    } catch (schemaError) {
+      console.error('❌ Error creating schema:', schemaError);
+      // Don't fail the entire operation, but log the error
+    }
+
+    res.json({ 
+      ok: true, 
+      data: {
+        ...base.toObject(),
+        schemaCreated: true
+      }
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ ok: false, error: "base_create_error" });

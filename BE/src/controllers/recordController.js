@@ -430,7 +430,7 @@ export const createRecord = async (req, res) => {
         created_at: record.created_at,
         updated_at: record.updated_at
       };
-      await updateMetabaseTable(tableId, metabaseRecord, 'insert');
+      await updateMetabaseTable(tableId, metabaseRecord, 'insert', [], databaseId);
       console.log(`✅ Metabase table updated for record: ${record.id}`);
     } catch (metabaseError) {
       console.error('Metabase update failed:', metabaseError);
@@ -1076,6 +1076,25 @@ export const updateRecord = async (req, res) => {
     record.data = validatedData;
     await record.save();
 
+    // Update Metabase table
+    try {
+      const { updateMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      const metabaseRecord = {
+        id: record._id,
+        table_id: record.tableId._id,
+        user_id: record.userId,
+        site_id: record.siteId,
+        data: record.data,
+        created_at: record.createdAt,
+        updated_at: record.updatedAt
+      };
+      await updateMetabaseTable(record.tableId._id, metabaseRecord, 'update', [], record.tableId.databaseId);
+      console.log(`✅ Metabase table updated for record: ${record._id}`);
+    } catch (metabaseError) {
+      console.error('Metabase update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
+
     res.status(200).json({
       success: true,
       message: 'Record updated successfully',
@@ -1147,6 +1166,16 @@ export const deleteRecord = async (req, res) => {
       }
     }
     // Owners and managers can always delete records
+
+    // Update Metabase table before deleting
+    try {
+      const { updateMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      await updateMetabaseTable(record.tableId._id, { id: recordId }, 'delete', [], record.tableId.databaseId);
+      console.log(`✅ Metabase table updated for record deletion: ${recordId}`);
+    } catch (metabaseError) {
+      console.error('Metabase delete update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
 
     // Delete all comments associated with this record
     await Comment.deleteMany({ recordId: recordId });
@@ -1307,6 +1336,28 @@ export const deleteMultipleRecords = async (req, res) => {
       await Comment.deleteMany({ recordId: { $in: recordIds } });
     }
     
+    // Update Metabase table before deleting
+    try {
+      const { updateMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      
+      if (isPostgres) {
+        // For PostgreSQL records, sync each record deletion
+        for (const record of records) {
+          await updateMetabaseTable(record.table_id, { id: record.id }, 'delete', [], record.table_id);
+          console.log(`✅ Metabase table updated for record deletion: ${record.id}`);
+        }
+      } else {
+        // For MongoDB records, sync each record deletion
+        for (const record of records) {
+          await updateMetabaseTable(record.tableId._id, { id: record._id }, 'delete', [], record.tableId.databaseId);
+          console.log(`✅ Metabase table updated for record deletion: ${record._id}`);
+        }
+      }
+    } catch (metabaseError) {
+      console.error('Metabase bulk delete update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
+
     // Delete all records
     let deletedCount;
     if (isPostgres) {
@@ -1426,6 +1477,18 @@ export const deleteAllRecords = async (req, res) => {
     }).select('_id');
     
     const recordIds = records.map(record => record._id);
+    
+    // Update Metabase table before deleting all records
+    try {
+      const { updateMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      for (const record of records) {
+        await updateMetabaseTable(tableId, { id: record._id }, 'delete', [], table.databaseId._id);
+        console.log(`✅ Metabase table updated for record deletion: ${record._id}`);
+      }
+    } catch (metabaseError) {
+      console.error('Metabase delete all update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
     
     // Delete all comments associated with records in this table
     if (recordIds.length > 0) {

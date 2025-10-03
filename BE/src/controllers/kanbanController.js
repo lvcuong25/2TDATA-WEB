@@ -544,6 +544,30 @@ export const updateRecordColumn = async (req, res) => {
       }
     }
     
+    // Update Metabase table
+    try {
+      const { updateMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      const metabaseRecord = {
+        id: record.id || record._id,
+        table_id: record.table_id || record.tableId,
+        user_id: record.user_id || record.userId,
+        site_id: record.site_id || record.siteId,
+        data: record.data,
+        created_at: record.created_at || record.createdAt,
+        updated_at: record.updated_at || record.updatedAt
+      };
+      
+      // Get database ID from table
+      const table = await PostgresTable.findByPk(record.table_id || record.tableId);
+      if (table) {
+        await updateMetabaseTable(record.table_id || record.tableId, metabaseRecord, 'update', [], table.database_id);
+        console.log(`✅ Metabase table updated for kanban record: ${record.id || record._id}`);
+      }
+    } catch (metabaseError) {
+      console.error('Metabase update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
+    
     res.json({
       success: true,
       message: 'Record updated successfully',

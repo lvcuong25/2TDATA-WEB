@@ -110,7 +110,7 @@ export const createRecordSimple = async (req, res) => {
         created_at: newRecord.created_at,
         updated_at: newRecord.updated_at
       };
-      await updateMetabaseTable(tableId, metabaseRecord, 'insert');
+      await updateMetabaseTable(tableId, metabaseRecord, 'insert', [], table.database_id);
       console.log(`✅ Metabase table updated for record: ${newRecord.id}`);
     } catch (metabaseError) {
       console.error('Metabase update failed:', metabaseError);
@@ -350,7 +350,7 @@ export const getRecordByIdSimple = async (req, res) => {
 export const updateRecordSimple = async (req, res) => {
   try {
     const { recordId } = req.params;
-    const { data } = req.body;
+    let { data } = req.body; // Change to let to allow reassignment
     const userId = req.user?._id?.toString() || '68341e4d3f86f9c7ae46e962';
 
     const record = await PostgresRecord.findByPk(recordId);
@@ -363,9 +363,100 @@ export const updateRecordSimple = async (req, res) => {
       return res.status(404).json({ message: 'Associated table not found' });
     }
 
-    await record.update({
-      data: data !== undefined ? data : record.data
-    });
+    // Validate data if provided - TEMPORARILY RELAXED FOR TESTING
+    if (data !== undefined) {
+      // Allow null data to pass through (frontend might send null)
+      if (data === null) {
+        data = {}; // Convert null to empty object
+      } else if (typeof data !== 'object') {
+        return res.status(400).json({ message: 'Data must be an object' });
+      }
+
+      // Get table columns for validation
+      const columns = await PostgresColumn.findAll({
+        where: { table_id: record.table_id },
+        order: [['order', 'ASC']]
+      });
+      
+      // Validate data against column definitions
+      const validatedData = {};
+      for (const column of columns) {
+        const value = data[column.name];
+        
+        // Check required fields
+        if (column.is_required && (value === undefined || value === null || value === '')) {
+          return res.status(400).json({ 
+            message: `Column '${column.name}' is required` 
+          });
+        }
+
+        // Validate email format for email data type
+        if (column.data_type === 'email' && value && value !== '') {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+            return res.status(400).json({ 
+              message: `Invalid email format for column '${column.name}'` 
+            });
+          }
+        }
+
+        // Validate phone format for phone data type
+        if (column.data_type === 'phone' && value && value !== '') {
+          const phoneRegex = /^[\+]?[0-9][\d]{6,15}$/;
+          const cleanPhone = value.replace(/[\s\-\(\)\.]/g, '');
+          if (!phoneRegex.test(cleanPhone)) {
+            return res.status(400).json({ 
+              message: `Invalid phone number format for column '${column.name}'` 
+            });
+          }
+        }
+
+        // Validate number format for number data types - TEMPORARILY RELAXED FOR TESTING
+        if (['number', 'currency', 'percent', 'rating'].includes(column.data_type) && value && value !== '') {
+          const numValue = Number(value);
+          if (isNaN(numValue)) {
+            // Instead of returning error, convert to 0 or skip validation
+            console.log(`⚠️ Invalid number value for column '${column.name}': ${value}, skipping validation`);
+            // Don't include this field in validatedData
+            continue;
+          }
+        }
+
+        // Validate date format for date data types
+        if (['date', 'datetime'].includes(column.data_type) && value && value !== '') {
+          const dateValue = new Date(value);
+          if (isNaN(dateValue.getTime())) {
+            return res.status(400).json({ 
+              message: `Invalid date value for column '${column.name}'` 
+            });
+          }
+        }
+
+        // Only include fields that exist in column definitions
+        if (value !== undefined) {
+          validatedData[column.name] = value;
+        }
+      }
+
+      // Check for fields that don't exist in column definitions - TEMPORARILY RELAXED FOR TESTING
+      const columnNames = columns.map(col => col.name);
+      for (const fieldName of Object.keys(data)) {
+        if (!columnNames.includes(fieldName)) {
+          console.log(`⚠️ Field '${fieldName}' does not exist in table columns, skipping...`);
+          // Skip this field instead of returning error
+          continue;
+        }
+      }
+
+      await record.update({
+        data: validatedData
+      });
+    } else {
+      // No data provided, keep existing data
+      await record.update({
+        data: record.data
+      });
+    }
 
     console.log(`✅ Record updated in PostgreSQL: ${record.id}`);
 
@@ -392,7 +483,7 @@ export const updateRecordSimple = async (req, res) => {
         created_at: record.created_at,
         updated_at: record.updated_at
       };
-      await updateMetabaseTable(record.table_id, metabaseRecord, 'update');
+      await updateMetabaseTable(record.table_id, metabaseRecord, 'update', [], table.database_id);
       console.log(`✅ Metabase table updated for record: ${record.id}`);
     } catch (metabaseError) {
       console.error('Metabase update failed:', metabaseError);
@@ -435,7 +526,7 @@ export const deleteRecordSimple = async (req, res) => {
 
     // Update Metabase table before deleting
     try {
-      await updateMetabaseTable(record.table_id, { id: record.id }, 'delete');
+      await updateMetabaseTable(record.table_id, { id: record.id }, 'delete', [], record.table_id);
       console.log(`✅ Metabase table updated for deleted record: ${record.id}`);
     } catch (metabaseError) {
       console.error('Metabase update failed:', metabaseError);

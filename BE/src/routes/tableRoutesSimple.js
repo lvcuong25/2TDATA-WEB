@@ -27,26 +27,24 @@ const router = Router();
 router.post('/tables', createTableSimple);
 router.get('/databases/:databaseId/tables', getTablesSimple);
 
-// Column routes
-router.post('/columns', checkTablePermission('canEditStructure'), createColumnSimple);
-router.get('/tables/:tableId/columns', checkTableViewPermission, getColumnsByTableIdSimple);
-router.put('/columns/:columnId', checkTablePermission('canEditStructure'), updateColumnSimple);
-router.delete('/columns/:columnId', checkTablePermission('canEditStructure'), deleteColumnSimple);
+// Column routes - WITH AUTHENTICATION AND PERMISSIONS
+router.post('/columns', authAndSiteDetectionMiddleware, checkTablePermission('canEditStructure'), createColumnSimple);
+router.get('/tables/:tableId/columns', authAndSiteDetectionMiddleware, checkTableViewPermission, getColumnsByTableIdSimple);
+router.put('/columns/:columnId', authAndSiteDetectionMiddleware, checkTablePermission('canEditStructure'), updateColumnSimple);
+router.delete('/columns/:columnId', authAndSiteDetectionMiddleware, checkTablePermission('canEditStructure'), deleteColumnSimple);
 
-// Record routes
-
-router.post('/records', checkTablePermission('canAddData'), createRecordSimple);
-router.get('/tables/:tableId/records', checkTableViewPermission, getRecordsByTableIdSimple);
+// Record routes - WITH AUTHENTICATION AND PERMISSIONS
+router.post('/records', authAndSiteDetectionMiddleware, checkTablePermission('canAddData'), createRecordSimple);
+router.get('/tables/:tableId/records', authAndSiteDetectionMiddleware, checkTableViewPermission, getRecordsByTableIdSimple);
 
 // Bulk delete route - MUST come before :recordId routes
-router.delete('/records/bulk', deleteMultipleRecords);
+router.delete('/records/bulk', authAndSiteDetectionMiddleware, deleteMultipleRecords);
 
+router.get('/records/:recordId', authAndSiteDetectionMiddleware, getRecordByIdSimple);
+router.put('/records/:recordId', authAndSiteDetectionMiddleware, checkTablePermission('canEditData'), updateRecordSimple);
+router.delete('/records/:recordId', authAndSiteDetectionMiddleware, checkTablePermission('canEditData'), deleteRecordSimple);
 
-router.get('/records/:recordId', getRecordByIdSimple);
-router.put('/records/:recordId', checkTablePermission('canEditData'), updateRecordSimple);
-router.delete('/records/:recordId', checkTablePermission('canEditData'), deleteRecordSimple);
-
-// Table structure route
-router.get('/tables/:tableId/structure', checkTableViewPermission, getTableStructureSimple);
+// Table structure route - WITH AUTHENTICATION AND PERMISSIONS
+router.get('/tables/:tableId/structure', authAndSiteDetectionMiddleware, checkTableViewPermission, getTableStructureSimple);
 
 export default router;

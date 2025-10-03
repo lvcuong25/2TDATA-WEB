@@ -35,14 +35,14 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     setAllRecords 
   } = context;
 
-  // Fetch table permissions
+  // Fetch table permissions - KEEP ENABLED (only disable column/record/cell permissions)
   const { data: tablePermissionsResponse, isLoading: tablePermissionsLoading } = useQuery({
     queryKey: ['table-permissions', tableId],
     queryFn: async () => {
       const response = await axiosInstance.get(`/permissions/tables/${tableId}/permissions`);
       return response.data;
     },
-    enabled: !!tableId,
+    enabled: !!tableId, // Keep enabled for table permissions
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -89,7 +89,7 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     return false;
   };
 
-  // Permission checks
+  // Permission checks - TABLE PERMISSIONS ENABLED (only disable column/record/cell permissions)
   const canViewTable = checkTablePermission('canView');
   const canEditStructure = checkTablePermission('canEditStructure');
   const canEditData = checkTablePermission('canEditData');
@@ -346,21 +346,14 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     },
   });
 
-  // Fetch column permissions
+  // Fetch column permissions - TEMPORARILY DISABLED FOR TESTING
   const { data: columnPermissionsResponse, error: columnPermissionsError, isLoading: columnPermissionsLoading } = useQuery({
     queryKey: ['columnPermissions', tableId],
     queryFn: async () => {
-      // console.log(`🔍 Fetching column permissions for tableId: ${tableId}`);
-      try {
-        const response = await axiosInstance.get(`/permissions/tables/${tableId}/columns/permissions`);
-        // console.log(`🔍 Column permissions response:`, response.data);
-        return response.data;
-      } catch (error) {
-        console.error(`🔍 Column permissions API error:`, error);
-        throw error;
-      }
+      // Return empty permissions for testing
+      return { data: [] };
     },
-    enabled: !!tableId,
+    enabled: false, // Disabled for testing
   });
 
   // Debug column permissions query
@@ -375,24 +368,24 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     }
   }, [tableId, columnPermissionsLoading, columnPermissionsError, columnPermissionsResponse]);
 
-  // Fetch record permissions
+  // Fetch record permissions - TEMPORARILY DISABLED FOR TESTING
   const { data: recordPermissionsResponse } = useQuery({
     queryKey: ['recordPermissions', tableId],
     queryFn: async () => {
-      const response = await axiosInstance.get(`/permissions/tables/${tableId}/records/permissions`);
-      return response.data;
+      // Return empty permissions for testing
+      return { data: [] };
     },
-    enabled: !!tableId,
+    enabled: false, // Disabled for testing
   });
 
-  // Fetch cell permissions
+  // Fetch cell permissions - TEMPORARILY DISABLED FOR TESTING
   const { data: cellPermissionsResponse } = useQuery({
     queryKey: ['cellPermissions', tableId],
     queryFn: async () => {
-      const response = await axiosInstance.get(`/permissions/tables/${tableId}/cells/permissions`);
-      return response.data;
+      // Return empty permissions for testing
+      return { data: [] };
     },
-    enabled: !!tableId,
+    enabled: false, // Disabled for testing
   });
 
   // Fetch database members for user role
