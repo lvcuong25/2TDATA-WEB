@@ -109,6 +109,52 @@ export const createColumnSimple = async (req, res) => {
 
     console.log(`✅ Column created in PostgreSQL: ${newColumn.name} (${newColumn.data_type})`);
 
+    // Add default value to existing records for the new column
+    const { Record } = await import('../models/postgres/index.js');
+    const existingRecords = await Record.findAll({
+      where: { table_id: tableId }
+    });
+
+    console.log(`📝 Adding default value to ${existingRecords.length} existing records`);
+
+    for (const record of existingRecords) {
+      const updatedData = { ...record.data };
+      
+      // Add default value for the new column if it doesn't exist
+      if (updatedData[newColumn.name] === undefined) {
+        if (defaultValue !== null && defaultValue !== undefined) {
+          updatedData[newColumn.name] = defaultValue;
+        } else {
+          // Set appropriate default based on data type
+          switch (dataType) {
+            case 'number':
+            case 'currency':
+            case 'percent':
+            case 'rating':
+              updatedData[newColumn.name] = 0;
+              break;
+            case 'checkbox':
+              updatedData[newColumn.name] = false;
+              break;
+            case 'date':
+            case 'time':
+              updatedData[newColumn.name] = null;
+              break;
+            case 'multi_select':
+            case 'linked_table':
+            case 'lookup':
+              updatedData[newColumn.name] = [];
+              break;
+            default:
+              updatedData[newColumn.name] = '';
+          }
+        }
+        
+        await record.update({ data: updatedData });
+        console.log(`✅ Added default value to record ${record.id}`);
+      }
+    }
+
     // Recreate Metabase table with new column
     try {
       const metabaseResult = await createMetabaseTable(tableId, table.name, 'column-added');
@@ -368,13 +414,49 @@ export const deleteColumnSimple = async (req, res) => {
       return res.status(404).json({ message: 'Associated table not found' });
     }
 
+    // Import Record model for data cleanup
+    const { Record } = await import('../models/postgres/index.js');
+
+    // Remove column data from all records in this table
+    const records = await Record.findAll({
+      where: { table_id: column.table_id }
+    });
+
+    console.log(`🗑️ Removing column data from ${records.length} records`);
+
+    for (const record of records) {
+      const updatedData = { ...record.data };
+      if (updatedData[column.name] !== undefined) {
+        delete updatedData[column.name];
+        await record.update({ data: updatedData });
+        console.log(`✅ Removed column data from record ${record.id}`);
+      }
+    }
+
+    // Delete the column
     await column.destroy();
 
     console.log(`✅ Column deleted from PostgreSQL: ${column.name} (${column.id})`);
 
+    // Recreate Metabase table without the deleted column
+    try {
+      const metabaseResult = await createMetabaseTable(column.table_id, table.name, 'column-deleted');
+      if (metabaseResult.success) {
+        console.log(`✅ Metabase table recreated without column: ${column.name}`);
+      } else {
+        console.error('Metabase table recreation failed:', metabaseResult.error);
+      }
+    } catch (metabaseError) {
+      console.error('Metabase update failed:', metabaseError);
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Column deleted successfully'
+      message: 'Column deleted successfully',
+      data: {
+        deletedColumnName: column.name,
+        recordsUpdated: records.length
+      }
     });
 
   } catch (error) {

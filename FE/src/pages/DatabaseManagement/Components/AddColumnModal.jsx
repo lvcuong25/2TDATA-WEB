@@ -58,9 +58,47 @@ const AddColumnModal = ({
   addColumnPosition = null
 }) => {
   const handleDataTypeChange = (value) => {
+    // Auto-generate column name based on data type if name is empty or default
+    const getDefaultColumnName = (dataType) => {
+      switch (dataType) {
+        case 'text': return 'Text';
+        case 'number': return 'Number';
+        case 'date': return 'Date';
+        case 'email': return 'Email';
+        case 'url': return 'URL';
+        case 'phone': return 'Phone';
+        case 'checkbox': return 'Checkbox';
+        case 'single_select': return 'Single Select';
+        case 'multi_select': return 'Multi Select';
+        case 'currency': return 'Currency';
+        case 'percent': return 'Percent';
+        case 'rating': return 'Rating';
+        case 'time': return 'Time';
+        case 'formula': return 'Formula';
+        case 'linked_table': return 'Linked Table';
+        case 'lookup': return 'Lookup';
+        case 'json': return 'JSON';
+        default: return 'New Column';
+      }
+    };
+
+    const shouldUpdateName = !newColumn.name || newColumn.name === 'New Column' || newColumn.name === '';
+    let newName = shouldUpdateName ? getDefaultColumnName(value) : newColumn.name;
+    
+    // Check if column name already exists and add number suffix
+    if (shouldUpdateName) {
+      let counter = 1;
+      let originalName = newName;
+      while (columns.some(col => col.name === newName)) {
+        newName = `${originalName} ${counter}`;
+        counter++;
+      }
+    }
+
     setNewColumn({ 
       ...newColumn, 
       dataType: value,
+      name: newName,
       // Set default value for currency
       ...(value === 'currency' ? { defaultValue: 0 } : {})
     });

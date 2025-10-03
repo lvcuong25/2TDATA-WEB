@@ -965,8 +965,9 @@ const TableDetail = () => {
         return response.json();
       })
       .then(data => {
-        // Invalidate and refetch table structure
+        // Invalidate and refetch table structure and records
         queryClient.invalidateQueries(['tableStructure', tableId]);
+        queryClient.invalidateQueries(['records', tableId]);
         setShowAddColumn(false);
         setAddColumnPosition(null);
         setNewColumn({ 

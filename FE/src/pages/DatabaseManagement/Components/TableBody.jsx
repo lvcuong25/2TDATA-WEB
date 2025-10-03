@@ -24,7 +24,8 @@ import {
   AppstoreOutlined,
   ExpandOutlined,
   ZoomInOutlined,
-  LockOutlined
+  LockOutlined,
+  MailOutlined
 } from '@ant-design/icons';
 import DraggableColumnHeader from './DraggableColumnHeader';
 import { formatDateForDisplay, formatDateForInput } from '../../../utils/dateFormatter.js';
@@ -894,6 +895,31 @@ const TableBody = ({
                                       boxShadow: 'none',
                                       fontSize: 'inherit',
                                       height: '100%'
+                                    }}
+                                  />
+                                );
+                              } else if (dataType === 'email') {
+                                return (
+                                  <Input
+                                    type="email"
+                                    value={cellValue}
+                                    onChange={(e) => {
+                                      if (!canEditCurrentCell()) {
+                                        console.log('🔍 Permission denied: Cannot edit email cell');
+                                        return;
+                                      }
+                                      setCellValue(e.target.value);
+                                    }}
+                                    onPressEnter={handleCellSave}
+                                    onBlur={handleCellSave}
+                                    autoFocus
+                                    size="small"
+                                    placeholder="Enter email address"
+                                    disabled={!canEditCurrentCell()}
+                                    style={{
+                                      width: '100%',
+                                      border: '1px solid #d9d9d9',
+                                      borderRadius: '4px'
                                     }}
                                   />
                                 );
@@ -2024,6 +2050,42 @@ const TableBody = ({
                               }}
                             />
                           );
+                        } else if (dataType === 'email') {
+                          return (
+                            <Input
+                              type="email"
+                              value={cellValue}
+                              onChange={(e) => {
+                                if (!canEditCurrentCell()) {
+                                  console.log('🔍 Permission denied: Cannot edit email cell (grouped)');
+                                  return;
+                                }
+                                setCellValue(e.target.value);
+                              }}
+                              onPressEnter={handleCellSave}
+                              onBlur={handleCellSave}
+                              autoFocus
+                              size="small"
+                              placeholder="Enter email address"
+                              disabled={!canEditCurrentCell()}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                                padding: '0',
+                                margin: '0',
+                                borderRadius: '0',
+                                backgroundColor: 'transparent',
+                                boxShadow: 'none',
+                                fontSize: 'inherit',
+                                position: 'absolute',
+                                top: '0',
+                                left: '0',
+                                right: '0',
+                                bottom: '0'
+                              }}
+                            />
+                          );
                         } else if (dataType === 'phone') {
                           return (
                             <Input
@@ -2456,7 +2518,20 @@ const TableBody = ({
                                 return displayUrl;
                               })()
                               : column.dataType === 'email' && value ?
-                                value
+                                <a 
+                                  href={`mailto:${value}`} 
+                                  style={{ 
+                                    color: '#1890ff', 
+                                    textDecoration: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MailOutlined style={{ fontSize: '12px' }} />
+                                  {value}
+                                </a>
                                 : column.dataType === 'phone' && value ?
                                   value
                                   : column.dataType === 'time' && value ?
