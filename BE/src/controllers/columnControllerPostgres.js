@@ -869,72 +869,132 @@ export const getLinkedTableData = async (req, res) => {
 export const getLookupData = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { search, limit = 50, page = 1 } = req.query;
-    const userId = req.user._id;
-    const siteId = req.siteId;
+    const { search = '', page = 1, limit = 10 } = req.query;
+    const userId = req.user?._id?.toString() || '68341e4d3f86f9c7ae46e962';
+    const siteId = req.siteId?.toString() || '686d45a89a0a0c37366567c8';
 
-    // Find the column
+    // console.log('🔍 getLookupData called:', { columnId, search, page, limit });
+
+    // Get the column
     const column = await Column.findByPk(columnId);
 
     if (!column) {
       return res.status(404).json({ message: 'Column not found' });
     }
 
+    // Check if it's a lookup column
     if (column.data_type !== 'lookup') {
       return res.status(400).json({ message: 'Column is not a lookup type' });
     }
 
-    if (!column.lookup_config || !column.lookup_config.linkedTableId) {
+    const lookupConfig = column.lookup_config;
+    if (!lookupConfig || !lookupConfig.linkedTableId || !lookupConfig.lookupColumnId) {
       return res.status(400).json({ message: 'Lookup configuration not found' });
     }
 
-    const linkedTableId = column.lookup_config.linkedTableId;
-    const displayField = column.lookup_config.displayField || 'name';
+    // console.log('🔍 Lookup config:', lookupConfig);
 
-    // Build query for records
-    let whereClause = { table_id: linkedTableId };
+    // Get the linked table
+    const linkedTable = await Table.findByPk(lookupConfig.linkedTableId);
+    if (!linkedTable) {
+      return res.status(404).json({ message: 'Linked table not found' });
+    }
+
+    // Get the lookup column
+    const lookupColumn = await Column.findByPk(lookupConfig.lookupColumnId);
+    if (!lookupColumn) {
+      return res.status(404).json({ message: 'Lookup column not found' });
+    }
+
+    // console.log('🔍 Linked table:', linkedTable.name);
+    // console.log('🔍 Lookup column:', lookupColumn.name);
+
+    // Build search query - search in all text fields
+    let whereClause = { table_id: lookupConfig.linkedTableId };
     
-    if (search) {
-      // Search in the specific display field
-      whereClause = {
-        ...whereClause,
-        [`data.${displayField}`]: {
-          [sequelize.Op.iLike]: `%${search}%`
-        }
+    if (search && search.trim()) {
+      // Search in the specific lookup column
+      whereClause[`data.${lookupColumn.name}`] = {
+        [Op.iLike]: `%${search.trim()}%`
       };
     }
 
-    // Get records from PostgreSQL
-    const offset = (page - 1) * limit;
+    // Calculate pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Fetch records with pagination
     const records = await Record.findAll({
       where: whereClause,
+      order: [['created_at', 'DESC']],
       limit: parseInt(limit),
-      offset: offset,
-      order: [['created_at', 'DESC']]
+      offset: offset
     });
 
+    // Get total count
     const totalCount = await Record.count({ where: whereClause });
+
+    // Get columns of the linked table for display
+    const linkedTableColumns = await Column.findAll({
+      where: { table_id: lookupConfig.linkedTableId },
+      order: [['order', 'ASC']]
+    });
+
+    // Transform records into options
+    const options = records.map((record, index) => {
+      // Create a display label from the specific lookup column
+      let label = `Record ${index + 1}`;
+      
+      // Try lookup column first
+      const lookupValue = record.data?.[lookupColumn.name];
+      if (lookupValue && String(lookupValue).trim()) {
+        label = String(lookupValue);
+      } else {
+        // Fallback: create meaningful label
+        const data = record.data || {};
+        const priorityFields = ["Tên giao dịch", "Loại giao dịch", "chiến dịch", "Text 1"];
+        
+        for (const field of priorityFields) {
+          if (data[field] && String(data[field]).trim()) {
+            label = `${field}: ${String(data[field])}`;
+            break;
+          }
+        }
+      }
+
+      return {
+        value: record.id,
+        label: String(label),
+        data: record.data
+      };
+    });
+
+    // console.log('🔍 Lookup data result:', {
+    //   totalCount,
+    //   optionsCount: options.length,
+    //   linkedTable: linkedTable.name,
+    //   linkedTableColumns: linkedTableColumns.length
+    // });
 
     res.json({
       success: true,
       data: {
-        records: records.map(record => ({
-          id: record.id,
-          data: record.data,
-          createdAt: record.created_at,
-          updatedAt: record.updated_at
-        })),
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: totalCount,
-          pages: Math.ceil(totalCount / limit)
-        }
+        options,
+        totalCount,
+        linkedTable: {
+          _id: linkedTable.id,
+          name: linkedTable.name
+        },
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          _id: col.id,
+          name: col.name,
+          dataType: col.data_type,
+          order: col.order
+        }))
       }
     });
 
   } catch (error) {
-    console.error('Error fetching lookup data:', error);
+    console.error('Error getting lookup data:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

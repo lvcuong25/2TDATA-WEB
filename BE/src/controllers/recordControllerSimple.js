@@ -73,6 +73,101 @@ const calculateFormulaColumns = async (records, tableId) => {
   }
 };
 
+// Calculate lookup column values for PostgreSQL
+const calculateLookupColumns = async (records, tableId) => {
+  try {
+    console.log(`🔍 Starting lookup calculation for table ${tableId} with ${records.length} records`);
+    
+    // Get all columns for this table
+    const columns = await PostgresColumn.findAll({
+      where: { table_id: tableId },
+      order: [['order', 'ASC']]
+    });
+    
+    const lookupColumns = columns.filter(col => col.data_type === 'lookup' && col.lookup_config);
+    console.log(`📋 Found ${lookupColumns.length} lookup columns:`, lookupColumns.map(col => col.name));
+    
+    if (lookupColumns.length === 0) {
+      console.log('⚠️ No lookup columns found, returning original records');
+      return records; // No lookup columns, return as is
+    }
+    
+    // Calculate lookup values for each record
+    const enhancedRecords = await Promise.all(records.map(async record => {
+      const enhancedRecord = { ...record };
+      
+      // Calculate each lookup column
+      for (const lookupColumn of lookupColumns) {
+        try {
+          const { lookup_config } = lookupColumn;
+          
+          // Find the linked_table column that this lookup depends on
+          const linkedColumn = columns.find(col => 
+            col.data_type === 'linked_table' && 
+            col.linked_table_config?.linkedTableId?.toString() === lookup_config.linkedTableId?.toString()
+          );
+          
+          if (!linkedColumn) {
+            console.warn(`No linked table column found for lookup ${lookupColumn.name}`);
+            continue;
+          }
+          
+          // Get the linked record ID from the linked_table column
+          const linkedTableValue = enhancedRecord.data?.[linkedColumn.name];
+          if (!linkedTableValue || !linkedTableValue.recordId) {
+            continue; // No linked record
+          }
+          
+          // Get the linked record from PostgreSQL
+          const linkedRecord = await PostgresRecord.findByPk(linkedTableValue.recordId);
+          if (!linkedRecord) {
+            continue;
+          }
+          
+          // Get the lookup column from the linked table
+          const lookupColumnInLinkedTable = await PostgresColumn.findByPk(lookup_config.lookupColumnId);
+          if (!lookupColumnInLinkedTable) {
+            continue;
+          }
+          
+          // Extract the value from the linked record
+          const lookupValue = linkedRecord.data?.[lookupColumnInLinkedTable.name];
+          
+          // Create proper lookup display value
+          let displayValue = null;
+          if (lookupValue && String(lookupValue).trim()) {
+            displayValue = {
+              value: linkedRecord.id,
+              label: String(lookupValue),
+              sourceField: lookupColumnInLinkedTable.name,
+              sourceData: linkedRecord.data
+            };
+          }
+          
+          // Add calculated value to record data
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[lookupColumn.name] = displayValue;
+          
+        } catch (error) {
+          console.error(`Error calculating lookup for column ${lookupColumn.name}:`, error);
+          // Set null for failed calculations
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[lookupColumn.name] = null;
+        }
+      }
+      
+      return enhancedRecord;
+    }));
+    
+    console.log(`✅ Lookup calculation completed for ${enhancedRecords.length} records`);
+    return enhancedRecords;
+    
+  } catch (error) {
+    console.error('Error calculating lookup columns:', error);
+    return records; // Return original records if calculation fails
+  }
+};
+
 // Simple Record Controllers that use PostgreSQL
 export const createRecordSimple = async (req, res) => {
   try {
@@ -98,6 +193,19 @@ export const createRecordSimple = async (req, res) => {
     });
 
     console.log(`✅ Record created in PostgreSQL: ${newRecord.id}`);
+
+    // Calculate formula and lookup columns for new record
+    const formulaEnhanced = await calculateFormulaColumns([newRecord], newRecord.table_id);
+    const enhancedRecords = await calculateLookupColumns(formulaEnhanced, newRecord.table_id);
+    const enhancedRecord = enhancedRecords[0];
+    
+    // Update record with calculated values if they changed
+    if (enhancedRecord.data !== newRecord.data) {
+      await newRecord.update({
+        data: enhancedRecord.data
+      });
+      console.log(`✅ Record updated with calculated values: ${newRecord.id}`);
+    }
 
     // Update Metabase table
     try {
@@ -291,10 +399,12 @@ export const getRecordsByTableIdSimple = async (req, res) => {
       updatedAt: record.updated_at
     }));
 
-    // Calculate formula columns for all records
+    // Calculate formula and lookup columns for all records
     console.log(`🧮 Calculating formula columns for ${transformedRecords.length} records in table ${tableId}`);
-    const enhancedRecords = await calculateFormulaColumns(transformedRecords, tableId);
-    console.log(`✅ Formula calculation completed for ${enhancedRecords.length} records`);
+    const formulaEnhanced = await calculateFormulaColumns(transformedRecords, tableId);
+    console.log(`🔍 Calculating lookup columns for ${formulaEnhanced.length} records in table ${tableId}`);
+    const enhancedRecords = await calculateLookupColumns(formulaEnhanced, tableId);
+    console.log(`✅ Formula and lookup calculation completed for ${enhancedRecords.length} records`);
 
     res.status(200).json({
       success: true,
@@ -328,16 +438,21 @@ export const getRecordByIdSimple = async (req, res) => {
       return res.status(404).json({ message: 'Associated table not found' });
     }
 
+    // Calculate formula and lookup columns for single record
+    const formulaEnhanced = await calculateFormulaColumns([record], record.table_id);
+    const enhancedRecords = await calculateLookupColumns(formulaEnhanced, record.table_id);
+    const finalRecord = enhancedRecords[0] || record;
+
     res.status(200).json({
       success: true,
       data: {
-        _id: record.id,
-        tableId: record.table_id,
-        userId: record.user_id,
-        siteId: record.site_id,
-        data: record.data,
-        createdAt: record.created_at,
-        updatedAt: record.updated_at
+        _id: finalRecord.id,
+        tableId: finalRecord.table_id,
+        userId: finalRecord.user_id,
+        siteId: finalRecord.site_id,
+        data: finalRecord.data,
+        createdAt: finalRecord.created_at,
+        updatedAt: finalRecord.updated_at
       }
     });
 
@@ -369,8 +484,9 @@ export const updateRecordSimple = async (req, res) => {
 
     console.log(`✅ Record updated in PostgreSQL: ${record.id}`);
 
-    // Calculate formula columns for updated record and save back to database
-    const enhancedRecords = await calculateFormulaColumns([record], record.table_id);
+    // Calculate formula and lookup columns for updated record and save back to database
+    const formulaEnhanced = await calculateFormulaColumns([record], record.table_id);
+    const enhancedRecords = await calculateLookupColumns(formulaEnhanced, record.table_id);
     const enhancedRecord = enhancedRecords[0];
     
     // Update record again with calculated formula values

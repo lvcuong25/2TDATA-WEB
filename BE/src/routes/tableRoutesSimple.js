@@ -6,6 +6,7 @@ import {
   updateColumnSimple, 
   deleteColumnSimple 
 } from '../controllers/columnControllerSimple.js';
+import { getLookupData } from '../controllers/columnControllerPostgres.js';
 import { 
   createRecordSimple, 
   getRecordsByTableIdSimple, 
@@ -30,6 +31,7 @@ router.get('/databases/:databaseId/tables', getTablesSimple);
 // Column routes
 router.post('/columns', checkTablePermission('canEditStructure'), createColumnSimple);
 router.get('/tables/:tableId/columns', checkTableViewPermission, getColumnsByTableIdSimple);
+router.get('/columns/:columnId/lookup-data', checkTableViewPermission, getLookupData);
 router.put('/columns/:columnId', checkTablePermission('canEditStructure'), updateColumnSimple);
 router.delete('/columns/:columnId', checkTablePermission('canEditStructure'), deleteColumnSimple);
 
