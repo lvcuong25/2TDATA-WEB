@@ -130,7 +130,7 @@ export const createColumn = async (req, res) => {
       
       try {
         // Import formula calculation function
-        const { evaluateFormula } = await import('../utils/formulaEngine.js');
+        const exprEvalEngine = (await import('../utils/exprEvalEngine.js')).default;
         
         // Get all columns for this table
         const allColumns = await Column.findAll({
@@ -164,7 +164,7 @@ export const createColumn = async (req, res) => {
           
           // Calculate formula for this new column
           try {
-            const formulaValue = evaluateFormula(
+            const formulaValue = exprEvalEngine.evaluateFormula(
               formulaConfig.formula,
               record.data || {},
               transformedColumns
@@ -417,7 +417,7 @@ export const updateColumn = async (req, res) => {
       
       try {
         // Import formula calculation function
-        const { evaluateFormula } = await import('../utils/formulaEngine.js');
+        const exprEvalEngine = (await import('../utils/exprEvalEngine.js')).default;
         
         // Get all columns for this table
         const allColumns = await Column.findAll({
@@ -451,7 +451,7 @@ export const updateColumn = async (req, res) => {
           
           // Calculate formula for this column
           try {
-            const formulaValue = evaluateFormula(
+            const formulaValue = exprEvalEngine.evaluateFormula(
               updateData.formulaConfig.formula,
               record.data || {},
               transformedColumns

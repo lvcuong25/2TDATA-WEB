@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 import { updateMetabaseTable } from '../utils/metabaseTableCreator.js';
 import Table from '../model/Table.js';
 import Column from '../model/Column.js';
-import { evaluateFormula } from '../utils/formulaEngine.js';
+import exprEvalEngine from '../utils/exprEvalEngine.js';
 
 // Helper function to calculate formula columns for records
 const calculateFormulaColumns = async (records, tableId) => {
@@ -36,18 +36,22 @@ const calculateFormulaColumns = async (records, tableId) => {
     
     // Calculate formula values for each record
     const enhancedRecords = records.map(record => {
-      const enhancedRecord = { ...record };
+      // Create a deep copy to preserve original data structure
+      const enhancedRecord = {
+        ...record,
+        data: record.data ? { ...record.data } : {}
+      };
       
       // Calculate each formula column
       formulaColumns.forEach(formulaColumn => {
         try {
-          const formulaValue = evaluateFormula(
+          const formulaValue = exprEvalEngine.evaluateFormula(
             formulaColumn.formula_config.formula,
             enhancedRecord.data || {},
             transformedColumns
           );
           
-          // Add calculated value to record data
+          // Add calculated value to record data (preserve existing data)
           if (!enhancedRecord.data) enhancedRecord.data = {};
           const oldValue = enhancedRecord.data[formulaColumn.name];
           enhancedRecord.data[formulaColumn.name] = formulaValue;
