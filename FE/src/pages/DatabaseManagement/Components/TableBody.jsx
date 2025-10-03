@@ -1388,7 +1388,7 @@ const TableBody = ({
                                   isEditable: isCellEditableByPermission(record._id, column._id)
                                 });
                                 
-                                if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || !isCellEditableByPermission(record._id, column._id)) {
+                                if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || column.dataType === 'json' || !isCellEditableByPermission(record._id, column._id)) {
                                   console.log('🔍 Cell click blocked by conditions');
                                   return;
                                 }
@@ -1600,6 +1600,45 @@ const TableBody = ({
                                           } else {
                                             // Display as percentage (e.g., 25%)
                                             return `${numValue}%`;
+                                          }
+                                        })()
+                                      ) : column.dataType === 'json' ? (
+                                        (() => {
+                                          try {
+                                            if (!value || value === '') {
+                                              return <span style={{ color: '#999', fontStyle: 'italic' }}>Empty JSON</span>;
+                                            }
+                                            
+                                            // Try to parse and format JSON
+                                            const jsonValue = typeof value === 'string' ? JSON.parse(value) : value;
+                                            const formattedJson = JSON.stringify(jsonValue, null, 2);
+                                            
+                                            return (
+                                              <div style={{ 
+                                                fontFamily: 'monospace', 
+                                                fontSize: '12px',
+                                                backgroundColor: '#f5f5f5',
+                                                padding: '4px 8px',
+                                                borderRadius: '4px',
+                                                border: '1px solid #d9d9d9',
+                                                maxWidth: '200px',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                              }}>
+                                                {formattedJson.length > 50 ? `${formattedJson.substring(0, 50)}...` : formattedJson}
+                                              </div>
+                                            );
+                                          } catch (error) {
+                                            return (
+                                              <div style={{ 
+                                                color: '#ff4d4f',
+                                                fontFamily: 'monospace',
+                                                fontSize: '12px'
+                                              }}>
+                                                Invalid JSON
+                                              </div>
+                                            );
                                           }
                                         })()
                                       ) : column.dataType === 'linked_table' ?
@@ -2472,7 +2511,7 @@ const TableBody = ({
                             isEditable: isCellEditableByPermission(record._id, column._id)
                           });
                           
-                          if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || !isCellEditableByPermission(record._id, column._id)) {
+                          if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || column.dataType === 'json' || !isCellEditableByPermission(record._id, column._id)) {
                             console.log('🔍 Cell click blocked by conditions (grouped)');
                             return;
                           }
@@ -2823,6 +2862,45 @@ const TableBody = ({
                                         } else {
                                           // Display as percentage (e.g., 25%)
                                           return `${numValue}%`;
+                                        }
+                                      })()
+                                    ) : column.dataType === 'json' ? (
+                                      (() => {
+                                        try {
+                                          if (!value || value === '') {
+                                            return <span style={{ color: '#999', fontStyle: 'italic' }}>Empty JSON</span>;
+                                          }
+                                          
+                                          // Try to parse and format JSON
+                                          const jsonValue = typeof value === 'string' ? JSON.parse(value) : value;
+                                          const formattedJson = JSON.stringify(jsonValue, null, 2);
+                                          
+                                          return (
+                                            <div style={{ 
+                                              fontFamily: 'monospace', 
+                                              fontSize: '12px',
+                                              backgroundColor: '#f5f5f5',
+                                              padding: '4px 8px',
+                                              borderRadius: '4px',
+                                              border: '1px solid #d9d9d9',
+                                              maxWidth: '200px',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis',
+                                              whiteSpace: 'nowrap'
+                                            }}>
+                                              {formattedJson.length > 50 ? `${formattedJson.substring(0, 50)}...` : formattedJson}
+                                            </div>
+                                          );
+                                        } catch (error) {
+                                          return (
+                                            <div style={{ 
+                                              color: '#ff4d4f',
+                                              fontFamily: 'monospace',
+                                              fontSize: '12px'
+                                            }}>
+                                              Invalid JSON
+                                            </div>
+                                          );
                                         }
                                       })()
                                     ) : column.dataType === 'linked_table' ?
