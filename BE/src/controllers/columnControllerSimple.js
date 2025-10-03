@@ -128,13 +128,35 @@ export const createColumnSimple = async (req, res) => {
           // Set appropriate default based on data type
           switch (dataType) {
             case 'number':
-            case 'currency':
-            case 'percent':
-            case 'rating':
               updatedData[newColumn.name] = 0;
               break;
+            case 'currency':
+              // Use defaultValue from currencyConfig if available
+              const currencyDefaultValue = currencyConfig?.defaultValue !== null && currencyConfig?.defaultValue !== undefined 
+                ? currencyConfig.defaultValue 
+                : 0;
+              updatedData[newColumn.name] = currencyDefaultValue;
+              break;
+            case 'percent':
+              // Use defaultValue from percentConfig if available
+              const percentDefaultValue = percentConfig?.defaultValue !== null && percentConfig?.defaultValue !== undefined 
+                ? percentConfig.defaultValue 
+                : 0;
+              updatedData[newColumn.name] = percentDefaultValue;
+              break;
+            case 'rating':
+              // Use defaultValue from ratingConfig if available
+              const ratingDefaultValue = ratingConfig?.defaultValue !== null && ratingConfig?.defaultValue !== undefined 
+                ? ratingConfig.defaultValue 
+                : 0;
+              updatedData[newColumn.name] = ratingDefaultValue;
+              break;
             case 'checkbox':
-              updatedData[newColumn.name] = false;
+              // Use defaultValue from checkboxConfig if available
+              const checkboxDefaultValue = checkboxConfig?.defaultValue !== null && checkboxConfig?.defaultValue !== undefined 
+                ? checkboxConfig.defaultValue 
+                : false;
+              updatedData[newColumn.name] = checkboxDefaultValue;
               break;
             case 'date':
             case 'time':
@@ -357,6 +379,57 @@ export const updateColumnSimple = async (req, res) => {
     await column.update(updateData);
 
     console.log(`✅ Column updated in PostgreSQL: ${column.name} (${column.id})`);
+
+    // If default value changed, update existing records that have empty/null values
+    if (defaultValue !== undefined && defaultValue !== column.default_value) {
+      const { Record } = await import('../models/postgres/index.js');
+      const records = await Record.findAll({
+        where: { table_id: column.table_id }
+      });
+
+      console.log(`🔄 Updating default values for ${records.length} records`);
+
+      for (const record of records) {
+        const updatedData = { ...record.data };
+        
+        // Update records that have empty, null, or 0 values for this column
+        if (updatedData[column.name] === undefined || 
+            updatedData[column.name] === null || 
+            updatedData[column.name] === '' ||
+            updatedData[column.name] === 0) {
+          
+          updatedData[column.name] = defaultValue;
+          await record.update({ data: updatedData });
+          console.log(`✅ Updated default value for record ${record.id}: ${column.name} = ${defaultValue}`);
+        }
+      }
+    }
+
+    // If percent config default value changed, update existing records
+    if (percentConfig?.defaultValue !== undefined && 
+        percentConfig?.defaultValue !== column.percent_config?.defaultValue) {
+      const { Record } = await import('../models/postgres/index.js');
+      const records = await Record.findAll({
+        where: { table_id: column.table_id }
+      });
+
+      console.log(`🔄 Updating percent default values for ${records.length} records`);
+
+      for (const record of records) {
+        const updatedData = { ...record.data };
+        
+        // Update records that have empty, null, or 0 values for this column
+        if (updatedData[column.name] === undefined || 
+            updatedData[column.name] === null || 
+            updatedData[column.name] === '' ||
+            updatedData[column.name] === 0) {
+          
+          updatedData[column.name] = percentConfig.defaultValue;
+          await record.update({ data: updatedData });
+          console.log(`✅ Updated percent default value for record ${record.id}: ${column.name} = ${percentConfig.defaultValue}`);
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,

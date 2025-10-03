@@ -1589,6 +1589,19 @@ const TableBody = ({
                                           color="#1890ff"
                                           height="6px"
                                         />
+                                      ) : column.dataType === 'percent' ? (
+                                        (() => {
+                                          const numValue = Number(String(value)) || 0;
+                                          const displayFormat = column.percentConfig?.displayFormat || 'percentage';
+                                          
+                                          if (displayFormat === 'decimal') {
+                                            // Display as decimal (e.g., 0.25 for 25%)
+                                            return (numValue / 100).toFixed(2);
+                                          } else {
+                                            // Display as percentage (e.g., 25%)
+                                            return `${numValue}%`;
+                                          }
+                                        })()
                                       ) : column.dataType === 'linked_table' ?
                                         (() => {
                                           const linkedValue = value;
@@ -2799,6 +2812,19 @@ const TableBody = ({
                                         color="#1890ff"
                                         height="6px"
                                       />
+                                    ) : column.dataType === 'percent' ? (
+                                      (() => {
+                                        const numValue = Number(String(value)) || 0;
+                                        const displayFormat = column.percentConfig?.displayFormat || 'percentage';
+                                        
+                                        if (displayFormat === 'decimal') {
+                                          // Display as decimal (e.g., 0.25 for 25%)
+                                          return (numValue / 100).toFixed(2);
+                                        } else {
+                                          // Display as percentage (e.g., 25%)
+                                          return `${numValue}%`;
+                                        }
+                                      })()
                                     ) : column.dataType === 'linked_table' ?
                                       (() => {
                                         const linkedValue = value;
