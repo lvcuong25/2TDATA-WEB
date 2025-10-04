@@ -6,6 +6,7 @@ import {
   updateColumnSimple, 
   deleteColumnSimple 
 } from '../controllers/columnControllerSimple.js';
+import { getLookupData } from '../controllers/columnControllerPostgres.js';
 import { 
   createRecordSimple, 
   getRecordsByTableIdSimple, 
@@ -27,11 +28,14 @@ const router = Router();
 router.post('/tables', createTableSimple);
 router.get('/databases/:databaseId/tables', getTablesSimple);
 
-// Column routes - WITH AUTHENTICATION AND PERMISSIONS
-router.post('/columns', authAndSiteDetectionMiddleware, checkTablePermission('canEditStructure'), createColumnSimple);
-router.get('/tables/:tableId/columns', authAndSiteDetectionMiddleware, checkTableViewPermission, getColumnsByTableIdSimple);
-router.put('/columns/:columnId', authAndSiteDetectionMiddleware, checkTablePermission('canEditStructure'), updateColumnSimple);
-router.delete('/columns/:columnId', authAndSiteDetectionMiddleware, checkTablePermission('canEditStructure'), deleteColumnSimple);
+
+// Column routes
+router.post('/columns', checkTablePermission('canEditStructure'), createColumnSimple);
+router.get('/tables/:tableId/columns', checkTableViewPermission, getColumnsByTableIdSimple);
+router.get('/columns/:columnId/lookup-data', checkTableViewPermission, getLookupData);
+router.put('/columns/:columnId', checkTablePermission('canEditStructure'), updateColumnSimple);
+router.delete('/columns/:columnId', checkTablePermission('canEditStructure'), deleteColumnSimple);
+
 
 // Record routes - WITH AUTHENTICATION AND PERMISSIONS
 router.post('/records', authAndSiteDetectionMiddleware, checkTablePermission('canAddData'), createRecordSimple);

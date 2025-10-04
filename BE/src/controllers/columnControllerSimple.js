@@ -109,7 +109,79 @@ export const createColumnSimple = async (req, res) => {
 
     console.log(`✅ Column created in PostgreSQL: ${newColumn.name} (${newColumn.data_type})`);
 
+
     // Update Metabase table structure with new column
+
+    // Add default value to existing records for the new column
+    const { Record } = await import('../models/postgres/index.js');
+    const existingRecords = await Record.findAll({
+      where: { table_id: tableId }
+    });
+
+    console.log(`📝 Adding default value to ${existingRecords.length} existing records`);
+
+    for (const record of existingRecords) {
+      const updatedData = { ...record.data };
+      
+      // Add default value for the new column if it doesn't exist
+      if (updatedData[newColumn.name] === undefined) {
+        if (defaultValue !== null && defaultValue !== undefined) {
+          updatedData[newColumn.name] = defaultValue;
+        } else {
+          // Set appropriate default based on data type
+          switch (dataType) {
+            case 'number':
+              updatedData[newColumn.name] = 0;
+              break;
+            case 'currency':
+              // Use defaultValue from currencyConfig if available
+              const currencyDefaultValue = currencyConfig?.defaultValue !== null && currencyConfig?.defaultValue !== undefined 
+                ? currencyConfig.defaultValue 
+                : 0;
+              updatedData[newColumn.name] = currencyDefaultValue;
+              break;
+            case 'percent':
+              // Use defaultValue from percentConfig if available
+              const percentDefaultValue = percentConfig?.defaultValue !== null && percentConfig?.defaultValue !== undefined 
+                ? percentConfig.defaultValue 
+                : 0;
+              updatedData[newColumn.name] = percentDefaultValue;
+              break;
+            case 'rating':
+              // Use defaultValue from ratingConfig if available
+              const ratingDefaultValue = ratingConfig?.defaultValue !== null && ratingConfig?.defaultValue !== undefined 
+                ? ratingConfig.defaultValue 
+                : 0;
+              updatedData[newColumn.name] = ratingDefaultValue;
+              break;
+            case 'checkbox':
+              // Use defaultValue from checkboxConfig if available
+              const checkboxDefaultValue = checkboxConfig?.defaultValue !== null && checkboxConfig?.defaultValue !== undefined 
+                ? checkboxConfig.defaultValue 
+                : false;
+              updatedData[newColumn.name] = checkboxDefaultValue;
+              break;
+            case 'date':
+            case 'time':
+              updatedData[newColumn.name] = null;
+              break;
+            case 'multi_select':
+            case 'linked_table':
+            case 'lookup':
+              updatedData[newColumn.name] = [];
+              break;
+            default:
+              updatedData[newColumn.name] = '';
+          }
+        }
+        
+        await record.update({ data: updatedData });
+        console.log(`✅ Added default value to record ${record.id}`);
+      }
+    }
+
+    // Recreate Metabase table with new column
+
     try {
       // Get database ID from table to determine schema
       const databaseId = table.database_id;
@@ -438,6 +510,7 @@ export const updateColumnSimple = async (req, res) => {
 
     console.log(`✅ Column updated in PostgreSQL: ${column.name} (${column.id})`);
 
+
     // Update Metabase table structure
     try {
       const { createMetabaseTable } = await import('../utils/metabaseTableCreator.js');
@@ -446,6 +519,57 @@ export const updateColumnSimple = async (req, res) => {
     } catch (metabaseError) {
       console.error('Metabase table structure update failed:', metabaseError);
       // Don't fail the entire operation if metabase fails
+
+    // If default value changed, update existing records that have empty/null values
+    if (defaultValue !== undefined && defaultValue !== column.default_value) {
+      const { Record } = await import('../models/postgres/index.js');
+      const records = await Record.findAll({
+        where: { table_id: column.table_id }
+      });
+
+      console.log(`🔄 Updating default values for ${records.length} records`);
+
+      for (const record of records) {
+        const updatedData = { ...record.data };
+        
+        // Update records that have empty, null, or 0 values for this column
+        if (updatedData[column.name] === undefined || 
+            updatedData[column.name] === null || 
+            updatedData[column.name] === '' ||
+            updatedData[column.name] === 0) {
+          
+          updatedData[column.name] = defaultValue;
+          await record.update({ data: updatedData });
+          console.log(`✅ Updated default value for record ${record.id}: ${column.name} = ${defaultValue}`);
+        }
+      }
+    }
+
+    // If percent config default value changed, update existing records
+    if (percentConfig?.defaultValue !== undefined && 
+        percentConfig?.defaultValue !== column.percent_config?.defaultValue) {
+      const { Record } = await import('../models/postgres/index.js');
+      const records = await Record.findAll({
+        where: { table_id: column.table_id }
+      });
+
+      console.log(`🔄 Updating percent default values for ${records.length} records`);
+
+      for (const record of records) {
+        const updatedData = { ...record.data };
+        
+        // Update records that have empty, null, or 0 values for this column
+        if (updatedData[column.name] === undefined || 
+            updatedData[column.name] === null || 
+            updatedData[column.name] === '' ||
+            updatedData[column.name] === 0) {
+          
+          updatedData[column.name] = percentConfig.defaultValue;
+          await record.update({ data: updatedData });
+          console.log(`✅ Updated percent default value for record ${record.id}: ${column.name} = ${percentConfig.defaultValue}`);
+        }
+      }
+
     }
 
     res.status(200).json({
@@ -504,6 +628,7 @@ export const deleteColumnSimple = async (req, res) => {
       return res.status(404).json({ message: 'Associated table not found' });
     }
 
+
     const columnName = column.name;
     const tableId = column.table_id;
 
@@ -527,6 +652,28 @@ export const deleteColumnSimple = async (req, res) => {
     
     console.log(`✅ Successfully removed column data from ${updatedCount} records`);
 
+
+    // Import Record model for data cleanup
+    const { Record } = await import('../models/postgres/index.js');
+
+    // Remove column data from all records in this table
+    const records = await Record.findAll({
+      where: { table_id: column.table_id }
+    });
+
+    console.log(`🗑️ Removing column data from ${records.length} records`);
+
+    for (const record of records) {
+      const updatedData = { ...record.data };
+      if (updatedData[column.name] !== undefined) {
+        delete updatedData[column.name];
+        await record.update({ data: updatedData });
+        console.log(`✅ Removed column data from record ${record.id}`);
+      }
+    }
+
+    // Delete the column
+
     await column.destroy();
 
     console.log(`✅ Column deleted from PostgreSQL: ${columnName} (${column.id})`);
@@ -541,9 +688,25 @@ export const deleteColumnSimple = async (req, res) => {
       // Don't fail the entire operation if metabase fails
     }
 
+    // Recreate Metabase table without the deleted column
+    try {
+      const metabaseResult = await createMetabaseTable(column.table_id, table.name, 'column-deleted');
+      if (metabaseResult.success) {
+        console.log(`✅ Metabase table recreated without column: ${column.name}`);
+      } else {
+        console.error('Metabase table recreation failed:', metabaseResult.error);
+      }
+    } catch (metabaseError) {
+      console.error('Metabase update failed:', metabaseError);
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Column deleted successfully'
+      message: 'Column deleted successfully',
+      data: {
+        deletedColumnName: column.name,
+        recordsUpdated: records.length
+      }
     });
 
   } catch (error) {

@@ -3,7 +3,17 @@ export const formatDateForDisplay = (dateValue, format = 'DD/MM/YYYY') => {
   if (!dateValue) return '';
   
   try {
-    const date = new Date(dateValue);
+    let date;
+    
+    // Check if it's an Excel serial number
+    const numValue = parseFloat(dateValue);
+    if (!isNaN(numValue) && numValue > 25569 && numValue < 100000) {
+      // Convert Excel serial number to date
+      const excelEpoch = new Date(1900, 0, 1);
+      date = new Date(excelEpoch.getTime() + (numValue - 2) * 24 * 60 * 60 * 1000);
+    } else {
+      date = new Date(dateValue);
+    }
     
     // Check if date is valid
     if (isNaN(date.getTime())) {

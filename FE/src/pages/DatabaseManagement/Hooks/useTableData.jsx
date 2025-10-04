@@ -198,6 +198,7 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     onSuccess: () => {
       toast.success('Thêm cột thành công');
       queryClient.invalidateQueries(['tableStructure', tableId]);
+      queryClient.invalidateQueries(['records', tableId]);
       
       // Close modal and reset form
       if (modalCallbacks?.onAddColumnSuccess) {
@@ -313,6 +314,7 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     onSuccess: () => {
       toast.success('Cập nhật cột thành công');
       queryClient.invalidateQueries(['tableStructure', tableId]);
+      queryClient.invalidateQueries(['records', tableId]);
       
       // Close modal and reset form
       if (modalCallbacks?.onEditColumnSuccess) {
@@ -334,6 +336,7 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     onSuccess: () => {
       toast.success('Xóa cột thành công');
       queryClient.invalidateQueries(['tableStructure', tableId]);
+      queryClient.invalidateQueries(['records', tableId]);
     },
     onError: (error) => {
       console.error('Error deleting column:', error);

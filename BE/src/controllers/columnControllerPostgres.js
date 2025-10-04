@@ -5,6 +5,52 @@ import Base from '../model/Base.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
 
+// Helper function to convert value to date type
+const convertValueToDateType = (value, dataType) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const stringValue = String(value).trim();
+  
+  // Try to parse date, including Excel serial numbers
+  let dateValue;
+  const numValue = parseFloat(stringValue);
+  
+  // Check if it's an Excel serial number (range: 25569-100000)
+  if (!isNaN(numValue) && numValue > 25569 && numValue < 100000) {
+    // Convert Excel serial number to date
+    // Excel serial number 25569 = 1970-01-01
+    // Excel epoch is 1900-01-01, but we need to account for the leap year bug
+    const excelEpoch = new Date(1900, 0, 1);
+    dateValue = new Date(excelEpoch.getTime() + (numValue - 2) * 24 * 60 * 60 * 1000);
+    
+    console.log(`📅 Converting Excel serial ${numValue} to date: ${dateValue.toISOString()}`);
+  } else {
+    // Try to parse as regular date string
+    dateValue = new Date(stringValue);
+  }
+  
+  if (isNaN(dateValue.getTime())) {
+    console.log(`❌ Could not parse date: ${stringValue}`);
+    return stringValue; // Return original if can't parse
+  }
+  
+  if (dataType === 'year') {
+    const year = dateValue.getFullYear();
+    console.log(`📅 Converting to year: ${year}`);
+    return year;
+  } else if (dataType === 'datetime') {
+    const isoString = dateValue.toISOString();
+    console.log(`📅 Converting to datetime: ${isoString}`);
+    return isoString;
+  } else {
+    const dateOnly = dateValue.toISOString().split('T')[0];
+    console.log(`📅 Converting to date: ${dateOnly}`);
+    return dateOnly; // Date only
+  }
+};
+
 // Column Controllers for PostgreSQL
 export const createColumn = async (req, res) => {
   try {
@@ -130,7 +176,7 @@ export const createColumn = async (req, res) => {
       
       try {
         // Import formula calculation function
-        const { evaluateFormula } = await import('../utils/formulaEngine.js');
+        const exprEvalEngine = (await import('../utils/exprEvalEngine.js')).default;
         
         // Get all columns for this table
         const allColumns = await Column.findAll({
@@ -164,7 +210,7 @@ export const createColumn = async (req, res) => {
           
           // Calculate formula for this new column
           try {
-            const formulaValue = evaluateFormula(
+            const formulaValue = exprEvalEngine.evaluateFormula(
               formulaConfig.formula,
               record.data || {},
               transformedColumns
@@ -547,7 +593,7 @@ export const updateColumn = async (req, res) => {
       
       try {
         // Import formula calculation function
-        const { evaluateFormula } = await import('../utils/formulaEngine.js');
+        const exprEvalEngine = (await import('../utils/exprEvalEngine.js')).default;
         
         // Get all columns for this table
         const allColumns = await Column.findAll({
@@ -581,7 +627,7 @@ export const updateColumn = async (req, res) => {
           
           // Calculate formula for this column
           try {
-            const formulaValue = evaluateFormula(
+            const formulaValue = exprEvalEngine.evaluateFormula(
               updateData.formulaConfig.formula,
               record.data || {},
               transformedColumns
@@ -612,6 +658,7 @@ export const updateColumn = async (req, res) => {
       }
     }
 
+
     // Update Metabase table structure
     try {
       const { createMetabaseTable } = await import('../utils/metabaseTableCreator.js');
@@ -620,6 +667,45 @@ export const updateColumn = async (req, res) => {
     } catch (metabaseError) {
       console.error('Metabase table structure update failed:', metabaseError);
       // Don't fail the entire operation if metabase fails
+
+    // If data type changed to date/datetime/year, convert existing data
+    if (updateData.dataType && ['date', 'datetime', 'year'].includes(updateData.dataType) && 
+        column.data_type !== updateData.dataType) {
+      console.log(`📅 Data type changed to ${updateData.dataType}, converting existing data for column ${column.name}`);
+      
+      try {
+        // Get all records for this table
+        const records = await Record.findAll({
+          where: { table_id: column.table_id }
+        });
+        
+        console.log(`📊 Found ${records.length} records to convert`);
+        
+        let updatedCount = 0;
+        
+        // Convert each record
+        for (const record of records) {
+          const updatedData = { ...record.data };
+          const currentValue = record.data?.[column.name];
+          
+          if (currentValue !== null && currentValue !== undefined && currentValue !== '') {
+            let convertedValue = convertValueToDateType(currentValue, updateData.dataType);
+            
+            if (convertedValue !== currentValue) {
+              updatedData[column.name] = convertedValue;
+              await record.update({ data: updatedData });
+              updatedCount++;
+              console.log(`📅 ${column.name}: ${currentValue} → ${convertedValue}`);
+            }
+          }
+        }
+        
+        console.log(`🎉 Converted ${updatedCount} records to ${updateData.dataType} format`);
+        
+      } catch (error) {
+        console.error('❌ Error converting date records:', error.message);
+      }
+
     }
 
     res.json({
@@ -1054,72 +1140,132 @@ export const getLinkedTableData = async (req, res) => {
 export const getLookupData = async (req, res) => {
   try {
     const { columnId } = req.params;
-    const { search, limit = 50, page = 1 } = req.query;
-    const userId = req.user._id;
-    const siteId = req.siteId;
+    const { search = '', page = 1, limit = 10 } = req.query;
+    const userId = req.user?._id?.toString() || '68341e4d3f86f9c7ae46e962';
+    const siteId = req.siteId?.toString() || '686d45a89a0a0c37366567c8';
 
-    // Find the column
+    // console.log('🔍 getLookupData called:', { columnId, search, page, limit });
+
+    // Get the column
     const column = await Column.findByPk(columnId);
 
     if (!column) {
       return res.status(404).json({ message: 'Column not found' });
     }
 
+    // Check if it's a lookup column
     if (column.data_type !== 'lookup') {
       return res.status(400).json({ message: 'Column is not a lookup type' });
     }
 
-    if (!column.lookup_config || !column.lookup_config.linkedTableId) {
+    const lookupConfig = column.lookup_config;
+    if (!lookupConfig || !lookupConfig.linkedTableId || !lookupConfig.lookupColumnId) {
       return res.status(400).json({ message: 'Lookup configuration not found' });
     }
 
-    const linkedTableId = column.lookup_config.linkedTableId;
-    const displayField = column.lookup_config.displayField || 'name';
+    // console.log('🔍 Lookup config:', lookupConfig);
 
-    // Build query for records
-    let whereClause = { table_id: linkedTableId };
+    // Get the linked table
+    const linkedTable = await Table.findByPk(lookupConfig.linkedTableId);
+    if (!linkedTable) {
+      return res.status(404).json({ message: 'Linked table not found' });
+    }
+
+    // Get the lookup column
+    const lookupColumn = await Column.findByPk(lookupConfig.lookupColumnId);
+    if (!lookupColumn) {
+      return res.status(404).json({ message: 'Lookup column not found' });
+    }
+
+    // console.log('🔍 Linked table:', linkedTable.name);
+    // console.log('🔍 Lookup column:', lookupColumn.name);
+
+    // Build search query - search in all text fields
+    let whereClause = { table_id: lookupConfig.linkedTableId };
     
-    if (search) {
-      // Search in the specific display field
-      whereClause = {
-        ...whereClause,
-        [`data.${displayField}`]: {
-          [sequelize.Op.iLike]: `%${search}%`
-        }
+    if (search && search.trim()) {
+      // Search in the specific lookup column
+      whereClause[`data.${lookupColumn.name}`] = {
+        [Op.iLike]: `%${search.trim()}%`
       };
     }
 
-    // Get records from PostgreSQL
-    const offset = (page - 1) * limit;
+    // Calculate pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Fetch records with pagination
     const records = await Record.findAll({
       where: whereClause,
+      order: [['created_at', 'DESC']],
       limit: parseInt(limit),
-      offset: offset,
-      order: [['created_at', 'DESC']]
+      offset: offset
     });
 
+    // Get total count
     const totalCount = await Record.count({ where: whereClause });
+
+    // Get columns of the linked table for display
+    const linkedTableColumns = await Column.findAll({
+      where: { table_id: lookupConfig.linkedTableId },
+      order: [['order', 'ASC']]
+    });
+
+    // Transform records into options
+    const options = records.map((record, index) => {
+      // Create a display label from the specific lookup column
+      let label = `Record ${index + 1}`;
+      
+      // Try lookup column first
+      const lookupValue = record.data?.[lookupColumn.name];
+      if (lookupValue && String(lookupValue).trim()) {
+        label = String(lookupValue);
+      } else {
+        // Fallback: create meaningful label
+        const data = record.data || {};
+        const priorityFields = ["Tên giao dịch", "Loại giao dịch", "chiến dịch", "Text 1"];
+        
+        for (const field of priorityFields) {
+          if (data[field] && String(data[field]).trim()) {
+            label = `${field}: ${String(data[field])}`;
+            break;
+          }
+        }
+      }
+
+      return {
+        value: record.id,
+        label: String(label),
+        data: record.data
+      };
+    });
+
+    // console.log('🔍 Lookup data result:', {
+    //   totalCount,
+    //   optionsCount: options.length,
+    //   linkedTable: linkedTable.name,
+    //   linkedTableColumns: linkedTableColumns.length
+    // });
 
     res.json({
       success: true,
       data: {
-        records: records.map(record => ({
-          id: record.id,
-          data: record.data,
-          createdAt: record.created_at,
-          updatedAt: record.updated_at
-        })),
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: totalCount,
-          pages: Math.ceil(totalCount / limit)
-        }
+        options,
+        totalCount,
+        linkedTable: {
+          _id: linkedTable.id,
+          name: linkedTable.name
+        },
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          _id: col.id,
+          name: col.name,
+          dataType: col.data_type,
+          order: col.order
+        }))
       }
     });
 
   } catch (error) {
-    console.error('Error fetching lookup data:', error);
+    console.error('Error getting lookup data:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
