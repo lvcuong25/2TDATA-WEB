@@ -519,6 +519,7 @@ export const updateColumnSimple = async (req, res) => {
     } catch (metabaseError) {
       console.error('Metabase table structure update failed:', metabaseError);
       // Don't fail the entire operation if metabase fails
+    }
 
     // If default value changed, update existing records that have empty/null values
     if (defaultValue !== undefined && defaultValue !== column.default_value) {
