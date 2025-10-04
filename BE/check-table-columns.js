@@ -67,3 +67,4 @@ async function checkTableColumns() {
 checkTableColumns();
 
 
+

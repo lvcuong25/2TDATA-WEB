@@ -1,37 +1,58 @@
 import axios from 'axios';
 
-console.log('🔍 Testing Server Status...');
+const BASE_URL = 'http://localhost:5000';
+
+console.log('=== TESTING SERVER STATUS ===');
 
 async function testServerStatus() {
   try {
-    // Test health endpoint
-    console.log('📝 Testing health endpoint...');
-    const healthResponse = await axios.get('http://localhost:5000/api/health');
-    console.log('✅ Server is running:', healthResponse.data);
+    console.log('\n🔍 Testing server status...');
     
-    // Test root endpoint
-    console.log('\n📝 Testing root endpoint...');
-    const rootResponse = await axios.get('http://localhost:5000/api/');
-    console.log('✅ Root endpoint working:', rootResponse.data);
+    // Test basic server health
+    const response = await axios.get(`${BASE_URL}/health`, {
+      timeout: 5000
+    });
     
-    // Test database endpoint
-    console.log('\n📝 Testing database endpoint...');
-    const dbResponse = await axios.get('http://localhost:5000/api/database/');
-    console.log('✅ Database endpoint working:', dbResponse.data);
+    console.log('✅ Server is running');
+    console.log('✅ Response status:', response.status);
+    console.log('✅ Response data:', response.data);
     
   } catch (error) {
-    console.log('❌ Server test failed:', error.message);
-    
     if (error.code === 'ECONNREFUSED') {
-      console.log('📝 Server is not running on localhost:5000');
-      console.log('📝 Please start the server with: npm run dev');
+      console.log('❌ Server is not running - connection refused');
+    } else if (error.code === 'ETIMEDOUT') {
+      console.log('❌ Server timeout - server might be slow or not responding');
     } else {
-      console.log('📝 Server error:', error.response?.data || error.message);
+      console.log('❌ Server error:', error.message);
     }
   }
 }
 
-// Run the test
-testServerStatus();
+async function testAuthEndpoint() {
+  try {
+    console.log('\n🔍 Testing auth endpoint...');
+    
+    const response = await axios.get(`${BASE_URL}/auth/me`, {
+      timeout: 5000
+    });
+    
+    console.log('✅ Auth endpoint is accessible');
+    console.log('✅ Response status:', response.status);
+    
+  } catch (error) {
+    if (error.response?.status === 401) {
+      console.log('✅ Auth endpoint is working (401 Unauthorized - expected without token)');
+    } else {
+      console.log('❌ Auth endpoint error:', error.message);
+    }
+  }
+}
 
+// Run tests
+async function runTests() {
+  await testServerStatus();
+  await testAuthEndpoint();
+  console.log('\n✅ All tests completed');
+}
 
+runTests().catch(console.error);

@@ -109,6 +109,53 @@ export const createColumnSimple = async (req, res) => {
 
     console.log(`✅ Column created in PostgreSQL: ${newColumn.name} (${newColumn.data_type})`);
 
+    // Tạo default permission cho column
+    try {
+      const ColumnPermission = (await import('../model/ColumnPermission.js')).default;
+      console.log('🔍 Creating default permission for column:', {
+        columnId: newColumn.id,
+        columnName: newColumn.name,
+        tableId: tableId,
+        databaseId: table.database_id,
+        userId: userId
+      });
+      
+      // Validate database_id
+      if (!table.database_id) {
+        console.error('❌ Cannot create default permission: table.database_id is undefined');
+        return;
+      }
+      
+      // Convert database_id and userId to ObjectId (MongoDB fields)
+      // columnId and tableId remain as strings (PostgreSQL UUIDs)
+      const mongoose = (await import('mongoose')).default;
+      const databaseObjectId = new mongoose.Types.ObjectId(table.database_id);
+      const createdByObjectId = new mongoose.Types.ObjectId(userId);
+      
+      const defaultPermission = new ColumnPermission({
+        columnId: newColumn.id, // PostgreSQL UUID (String)
+        tableId: tableId, // PostgreSQL UUID (String)
+        databaseId: databaseObjectId, // MongoDB ObjectId
+        targetType: 'all_members',
+        name: newColumn.name,
+        canView: true, // Default: true cho column permissions
+        canEdit: true, // Default: true cho column permissions
+        createdBy: createdByObjectId, // MongoDB ObjectId
+        isDefault: true
+      });
+      await defaultPermission.save();
+      console.log('✅ Default column permission created successfully (simple):', {
+        id: defaultPermission._id,
+        name: defaultPermission.name,
+        columnId: defaultPermission.columnId,
+        targetType: defaultPermission.targetType,
+        canView: defaultPermission.canView,
+        canEdit: defaultPermission.canEdit
+      });
+    } catch (permissionError) {
+      console.error('❌ Error creating default column permission:', permissionError);
+      // Không throw error để không ảnh hưởng đến việc tạo column
+    }
 
     // Update Metabase table structure with new column
 
@@ -246,10 +293,20 @@ export const getColumnsByTableIdSimple = async (req, res) => {
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    const columns = await PostgresColumn.findAll({
+    const allColumns = await PostgresColumn.findAll({
       where: { table_id: tableId },
       order: [['order', 'ASC']]
     });
+
+    // Filter columns based on user permissions
+    const { getViewableColumns } = await import('../utils/columnPermissionUtils.js');
+    const viewableColumns = await getViewableColumns(userId, tableId, table.database_id, req.user);
+    
+    // Filter columns based on permissions
+    let columns = allColumns;
+    if (viewableColumns !== null) { // null means all columns are viewable
+      columns = allColumns.filter(column => viewableColumns.includes(column.id));
+    }
 
     // Transform PostgreSQL data to match frontend expected format
     const transformedColumns = columns.map(column => ({
@@ -314,6 +371,13 @@ export const updateColumnSimple = async (req, res) => {
     const table = await PostgresTable.findByPk(column.table_id);
     if (!table) {
       return res.status(404).json({ message: 'Associated table not found' });
+    }
+
+    // Check column edit permission
+    const { canUserEditColumn } = await import('../utils/columnPermissionUtils.js');
+    const canEdit = await canUserEditColumn(userId, columnId, column.table_id, table.database_id, req.user);
+    if (!canEdit) {
+      return res.status(403).json({ message: 'You do not have permission to edit this column' });
     }
 
     // Check for duplicate name if name is being updated
@@ -629,6 +693,12 @@ export const deleteColumnSimple = async (req, res) => {
       return res.status(404).json({ message: 'Associated table not found' });
     }
 
+    // Check column edit permission
+    const { canUserEditColumn } = await import('../utils/columnPermissionUtils.js');
+    const canEdit = await canUserEditColumn(userId, columnId, column.table_id, table.database_id, req.user);
+    if (!canEdit) {
+      return res.status(403).json({ message: 'You do not have permission to delete this column' });
+    }
 
     const columnName = column.name;
     const tableId = column.table_id;

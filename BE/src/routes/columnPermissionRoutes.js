@@ -5,7 +5,8 @@ import {
   updateColumnPermission,
   deleteColumnPermission,
   getUserColumnPermission,
-  getTableColumnPermissions
+  getTableColumnPermissions,
+  getAvailableColumnPermissionTargets
 } from '../controllers/columnPermissionController.js';
 import { requireAuthWithCookie } from '../middlewares/requireAuthWithCookie.js';
 
@@ -16,6 +17,9 @@ router.post('/columns/:columnId/permissions', requireAuthWithCookie, createColum
 
 // Lấy tất cả permissions của column
 router.get('/columns/:columnId/permissions', requireAuthWithCookie, getColumnPermissions);
+
+// Lấy danh sách users/roles có thể tạo quyền cho column
+router.get('/columns/:columnId/available-targets', requireAuthWithCookie, getAvailableColumnPermissionTargets);
 
 // Lấy tất cả permissions của tất cả columns trong table
 router.get('/tables/:tableId/columns/permissions', requireAuthWithCookie, getTableColumnPermissions);

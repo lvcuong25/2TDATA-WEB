@@ -170,6 +170,40 @@ export const createColumn = async (req, res) => {
 
     console.log(`✅ Column created in PostgreSQL: ${newColumn.name} (${newColumn.id})`);
 
+    // Tạo default permission cho column
+    try {
+      const ColumnPermission = (await import('../model/ColumnPermission.js')).default;
+      
+      // Validate database_id
+      if (!table.database_id) {
+        console.error('❌ Cannot create default permission: table.database_id is undefined');
+        return;
+      }
+      
+      // Convert database_id and userId to ObjectId (MongoDB fields)
+      // columnId and tableId remain as strings (PostgreSQL UUIDs)
+      const mongoose = (await import('mongoose')).default;
+      const databaseObjectId = new mongoose.Types.ObjectId(table.database_id);
+      const createdByObjectId = new mongoose.Types.ObjectId(userId);
+      
+      const defaultPermission = new ColumnPermission({
+        columnId: newColumn.id, // PostgreSQL UUID (String)
+        tableId: tableId, // PostgreSQL UUID (String)
+        databaseId: databaseObjectId, // MongoDB ObjectId
+        targetType: 'all_members',
+        name: newColumn.name,
+        canView: true, // Default: true cho column permissions
+        canEdit: true, // Default: true cho column permissions
+        createdBy: createdByObjectId, // MongoDB ObjectId
+        isDefault: true
+      });
+      await defaultPermission.save();
+      console.log('✅ Default column permission created successfully (postgres)');
+    } catch (permissionError) {
+      console.error('❌ Error creating default column permission:', permissionError);
+      // Không throw error để không ảnh hưởng đến việc tạo column
+    }
+
     // If this is a formula column, calculate values for all existing records
     if (dataType === 'formula' && formulaConfig) {
       console.log(`🧮 New formula column created, calculating values for all records in table ${tableId}`);

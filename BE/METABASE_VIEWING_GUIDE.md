@@ -183,3 +183,4 @@ ORDER BY "created_at" DESC;
 *Hướng dẫn này được tạo sau khi verify thành công việc sync data từ hệ thống 2TDATA đến Metabase tables.*
 
 
+

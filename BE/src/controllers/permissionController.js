@@ -598,25 +598,24 @@ export const getAvailablePermissionTargets = async (req, res) => {
       perm.targetType === 'all_members'
     );
     
-    // Nếu đã có all_members permission, không thể tạo specific_role permissions
-    if (!hasAllMembersPermission) {
-      for (const role of availableRoles) {
-        // Manager không thể tạo quyền cho owner và manager role
-        if (currentUserRole === 'manager' && (role === 'owner' || role === 'manager')) {
-          continue;
-        }
+    // Cho phép tạo specific_role permissions ngay cả khi đã có all_members
+    // Logic ưu tiên: specific_user > specific_role > all_members
+    for (const role of availableRoles) {
+      // Manager không thể tạo quyền cho owner và manager role
+      if (currentUserRole === 'manager' && (role === 'owner' || role === 'manager')) {
+        continue;
+      }
 
-        // Kiểm tra xem đã có quyền cho role này chưa
-        const hasRolePermission = existingPermissions.some(perm => 
-          perm.targetType === 'specific_role' && perm.role === role
-        );
+      // Kiểm tra xem đã có specific_role permission cho role này chưa
+      const hasRolePermission = existingPermissions.some(perm => 
+        perm.targetType === 'specific_role' && perm.role === role
+      );
 
-        if (!hasRolePermission) {
-          availableRolesList.push({
-            role: role,
-            displayName: role.charAt(0).toUpperCase() + role.slice(1)
-          });
-        }
+      if (!hasRolePermission) {
+        availableRolesList.push({
+          role: role,
+          displayName: role.charAt(0).toUpperCase() + role.slice(1)
+        });
       }
     }
 
@@ -627,7 +626,7 @@ export const getAvailablePermissionTargets = async (req, res) => {
       data: {
         users: availableUsers,
         roles: availableRolesList,
-        canCreateAllMembers: !hasAllMembersPermission && currentUserRole !== 'manager'
+        canCreateAllMembers: false // all_members permission luôn tồn tại (mặc định)
       }
     });
 
@@ -785,8 +784,14 @@ export const getDatabaseMembers = async (req, res) => {
       }
     }
 
+    // Convert databaseId to ObjectId if it's a string
+    const mongoose = (await import('mongoose')).default;
+    const databaseObjectId = mongoose.Types.ObjectId.isValid(databaseId) 
+      ? new mongoose.Types.ObjectId(databaseId) 
+      : databaseId;
+
     // Lấy tất cả thành viên của database
-    const members = await BaseMember.find({ databaseId })
+    const members = await BaseMember.find({ databaseId: databaseObjectId })
       .populate('userId', 'name email')
       .sort({ createdAt: -1 });
 
