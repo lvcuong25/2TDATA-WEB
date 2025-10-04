@@ -151,8 +151,13 @@ export const getRecordsByTableIdSimple = async (req, res) => {
 
     const offset = (page - 1) * limit;
 
+    // Get record view filter based on table permissions
+    const { getRecordViewFilter } = await import('../utils/tablePermissionUtils.js');
+    const recordViewFilter = await getRecordViewFilter(userId, tableId, table.database_id, req.user);
+    console.log('🔍 Record view filter:', recordViewFilter);
+
     // Build where clause for filtering
-    let whereClause = { table_id: tableId };
+    let whereClause = { table_id: tableId, ...recordViewFilter };
 
     // Parse filter rules if provided
     if (filterRules) {

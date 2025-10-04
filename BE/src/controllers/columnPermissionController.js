@@ -4,19 +4,36 @@ import Table from '../model/Table.js';
 import User from '../model/User.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
+import { isOwner } from '../utils/ownerUtils.js';
 // PostgreSQL imports
 import { Column as PostgresColumn } from '../models/postgres/index.js';
 
-// Helper function để kiểm tra user có phải manager hoặc owner không
-const isManagerOrOwner = async (userId, databaseId) => {
+// Helper function để kiểm tra user có quyền quản lý permissions không
+const canManagePermissions = async (userId, tableId, databaseId) => {
+  // Super admin có quyền quản lý tất cả
+  if (isSuperAdmin({ role: 'super_admin' })) {
+    return true;
+  }
+
+  // Kiểm tra user có phải owner (database owner hoặc table owner) không
+  const userIsOwner = await isOwner(userId, tableId, databaseId);
+  if (userIsOwner) {
+    return true;
+  }
+
+  // Manager cũng có quyền quản lý permissions
+  // Convert databaseId to ObjectId if it's a string (from PostgreSQL)
+  const mongoose = (await import('mongoose')).default;
+  const databaseObjectId = mongoose.Types.ObjectId.isValid(databaseId) 
+    ? new mongoose.Types.ObjectId(databaseId) 
+    : databaseId;
+  
   const baseMember = await BaseMember.findOne({
     userId,
-    databaseId
+    databaseId: databaseObjectId
   });
   
-  if (!baseMember) return false;
-  
-  return baseMember.role === 'owner' || baseMember.role === 'manager';
+  return baseMember && baseMember.role === 'manager';
 };
 
 // Tạo permission cho column
@@ -41,20 +58,25 @@ export const createColumnPermission = async (req, res) => {
       return res.status(404).json({ message: 'Column not found' });
     }
 
-    // Get database ID from either source
-    let databaseId;
+    // Get database ID and table ID from either source
+    let databaseId, tableId;
     if (mongoColumn) {
+      // MongoDB column - get from populated tableId
       databaseId = mongoColumn.tableId.databaseId;
+      tableId = mongoColumn.tableId._id;
     } else {
-      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
-      databaseId = postgresColumn.database_id;
+      // PostgreSQL column - database_id is MongoDB ObjectId string, table_id is PostgreSQL UUID
+      databaseId = postgresColumn.database_id; // This is MongoDB ObjectId as string
+      tableId = postgresColumn.table_id; // This is PostgreSQL UUID
     }
+    
+    console.log('🔍 Column permission - databaseId:', databaseId, 'tableId:', tableId);
 
     // Kiểm tra user có quyền set permission không
-    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
+    const hasPermission = await canManagePermissions(currentUserId, tableId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
-        message: 'Only database managers and owners can set permissions' 
+        message: 'Only database owners, table owners, and managers can set permissions' 
       });
     }
 
@@ -87,12 +109,12 @@ export const createColumnPermission = async (req, res) => {
     // Tạo permission object
     const permissionData = {
       columnId,
-      tableId: column.tableId._id,
-      databaseId: column.tableId.databaseId,
+      tableId: tableId,
+      databaseId: databaseId,
       targetType,
       name: req.body.name || defaultName,
-      canView: canView || false,
-      canEdit: canEdit || false,
+      canView: canView !== undefined ? canView : true,
+      canEdit: canEdit !== undefined ? canEdit : true,
       note: note || '',
       createdBy: currentUserId
     };
@@ -149,20 +171,25 @@ export const getColumnPermissions = async (req, res) => {
       return res.status(404).json({ message: 'Column not found' });
     }
 
-    // Get database ID from either source
-    let databaseId;
+    // Get database ID and table ID from either source
+    let databaseId, tableId;
     if (mongoColumn) {
+      // MongoDB column - get from populated tableId
       databaseId = mongoColumn.tableId.databaseId;
+      tableId = mongoColumn.tableId._id;
     } else {
-      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
-      databaseId = postgresColumn.database_id;
+      // PostgreSQL column - database_id is MongoDB ObjectId string, table_id is PostgreSQL UUID
+      databaseId = postgresColumn.database_id; // This is MongoDB ObjectId as string
+      tableId = postgresColumn.table_id; // This is PostgreSQL UUID
     }
+    
+    console.log('🔍 Get column permission - databaseId:', databaseId, 'tableId:', tableId);
 
     // Kiểm tra user có quyền xem quyền không
-    const hasPermission = await isManagerOrOwner(currentUserId, databaseId);
+    const hasPermission = await canManagePermissions(currentUserId, tableId, databaseId);
     if (!hasPermission) {
       return res.status(403).json({ 
-        message: 'Only database managers and owners can view permissions' 
+        message: 'Only database owners, table owners, and managers can view permissions' 
       });
     }
 
@@ -305,16 +332,41 @@ export const getUserColumnPermission = async (req, res) => {
       return res.status(400).json({ message: 'Column ID is required' });
     }
 
-    // Kiểm tra column tồn tại
-    const column = await Column.findById(columnId).populate('tableId');
+    // Kiểm tra column tồn tại (check both MongoDB and PostgreSQL)
+    const [mongoColumn, postgresColumn] = await Promise.all([
+      Column.findById(columnId).populate('tableId'),
+      PostgresColumn.findByPk(columnId)
+    ]);
+
+    const column = mongoColumn || postgresColumn;
     if (!column) {
       return res.status(404).json({ message: 'Column not found' });
     }
 
+    // Get database ID and table ID from either source
+    let databaseId, tableId;
+    if (mongoColumn) {
+      // MongoDB column - get from populated tableId
+      databaseId = mongoColumn.tableId.databaseId;
+      tableId = mongoColumn.tableId._id;
+    } else {
+      // PostgreSQL column - database_id is MongoDB ObjectId string, table_id is PostgreSQL UUID
+      databaseId = postgresColumn.database_id; // This is MongoDB ObjectId as string
+      tableId = postgresColumn.table_id; // This is PostgreSQL UUID
+    }
+    
+    console.log('🔍 Get user column permission - databaseId:', databaseId, 'tableId:', tableId);
+
     // Lấy role của user trong database
+    // Convert databaseId to ObjectId if it's a string (from PostgreSQL)
+    const mongoose = (await import('mongoose')).default;
+    const databaseObjectId = mongoose.Types.ObjectId.isValid(databaseId) 
+      ? new mongoose.Types.ObjectId(databaseId) 
+      : databaseId;
+    
     const baseMember = await BaseMember.findOne({
       userId: currentUserId,
-      databaseId: column.tableId.databaseId
+      databaseId: databaseObjectId
     });
 
     if (!baseMember) {
@@ -339,8 +391,9 @@ export const getUserColumnPermission = async (req, res) => {
       canEdit: false
     };
 
-    // Owner và manager có quyền mặc định
-    if (userRole === 'owner' || userRole === 'manager') {
+    // Kiểm tra user có phải owner (database owner hoặc table owner) không
+    const userIsOwner = await isOwner(currentUserId, tableId, databaseId);
+    if (userIsOwner) {
       finalPermissions = {
         canView: true,
         canEdit: true

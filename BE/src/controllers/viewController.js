@@ -113,37 +113,43 @@ export const createView = async (req, res) => {
 
       console.log('ViewController - createView - found permissions:', tablePermissions);
 
-      let canAddView = false;
+      let canAddView = false; // ✅ Default: false (deny by default)
       
-      // Sort permissions by priority: specific_user > specific_role > all_members
-      const sortedPermissions = tablePermissions.sort((a, b) => {
-        const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
-        return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
-      });
-      
-      console.log('ViewController - createView - sorted permissions:', sortedPermissions.map(p => ({
-        id: p._id,
-        targetType: p.targetType,
-        userId: p.userId,
-        role: p.role,
-        canAddView: p.viewPermissions?.canAddView
-      })));
-      
-      // Check permissions in priority order
-      for (const perm of sortedPermissions) {
-        console.log('ViewController - createView - checking permission:', {
-          permissionId: perm._id,
-          targetType: perm.targetType,
-          viewPermissions: perm.viewPermissions
+      // If no permissions are set, deny access by default
+      if (tablePermissions.length === 0) {
+        console.log('ViewController - createView - no permissions found, denying access');
+        canAddView = false;
+      } else {
+        // Sort permissions by priority: specific_user > specific_role > all_members
+        const sortedPermissions = tablePermissions.sort((a, b) => {
+          const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+          return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
         });
         
-        if (perm.viewPermissions && perm.viewPermissions.canAddView !== undefined) {
-          canAddView = perm.viewPermissions.canAddView;
-          console.log('ViewController - createView - permission found, stopping at:', {
+        console.log('ViewController - createView - sorted permissions:', sortedPermissions.map(p => ({
+          id: p._id,
+          targetType: p.targetType,
+          userId: p.userId,
+          role: p.role,
+          canAddView: p.viewPermissions?.canAddView
+        })));
+        
+        // Check permissions in priority order
+        for (const perm of sortedPermissions) {
+          console.log('ViewController - createView - checking permission:', {
+            permissionId: perm._id,
             targetType: perm.targetType,
-            canAddView: canAddView
+            viewPermissions: perm.viewPermissions
           });
-          break; // Stop at first permission found (highest priority)
+          
+          if (perm.viewPermissions && perm.viewPermissions.canAddView !== undefined) {
+            canAddView = perm.viewPermissions.canAddView; // ✅ Check both true and false
+            console.log('ViewController - createView - permission found, stopping at:', {
+              targetType: perm.targetType,
+              canAddView: canAddView
+            });
+            break; // Stop at first permission found (highest priority)
+          }
         }
       }
 
@@ -448,12 +454,27 @@ export const updateView = async (req, res) => {
         ]
       });
 
-      let canEditView = false;
-      tablePermissions.forEach(perm => {
-        if (perm.viewPermissions && perm.viewPermissions.canEditView) {
-          canEditView = true;
+      let canEditView = false; // ✅ Default: false (deny by default)
+      
+      // If no permissions are set, deny access by default
+      if (tablePermissions.length === 0) {
+        console.log('ViewController - updateView - no permissions found, denying access');
+        canEditView = false;
+      } else {
+        // Sort permissions by priority: specific_user > specific_role > all_members
+        const sortedPermissions = tablePermissions.sort((a, b) => {
+          const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+          return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
+        });
+        
+        // Check permissions in priority order
+        for (const perm of sortedPermissions) {
+          if (perm.viewPermissions && perm.viewPermissions.canEditView !== undefined) {
+            canEditView = perm.viewPermissions.canEditView; // ✅ Check both true and false
+            break; // Stop at first permission found (highest priority)
+          }
         }
-      });
+      }
 
       if (!canEditView) {
         return res.status(403).json({
@@ -592,29 +613,35 @@ export const deleteView = async (req, res) => {
 
         console.log('ViewController - deleteView - found permissions:', tablePermissions);
 
-        let canEditView = false;
+        let canEditView = false; // ✅ Default: false (deny by default)
         
-        // Sort permissions by priority: specific_user > specific_role > all_members
-        const sortedPermissions = tablePermissions.sort((a, b) => {
-          const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
-          return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
-        });
-        
-        // Check permissions in priority order
-        for (const perm of sortedPermissions) {
-          console.log('ViewController - deleteView - checking permission:', {
-            permissionId: perm._id,
-            targetType: perm.targetType,
-            viewPermissions: perm.viewPermissions
+        // If no permissions are set, deny access by default
+        if (tablePermissions.length === 0) {
+          console.log('ViewController - deleteView - no permissions found, denying access');
+          canEditView = false;
+        } else {
+          // Sort permissions by priority: specific_user > specific_role > all_members
+          const sortedPermissions = tablePermissions.sort((a, b) => {
+            const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+            return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
           });
           
-          if (perm.viewPermissions && perm.viewPermissions.canEditView !== undefined) {
-            canEditView = perm.viewPermissions.canEditView;
-            console.log('ViewController - deleteView - permission found, stopping at:', {
+          // Check permissions in priority order
+          for (const perm of sortedPermissions) {
+            console.log('ViewController - deleteView - checking permission:', {
+              permissionId: perm._id,
               targetType: perm.targetType,
-              canEditView: canEditView
+              viewPermissions: perm.viewPermissions
             });
-            break; // Stop at first permission found (highest priority)
+            
+            if (perm.viewPermissions && perm.viewPermissions.canEditView !== undefined) {
+              canEditView = perm.viewPermissions.canEditView; // ✅ Check both true and false
+              console.log('ViewController - deleteView - permission found, stopping at:', {
+                targetType: perm.targetType,
+                canEditView: canEditView
+              });
+              break; // Stop at first permission found (highest priority)
+            }
           }
         }
 

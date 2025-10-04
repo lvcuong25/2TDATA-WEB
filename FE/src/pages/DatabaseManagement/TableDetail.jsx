@@ -89,7 +89,6 @@ import {
 } from './Utils/fieldVisibilityUtils.jsx';
 import {
   filterColumnsByPermission,
-  filterRecordsByPermission,
   getUserDatabaseRole,
   canEditCell
 } from './Utils/permissionUtils.jsx';
@@ -738,15 +737,10 @@ const TableDetail = () => {
 
   // Apply filters and permissions to records
   const records = useMemo(() => {
-    // First apply filters
+    // Apply filters only (no record permission filtering since record permissions are removed)
     const filteredRecords = applyFilterRules(allRecords, filterRules, isFilterActive);
     
-    // Then apply permission filtering
-    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
-    const recordPermissions = recordPermissionsResponse?.data || [];
-    
-    return filterRecordsByPermission(filteredRecords, recordPermissions, currentUser, userRole);
+    return filteredRecords;
   }, [allRecords, filterRules, isFilterActive, recordPermissionsResponse, databaseMembersResponse]);
 
   const handleAddColumn = (e) => {

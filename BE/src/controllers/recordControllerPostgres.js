@@ -4,6 +4,7 @@ import Base from '../model/Base.js';
 import BaseMember from '../model/BaseMember.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
 import { evaluateFormula } from '../utils/formulaEngine.js';
+import { getRecordViewFilter } from '../utils/tablePermissionUtils.js';
 
 // Helper function to calculate formula columns for records
 const calculateFormulaColumns = async (records, tableId) => {
@@ -458,6 +459,10 @@ export const getRecords = async (req, res) => {
       }
     }
 
+    // Get record view filter based on table permissions
+    const recordViewFilter = await getRecordViewFilter(userId, tableId, table.database_id, req.user);
+    console.log('🔍 Record view filter:', recordViewFilter);
+
     // Get columns to determine data types for sorting
     const columns = await Column.findAll({
       where: { table_id: tableId },
@@ -519,7 +524,7 @@ export const getRecords = async (req, res) => {
       if (column && ['number', 'currency', 'percent', 'rating'].includes(column.dataType)) {
         // For numeric types, use PostgreSQL JSONB numeric sorting
         const result = await Record.findAndCountAll({
-          where: { table_id: tableId },
+          where: { table_id: tableId, ...recordViewFilter },
           order: [
             [sequelize.literal(`(data->>'${primarySortField}')::numeric`), 
              primarySortDirection.toUpperCase()]
@@ -541,7 +546,7 @@ export const getRecords = async (req, res) => {
       } else if (column && ['date', 'datetime'].includes(column.dataType)) {
         // For date types, use PostgreSQL JSONB date sorting
         const result = await Record.findAndCountAll({
-          where: { table_id: tableId },
+          where: { table_id: tableId, ...recordViewFilter },
           order: [
             [sequelize.literal(`(data->>'${primarySortField}')::timestamp`), 
              primarySortDirection.toUpperCase()]
@@ -563,7 +568,7 @@ export const getRecords = async (req, res) => {
       } else {
         // For text and other types, use PostgreSQL JSONB text sorting
         const result = await Record.findAndCountAll({
-          where: { table_id: tableId },
+          where: { table_id: tableId, ...recordViewFilter },
           order: [
             [sequelize.literal(`data->>'${primarySortField}'`), 
              primarySortDirection.toUpperCase()]
@@ -586,7 +591,7 @@ export const getRecords = async (req, res) => {
     } else {
       // For system fields, use database sorting
       const result = await Record.findAndCountAll({
-        where: { table_id: tableId },
+        where: { table_id: tableId, ...recordViewFilter },
         order: [[primarySortField || sortBy || 'created_at', primarySortDirection.toUpperCase()]],
         limit: parseInt(limit),
         offset: parseInt(offset)

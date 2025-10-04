@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../utils/axiosInstance-cookie-only';
-import { isSuperAdmin } from '../Utils/permissionUtils.jsx';
+import { isSuperAdmin, getUserDatabaseRole } from '../Utils/permissionUtils.jsx';
 
 /**
  * Custom hook for managing table data fetching and mutations
@@ -51,7 +51,7 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   
   // Helper function to check table permission
-  const checkTablePermission = (permission) => {
+  const checkTablePermission = (permission, userRole = null) => {
     if (!currentUser._id) return false;
     
     // Super admin có tất cả quyền
@@ -59,9 +59,11 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       return true;
     }
     
-    // Check if user is owner or manager (they have all permissions by default)
-    // This should be checked against database membership, but for now we'll use a simple check
-    // TODO: Add proper role checking
+    // Check if user is owner (only owner has all permissions by default)
+    if (userRole === 'owner') {
+      console.log('✅ User is owner, bypassing permission check for:', permission);
+      return true;
+    }
     
     // Check specific user permissions first
     const specificUserPermission = tablePermissions.find(p => 
@@ -89,13 +91,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     return false;
   };
 
-  // Permission checks - TABLE PERMISSIONS ENABLED (only disable column/record/cell permissions)
-  const canViewTable = checkTablePermission('canView');
-  const canEditStructure = checkTablePermission('canEditStructure');
-  const canEditData = checkTablePermission('canEditData');
-  const canAddData = checkTablePermission('canAddData');
-  const canAddView = checkTablePermission('canAddView');
-  const canEditView = checkTablePermission('canEditView');
 
   // Fetch group preferences from backend
   const { data: groupPreferenceResponse } = useQuery({
@@ -413,6 +408,17 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     retry: 1,
     retryDelay: 1000,
   });
+
+  // Calculate user role after databaseMembersResponse is available
+  const userRole = getUserDatabaseRole(databaseMembersResponse?.data || [], currentUser);
+  
+  // Permission checks - TABLE PERMISSIONS ENABLED (only disable column/record/cell permissions)
+  const canViewTable = checkTablePermission('canView', userRole);
+  const canEditStructure = checkTablePermission('canEditStructure', userRole);
+  const canEditData = checkTablePermission('canEditData', userRole);
+  const canAddData = checkTablePermission('canAddData', userRole);
+  const canAddView = checkTablePermission('canAddView', userRole);
+  const canEditView = checkTablePermission('canEditView', userRole);
 
   // Debug database members query
   useEffect(() => {

@@ -12,8 +12,10 @@
  * @returns {boolean} True if user can view the column
  */
 export const canViewColumn = (columnPermissions, columnId, user, userRole) => {
-  // TEMPORARILY DISABLED FOR TESTING - ALWAYS RETURN TRUE
-  return true;
+  // Check if user is owner (database owner or table owner)
+  if (userRole === 'owner') {
+    return true;
+  }
   
   // console.log(`🔍 canViewColumn called:`, {
   //   columnId,
@@ -23,7 +25,7 @@ export const canViewColumn = (columnPermissions, columnId, user, userRole) => {
   // });
 
   if (!columnPermissions || columnPermissions.length === 0) {
-    // console.log(`🔍 No permissions set for column ${columnId}, defaulting to visible`);
+    // console.log(`🔍 No permissions set for column ${columnId}, defaulting to visible (column permissions default to true)`);
     return true;
   }
 
@@ -32,7 +34,7 @@ export const canViewColumn = (columnPermissions, columnId, user, userRole) => {
   // console.log(`🔍 Found ${columnPerms.length} permissions for column ${columnId}:`, columnPerms);
   
   if (columnPerms.length === 0) {
-    // console.log(`🔍 No specific permissions for column ${columnId}, defaulting to visible`);
+    // console.log(`🔍 No specific permissions for column ${columnId}, defaulting to visible (column permissions default to true)`);
     return true;
   }
 
@@ -64,7 +66,7 @@ export const canViewColumn = (columnPermissions, columnId, user, userRole) => {
     return allMembersPerm.canView;
   }
 
-  // console.log(`🔍 No matching permission found for column ${columnId}, defaulting to visible`);
+  // console.log(`🔍 No matching permission found for column ${columnId}, defaulting to visible (column permissions default to true)`);
   return true;
 };
 
@@ -77,11 +79,13 @@ export const canViewColumn = (columnPermissions, columnId, user, userRole) => {
  * @returns {boolean} True if user can edit the column
  */
 export const canEditColumn = (columnPermissions, columnId, user, userRole) => {
-  // TEMPORARILY DISABLED FOR TESTING - ALWAYS RETURN TRUE
-  return true;
+  // Check if user is owner (database owner or table owner)
+  if (userRole === 'owner') {
+    return true;
+  }
   
   if (!columnPermissions || columnPermissions.length === 0) {
-    // No permissions set, default to editable
+    // No permissions set, default to editable (column permissions default to true)
     return true;
   }
 
@@ -89,7 +93,7 @@ export const canEditColumn = (columnPermissions, columnId, user, userRole) => {
   const columnPerms = columnPermissions.filter(perm => perm.columnId === columnId);
   
   if (columnPerms.length === 0) {
-    // No specific permissions for this column, default to editable
+    // No specific permissions for this column, default to editable (column permissions default to true)
     return true;
   }
 
@@ -118,106 +122,10 @@ export const canEditColumn = (columnPermissions, columnId, user, userRole) => {
     return allMembersPerm.canEdit;
   }
 
-  // No matching permission found, default to editable
+  // No matching permission found, default to editable (column permissions default to true)
   return true;
 };
 
-/**
- * Check if user has permission to view a record
- * @param {Array} recordPermissions - Array of record permissions
- * @param {string} recordId - Record ID
- * @param {Object} user - Current user object
- * @param {string} userRole - User's role in the database
- * @returns {boolean} True if user can view the record
- */
-export const canViewRecord = (recordPermissions, recordId, user, userRole) => {
-  if (!recordPermissions || recordPermissions.length === 0) {
-    // No permissions set, default to visible
-    return true;
-  }
-
-  // Find permissions for this record
-  const recordPerms = recordPermissions.filter(perm => perm.recordId === recordId);
-  
-  if (recordPerms.length === 0) {
-    // No specific permissions for this record, default to visible
-    return true;
-  }
-
-  // Check permissions in priority order: specific_user > specific_role > all_members
-  const specificUserPerm = recordPerms.find(perm => 
-    perm.targetType === 'specific_user' && perm.userId?._id === user._id
-  );
-  
-  if (specificUserPerm) {
-    return specificUserPerm.canView;
-  }
-
-  const specificRolePerm = recordPerms.find(perm => 
-    perm.targetType === 'specific_role' && perm.role === userRole
-  );
-  
-  if (specificRolePerm) {
-    return specificRolePerm.canView;
-  }
-
-  const allMembersPerm = recordPerms.find(perm => 
-    perm.targetType === 'all_members'
-  );
-  
-  if (allMembersPerm) {
-    return allMembersPerm.canView;
-  }
-
-  // No matching permission found, default to visible
-  return true;
-};
-
-/**
- * Check if user has permission to edit a record
- * @param {Array} recordPermissions - Array of record permissions
- * @param {string} recordId - Record ID
- * @param {Object} user - Current user object
- * @param {string} userRole - User's role in the database
- * @returns {boolean} True if user can edit the record
- */
-export const canEditRecord = (recordPermissions, recordId, user, userRole) => {
-  if (!recordPermissions || recordPermissions.length === 0) {
-    return true;
-  }
-
-  const recordPerms = recordPermissions.filter(perm => perm.recordId === recordId);
-  
-  if (recordPerms.length === 0) {
-    return true;
-  }
-
-  const specificUserPerm = recordPerms.find(perm => 
-    perm.targetType === 'specific_user' && perm.userId?._id === user._id
-  );
-  
-  if (specificUserPerm) {
-    return specificUserPerm.canEdit;
-  }
-
-  const specificRolePerm = recordPerms.find(perm => 
-    perm.targetType === 'specific_role' && perm.role === userRole
-  );
-  
-  if (specificRolePerm) {
-    return specificRolePerm.canEdit;
-  }
-
-  const allMembersPerm = recordPerms.find(perm => 
-    perm.targetType === 'all_members'
-  );
-  
-  if (allMembersPerm) {
-    return allMembersPerm.canEdit;
-  }
-  
-  return false;
-};
 
 /**
  * Check if user has permission to edit a cell
@@ -318,23 +226,6 @@ export const filterColumnsByPermission = (columns, columnPermissions, user, user
   });
 };
 
-/**
- * Filter records based on user permissions
- * @param {Array} records - Array of records
- * @param {Array} recordPermissions - Array of record permissions
- * @param {Object} user - Current user object
- * @param {string} userRole - User's role in the database
- * @returns {Array} Filtered records that user can view
- */
-export const filterRecordsByPermission = (records, recordPermissions, user, userRole) => {
-  if (!records || records.length === 0) {
-    return [];
-  }
-
-  return records.filter(record => {
-    return canViewRecord(recordPermissions, record._id, user, userRole);
-  });
-};
 
 /**
  * Check if user is super admin
