@@ -9,9 +9,9 @@ import { isOwner } from '../utils/ownerUtils.js';
 import { Column as PostgresColumn } from '../models/postgres/index.js';
 
 // Helper function để kiểm tra user có quyền quản lý permissions không
-const canManagePermissions = async (userId, tableId, databaseId) => {
+const canManagePermissions = async (userId, tableId, databaseId, user = null) => {
   // Super admin có quyền quản lý tất cả
-  if (isSuperAdmin({ role: 'super_admin' })) {
+  if (user && isSuperAdmin(user)) {
     return true;
   }
 
@@ -73,7 +73,7 @@ export const createColumnPermission = async (req, res) => {
     console.log('🔍 Column permission - databaseId:', databaseId, 'tableId:', tableId);
 
     // Kiểm tra user có quyền set permission không
-    const hasPermission = await canManagePermissions(currentUserId, tableId, databaseId);
+    const hasPermission = await canManagePermissions(currentUserId, tableId, databaseId, req.user);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database owners, table owners, and managers can set permissions' 
@@ -186,7 +186,7 @@ export const getColumnPermissions = async (req, res) => {
     console.log('🔍 Get column permission - databaseId:', databaseId, 'tableId:', tableId);
 
     // Kiểm tra user có quyền xem quyền không
-    const hasPermission = await canManagePermissions(currentUserId, tableId, databaseId);
+    const hasPermission = await canManagePermissions(currentUserId, tableId, databaseId, req.user);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database owners, table owners, and managers can view permissions' 
