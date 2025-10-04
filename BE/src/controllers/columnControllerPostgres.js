@@ -667,6 +667,7 @@ export const updateColumn = async (req, res) => {
     } catch (metabaseError) {
       console.error('Metabase table structure update failed:', metabaseError);
       // Don't fail the entire operation if metabase fails
+    }
 
     // If data type changed to date/datetime/year, convert existing data
     if (updateData.dataType && ['date', 'datetime', 'year'].includes(updateData.dataType) && 
