@@ -575,6 +575,30 @@ export const updateRecordDate = async (req, res) => {
     record.data = updatedData;
     await record.save();
     
+    // Update Metabase table
+    try {
+      const { updateMetabaseTable } = await import('../utils/metabaseTableCreator.js');
+      const metabaseRecord = {
+        id: record._id,
+        table_id: record.tableId,
+        user_id: record.userId,
+        site_id: record.siteId,
+        data: record.data,
+        created_at: record.createdAt,
+        updated_at: record.updatedAt
+      };
+      
+      // Get database ID from table
+      const table = await Table.findById(record.tableId).populate('databaseId');
+      if (table && table.databaseId) {
+        await updateMetabaseTable(record.tableId, metabaseRecord, 'update', [], table.databaseId._id);
+        console.log(`✅ Metabase table updated for calendar record: ${record._id}`);
+      }
+    } catch (metabaseError) {
+      console.error('Metabase update failed:', metabaseError);
+      // Don't fail the entire operation if metabase fails
+    }
+    
     res.json({
       success: true,
       message: 'Record date updated successfully',

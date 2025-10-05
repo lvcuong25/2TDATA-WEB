@@ -19,8 +19,8 @@ router.use(requireAuthWithCookie);
 router.post('/tables/:tableId/permissions', createTablePermission);
 router.get('/tables/:tableId/permissions', getTablePermissions);
 router.get('/tables/:tableId/available-targets', getAvailablePermissionTargets);
-router.put('/permissions/:permissionId', updateTablePermission);
-router.delete('/permissions/:permissionId', deleteTablePermission);
+router.put('/tables/permissions/:permissionId', updateTablePermission);
+router.delete('/tables/permissions/:permissionId', deleteTablePermission);
 router.get('/tables/:tableId/user-permissions', getUserTablePermissions);
 
 // Database Members Routes

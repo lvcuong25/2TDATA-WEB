@@ -138,7 +138,7 @@ export const createTable = async (req, res) => {
       console.log(`🎯 Creating Metabase table for: ${table.name} (${table.id})`);
       console.log('📋 Table object:', JSON.stringify(table, null, 2));
       
-      const metabaseResult = await createMetabaseTable(table.id, table.name, base.organizationId?.toString());
+      const metabaseResult = await createMetabaseTable(table.id, table.name, base.organizationId?.toString(), actualBaseId);
       console.log('🎯 Metabase result:', metabaseResult);
       
       if (metabaseResult.success) {

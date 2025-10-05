@@ -7,6 +7,7 @@ import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRec
 import TablePermission from '../model/TablePermission.js';
 import ColumnPermission from '../model/ColumnPermission.js';
 import RecordPermission from '../model/RecordPermission.js';
+import { createDatabaseSchema } from '../services/schemaManager.js';
 import CellPermission from '../model/CellPermission.js';
 
 // Create database
@@ -90,7 +91,37 @@ export const createDatabase = async (req, res) => {
 
     await BaseRole.insertMany(defaultRoles);
 
-    res.status(201).json({ success: true, data: database });
+    // Create PostgreSQL schema for this database
+    try {
+      console.log(`🏗️ Creating PostgreSQL schema for database: ${database._id}`);
+      const schemaResult = await createDatabaseSchema(database._id, currentUserId);
+      
+      if (schemaResult.success) {
+        console.log(`✅ Schema created successfully: ${schemaResult.schemaName}`);
+        
+        // Update database with schema information
+        await Database.findByIdAndUpdate(database._id, {
+          $set: {
+            postgresSchema: schemaResult.schemaName,
+            schemaCreatedAt: new Date()
+          }
+        });
+      } else {
+        console.error(`❌ Failed to create schema: ${schemaResult.error}`);
+        // Don't fail the entire operation, but log the error
+      }
+    } catch (schemaError) {
+      console.error('❌ Error creating schema:', schemaError);
+      // Don't fail the entire operation, but log the error
+    }
+
+    res.status(201).json({ 
+      success: true, 
+      data: {
+        ...database.toObject(),
+        schemaCreated: true
+      }
+    });
   } catch (error) {
     console.error('Error creating database:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });

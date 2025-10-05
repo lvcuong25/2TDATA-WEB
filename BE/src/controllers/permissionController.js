@@ -394,16 +394,32 @@ export const updateTablePermission = async (req, res) => {
       });
     }
 
-    // Cập nhật permission
+    // Cập nhật permission - MERGE thay vì ghi đè
+    const updateData = {
+      name: name || existingPermission.name,
+      note: note !== undefined ? note : existingPermission.note,
+      updatedAt: new Date()
+    };
+
+    // Merge permissions thay vì ghi đè
+    if (permissions) {
+      updateData.permissions = {
+        ...existingPermission.permissions,
+        ...permissions
+      };
+    }
+
+    // Merge viewPermissions thay vì ghi đè
+    if (viewPermissions) {
+      updateData.viewPermissions = {
+        ...existingPermission.viewPermissions,
+        ...viewPermissions
+      };
+    }
+
     const updatedPermission = await TablePermission.findByIdAndUpdate(
       permissionId,
-      {
-        name: name || existingPermission.name,
-        permissions: permissions || existingPermission.permissions,
-        viewPermissions: viewPermissions || existingPermission.viewPermissions,
-        note: note || existingPermission.note,
-        updatedAt: new Date()
-      },
+      updateData,
       { new: true }
     ).populate([
       { path: 'userId', select: 'name email' },
