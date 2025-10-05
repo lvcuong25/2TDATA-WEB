@@ -429,7 +429,6 @@ export const getRecords = async (req, res) => {
     const { tableId } = req.params;
     const { 
       page = 1, 
-      limit = 50, 
       sortBy = 'created_at', 
       sortOrder = 'DESC',
       sortField,
@@ -477,8 +476,7 @@ export const getRecords = async (req, res) => {
       order: column.order
     }));
 
-    // Calculate pagination
-    const offset = (page - 1) * limit;
+    // No pagination - get all records
 
     // Parse sort rules if provided
     let parsedSortRules = [];
@@ -528,8 +526,6 @@ export const getRecords = async (req, res) => {
             [sequelize.literal(`(data->>'${primarySortField}')::numeric`), 
              primarySortDirection.toUpperCase()]
           ],
-          limit: parseInt(limit),
-          offset: parseInt(offset)
         });
         
         count = result.count;
@@ -550,8 +546,6 @@ export const getRecords = async (req, res) => {
             [sequelize.literal(`(data->>'${primarySortField}')::timestamp`), 
              primarySortDirection.toUpperCase()]
           ],
-          limit: parseInt(limit),
-          offset: parseInt(offset)
         });
         
         count = result.count;
@@ -572,8 +566,6 @@ export const getRecords = async (req, res) => {
             [sequelize.literal(`data->>'${primarySortField}'`), 
              primarySortDirection.toUpperCase()]
           ],
-          limit: parseInt(limit),
-          offset: parseInt(offset)
         });
 
         count = result.count;
@@ -592,8 +584,6 @@ export const getRecords = async (req, res) => {
       const result = await Record.findAndCountAll({
         where: { table_id: tableId },
         order: [[primarySortField || sortBy || 'created_at', primarySortDirection.toUpperCase()]],
-        limit: parseInt(limit),
-        offset: parseInt(offset)
       });
       
       count = result.count;
@@ -619,8 +609,7 @@ export const getRecords = async (req, res) => {
       pagination: {
         total: count,
         page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(count / limit)
+        totalPages: 1
       }
     });
 
