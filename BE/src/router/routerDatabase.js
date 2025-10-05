@@ -5,6 +5,7 @@ import {
   getDatabaseById,
   updateDatabase,
   deleteDatabase,
+  copyDatabase,
   getDatabaseMembers,
   updateUserRole,
   removeDatabaseMember
@@ -187,7 +188,7 @@ router.get("/databases/:databaseId/roles", async (req, res, next) => {
 });
 router.put("/databases/:databaseId", updateDatabase);
 router.delete("/databases/:databaseId", deleteDatabase);
-// router.post("/databases/:databaseId/copy", copyDatabase); // Function not implemented yet
+router.post("/databases/:databaseId/copy", requireAuthWithCookie, copyDatabase);
 
 // Table routes
 

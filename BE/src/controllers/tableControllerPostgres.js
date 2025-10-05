@@ -463,6 +463,22 @@ export const copyTable = async (req, res) => {
       newColumns.push(newColumn);
     }
 
+    // Copy records
+    const originalRecords = await Record.findAll({
+      where: { table_id: tableId }
+    });
+
+    const newRecords = [];
+    for (const originalRecord of originalRecords) {
+      const newRecord = await Record.create({
+        data: originalRecord.data,
+        table_id: newTable.id,
+        user_id: userId,
+        site_id: originalTable.site_id
+      });
+      newRecords.push(newRecord);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Table copied successfully',
@@ -492,7 +508,8 @@ export const copyTable = async (req, res) => {
           siteId: col.site_id,
           createdAt: col.created_at,
           updatedAt: col.updated_at
-        }))
+        })),
+        recordsCount: newRecords.length
       }
     });
 

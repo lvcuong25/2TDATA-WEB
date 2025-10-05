@@ -217,6 +217,10 @@ export const getTables = async (req, res) => {
         order: [['created_at', 'DESC']]
       })
     ]);
+    
+    console.log('🔍 getTables - MongoDB tables found:', mongoTables.length);
+    console.log('🔍 getTables - PostgreSQL tables found:', postgresTables.length);
+    console.log('🔍 getTables - DatabaseId:', databaseId);
 
     // Transform PostgreSQL tables to match MongoDB format
     const transformedPostgresTables = postgresTables.map(table => ({
