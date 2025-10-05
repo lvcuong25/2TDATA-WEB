@@ -7,6 +7,7 @@ import TableHeader from './Components/TableHeader';
 import TableBody from './Components/TableBody';
 import ContextMenu from './Components/ContextMenu';
 import RowColumnCellPermissionModal from '../../components/Table/RowColumnCellPermissionModal';
+import ConditionalFormattingModal from '../../components/Table/ConditionalFormattingModal';
 import {
   addSortRule,
   removeSortRule,
@@ -78,7 +79,8 @@ import {
   isCellEditable,
   getCellEditingStyle,
   prepareCellDataForSave,
-  getCellDisplayComponentType
+  getCellDisplayComponentType,
+  applyConditionalFormatting
 } from './Utils/cellUtils.jsx';
 import {
   getAllColumnsWithSystem,
@@ -229,6 +231,9 @@ const TableDetail = () => {
   // Cell permission modal
   const [showCellPermissionModal, setShowCellPermissionModal] = useState(false);
   const [selectedCellForPermission, setSelectedCellForPermission] = useState(null);
+  
+  // Conditional formatting modal
+  const [showConditionalFormattingModal, setShowConditionalFormattingModal] = useState(false);
   
   // const [showDebugPanel, setShowDebugPanel] = useState(false);
   // const [debugLogs, setDebugLogs] = useState([]);
@@ -401,6 +406,8 @@ const TableDetail = () => {
     canAddView,
     canEditView,
     tablePermissionsLoading,
+    formattingRules,
+    formattingRulesLoading,
   } = useTableData(tableId, databaseId, sortRules, filterRules, isFilterActive, tableContext, modalCallbacks);
 
   // Load group preferences from backend when data is available
@@ -1180,6 +1187,17 @@ const TableDetail = () => {
     // console.log('🚨 Cell Permission Modal should be visible now');
   };
 
+  const handleConditionalFormatting = () => {
+    setShowConditionalFormattingModal(true);
+  };
+
+  // Function to format cell value with conditional formatting
+  const formatCellWithConditionalFormatting = (value, column, record) => {
+    const formattedValue = formatCellValueForDisplay(value, column);
+    const { style } = applyConditionalFormatting(formattedValue, column, record, formattingRules);
+    return { value: formattedValue, style };
+  };
+
   const handleEditColumnSubmit = (e) => {
     e.preventDefault();
     if (!editingColumn || !editingColumn.name.trim()) {
@@ -1811,6 +1829,7 @@ const TableDetail = () => {
             onRowHeightChange={handleRowHeightChange}
             // Column actions
             handleEditColumn={handleEditColumn}
+            handleConditionalFormatting={handleConditionalFormatting}
           />
           {/* Table Body Component */}
           <TableBody
@@ -1866,6 +1885,7 @@ const TableDetail = () => {
             isColumnCompact={isColumnCompact}
             formatCellValueForDisplay={formatCellValueForDisplay}
             formatCellValueForInput={formatCellValueForInput}
+            formatCellWithConditionalFormatting={formatCellWithConditionalFormatting}
             getCellInputType={getCellInputType}
             getCellInputPlaceholder={getCellInputPlaceholder}
             isCellEditable={isCellEditable}
@@ -1982,6 +2002,16 @@ const TableDetail = () => {
               <div>databaseId: {databaseId}</div>
             </div>
           )} */}
+
+          {/* Conditional Formatting Modal */}
+          <ConditionalFormattingModal
+            visible={showConditionalFormattingModal}
+            onClose={() => setShowConditionalFormattingModal(false)}
+            tableId={tableId}
+            databaseId={databaseId}
+            columns={columns}
+            records={records}
+          />
 
           {/* Debug Panel - Commented out */}
           {/* {showDebugPanel && (

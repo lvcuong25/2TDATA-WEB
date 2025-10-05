@@ -48,6 +48,20 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
 
   // Extract table permissions for current user
   const tablePermissions = tablePermissionsResponse?.data || [];
+
+  // Fetch conditional formatting rules
+  const { data: formattingRulesResponse, isLoading: formattingRulesLoading } = useQuery({
+    queryKey: ['conditional-formatting-rules', tableId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/conditional-formatting/tables/${tableId}/rules`);
+      return response.data;
+    },
+    enabled: !!tableId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Extract formatting rules
+  const formattingRules = formattingRulesResponse?.data || [];
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   
   // Helper function to check table permission
@@ -486,6 +500,10 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
     canAddView,
     canEditView,
     tablePermissionsLoading,
+    
+    // Conditional formatting
+    formattingRules,
+    formattingRulesLoading,
     
     // Query client for manual invalidation
     queryClient

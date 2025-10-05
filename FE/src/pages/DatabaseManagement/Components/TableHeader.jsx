@@ -13,7 +13,8 @@ import {
   DeleteOutlined,
   SortAscendingOutlined,
   SettingOutlined,
-  EditOutlined
+  EditOutlined,
+  FormatPainterOutlined
 } from '@ant-design/icons';
 import {
   getFieldVisibilityButtonStyle,
@@ -104,6 +105,7 @@ const TableHeader = ({
   onRowHeightChange,
   // Column actions
   handleEditColumn,
+  handleConditionalFormatting,
   // Permission checks
   canEditStructure,
   canAddData,
@@ -1061,6 +1063,16 @@ const TableHeader = ({
           tableId={tableId}
           currentSettings={rowHeightSettings}
           onRowHeightChange={onRowHeightChange}
+        />
+        
+        {/* Conditional Formatting Button */}
+        <Button 
+          type="text" 
+          icon={<FormatPainterOutlined />}
+          size="small"
+          onClick={handleConditionalFormatting}
+          style={{ color: '#666' }}
+          title="Conditional Formatting"
         />
         
         <Button 
