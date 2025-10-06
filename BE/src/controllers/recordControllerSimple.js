@@ -263,8 +263,13 @@ export const getRecordsByTableIdSimple = async (req, res) => {
 
     // No pagination - get all records
 
+    // Get record view filter based on table permissions
+    const { getRecordViewFilter } = await import('../utils/tablePermissionUtils.js');
+    const recordViewFilter = await getRecordViewFilter(userId, tableId, table.database_id, req.user);
+    console.log('🔍 Record view filter:', recordViewFilter);
+
     // Build where clause for filtering
-    let whereClause = { table_id: tableId };
+    let whereClause = { table_id: tableId, ...recordViewFilter };
 
     // Parse filter rules if provided
     if (filterRules) {
@@ -390,16 +395,37 @@ export const getRecordsByTableIdSimple = async (req, res) => {
     console.log('📊 Records count:', count, 'Returned:', records.length);
 
 
+    // Get viewable columns based on user permissions
+    const { getViewableColumns } = await import('../utils/columnPermissionUtils.js');
+    const viewableColumns = await getViewableColumns(userId, tableId, table.database_id, req.user);
+    
     // Transform PostgreSQL data to match frontend expected format
-    const transformedRecords = records.map(record => ({
-      _id: record.id,
-      tableId: record.table_id,
-      userId: record.user_id,
-      siteId: record.site_id,
-      data: record.data,
-      createdAt: record.created_at,
-      updatedAt: record.updated_at
-    }));
+    const transformedRecords = records.map(record => {
+      let recordData = { ...record.data };
+      
+      // Filter columns based on permissions
+      if (viewableColumns !== null) { // null means all columns are viewable
+        const filteredData = {};
+        for (const columnId of viewableColumns) {
+          // Find column name by ID
+          const column = columns.find(col => col.id === columnId);
+          if (column && recordData.hasOwnProperty(column.name)) {
+            filteredData[column.name] = recordData[column.name];
+          }
+        }
+        recordData = filteredData;
+      }
+      
+      return {
+        _id: record.id,
+        tableId: record.table_id,
+        userId: record.user_id,
+        siteId: record.site_id,
+        data: recordData,
+        createdAt: record.created_at,
+        updatedAt: record.updated_at
+      };
+    });
 
     // Calculate formula and lookup columns for all records
     console.log(`🧮 Calculating formula columns for ${transformedRecords.length} records in table ${tableId}`);
@@ -564,8 +590,31 @@ export const updateRecordSimple = async (req, res) => {
         }
       }
 
+      // Check column edit permissions before updating
+      const { canUserEditColumn } = await import('../utils/columnPermissionUtils.js');
+      const finalValidatedData = { ...record.data }; // Start with existing data
+      
+      for (const [fieldName, value] of Object.entries(validatedData)) {
+        // Find column by name
+        const column = columns.find(col => col.name === fieldName);
+        if (!column) {
+          console.log(`⚠️ Column '${fieldName}' not found, skipping...`);
+          continue;
+        }
+        
+        // Check if user can edit this column
+        const canEdit = await canUserEditColumn(userId, column.id, record.table_id, table.database_id, req.user);
+        if (canEdit) {
+          finalValidatedData[fieldName] = value;
+          console.log(`✅ User can edit column '${fieldName}' (${column.id})`);
+        } else {
+          console.log(`❌ User cannot edit column '${fieldName}' (${column.id}), preserving existing value...`);
+          // Keep existing value - don't update this field
+        }
+      }
+
       await record.update({
-        data: validatedData
+        data: finalValidatedData
       });
     } else {
       // No data provided, keep existing data
@@ -697,10 +746,20 @@ export const getTableStructureSimple = async (req, res) => {
     }
 
     // Get columns from PostgreSQL
-    const columns = await PostgresColumn.findAll({
+    const allColumns = await PostgresColumn.findAll({
       where: { table_id: tableId },
       order: [['order', 'ASC']]
     });
+
+    // Filter columns based on user permissions
+    const { getViewableColumns } = await import('../utils/columnPermissionUtils.js');
+    const viewableColumns = await getViewableColumns(userId, tableId, table.database_id, req.user);
+    
+    // Filter columns based on permissions
+    let columns = allColumns;
+    if (viewableColumns !== null) { // null means all columns are viewable
+      columns = allColumns.filter(column => viewableColumns.includes(column.id));
+    }
 
     // Transform data to match frontend expected format
     const transformedTable = {

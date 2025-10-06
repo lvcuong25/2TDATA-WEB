@@ -548,6 +548,16 @@ const PermissionModal = ({
                     </Form.Item>
                   </div>
                   
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Space>
+                      <EyeOutlined />
+                      <span>Xem dữ liệu của tất cả thành viên</span>
+                    </Space>
+                    <Form.Item name={['tablePermissions', 'canViewAllRecords']} valuePropName="checked" style={{ margin: 0 }}>
+                      <Switch />
+                    </Form.Item>
+                  </div>
+                  
                 </Space>
               </Card>
             </Form.Item>
@@ -721,6 +731,13 @@ const PermissionModal = ({
                             <span style={{ fontSize: '12px' }}>Chỉ được thêm dữ liệu</span>
                           </Space>
                           {renderPermissionSwitch(permission, 'canAddData', 'table')}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Space size="small">
+                            <EyeOutlined />
+                            <span style={{ fontSize: '12px' }}>Xem dữ liệu của tất cả thành viên</span>
+                          </Space>
+                          {renderPermissionSwitch(permission, 'canViewAllRecords', 'table')}
                         </div>
                       </Space>
                     </div>

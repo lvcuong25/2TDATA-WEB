@@ -7,7 +7,6 @@ import { AuthContext } from '../../components/core/Auth';
 import { toast } from 'react-toastify';
 import { TableProvider, useTableContext } from '../../contexts/TableContext';
 import PermissionModal from '../../components/Table/PermissionModal';
-import RowColumnCellPermissionModal from '../../components/Table/RowColumnCellPermissionModal';
 import { getUserDatabaseRole } from './Utils/permissionUtils.jsx';
 import {
   DatabaseOutlined,
@@ -252,8 +251,6 @@ const TableHeaderActions = () => {
   const { selectedRowKeys } = useTableContext();
   const queryClient = useQueryClient();
   const location = useLocation();
-  const [showRecordPermissionModal, setShowRecordPermissionModal] = useState(false);
-  const [selectedRecordIds, setSelectedRecordIds] = useState([]);
   
   // Extract table ID from current path
   const getTableId = () => {
@@ -319,13 +316,6 @@ const TableHeaderActions = () => {
     deleteMultipleRecordsMutation.mutate(selectedRowKeys);
   };
 
-  const handleRecordPermission = () => {
-    if (selectedRowKeys.length === 0) {
-      return;
-    }
-    setSelectedRecordIds(selectedRowKeys);
-    setShowRecordPermissionModal(true);
-  };
 
   // Only show delete button when on table detail page and rows are selected
   if (!location.pathname.includes('/table/') || selectedRowKeys.length === 0) {
@@ -334,16 +324,6 @@ const TableHeaderActions = () => {
 
   return (
     <div style={{ display: 'flex', gap: '8px' }}>
-      {/* Only show Record Permission button for owners and managers */}
-      {(userRole === 'owner' || userRole === 'manager') && (
-        <Button
-          type="default"
-          icon={<SettingOutlined />}
-          onClick={handleRecordPermission}
-        >
-          Record Permission ({selectedRowKeys.length})
-        </Button>
-      )}
       <Button
         danger
         icon={<DeleteOutlined />}
@@ -353,18 +333,6 @@ const TableHeaderActions = () => {
         Delete Selected ({selectedRowKeys.length})
       </Button>
       
-      {/* Record Permission Modal */}
-      <RowColumnCellPermissionModal
-        visible={showRecordPermissionModal}
-        onCancel={() => {
-          setShowRecordPermissionModal(false);
-          setSelectedRecordIds([]);
-        }}
-        type="record"
-        recordId={selectedRecordIds[0]} // For single record, we'll handle multiple later
-        tableId={getTableId()}
-        databaseId={getDatabaseId()}
-      />
     </div>
   );
 };

@@ -109,16 +109,17 @@ export const createTable = async (req, res) => {
         targetType: 'all_members',
         name: table.name, // Thêm field name required
         permissions: {
-          canView: true,
-          canEditStructure: true, // Default: bật tất cả quyền cho tất cả thành viên
-          canEditData: true,
-          canAddData: true,
+          canView: false, // Default: tắt tất cả quyền cho members
+          canEditStructure: false,
+          canEditData: false,
+          canAddData: false,
+          canViewAllRecords: false, // Default: chỉ xem records của mình
           isHidden: false
         },
         viewPermissions: {
-          canView: true,
-          canAddView: true, // Default: bật tất cả quyền cho tất cả thành viên
-          canEditView: true, // Default: bật tất cả quyền cho tất cả thành viên
+          canView: false, // Default: tắt tất cả quyền view cho members
+          canAddView: false,
+          canEditView: false,
           isHidden: false
         },
         createdBy: new mongoose.Types.ObjectId(userId), // Convert to ObjectId
@@ -269,8 +270,15 @@ export const getTables = async (req, res) => {
         userId 
       });
       
-      // Only apply permission filtering for members
-      if (baseMember && baseMember.role === 'member') {
+      // Check if user is database owner or table owner
+      const isDatabaseOwner = baseMember && baseMember.role === 'owner';
+      const isTableOwner = tables.some(table => {
+        const tableUserId = table.userId || table.user_id;
+        return tableUserId && tableUserId.toString() === userId.toString();
+      });
+      
+      // Only apply permission filtering for members and managers (database owners and table owners see all tables)
+      if (baseMember && !isDatabaseOwner && !isTableOwner && (baseMember.role === 'member' || baseMember.role === 'manager')) {
       // For members, check table permissions
       const TablePermission = (await import('../model/TablePermission.js')).default;
       
@@ -309,9 +317,9 @@ export const getTables = async (req, res) => {
             return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
           });
           
-          // Initialize with default values (show by default)
+          // Initialize with default values (hide by default for security)
           tablePermissionMap[tableId] = {
-            canView: true,
+            canView: false, // ✅ Default: hide by default
             isHidden: false
           };
           
@@ -330,12 +338,12 @@ export const getTables = async (req, res) => {
           }
         });
 
-        // Filter tables - only hide tables that are explicitly hidden or cannot be viewed
+        // Filter tables - only show tables that user has permission to view
         visibleTables = tables.filter(table => {
           const permissions = tablePermissionMap[table._id];
           if (!permissions) {
-            // No permissions set, show by default
-            return true;
+            // No permissions set, hide by default (new behavior)
+            return false;
           }
           return permissions.canView && !permissions.isHidden;
         });

@@ -73,21 +73,45 @@ const RowColumnCellPermissionModal = ({
   }, [visible, type, recordId, columnId, tableId, databaseId]);
   const queryClient = useQueryClient();
 
-  // Lấy danh sách thành viên database
-  const { data: membersResponse, isLoading: membersLoading } = useQuery({
-    queryKey: ['database-members', databaseId],
+  // Lấy danh sách available targets dựa trên type
+  const { data: availableTargetsResponse, isLoading: availableTargetsLoading } = useQuery({
+    queryKey: ['available-targets', type, recordId, columnId],
     queryFn: async () => {
-      if (!databaseId) {
-        throw new Error('databaseId is required');
+      let url = '';
+      if (type === 'column') {
+        if (!columnId) throw new Error('columnId is required for column permissions');
+        url = `/permissions/columns/${columnId}/available-targets`;
+      } else if (type === 'record') {
+        if (!recordId) throw new Error('recordId is required for record permissions');
+        // For record permissions, use database members API (no available-targets for records yet)
+        url = `/permissions/database/databases/${databaseId}/members`;
+      } else if (type === 'cell') {
+        if (!recordId || !columnId) throw new Error('recordId and columnId are required for cell permissions');
+        // For cell permissions, use database members API (no available-targets for cells yet)
+        url = `/permissions/database/databases/${databaseId}/members`;
+      } else {
+        throw new Error(`Invalid permission type: ${type}`);
       }
-      const response = await axiosConfig.get(`/permissions/database/databases/${databaseId}/members`);
+      
+      addDebugLog(`FETCHING AVAILABLE TARGETS: ${url}`);
+      const response = await axiosConfig.get(url);
+      addDebugLog(`AVAILABLE TARGETS API RESPONSE: ${JSON.stringify(response.data)}`);
       return response.data;
     },
-    enabled: !!databaseId && visible
+    enabled: visible && (
+      (type === 'column' && !!columnId) || 
+      (type === 'record' && !!recordId && !!databaseId) || 
+      (type === 'cell' && !!recordId && !!columnId && !!databaseId)
+    )
   });
   
-  // Extract members array from response
-  const members = membersResponse?.data || [];
+  // Extract available targets from response
+  const availableUsers = availableTargetsResponse?.data?.users || [];
+  const availableRoles = availableTargetsResponse?.data?.roles || [];
+  const canCreateAllMembers = availableTargetsResponse?.data?.canCreateAllMembers || false;
+  
+  // For backward compatibility, also extract members array
+  const members = availableTargetsResponse?.data || [];
 
   // Lấy permissions dựa trên type
   const { data: permissions, isLoading: permissionsLoading } = useQuery({
@@ -324,7 +348,22 @@ const RowColumnCellPermissionModal = ({
   };
 
   const getTargetDisplay = (permission) => {
+    console.log('🔍 getTargetDisplay - permission:', {
+      id: permission._id,
+      targetType: permission.targetType,
+      name: permission.name,
+      userId: permission.userId,
+      role: permission.role
+    });
+    
     switch (permission.targetType) {
+      case 'all_members':
+        return (
+          <Space>
+            <TeamOutlined />
+            <span>Tất cả thành viên</span>
+          </Space>
+        );
       case 'specific_user':
         return (
           <Space>
@@ -341,7 +380,8 @@ const RowColumnCellPermissionModal = ({
           </Space>
         );
       default:
-        return <span>Unknown</span>;
+        console.log('🔍 getTargetDisplay - Unknown targetType:', permission.targetType);
+        return <span>Unknown (targetType: {permission.targetType || 'undefined'})</span>;
     }
   };
 
@@ -486,24 +526,37 @@ const RowColumnCellPermissionModal = ({
                   value={selectedUser}
                   onChange={setSelectedUser}
                   placeholder="Chọn thành viên"
-                  loading={membersLoading}
+                  loading={availableTargetsLoading}
                   showSearch
                   optionFilterProp="children"
                 >
-                  {members?.map(member => {
-                    // Skip if member or userId is undefined
-                    if (!member || !member.userId) {
-                      return null;
-                    }
-                    return (
-                      <Option key={member.userId._id} value={member.userId._id}>
+                  {type === 'column' ? (
+                    // For column permissions, use availableUsers from available-targets API
+                    availableUsers?.map(user => (
+                      <Option key={user._id} value={user._id}>
                         <Space>
                           <UserOutlined />
-                          {member.userId.name || member.userId.email || 'Unknown User'}
+                          {user.name || user.email || 'Unknown User'}
                         </Space>
                       </Option>
-                    );
-                  })}
+                    ))
+                  ) : (
+                    // For record/cell permissions, use members from database members API
+                    members?.map(member => {
+                      // Skip if member or userId is undefined
+                      if (!member || !member.userId) {
+                        return null;
+                      }
+                      return (
+                        <Option key={member.userId._id} value={member.userId._id}>
+                          <Space>
+                            <UserOutlined />
+                            {member.userId.name || member.userId.email || 'Unknown User'}
+                          </Space>
+                        </Option>
+                      );
+                    })
+                  )}
                 </Select>
               </Form.Item>
             )}
@@ -515,24 +568,39 @@ const RowColumnCellPermissionModal = ({
                   onChange={setSelectedRole}
                   placeholder="Chọn vai trò"
                 >
-                  <Option value="owner">
-                    <Space>
-                      <CrownOutlined />
-                      Chủ sở hữu
-                    </Space>
-                  </Option>
-                  <Option value="manager">
-                    <Space>
-                      <CrownOutlined />
-                      Quản lý
-                    </Space>
-                  </Option>
-                  <Option value="member">
-                    <Space>
-                      <UserOutlined />
-                      Thành viên
-                    </Space>
-                  </Option>
+                  {type === 'column' ? (
+                    // For column permissions, use availableRoles from available-targets API
+                    availableRoles?.map(role => (
+                      <Option key={role.role} value={role.role}>
+                        <Space>
+                          <CrownOutlined />
+                          {role.displayName}
+                        </Space>
+                      </Option>
+                    ))
+                  ) : (
+                    // For record/cell permissions, show all roles
+                    <>
+                      <Option value="owner">
+                        <Space>
+                          <CrownOutlined />
+                          Chủ sở hữu
+                        </Space>
+                      </Option>
+                      <Option value="manager">
+                        <Space>
+                          <CrownOutlined />
+                          Quản lý
+                        </Space>
+                      </Option>
+                      <Option value="member">
+                        <Space>
+                          <UserOutlined />
+                          Thành viên
+                        </Space>
+                      </Option>
+                    </>
+                  )}
                 </Select>
               </Form.Item>
             )}

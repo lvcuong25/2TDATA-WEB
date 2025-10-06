@@ -151,8 +151,9 @@ export const getTables = async (req, res) => {
     }
 
     // Check if user has access to this database
+    let baseMember = null;
     if (!isSuperAdmin(req.user)) {
-      const baseMember = await BaseMember.findOne({ 
+      baseMember = await BaseMember.findOne({ 
         databaseId: actualBaseId, 
         userId 
       });
@@ -170,8 +171,94 @@ export const getTables = async (req, res) => {
       order: [['created_at', 'ASC']]
     });
 
+    let visibleTables = tables;
+
+    // Check table permissions for members and managers (database owners and table owners see all tables)
+    const isDatabaseOwner = baseMember && baseMember.role === 'owner';
+    const isTableOwner = tables.some(table => table.user_id && table.user_id.toString() === userId.toString());
+    
+    if (!isSuperAdmin(req.user) && baseMember && !isDatabaseOwner && !isTableOwner && (baseMember.role === 'member' || baseMember.role === 'manager')) {
+      const TablePermission = (await import('../model/TablePermission.js')).default;
+      
+      // Get all table permissions for this user
+      const tablePermissions = await TablePermission.find({
+        tableId: { $in: tables.map(t => t.id) },
+        $or: [
+          { targetType: 'all_members' },
+          { targetType: 'specific_user', userId: userId },
+          { targetType: 'specific_role', role: baseMember.role }
+        ]
+      });
+
+      console.log('🔍 Table permissions found:', tablePermissions.length);
+
+      // If no table permissions are set, show all tables to members
+      if (tablePermissions.length === 0) {
+        visibleTables = tables;
+      } else {
+        // Create a map of table permissions
+        const tablePermissionMap = {};
+        
+        // Group permissions by tableId
+        const permissionsByTable = {};
+        tablePermissions.forEach(perm => {
+          if (!permissionsByTable[perm.tableId]) {
+            permissionsByTable[perm.tableId] = [];
+          }
+          permissionsByTable[perm.tableId].push(perm);
+        });
+        
+        // Process each table's permissions with priority order
+        Object.keys(permissionsByTable).forEach(tableId => {
+          const perms = permissionsByTable[tableId];
+          
+          // Sort permissions by priority: specific_user > specific_role > all_members
+          const sortedPermissions = perms.sort((a, b) => {
+            const priority = { 'specific_user': 3, 'specific_role': 2, 'all_members': 1 };
+            return (priority[b.targetType] || 0) - (priority[a.targetType] || 0);
+          });
+          
+          // Initialize with default values (hide by default for security)
+          tablePermissionMap[tableId] = {
+            canView: false, // ✅ Default: hide by default
+            isHidden: false
+          };
+          
+          // Check permissions in priority order
+          for (const perm of sortedPermissions) {
+            if (perm.permissions) {
+              if (perm.permissions.canView !== undefined) {
+                tablePermissionMap[tableId].canView = perm.permissions.canView;
+              }
+              if (perm.permissions.isHidden !== undefined) {
+                tablePermissionMap[tableId].isHidden = perm.permissions.isHidden;
+              }
+              // Stop at first permission found (highest priority)
+              break;
+            }
+          }
+        });
+
+        // Filter tables - only show tables that user has permission to view
+        visibleTables = tables.filter(table => {
+          const permissions = tablePermissionMap[table.id];
+          if (!permissions) {
+            // No permissions set, hide by default (new behavior)
+            return false;
+          }
+          return permissions.canView && !permissions.isHidden;
+        });
+
+        console.log('🔍 Tables filtered:', {
+          total: tables.length,
+          visible: visibleTables.length,
+          hidden: tables.length - visibleTables.length
+        });
+      }
+    }
+
     // Transform to match expected format
-    const transformedTables = tables.map(table => ({
+    const transformedTables = visibleTables.map(table => ({
       id: table.id,
       name: table.name,
       databaseId: table.database_id,

@@ -1,17 +1,15 @@
 import mongoose from "mongoose";
 
 const columnPermissionSchema = new mongoose.Schema({
-  // Column được áp dụng permission
+  // Column được áp dụng permission (String để support cả MongoDB ObjectId và PostgreSQL UUID)
   columnId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Column',
+    type: String,
     required: true
   },
   
-  // Table chứa column
+  // Table chứa column (String để support cả MongoDB ObjectId và PostgreSQL UUID)
   tableId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Table',
+    type: String,
     required: true
   },
   

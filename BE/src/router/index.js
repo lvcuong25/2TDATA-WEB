@@ -31,9 +31,9 @@ import columnPermsRouter from "./column-perms.routes.js";
 import rolesPermsRouter from "./roles-perms.routes.js";
 import permissionRouter from "./permission.routes.js";
 import postgresRoutes from "../routes/postgresRoutes.js";
-import recordPermissionRouter from "../routes/recordPermissionRoutes.js";
 import columnPermissionRouter from "../routes/columnPermissionRoutes.js";
 import cellPermissionRouter from "../routes/cellPermissionRoutes.js";
+import conditionalFormattingRouter from "../routes/conditionalFormattingRoutes.js";
 
 const router = Router();
 
@@ -98,9 +98,9 @@ router.use("/database", tableRoutesSimple); // Simple PostgreSQL routes for test
 router.use(columnPermsRouter);
 router.use(rolesPermsRouter);
 router.use("/permissions", permissionRouter);
-router.use("/permissions", recordPermissionRouter);
 router.use("/permissions", columnPermissionRouter);
 router.use("/permissions", cellPermissionRouter);
+router.use("/conditional-formatting", conditionalFormattingRouter);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 
