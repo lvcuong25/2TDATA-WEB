@@ -44,6 +44,10 @@ const tablePermissionSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    canViewAllRecords: {
+      type: Boolean,
+      default: false
+    },
     isHidden: {
       type: Boolean,
       default: false

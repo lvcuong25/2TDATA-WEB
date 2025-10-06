@@ -3,6 +3,7 @@ import BaseMember from '../model/BaseMember.js';
 import Table from '../model/Table.js';
 import { Table as PostgresTable, Column as PostgresColumn, Record as PostgresRecord } from '../models/postgres/index.js';
 import { isSuperAdmin } from '../utils/permissionUtils.js';
+import { isOwner } from '../utils/ownerUtils.js';
 
 // Kiểm tra quyền của user cho table
 export const checkTablePermission = (requiredPermission) => {
@@ -133,9 +134,10 @@ export const checkTablePermission = (requiredPermission) => {
         return next();
       }
 
-      // Owner và manager có quyền mặc định
-      if (member.role === 'owner' || member.role === 'manager') {
-        return next();
+      // Kiểm tra user có phải owner (database owner hoặc table owner) không
+      const userIsOwner = await isOwner(userId, tableId, databaseId);
+      if (userIsOwner) {
+        return next(); // Owner có quyền mặc định
       }
 
       // Lấy quyền của user cho table này theo thứ tự ưu tiên
@@ -358,14 +360,14 @@ export const checkTableViewPermission = async (req, res, next) => {
     });
 
     // Kiểm tra quyền xem và ẩn theo thứ tự ưu tiên
-    let canView = false;
+    let canView = false; // ✅ Default: false (hide by default)
     let isHidden = false;
     let permissionSource = '';
 
     // Kiểm tra specific_user trước
     if (specificUserPermission && specificUserPermission.permissions) {
-      if (specificUserPermission.permissions.canView) {
-        canView = true;
+      if (specificUserPermission.permissions.canView !== undefined) {
+        canView = specificUserPermission.permissions.canView; // ✅ Check both true and false
         permissionSource = 'specific_user';
       }
       if (specificUserPermission.permissions.isHidden) {
@@ -374,8 +376,8 @@ export const checkTableViewPermission = async (req, res, next) => {
     }
     // Nếu không có specific_user, kiểm tra specific_role
     else if (specificRolePermission && specificRolePermission.permissions) {
-      if (specificRolePermission.permissions.canView) {
-        canView = true;
+      if (specificRolePermission.permissions.canView !== undefined) {
+        canView = specificRolePermission.permissions.canView; // ✅ Check both true and false
         permissionSource = 'specific_role';
       }
       if (specificRolePermission.permissions.isHidden) {
@@ -384,8 +386,8 @@ export const checkTableViewPermission = async (req, res, next) => {
     }
     // Nếu không có specific_role, kiểm tra all_members
     else if (allMembersPermission && allMembersPermission.permissions) {
-      if (allMembersPermission.permissions.canView) {
-        canView = true;
+      if (allMembersPermission.permissions.canView !== undefined) {
+        canView = allMembersPermission.permissions.canView; // ✅ Check both true and false
         permissionSource = 'all_members';
       }
       if (allMembersPermission.permissions.isHidden) {

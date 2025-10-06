@@ -7,13 +7,30 @@ import User from '../model/User.js';
 import Database from '../model/Database.js';
 // PostgreSQL imports
 import { Table as PostgresTable } from '../models/postgres/index.js';
+// Utility imports
+import { isOwner as isOwnerUtil } from '../utils/ownerUtils.js';
 
 // Kiểm tra quyền của user trong database
 const checkUserRole = async (userId, databaseId) => {
+  console.log('🔍 checkUserRole called:', { userId, databaseId, type: typeof databaseId });
+  
+  // Convert databaseId to ObjectId if it's a string (from PostgreSQL)
+  const mongoose = (await import('mongoose')).default;
+  const databaseObjectId = mongoose.Types.ObjectId.isValid(databaseId) 
+    ? new mongoose.Types.ObjectId(databaseId) 
+    : databaseId;
+  
+  console.log('🔍 Converted databaseId to ObjectId:', databaseObjectId);
+  
   const member = await BaseMember.findOne({ 
-    databaseId, 
+    databaseId: databaseObjectId, 
     userId 
   });
+  
+  console.log('🔍 BaseMember found:', member ? 'Yes' : 'No');
+  if (member) {
+    console.log('🔍 BaseMember role:', member.role);
+  }
   
   if (!member) {
     return null;
@@ -22,10 +39,11 @@ const checkUserRole = async (userId, databaseId) => {
   return member.role;
 };
 
-// Kiểm tra user có phải manager/owner không
-const isManagerOrOwner = async (userId, databaseId, user) => {
-  console.log('🔍 isManagerOrOwner called:', { 
+// Kiểm tra user có phải owner không (chỉ owner có quyền mặc định)
+const isOwner = async (userId, tableId, databaseId, user) => {
+  console.log('🔍 isOwner called:', { 
     userId, 
+    tableId,
     databaseId, 
     user: user ? { id: user._id, role: user.role } : 'null' 
   });
@@ -36,9 +54,10 @@ const isManagerOrOwner = async (userId, databaseId, user) => {
     return true;
   }
   
-  const role = await checkUserRole(userId, databaseId);
-  console.log('🔍 User role in database:', role);
-  return role === 'manager' || role === 'owner';
+  // Use the utility function that handles both database and table owners
+  const userIsOwner = await isOwnerUtil(userId, tableId, databaseId);
+  console.log('🔍 User is owner (database or table):', userIsOwner);
+  return userIsOwner;
 };
 
 // Tạo quyền cho table
@@ -91,14 +110,17 @@ export const createTablePermission = async (req, res) => {
     // Get database ID from either source
     let databaseId;
     if (mongoTable) {
+      // MongoDB table - get from populated databaseId
       databaseId = mongoTable.databaseId._id;
     } else {
-      // For PostgreSQL, we need to get the database from MongoDB to find databaseId
-      databaseId = postgresTable.database_id;
+      // PostgreSQL table - database_id is MongoDB ObjectId as string
+      databaseId = postgresTable.database_id; // This is MongoDB ObjectId as string
     }
+    
+    console.log('🔍 createTablePermission - databaseId:', databaseId, 'tableId:', tableId);
 
     // Kiểm tra user có quyền phân quyền không
-    const hasPermission = await isManagerOrOwner(currentUserId, databaseId, req.user);
+    const hasPermission = await isOwner(currentUserId, tableId, databaseId, req.user);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can set permissions' 
@@ -192,13 +214,9 @@ export const createTablePermission = async (req, res) => {
     const defaultName = table.name;
 
     // Tạo permission object
-    // Note: For hybrid database, we need to handle UUID vs ObjectId issue
-    // For now, return success but don't actually create permission
-    console.log('🔍 Note: Table permission creation not fully implemented for UUID tables yet');
-    
     const permissionData = {
-      tableId,
-      databaseId: mongoTable ? mongoTable.databaseId._id : postgresTable.database_id,
+      tableId: tableId, // ✅ Use tableId (can be MongoDB ObjectId or PostgreSQL UUID)
+      databaseId: databaseId, // ✅ Use databaseId (MongoDB ObjectId as string)
       targetType,
       name: req.body.name || defaultName,
       permissions: permissions || {},
@@ -206,6 +224,8 @@ export const createTablePermission = async (req, res) => {
       createdBy: currentUserId,
       note
     };
+    
+    console.log('🔍 Creating permission with data:', permissionData);
 
     // Thêm userId hoặc role tùy theo targetType
     if (targetType === 'specific_user') {
@@ -217,16 +237,16 @@ export const createTablePermission = async (req, res) => {
     // Tạo permission trong database
     console.log('🔍 Creating permission for table:', tableId);
     
-    // Create permission with actual table UUID
+    // Create permission with proper data types
     const permissionDataFixed = {
-      tableId: tableId, // Use actual table UUID
-      databaseId: new mongoose.Types.ObjectId(databaseId),
+      tableId: tableId, // ✅ Use tableId (can be MongoDB ObjectId or PostgreSQL UUID)
+      databaseId: new mongoose.Types.ObjectId(databaseId), // ✅ Convert to ObjectId
       targetType,
       name: permissionData.name,
       permissions: permissionData.permissions,
       viewPermissions: permissionData.viewPermissions,
       createdBy: new mongoose.Types.ObjectId(currentUserId),
-      isDefault: req.body.isDefault || false, // Set isDefault from request body
+      isDefault: req.body.isDefault || false,
       note: permissionData.note
     };
 
@@ -318,7 +338,7 @@ export const getTablePermissions = async (req, res) => {
     
     // Chỉ managers và owners mới có thể xem tất cả permissions
     // Members chỉ có thể xem permissions liên quan đến họ
-    const isManagerOrOwner = member.role === 'manager' || member.role === 'owner';
+    const isOwner = member.role === 'owner';
 
     // Lấy tất cả quyền của table
     console.log('🔍 Searching for table permissions for tableId:', tableId);
@@ -327,7 +347,7 @@ export const getTablePermissions = async (req, res) => {
     
     // Now we can search by actual table UUID since we updated the model
     try {
-      if (isManagerOrOwner) {
+      if (isOwner) {
         // Managers và owners có thể xem tất cả permissions
         permissions = await TablePermission.find({ tableId: tableId })
         .populate('userId', 'name email')
@@ -387,10 +407,10 @@ export const updateTablePermission = async (req, res) => {
     }
 
     // Kiểm tra user có quyền cập nhật permission không
-    const hasPermission = await isManagerOrOwner(currentUserId, existingPermission.databaseId, req.user);
+    const hasPermission = await isOwner(currentUserId, existingPermission.tableId, existingPermission.databaseId, req.user);
     if (!hasPermission) {
       return res.status(403).json({
-        message: 'Only database managers and owners can update permissions'
+        message: 'Only database owners and table owners can update permissions'
       });
     }
 
@@ -434,7 +454,16 @@ export const updateTablePermission = async (req, res) => {
 
   } catch (error) {
     console.error('Error updating table permission:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      permissionId: req.params.permissionId,
+      currentUserId: req.user?._id
+    });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -458,10 +487,10 @@ export const deleteTablePermission = async (req, res) => {
     }
 
     // Kiểm tra user có quyền xóa permission không
-    const hasPermission = await isManagerOrOwner(currentUserId, permission.databaseId, req.user);
+    const hasPermission = await isOwner(currentUserId, permission.tableId, permission.databaseId, req.user);
     if (!hasPermission) {
       return res.status(403).json({
-        message: 'Only database managers and owners can delete permissions'
+        message: 'Only database owners and table owners can delete permissions'
       });
     }
 
@@ -569,25 +598,24 @@ export const getAvailablePermissionTargets = async (req, res) => {
       perm.targetType === 'all_members'
     );
     
-    // Nếu đã có all_members permission, không thể tạo specific_role permissions
-    if (!hasAllMembersPermission) {
-      for (const role of availableRoles) {
-        // Manager không thể tạo quyền cho owner và manager role
-        if (currentUserRole === 'manager' && (role === 'owner' || role === 'manager')) {
-          continue;
-        }
+    // Cho phép tạo specific_role permissions ngay cả khi đã có all_members
+    // Logic ưu tiên: specific_user > specific_role > all_members
+    for (const role of availableRoles) {
+      // Manager không thể tạo quyền cho owner và manager role
+      if (currentUserRole === 'manager' && (role === 'owner' || role === 'manager')) {
+        continue;
+      }
 
-        // Kiểm tra xem đã có quyền cho role này chưa
-        const hasRolePermission = existingPermissions.some(perm => 
-          perm.targetType === 'specific_role' && perm.role === role
-        );
+      // Kiểm tra xem đã có specific_role permission cho role này chưa
+      const hasRolePermission = existingPermissions.some(perm => 
+        perm.targetType === 'specific_role' && perm.role === role
+      );
 
-        if (!hasRolePermission) {
-          availableRolesList.push({
-            role: role,
-            displayName: role.charAt(0).toUpperCase() + role.slice(1)
-          });
-        }
+      if (!hasRolePermission) {
+        availableRolesList.push({
+          role: role,
+          displayName: role.charAt(0).toUpperCase() + role.slice(1)
+        });
       }
     }
 
@@ -598,7 +626,7 @@ export const getAvailablePermissionTargets = async (req, res) => {
       data: {
         users: availableUsers,
         roles: availableRolesList,
-        canCreateAllMembers: !hasAllMembersPermission && currentUserRole !== 'manager'
+        canCreateAllMembers: false // all_members permission luôn tồn tại (mặc định)
       }
     });
 
@@ -748,7 +776,7 @@ export const getDatabaseMembers = async (req, res) => {
     } else if (req.user && req.user.role === 'user') {
       // User có quyền truy cập tất cả
     } else {
-      const hasPermission = await isManagerOrOwner(currentUserId, databaseId, req.user);
+      const hasPermission = await isOwner(currentUserId, null, databaseId, req.user);
     if (!hasPermission) {
       return res.status(403).json({ 
         message: 'Only database managers and owners can view members' 
@@ -756,8 +784,14 @@ export const getDatabaseMembers = async (req, res) => {
       }
     }
 
+    // Convert databaseId to ObjectId if it's a string
+    const mongoose = (await import('mongoose')).default;
+    const databaseObjectId = mongoose.Types.ObjectId.isValid(databaseId) 
+      ? new mongoose.Types.ObjectId(databaseId) 
+      : databaseId;
+
     // Lấy tất cả thành viên của database
-    const members = await BaseMember.find({ databaseId })
+    const members = await BaseMember.find({ databaseId: databaseObjectId })
       .populate('userId', 'name email')
       .sort({ createdAt: -1 });
 

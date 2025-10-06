@@ -271,6 +271,7 @@ const TableBody = ({
 
   // Utility functions
   formatCellValueForDisplay,
+  formatCellWithConditionalFormatting,
   // Row height props
   tableId,
   databaseId,
@@ -1773,6 +1774,14 @@ const TableBody = ({
                                               );
                                             }
                                             
+                                            if (formatCellWithConditionalFormatting) {
+                                              const { value: formattedValue, style } = formatCellWithConditionalFormatting(value, column, record);
+                                              return (
+                                                <span style={style}>
+                                                  {formattedValue}
+                                                </span>
+                                              );
+                                            }
                                             return formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''));
                                           })()
                               }
@@ -3035,6 +3044,14 @@ const TableBody = ({
                                             );
                                           }
                                           
+                                          if (formatCellWithConditionalFormatting) {
+                                            const { value: formattedValue, style } = formatCellWithConditionalFormatting(value, column, record);
+                                            return (
+                                              <span style={style}>
+                                                {formattedValue}
+                                              </span>
+                                            );
+                                          }
                                           return formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''));
                                         })()
                         }

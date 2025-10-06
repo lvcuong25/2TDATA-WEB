@@ -237,6 +237,89 @@ export const validateCellValue = (value, column) => {
 };
 
 /**
+ * Apply conditional formatting to cell value
+ * @param {any} value - Cell value
+ * @param {Object} column - Column configuration
+ * @param {Object} record - Record object
+ * @param {Array} formattingRules - Array of formatting rules
+ * @returns {Object} { value, style } - Formatted value and style
+ */
+export const applyConditionalFormatting = (value, column, record, formattingRules = []) => {
+  if (!formattingRules || formattingRules.length === 0) {
+    return { value, style: {} };
+  }
+
+  // Find applicable rules for this cell
+  const applicableRules = formattingRules.filter(rule => {
+    // Check if rule is active
+    if (!rule.isActive) return false;
+
+    // Check column match
+    if (rule.columnId && rule.columnId !== column._id && rule.columnId !== column.id) {
+      return false;
+    }
+
+    // Check conditions
+    if (!rule.conditions || rule.conditions.length === 0) return true;
+
+    return rule.conditions.every(condition => {
+      const { operator, value: conditionValue, field } = condition;
+      
+      // Get the field value from record
+      // Try both field name and column name for data access
+      const fieldValue = record.data?.[field] || record.data?.[column.name];
+      
+      switch (operator) {
+        case 'equals':
+          return fieldValue == conditionValue;
+        case 'not_equals':
+          return fieldValue != conditionValue;
+        case 'greater_than':
+          return Number(fieldValue) > Number(conditionValue);
+        case 'less_than':
+          return Number(fieldValue) < Number(conditionValue);
+        case 'greater_than_or_equal':
+          return Number(fieldValue) >= Number(conditionValue);
+        case 'less_than_or_equal':
+          return Number(fieldValue) <= Number(conditionValue);
+        case 'contains':
+          return String(fieldValue || '').toLowerCase().includes(String(conditionValue || '').toLowerCase());
+        case 'not_contains':
+          return !String(fieldValue || '').toLowerCase().includes(String(conditionValue || '').toLowerCase());
+        case 'is_empty':
+          return !fieldValue || fieldValue === '';
+        case 'is_not_empty':
+          return fieldValue && fieldValue !== '';
+        default:
+          return false;
+      }
+    });
+  });
+
+  if (applicableRules.length === 0) {
+    return { value, style: {} };
+  }
+
+  // Sort by priority (higher priority first)
+  const sortedRules = applicableRules.sort((a, b) => b.priority - a.priority);
+  const topRule = sortedRules[0];
+
+  // Apply formatting
+  const style = {
+    backgroundColor: topRule.formatting?.backgroundColor,
+    color: topRule.formatting?.textColor,
+    fontWeight: topRule.formatting?.fontWeight,
+    fontStyle: topRule.formatting?.fontStyle,
+    textDecoration: topRule.formatting?.textDecoration,
+    borderColor: topRule.formatting?.borderColor,
+    borderStyle: topRule.formatting?.borderStyle,
+    borderWidth: topRule.formatting?.borderWidth
+  };
+
+  return { value, style };
+};
+
+/**
  * Format cell value for display
  * @param {any} value - Cell value
  * @param {Object} column - Column configuration
