@@ -1,0 +1,390 @@
+/* CRM Table Styles - Based on the provided image */
+
+/* Top Navigation Bar */
+.top-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  height: 56px;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  color: #374151;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+
+.table-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-right button {
+  padding: 8px;
+  border: none;
+  background: none;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.nav-right button:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Table Control Bar */
+.table-control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  height: 56px;
+}
+
+.control-left {
+  display: flex;
+  align-items: center;
+}
+
+.ctrl-k-btn {
+  padding: 6px 12px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+.ctrl-k-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.control-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.control-btn:active {
+  background-color: #f3f4f6;
+}
+
+.control-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diamond-btn {
+  width: 32px;
+  height: 32px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.diamond-btn:hover {
+  background-color: #e5e7eb;
+}
+
+/* Data Table */
+.crm-data-table {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 16px 24px;
+}
+
+.crm-table-header {
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.crm-table-header th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-right: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.crm-table-header th:last-child {
+  border-right: none;
+}
+
+.crm-table-header th .column-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crm-table-header th .column-icon {
+  width: 16px;
+  height: 16px;
+  background-color: #dbeafe;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.crm-table-header th .add-column-btn {
+  width: 16px;
+  height: 16px;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  color: #6b7280;
+}
+
+.crm-table-header th .add-column-btn:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.crm-table-body {
+  background-color: #ffffff;
+}
+
+.crm-table-body td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  border-right: 1px solid #f3f4f6;
+  font-size: 14px;
+  color: #374151;
+  vertical-align: middle;
+}
+
+.crm-table-body td:last-child {
+  border-right: none;
+}
+
+.crm-table-body tr:hover td {
+  background-color: #f9fafb;
+}
+
+.crm-table-body tr:last-child td {
+  border-bottom: none;
+}
+
+/* Row Numbers Sidebar */
+.row-numbers-sidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 60px;
+  background-color: #f8fafc;
+  border-right: 1px solid #e5e7eb;
+  z-index: 10;
+}
+
+.row-number {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #6b7280;
+  border-bottom: 1px solid #f3f4f6;
+  position: relative;
+}
+
+.row-number:hover {
+  background-color: #f3f4f6;
+}
+
+.row-number .expand-arrow {
+  position: absolute;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+.row-number .expand-arrow:hover {
+  color: #6b7280;
+}
+
+/* Data Type Styling */
+.data-type-text {
+  color: #374151;
+}
+
+.data-type-number {
+  color: #059669;
+  font-weight: 500;
+}
+
+.data-type-date {
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+.data-type-email {
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.data-type-email .email-icon {
+  width: 12px;
+  height: 12px;
+  background-color: #fef2f2;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #dc2626;
+}
+
+/* Status Tags */
+.status-tag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.status-tag.tim-ki {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-tag.tiem-r {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-tag.can-nh {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+}
+
+.status-tag.gioi-th {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-tag.mua-h {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .top-nav-bar,
+  .table-control-bar {
+    padding: 8px 16px;
+  }
+  
+  .crm-data-table {
+    margin: 8px 16px;
+  }
+  
+  .control-center {
+    gap: 4px;
+  }
+  
+  .control-btn {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
+
+/* Scrollbar Styling */
+.crm-data-table::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.crm-data-table::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.crm-data-table::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.crm-data-table::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

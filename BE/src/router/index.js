@@ -34,6 +34,7 @@ import postgresRoutes from "../routes/postgresRoutes.js";
 import recordPermissionRouter from "../routes/recordPermissionRoutes.js";
 import columnPermissionRouter from "../routes/columnPermissionRoutes.js";
 import cellPermissionRouter from "../routes/cellPermissionRoutes.js";
+import tableTemplateRouter from "./tableTemplateRouter.js";
 
 const router = Router();
 
@@ -110,5 +111,6 @@ router.use("/database", membersRouter);
 router.use("/database", baseRolesRouter);
 router.use("/database", tableRoutesSimple); // Simple PostgreSQL routes for testing (fallback)
 router.use("/database", routerDatabase); // Database routes with permission checks
+router.use("/templates", tableTemplateRouter); // Template routes
 router.use("/test", testRouter);
 export default router;

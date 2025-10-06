@@ -4,6 +4,8 @@ import Table from './Table.js';
 import Column from './Column.js';
 import Record from './Record.js';
 import Row from './Row.js';
+import { TableTemplate, TemplateTable, TemplateColumn } from '../../model/TableTemplate.js';
+import TemplateRecord from '../../model/TemplateRecord.js';
 
 // Define associations
 Table.hasMany(Column, { foreignKey: 'table_id', as: 'columns' });
@@ -14,6 +16,8 @@ Record.belongsTo(Table, { foreignKey: 'table_id', as: 'table' });
 
 Table.hasMany(Row, { foreignKey: 'table_id', as: 'rows' });
 Row.belongsTo(Table, { foreignKey: 'table_id', as: 'table' });
+
+// Template associations are defined in TableTemplate.js
 
 // Sync models with database
 const syncModels = async (force = false) => {
@@ -32,6 +36,10 @@ export {
   Column,
   Record,
   Row,
+  TableTemplate,
+  TemplateTable,
+  TemplateColumn,
+  TemplateRecord,
   syncModels
 };
 
@@ -41,5 +49,9 @@ export default {
   Column,
   Record,
   Row,
+  TableTemplate,
+  TemplateTable,
+  TemplateColumn,
+  TemplateRecord,
   syncModels
 };
