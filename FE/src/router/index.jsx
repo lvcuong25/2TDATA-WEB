@@ -69,6 +69,10 @@ import BaseList from "../components/Base/BaseList.jsx";
 import BaseDetail from "../components/Base/BaseDetail.jsx";
 import BaseManagement from "../components/Base/BaseManagement.jsx";
 import TestBaseManagement from "../pages/TestBaseManagement.jsx";
+// Template management imports
+import TemplateList from "../pages/TemplateManagement/TemplateList.jsx";
+import TemplateDetail from "../pages/TemplateManagement/TemplateDetail.jsx";
+import TemplateTableDetail from "../pages/TemplateManagement/TableDetail.jsx";
 
 const Router = () => {
   return (
@@ -321,6 +325,20 @@ const Router = () => {
               }
             />
           </Route>
+        </Route>
+
+        {/* Template Management Routes */}
+        <Route
+          path="/templates"
+          element={
+            <PrivateRoute>
+              <DatabaseLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<TemplateList />} />
+          <Route path=":templateId" element={<TemplateDetail />} />
+          <Route path=":templateId/table/:tableIndex" element={<TemplateTableDetail />} />
         </Route>
       </Routes>
     </div>

@@ -1035,7 +1035,36 @@ const DatabaseLayout = () => {
             >
               Overview
             </Menu.Item>
+            <Menu.Item
+              key="/templates"
+              icon={<AppstoreOutlined />}
+              onClick={() => navigate('/templates')}
+              className="mx-2 rounded-lg"
+            >
+              Templates
+            </Menu.Item>
           </Menu>
+
+          {/* Templates Section */}
+          {!collapsed && (
+            <div className="px-4 py-2" style={{ paddingBottom: '20px' }}>
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                Templates
+              </div>
+              <div className="space-y-1">
+                <div 
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => navigate('/templates')}
+                >
+                  <div className="flex items-center">
+                    <AppstoreOutlined className="text-blue-500 mr-2" />
+                    <span className="text-sm text-gray-700">Template Gallery</span>
+                  </div>
+                  <RightOutlined className="text-gray-400 text-xs" />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Databases Section */}
           {!collapsed && (

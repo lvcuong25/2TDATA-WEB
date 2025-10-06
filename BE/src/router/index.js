@@ -18,6 +18,7 @@ import adminRouter from "./adminRouter.js";
 import routerOrganization from "./routerOrganization.js";
 import routerDatabase from "./routerDatabase.js";
 import testRouter from "./testRouter.js";
+import tableTemplateRouter from "./tableTemplateRouter.js";
 import routerOrder from "./orderRouter.js";
 import routerCell from "./routerCell.js";
 import basesRouter from "./bases.routes.js";
@@ -33,7 +34,6 @@ import permissionRouter from "./permission.routes.js";
 import postgresRoutes from "../routes/postgresRoutes.js";
 import columnPermissionRouter from "../routes/columnPermissionRoutes.js";
 import cellPermissionRouter from "../routes/cellPermissionRoutes.js";
-import conditionalFormattingRouter from "../routes/conditionalFormattingRoutes.js";
 
 const router = Router();
 
@@ -100,7 +100,7 @@ router.use(rolesPermsRouter);
 router.use("/permissions", permissionRouter);
 router.use("/permissions", columnPermissionRouter);
 router.use("/permissions", cellPermissionRouter);
-router.use("/conditional-formatting", conditionalFormattingRouter);
+// router.use("/conditional-formatting", conditionalFormattingRouter);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 
@@ -110,5 +110,6 @@ router.use("/database", membersRouter);
 router.use("/database", baseRolesRouter);
 router.use("/database", tableRoutesSimple); // Simple PostgreSQL routes for testing (fallback)
 router.use("/database", routerDatabase); // Database routes with permission checks
+router.use("/templates", tableTemplateRouter); // Template routes
 router.use("/test", testRouter);
 export default router;
