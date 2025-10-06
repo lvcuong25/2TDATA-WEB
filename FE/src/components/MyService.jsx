@@ -41,6 +41,8 @@ const MyService = () => {
   const [dateRangeModalVisible, setDateRangeModalVisible] = useState(false);
   const [selectedServiceForDateRange, setSelectedServiceForDateRange] = useState(null);
   const [startDate, setStartDate] = useState(null); // Chỉ lưu ngày bắt đầu
+  const [activeServices, setActiveServices] = useState(new Set()); // Theo dõi các dịch vụ đang chạy
+  const [isRealtimeUpdating, setIsRealtimeUpdating] = useState(false); // Trạng thái cập nhật realtime
 
   useEffect(() => {
     console.log('Current user:', currentUser);
@@ -50,6 +52,7 @@ const MyService = () => {
       window.history.replaceState(null, null, window.location.pathname + window.location.search);
     }
   }, [currentUser]);
+
 
   const { data: userData, isLoading } = useQuery({
     queryKey: ["myServices", currentUser?._id, currentPage, pageSize],
@@ -65,6 +68,56 @@ const MyService = () => {
     },
     enabled: !!currentUser?._id,
   });
+
+  // Cập nhật danh sách dịch vụ đang active
+  useEffect(() => {
+    if (!userData?.data?.services) return;
+
+    const newActiveServices = new Set();
+    userData.data.services.forEach(service => {
+      const currentPercent = service.webhookData?.current_percent || service.autoUpdate?.current_percent || 0;
+      if (currentPercent > 0 && currentPercent < 100) {
+        newActiveServices.add(service._id);
+      }
+    });
+
+    setActiveServices(newActiveServices);
+  }, [userData]);
+
+  // Realtime polling cho tiến độ - sử dụng API hiện có
+  useEffect(() => {
+    if (!currentUser?._id || activeServices.size === 0) return;
+
+    console.log('🚀 Starting realtime polling for', activeServices.size, 'active services');
+
+    const pollInterval = setInterval(async () => {
+      try {
+        setIsRealtimeUpdating(true);
+        console.log('🔄 Realtime polling: Refreshing data...');
+        
+        // Refetch dữ liệu services với cache tối ưu
+        await queryClient.invalidateQueries({ 
+          queryKey: ["myServices", currentUser._id],
+          exact: false // Invalidate tất cả queries có chứa key này
+        });
+        await queryClient.invalidateQueries({ 
+          queryKey: ["servicesWithLinks", currentUser._id],
+          exact: false
+        });
+        
+        // Delay ngắn để hiển thị loading state
+        setTimeout(() => setIsRealtimeUpdating(false), 500);
+      } catch (error) {
+        console.error('Error in realtime polling:', error);
+        setIsRealtimeUpdating(false);
+      }
+    }, 2000); // Polling mỗi 2 giây cho realtime hơn
+
+    return () => {
+      console.log('🛑 Stopping realtime polling');
+      clearInterval(pollInterval);
+    };
+  }, [currentUser?._id, queryClient, activeServices.size]);
 
   // API call riêng cho danh sách dịch vụ có link
   const { data: servicesWithLinksData, isLoading: isLoadingServicesWithLinks } = useQuery({
@@ -581,20 +634,31 @@ const MyService = () => {
           <div className="space-y-2">
             {/* Hiển thị tiến độ */}
             <div className="text-center">
-              <div className="text-sm text-gray-600 mb-1">Tiến độ</div>
+              <div className="text-sm text-gray-600 mb-1 flex items-center justify-center gap-1">
+                Tiến độ
+                {currentPercent > 0 && currentPercent < 100 && (
+                  <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                )}
+              </div>
               <div className="flex items-center justify-center gap-2">
-                <div className="w-16 bg-gray-200 rounded-full h-2">
+                <div className="w-16 bg-gray-200 rounded-full h-2 relative overflow-hidden">
                   <div 
-                    className={`h-2 rounded-full transition-all duration-300 ${
+                    className={`h-2 rounded-full transition-all duration-500 ease-out ${
                       currentPercent >= 100 ? 'bg-green-500' : 
                       currentPercent >= 75 ? 'bg-blue-500' : 
                       currentPercent >= 50 ? 'bg-yellow-500' : 
                       currentPercent >= 25 ? 'bg-orange-500' : 'bg-red-500'
                     }`}
-                    style={{ width: `${Math.min(currentPercent, 100)}%` }}
+                    style={{ 
+                      width: `${Math.min(currentPercent, 100)}%`,
+                      transition: 'width 0.5s ease-out'
+                    }}
                   ></div>
+                  {currentPercent > 0 && currentPercent < 100 && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+                  )}
                 </div>
-                <span className="text-sm font-medium min-w-[3rem]">
+                <span className="text-sm font-medium min-w-[3rem] transition-all duration-300">
                   {currentPercent}%
                 </span>
               </div>
@@ -736,9 +800,19 @@ const MyService = () => {
       <div className="container mx-auto pt-[100px] py-12">
         <section className="bg-gray-100 rounded-[32px] max-w-6xl mx-auto mt-8 p-8">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-center">
-              Dịch vụ đang triển khai
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-center">
+                Dịch vụ đang triển khai
+              </h2>
+              {activeServices.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isRealtimeUpdating ? 'bg-green-500 animate-pulse' : 'bg-green-400'}`}></div>
+                  <span className="text-sm text-green-600 font-medium">
+                    Realtime ({activeServices.size} dịch vụ)
+                  </span>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <AppstoreOutlined className={isCardView ? "text-blue-500" : "text-gray-400"} />
               <Switch
