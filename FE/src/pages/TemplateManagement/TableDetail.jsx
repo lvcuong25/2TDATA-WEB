@@ -1335,7 +1335,7 @@ const TableDetail = () => {
   };
 
   const handleCellClick = (recordId, columnName, currentValue) => {
-    // console.log('🔍 CELL CLICKED!', { recordId, columnName, currentValue });
+    console.log('🔍 CELL CLICKED!', { recordId, columnName, currentValue });
     
     // If clicking on the same cell that's already being edited, ignore
     if (editingCell && editingCell.recordId === recordId && editingCell.columnName === columnName) {
@@ -1386,17 +1386,17 @@ const TableDetail = () => {
     
     // Always allow editing for template management
     if (canEdit) {
-      // console.log('🔍 Starting cell editing...');
+      console.log('🔍 Starting cell editing...');
       const { editingCell: newEditingCell, cellValue: newCellValue } = initializeCellEditing(recordId, columnName, currentValue, column);
       setEditingCell(newEditingCell);
       setCellValue(newCellValue);
     } else {
-      // console.log('🔍 Cell editing blocked:', {
-      //   canEdit,
-      //   isSystem: column.isSystem,
-      //   dataType: column.dataType,
-      //   reason: !canEdit ? 'No permission' : column.isSystem ? 'System field' : 'Checkbox field'
-      // });
+      console.log('🔍 Cell editing blocked:', {
+        canEdit,
+        isSystem: column.isSystem,
+        dataType: column.dataType,
+        reason: !canEdit ? 'No permission' : column.isSystem ? 'System field' : 'Checkbox field'
+      });
     }
   };
 
@@ -1408,6 +1408,14 @@ const TableDetail = () => {
 
     const column = columns.find(col => col.name === editingCell.columnName);
     const updatedData = prepareCellDataForSave(cellValue, column, record);
+
+    console.log('🔍 SAVING CELL DATA:', {
+      recordId: editingCell.recordId,
+      columnName: editingCell.columnName,
+      cellValue,
+      updatedData,
+      originalRecord: record
+    });
 
     updateRecordMutation.mutate({
       recordId: editingCell.recordId,

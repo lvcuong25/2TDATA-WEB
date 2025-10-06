@@ -18,6 +18,7 @@ import adminRouter from "./adminRouter.js";
 import routerOrganization from "./routerOrganization.js";
 import routerDatabase from "./routerDatabase.js";
 import testRouter from "./testRouter.js";
+import tableTemplateRouter from "./tableTemplateRouter.js";
 import routerOrder from "./orderRouter.js";
 import routerCell from "./routerCell.js";
 import basesRouter from "./bases.routes.js";
@@ -99,7 +100,7 @@ router.use(rolesPermsRouter);
 router.use("/permissions", permissionRouter);
 router.use("/permissions", columnPermissionRouter);
 router.use("/permissions", cellPermissionRouter);
-router.use("/conditional-formatting", conditionalFormattingRouter);
+// router.use("/conditional-formatting", conditionalFormattingRouter);
 // Admin routes with proper admin interface support
 router.use("/admin", adminRouter);
 
