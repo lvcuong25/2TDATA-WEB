@@ -533,7 +533,7 @@ export const createRecord = async (req, res) => {
 export const getRecords = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { page = 1, limit = 50, sortRules, forceAscending, filterRules } = req.query;
+    const { page = 1, sortRules, forceAscending, filterRules } = req.query;
     
     if (!req.user) {
       return res.status(401).json({ message: 'User not authenticated' });
@@ -593,7 +593,7 @@ export const getRecords = async (req, res) => {
       }
     }
 
-    const skip = (page - 1) * limit;
+    // No pagination - get all records
     
     // Parse sort rules from query string
     let parsedSortRules = [];
@@ -720,12 +720,10 @@ export const getRecords = async (req, res) => {
 
     // Get records from both MongoDB and PostgreSQL
     const [mongoRecords, postgresRecords] = await Promise.all([
-      Record.find(filterQuery).sort(sortOptions).skip(skip).limit(parseInt(limit)),
+      Record.find(filterQuery).sort(sortOptions),
       PostgresRecord.findAll({
         where: { table_id: tableId },
         order: [['created_at', 'DESC']],
-        limit: parseInt(limit),
-        offset: skip
       })
     ]);
 
@@ -780,9 +778,8 @@ export const getRecords = async (req, res) => {
       data: enhancedRecords,
       pagination: {
         page: parseInt(page),
-        limit: parseInt(limit),
         total: totalRecords,
-        pages: Math.ceil(totalRecords / limit)
+        pages: 1
       },
       sortRules: parsedSortRules,
       filterRules: parsedFilterRules

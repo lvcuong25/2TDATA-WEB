@@ -724,25 +724,6 @@ export const deleteColumnSimple = async (req, res) => {
     console.log(`✅ Successfully removed column data from ${updatedCount} records`);
 
 
-    // Import Record model for data cleanup
-    const { Record } = await import('../models/postgres/index.js');
-
-    // Remove column data from all records in this table
-    const recordsToClean = await Record.findAll({
-      where: { table_id: column.table_id }
-    });
-
-    console.log(`🗑️ Removing column data from ${recordsToClean.length} records`);
-
-    for (const record of recordsToClean) {
-      const updatedData = { ...record.data };
-      if (updatedData[column.name] !== undefined) {
-        delete updatedData[column.name];
-        await record.update({ data: updatedData });
-        console.log(`✅ Removed column data from record ${record.id}`);
-      }
-    }
-
     // Delete the column
 
     await column.destroy();

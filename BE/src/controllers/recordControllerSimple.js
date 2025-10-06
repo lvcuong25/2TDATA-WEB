@@ -251,17 +251,17 @@ export const createRecordSimple = async (req, res) => {
 export const getRecordsByTableIdSimple = async (req, res) => {
   try {
     const { tableId } = req.params;
-    const { page = 1, limit = 50, sortRules, filterRules } = req.query;
+    const { page = 1, sortRules, filterRules } = req.query;
     const userId = req.user?._id?.toString() || '68341e4d3f86f9c7ae46e962';
 
-    console.log('🔍 Records request:', { tableId, sortRules, filterRules, page, limit });
+    console.log('🔍 Records request:', { tableId, sortRules, filterRules, page });
 
     const table = await PostgresTable.findByPk(tableId);
     if (!table) {
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    const offset = (page - 1) * limit;
+    // No pagination - get all records
 
     // Get record view filter based on table permissions
     const { getRecordViewFilter } = await import('../utils/tablePermissionUtils.js');
@@ -389,8 +389,6 @@ export const getRecordsByTableIdSimple = async (req, res) => {
     const { count, rows: records } = await PostgresRecord.findAndCountAll({
       where: whereClause,
       order: orderClause,
-      limit: parseInt(limit),
-      offset: parseInt(offset)
     });
 
     console.log('📋 Query executed with order:', orderClause);
@@ -442,8 +440,7 @@ export const getRecordsByTableIdSimple = async (req, res) => {
       pagination: {
         total: count,
         page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(count / limit)
+        totalPages: 1
       }
     });
 

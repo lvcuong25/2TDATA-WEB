@@ -740,7 +740,6 @@ export const updateColumn = async (req, res) => {
       } catch (error) {
         console.error('❌ Error converting date records:', error.message);
       }
-
     }
 
     res.json({
