@@ -112,8 +112,8 @@ const Header = () => {
                     </Link>
                   </li>
                 )}
-                {/* Ẩn Cơ sở dữ liệu */}
-                {/* {isLogin && (
+                {/* Cơ sở dữ liệu */}
+                {isLogin && (
                   <li>
                     <Link
                       to="/database"
@@ -127,7 +127,7 @@ const Header = () => {
                       Cơ sở dữ liệu
                     </Link>
                   </li>
-                )} */}
+                )}
                 <li>
                   <Link
                     to="/service"

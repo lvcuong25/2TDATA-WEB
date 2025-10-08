@@ -52,7 +52,7 @@ router.put('/admin/:templateId/tables/:tableIndex', requireAuthWithCookie, updat
 router.post('/admin/:templateId/tables/:tableIndex/columns', requireAuthWithCookie, addTemplateColumn);
 router.put('/admin/:templateId/tables/:tableIndex/columns/:columnId', requireAuthWithCookie, updateTemplateColumn);
 router.delete('/admin/:templateId/tables/:tableIndex/columns/:columnId', requireAuthWithCookie, deleteTemplateColumn);
-router.put('/admin/:templateId/tables/:tableIndex/columns/reorder', requireAuthWithCookie, reorderTemplateColumns);
+router.put('/:templateId/tables/:tableIndex/columns/reorder', requireAuthWithCookie, reorderTemplateColumns);
 router.post('/admin/:templateId/tables/:tableIndex/records', requireAuthWithCookie, addTemplateRecord);
 router.get('/admin/:templateId/tables/:tableIndex/records', requireAuthWithCookie, getTemplateRecords);
 router.put('/admin/:templateId/tables/:tableIndex/records/:recordId', requireAuthWithCookie, updateTemplateRecord);

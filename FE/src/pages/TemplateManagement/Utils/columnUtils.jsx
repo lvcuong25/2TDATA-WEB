@@ -165,10 +165,10 @@ export const getNormalHeaderStyle = (column, fieldVisibility) => {
   return {
     fontSize: '13px',
     flex: 1,
-    fontWeight: fieldVisibility[column._id] === false ? '400' : (column.isSystem ? '400' : '500'),
-    color: fieldVisibility[column._id] === false ? '#999' : (column.isSystem ? '#52c41a' : '#333'),
+    fontWeight: fieldVisibility[column.id || column._id] === false ? '400' : (column.isSystem ? '400' : '500'),
+    color: fieldVisibility[column.id || column._id] === false ? '#999' : (column.isSystem ? '#52c41a' : '#333'),
     fontStyle: column.isSystem ? 'italic' : 'normal',
-    textDecoration: fieldVisibility[column._id] === false ? 'line-through' : 'none'
+    textDecoration: fieldVisibility[column.id || column._id] === false ? 'line-through' : 'none'
   };
 };
 
@@ -190,7 +190,7 @@ export const initializeColumnWidths = (tableId) => {
 export const resetColumnWidths = (columns, defaultWidth = 150) => {
   const defaultWidths = {};
   columns.forEach(column => {
-    defaultWidths[column._id] = defaultWidth;
+    defaultWidths[column.id || column._id] = defaultWidth;
   });
   return defaultWidths;
 };
@@ -228,7 +228,7 @@ export const shouldShowCompactContent = (columnWidths, columnId, threshold = 80)
  * @returns {Array} Reordered columns array
  */
 export const reorderColumns = (columns, dragIndex, hoverIndex) => {
-  const result = Array.from(columns).filter(column => column && column._id);
+  const result = Array.from(columns).filter(column => column && (column._id || column.id));
   
   // Only swap if indices are different and within bounds
   if (dragIndex !== hoverIndex && 
@@ -248,9 +248,9 @@ export const reorderColumns = (columns, dragIndex, hoverIndex) => {
  */
 export const generateColumnOrders = (columns) => {
   return columns
-    .filter(column => column && column._id) // Filter out undefined/null columns
+    .filter(column => column && (column._id || column.id)) // Filter out undefined/null columns
     .map((column, index) => ({
-      columnId: column._id,
+      columnId: column.id || column._id,
       order: index
     }));
 };

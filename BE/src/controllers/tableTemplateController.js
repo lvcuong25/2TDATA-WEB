@@ -1038,7 +1038,14 @@ export const reorderTemplateColumns = async (req, res, next) => {
     }
     
     const { templateId, tableIndex } = req.params;
-    const { columnIds } = req.body; // Array of column IDs in new order
+    const { columnOrders } = req.body; // Array of { columnId, order }
+    
+    if (!columnOrders || !Array.isArray(columnOrders)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Column orders array is required'
+      });
+    }
     
     // Get template with tables
     const template = await TableTemplate.findByPk(templateId, {
@@ -1069,12 +1076,12 @@ export const reorderTemplateColumns = async (req, res, next) => {
     const table = template.tables[tableIndexNum];
     
     // Update column orders
-    for (let i = 0; i < columnIds.length; i++) {
+    for (const { columnId, order } of columnOrders) {
       await TemplateColumn.update(
-        { order: i },
+        { order: order },
         {
           where: {
-            id: columnIds[i],
+            id: columnId,
             template_table_id: table.id
           }
         }
