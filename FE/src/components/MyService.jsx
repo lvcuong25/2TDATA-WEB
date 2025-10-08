@@ -43,6 +43,11 @@ const MyService = () => {
   const [startDate, setStartDate] = useState(null); // Chỉ lưu ngày bắt đầu
   const [activeServices, setActiveServices] = useState(new Set()); // Theo dõi các dịch vụ đang chạy
   const [isRealtimeUpdating, setIsRealtimeUpdating] = useState(false); // Trạng thái cập nhật realtime
+  
+  // State cho tùy chọn lưu trữ và visualize
+  const [storageOption, setStorageOption] = useState('database'); // 'database' hoặc 'google_sheet'
+  const [visualizationTool, setVisualizationTool] = useState('metabase'); // 'metabase' hoặc 'looker_studio'
+  const [googleSheetUrl, setGoogleSheetUrl] = useState(''); // URL Google Sheet nếu chọn
 
   useEffect(() => {
     console.log('Current user:', currentUser);
@@ -158,7 +163,16 @@ const MyService = () => {
   const handleServiceClickWithDateRange = (service) => {
     setSelectedServiceForDateRange(service);
     setStartDate(null); // Reset start date
+    setStorageOption('database'); // Reset storage option
+    setVisualizationTool('metabase'); // Reset visualization tool
+    setGoogleSheetUrl(''); // Reset Google Sheet URL
     setDateRangeModalVisible(true);
+  };
+
+  // Hàm kiểm tra validation cho form
+  const isFormValid = () => {
+    // Không cần validation bắt buộc cho Google Sheet URL
+    return true;
   };
 
   // Hàm xử lý khi người dùng chọn khoảng thời gian và kết nối
@@ -171,6 +185,8 @@ const MyService = () => {
         alert('Vui lòng đăng nhập lại.');
         return;
       }
+
+      // Không cần validation bắt buộc cho Google Sheet URL
 
       // Find the first authorized link
       const authorizedLink = service?.service?.authorizedLinks?.[0];
@@ -202,14 +218,29 @@ const MyService = () => {
         };
       }
 
+      // Tạo thông tin cấu hình lưu trữ và visualize
+      const configData = {
+        storage: {
+          type: storageOption
+        },
+        visualization: {
+          tool: visualizationTool
+        }
+      };
+
       // Proceed with redirect - Sử dụng helper functions để truyền thông tin dịch vụ chi tiết
-      const stateObj = createStateObject(currentUser, service, getCleanUrl(), dateRangeData);
+      const stateObj = createStateObject(currentUser, service, getCleanUrl(), dateRangeData, configData);
       const encodedState = encodeState(stateObj);
       const urlWithState = appendStateToUrlHelper(authorizedLink.url, encodedState);
       
-      console.log('Redirecting to:', urlWithState);
-      console.log('State object being passed:', stateObj);
-      console.log('Date range data:', dateRangeData);
+      console.log('🚀 CONNECTING SERVICE WITH CONFIG:');
+      console.log('📊 Service:', service?.service?.name);
+      console.log('📅 Date Range:', dateRangeData);
+      console.log('💾 Storage Option:', storageOption);
+      console.log('📈 Visualization Tool:', visualizationTool);
+      console.log('⚙️ Config Data:', configData);
+      console.log('📦 Full State Object:', stateObj);
+      console.log('🌐 Redirecting to:', urlWithState);
       
       // Đóng modal và chuyển hướng
       setDateRangeModalVisible(false);
@@ -804,14 +835,6 @@ const MyService = () => {
               <h2 className="text-2xl font-bold text-center">
                 Dịch vụ đang triển khai
               </h2>
-              {activeServices.size > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isRealtimeUpdating ? 'bg-green-500 animate-pulse' : 'bg-green-400'}`}></div>
-                  <span className="text-sm text-green-600 font-medium">
-                    Realtime ({activeServices.size} dịch vụ)
-                  </span>
-                </div>
-              )}
             </div>
             <div className="flex items-center gap-2">
               <AppstoreOutlined className={isCardView ? "text-blue-500" : "text-gray-400"} />
@@ -1112,16 +1135,31 @@ const MyService = () => {
 
       {/* Modal chọn ngày bắt đầu */}
       <Modal
-        title="Chọn ngày bắt đầu (Tùy chọn)"
+        title="Cấu hình kết nối dịch vụ"
         open={dateRangeModalVisible}
         onOk={handleConnectWithDateRange}
         onCancel={() => {
           setDateRangeModalVisible(false);
           setStartDate(null);
+          setStorageOption('database');
+          setVisualizationTool('metabase');
+          setGoogleSheetUrl('');
         }}
-        okText={startDate ? "Kết nối từ ngày đã chọn đến hiện tại" : "Kết nối không có thời gian"}
+        okButtonProps={{
+          style: {
+            backgroundColor: '#1890ff',
+            borderColor: '#1890ff',
+            color: '#fff'
+          }
+        }}
+        okText={(() => {
+          let text = startDate ? "Kết nối từ ngày đã chọn đến hiện tại" : "Kết nối không có thời gian";
+          text += ` - ${storageOption === 'database' ? 'Database' : 'Google Sheet'}`;
+          text += ` - ${visualizationTool === 'metabase' ? 'Metabase' : 'Looker Studio'}`;
+          return text;
+        })()}
         cancelText="Hủy"
-        width={500}
+        width={600}
       >
         {selectedServiceForDateRange && (
           <div className="space-y-4">
@@ -1175,12 +1213,102 @@ const MyService = () => {
               </div>
             )}
 
+            {/* Tùy chọn lưu trữ dữ liệu */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                <AppstoreOutlined className="mr-2" />
+                Nơi lưu trữ dữ liệu
+              </label>
+              <Radio.Group
+                value={storageOption}
+                onChange={(e) => setStorageOption(e.target.value)}
+                className="w-full"
+              >
+                <div className="space-y-2">
+                  <Radio value="database" className="w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
+                        <span className="text-blue-600 text-xs font-bold">DB</span>
+                      </div>
+                      <div>
+                        <div className="font-medium">Database</div>
+                        <div className="text-xs text-gray-500">Lưu trữ trong cơ sở dữ liệu hệ thống</div>
+                      </div>
+                    </div>
+                  </Radio>
+                  <Radio value="google_sheet" className="w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
+                        <span className="text-green-600 text-xs font-bold">GS</span>
+                      </div>
+                      <div>
+                        <div className="font-medium">Google Sheet</div>
+                        <div className="text-xs text-gray-500">Lưu trữ trong Google Sheets</div>
+                      </div>
+                    </div>
+                  </Radio>
+                </div>
+              </Radio.Group>
+              
+            </div>
+
+            {/* Tùy chọn công cụ visualize */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                <TableOutlined className="mr-2" />
+                Công cụ visualize
+              </label>
+              <Radio.Group
+                value={visualizationTool}
+                onChange={(e) => setVisualizationTool(e.target.value)}
+                className="w-full"
+              >
+                <div className="space-y-2">
+                  <Radio value="metabase" className="w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center">
+                        <span className="text-purple-600 text-xs font-bold">MB</span>
+                      </div>
+                      <div>
+                        <div className="font-medium">Metabase</div>
+                        <div className="text-xs text-gray-500">Tạo dashboard và báo cáo với Metabase</div>
+                      </div>
+                    </div>
+                  </Radio>
+                  <Radio value="looker_studio" className="w-full">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-orange-100 rounded flex items-center justify-center">
+                        <span className="text-orange-600 text-xs font-bold">LS</span>
+                      </div>
+                      <div>
+                        <div className="font-medium">Looker Studio</div>
+                        <div className="text-xs text-gray-500">Tạo báo cáo và dashboard với Looker Studio</div>
+                      </div>
+                    </div>
+                  </Radio>
+                </div>
+              </Radio.Group>
+            </div>
+
+            {/* Trạng thái form */}
+            <div className="border p-3 rounded bg-green-50 border-green-200">
+              <div className="text-xs space-y-1 text-green-700">
+                <p className="font-medium">✅ Cấu hình hoàn tất - Sẵn sàng kết nối!</p>
+                <p>• Lưu trữ: <strong>{storageOption === 'database' ? 'Database' : 'Google Sheet'}</strong></p>
+                <p>• Visualize: <strong>{visualizationTool === 'metabase' ? 'Metabase' : 'Looker Studio'}</strong></p>
+                {startDate && <p>• Thời gian: <strong>Từ {startDate.format('DD/MM/YYYY')} đến hiện tại</strong></p>}
+                {!startDate && <p>• Thời gian: <strong>Toàn bộ dữ liệu</strong></p>}
+              </div>
+            </div>
+
             <div className="bg-blue-50 border border-blue-200 p-3 rounded">
               <div className="text-xs text-blue-700 space-y-1">
                 <p>• <strong>Tùy chọn:</strong> Bạn có thể chọn hoặc không chọn ngày bắt đầu</p>
                 <p>• <strong>Nếu chọn:</strong> Dữ liệu sẽ được lọc từ ngày đã chọn đến hiện tại</p>
                 <p>• <strong>Nếu không chọn:</strong> Sẽ kết nối dịch vụ với toàn bộ dữ liệu</p>
                 <p>• <strong>Tự động:</strong> Thời gian hiện tại sẽ tự động được lấy làm ngày kết thúc</p>
+                <p>• <strong>Lưu trữ:</strong> Chọn nơi lưu trữ dữ liệu (Database hoặc Google Sheet)</p>
+                <p>• <strong>Visualize:</strong> Chọn công cụ để tạo báo cáo và dashboard</p>
               </div>
             </div>
           </div>

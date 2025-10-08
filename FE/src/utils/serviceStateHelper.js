@@ -52,7 +52,8 @@ export function getServiceInfoFromState(state) {
     resultLinks: state.resultLinks || [],
     updateLinks: state.updateLinks || [],
     authorizedLinks: state.authorizedLinks || [],
-    dateRange: state.dateRange || null
+    dateRange: state.dateRange || null,
+    config: state.config || null
   };
 }
 
@@ -65,6 +66,16 @@ export function getDateRangeFromState(state) {
     endDate: state.dateRange.endDate,
     startDateISO: state.dateRange.startDateISO,
     endDateISO: state.dateRange.endDateISO
+  };
+}
+
+// Hàm lấy thông tin cấu hình từ state
+export function getConfigFromState(state) {
+  if (!state || !state.config) return null;
+  
+  return {
+    storage: state.config.storage || null,
+    visualization: state.config.visualization || null
   };
 }
 
@@ -86,7 +97,7 @@ export function removeStateFromUrl() {
 }
 
 // Hàm tạo state object để truyền sang site khác
-export function createStateObject(user, service, returnUrl, dateRange = null) {
+export function createStateObject(user, service, returnUrl, dateRange = null, configData = null) {
   const stateObj = {
     userId: user?._id || "",
     name: user?.name || "",
@@ -107,6 +118,11 @@ export function createStateObject(user, service, returnUrl, dateRange = null) {
   // Thêm thông tin dateRange nếu có
   if (dateRange) {
     stateObj.dateRange = dateRange;
+  }
+
+  // Thêm thông tin cấu hình nếu có
+  if (configData) {
+    stateObj.config = configData;
   }
 
   return stateObj;
