@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import instance from "../../utils/axiosInstance-cookie-only";
 import { useParams } from "react-router-dom";
 import image9 from "../../image/image9.png";
-import MyService from "../MyService";
+import MyService from "../MyService/MyService";
 const ServiceFacebook = () => {
   const { slug } = useParams();
   const { data, isLoading, error } = useQuery({

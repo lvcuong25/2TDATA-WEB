@@ -19,7 +19,7 @@ import BlogForm from "../components/admin/Blog/BlogForm.jsx";
 import BlogEdit from "../components/admin/Blog/BlogEdit.jsx";
 import AllBlogPage from "../components/Blog/AllBlogPage.js";
 import DetailBlogPage from "../components/Blog/DetailBlogPage.js";
-import MyService from "../components/MyService.jsx";
+import MyService from "../components/MyService/MyService";
 import UserInfoList from "../components/admin/UserInfo/UserInfoList.jsx";
 
 import UsersList from "../components/admin/Users/UsersList.jsx";

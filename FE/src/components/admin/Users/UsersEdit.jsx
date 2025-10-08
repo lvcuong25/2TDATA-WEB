@@ -739,7 +739,7 @@ const UsersEdit = () => {
                             <Table
                                 columns={infoColumns}
                                 dataSource={userData?.information || []}
-                                rowKey={(record, idx) => `${record._id}_${idx}`}
+                                rowKey={(record) => record._id}
                                 pagination={false}
                             />
                         </Card>
