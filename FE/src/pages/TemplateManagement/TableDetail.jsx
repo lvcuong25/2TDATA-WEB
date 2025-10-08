@@ -6,6 +6,7 @@ import EditColumnModal from './Components/EditColumnModal';
 import TableHeader from './Components/TableHeader';
 import TableBody from './Components/TableBody';
 import ContextMenu from './Components/ContextMenu';
+import TemplateBulkDeleteActions from './Components/TemplateBulkDeleteActions';
 import RowColumnCellPermissionModal from '../../components/Table/RowColumnCellPermissionModal';
 import {
   addSortRule,
@@ -413,6 +414,7 @@ const TableDetail = () => {
     addRecordMutation,
     updateRecordMutation,
     deleteRecordMutation,
+    deleteMultipleRecordsMutation,
     deleteAllRecordsMutation,
     updateColumnMutation,
     deleteColumnMutation,
@@ -1170,6 +1172,13 @@ const TableDetail = () => {
     deleteRecordMutation.mutate(recordId);
   };
 
+  const handleDeleteSelected = () => {
+    if (selectedRowKeys.length === 0) {
+      return;
+    }
+    deleteMultipleRecordsMutation.mutate(selectedRowKeys);
+  };
+
   const handleEditColumn = (column) => {
     console.log('🔍 handleEditColumn called with column:', column);
     console.log('🔍 Column lookupConfig:', column.lookupConfig);
@@ -1764,6 +1773,13 @@ const TableDetail = () => {
             <div className="flex justify-between items-center">
           <div>
                 {/* Description hidden for grid view */}
+            </div>
+            <div className="flex items-center gap-2">
+              <TemplateBulkDeleteActions
+                selectedRowKeys={selectedRowKeys}
+                deleteMultipleRecordsMutation={deleteMultipleRecordsMutation}
+                onDeleteSelected={handleDeleteSelected}
+              />
             </div>
         </div>
       </div>

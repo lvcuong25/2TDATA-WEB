@@ -1394,3 +1394,87 @@ export const deleteTemplateRecord = async (req, res, next) => {
     next(error);
   }
 };
+
+// Bulk delete template records
+export const deleteMultipleTemplateRecords = async (req, res, next) => {
+  try {
+    if (req.user?.role !== 'super_admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Super admin only.'
+      });
+    }
+    
+    const { templateId, tableIndex } = req.params;
+    const { recordIds } = req.body;
+    
+    if (!recordIds || !Array.isArray(recordIds) || recordIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Record IDs are required and must be an array'
+      });
+    }
+    
+    // Get template table
+    const template = await TableTemplate.findByPk(templateId, {
+      include: [
+        {
+          model: TemplateTable,
+          as: 'tables',
+          include: [
+            {
+              model: TemplateColumn,
+              as: 'columns',
+              order: [['order', 'ASC']]
+            }
+          ],
+          order: [['order', 'ASC']]
+        }
+      ]
+    });
+    
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: 'Template not found'
+      });
+    }
+    
+    const tableIndexNum = parseInt(tableIndex);
+    if (tableIndexNum < 0 || tableIndexNum >= template.tables.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Table not found'
+      });
+    }
+    
+    // Delete multiple records from database
+    const deletedCount = await TemplateRecord.destroy({
+      where: {
+        id: {
+          [Op.in]: recordIds
+        },
+        template_id: templateId,
+        table_index: tableIndexNum
+      }
+    });
+    
+    if (deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No records found to delete'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `${deletedCount} record(s) deleted successfully`,
+      data: {
+        deletedCount,
+        recordIds: recordIds
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

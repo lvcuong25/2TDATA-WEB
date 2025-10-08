@@ -192,9 +192,36 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
   });
 
   const deleteRecordMutation = useMutation({
-    mutationFn: async (data) => {
-      // Mock implementation - templates don't have records
-      return Promise.resolve();
+    mutationFn: async (recordId) => {
+      const response = await axiosInstance.delete(`/templates/admin/${templateId}/tables/${tableIndex}/records/${recordId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Record deleted successfully');
+      queryClient.invalidateQueries(['templateRecords', templateId, tableIndex]);
+    },
+    onError: (error) => {
+      console.error('Error deleting record:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete record');
+    },
+  });
+
+  const deleteMultipleRecordsMutation = useMutation({
+    mutationFn: async (recordIds) => {
+      const response = await axiosInstance.delete(`/templates/admin/${templateId}/tables/${tableIndex}/records/bulk`, {
+        data: { recordIds }
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(`${data.data.deletedCount} record(s) deleted successfully`);
+      queryClient.invalidateQueries(['templateRecords', templateId, tableIndex]);
+      // Clear selected rows after successful deletion
+      setSelectedRowKeys([]);
+    },
+    onError: (error) => {
+      console.error('Error deleting records:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete records');
     },
   });
 
@@ -261,6 +288,7 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
     addRecordMutation,
     updateRecordMutation,
     deleteRecordMutation,
+    deleteMultipleRecordsMutation,
     deleteAllRecordsMutation,
     
     // Permission checks
