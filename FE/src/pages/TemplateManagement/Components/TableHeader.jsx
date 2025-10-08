@@ -230,7 +230,7 @@ const TableHeader = ({
                         minHeight: '20px',
                         border: '1px solid #d9d9d9'
                       }}>
-                        {getDataTypeIcon(column.dataType)}
+                        {getDataTypeIcon(column.dataType || column.data_type)}
                       </div>
                       
                       {/* Field Name */}
@@ -360,7 +360,7 @@ const TableHeader = ({
                 <div>
                   {filterRules.map((rule, index) => {
                     const column = columns.find(col => col.name === rule.field);
-                    const operatorOptions = getOperatorOptions(column?.dataType || 'text');
+                    const operatorOptions = getOperatorOptions(column?.dataType || column?.data_type || 'text');
                     
                     return (
                       <div key={index} style={{
@@ -406,7 +406,7 @@ const TableHeader = ({
                             {columns.map(col => (
                               <Option key={col._id} value={col.name}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  {getDataTypeIcon(col.dataType)}
+                                  {getDataTypeIcon(col.dataType || col.data_type)}
                                   <span>{String(col.name || '')}</span>
                                 </div>
                               </Option>
@@ -613,7 +613,7 @@ const TableHeader = ({
                           minHeight: '20px',
                           border: '1px solid #d9d9d9'
                         }}>
-                          {getDataTypeIcon(columns.find(col => col.name === rule.field)?.dataType || 'text')}
+                          {getDataTypeIcon(columns.find(col => col.name === rule.field)?.dataType || columns.find(col => col.name === rule.field)?.data_type || 'text')}
                         </div>
                         <span style={{ fontSize: '13px', fontWeight: '500' }}>{rule.field}</span>
                       </div>
@@ -704,7 +704,7 @@ const TableHeader = ({
                                 minHeight: '20px',
                                 border: '1px solid #d9d9d9'
                               }}>
-                                {getDataTypeIcon(column.dataType)}
+                                {getDataTypeIcon(column.dataType || column.data_type)}
                               </div>
                               <span style={{ fontSize: '13px' }}>{column.name}</span>
                             </div>
@@ -773,7 +773,7 @@ const TableHeader = ({
                               minHeight: '20px',
                               border: '1px solid #d9d9d9'
                             }}>
-                              {getDataTypeIcon(column.dataType)}
+                              {getDataTypeIcon(column.dataType || column.data_type)}
                             </div>
                           <span style={{ fontSize: '13px' }}>{column.name}</span>
                         </div>
@@ -874,7 +874,7 @@ const TableHeader = ({
                           minHeight: '20px',
                           border: '1px solid #d9d9d9'
                         }}>
-                          {getDataTypeIcon(columns.find(col => col.name === rule.field)?.dataType || 'text')}
+                          {getDataTypeIcon(columns.find(col => col.name === rule.field)?.dataType || columns.find(col => col.name === rule.field)?.data_type || 'text')}
                         </div>
                         <span style={{ fontSize: '13px', fontWeight: '500' }}>{rule.field}</span>
                       </div>
@@ -975,7 +975,7 @@ const TableHeader = ({
                                 minHeight: '20px',
                                 border: '1px solid #d9d9d9'
                               }}>
-                                {getDataTypeIcon(column.dataType)}
+                                {getDataTypeIcon(column.dataType || column.data_type)}
                               </div>
                               <span style={{ fontSize: '13px' }}>{column.name}</span>
                             </div>
@@ -1044,7 +1044,7 @@ const TableHeader = ({
                               minHeight: '20px',
                               border: '1px solid #d9d9d9'
                             }}>
-                              {getDataTypeIcon(column.dataType)}
+                              {getDataTypeIcon(column.dataType || column.data_type)}
                             </div>
                           <span style={{ fontSize: '13px' }}>{column.name}</span>
                         </div>

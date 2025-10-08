@@ -16,13 +16,13 @@ export const initializeCellEditing = (recordId, columnName, currentValue, column
   
   let cellValue;
   if (column) {
-    if (column.dataType === 'multi_select') {
+    if ((column.dataType || column.data_type) === 'multi_select') {
       // For multi-select, ensure we have an array
       cellValue = Array.isArray(currentValue) ? currentValue : [];
-    } else if (column.dataType === 'single_select') {
+    } else if ((column.dataType || column.data_type) === 'single_select') {
       // For single-select, use string
       cellValue = currentValue || '';
-    } else if (column.dataType === 'percent') {
+    } else if ((column.dataType || column.data_type) === 'percent') {
       // For percent, use the raw value or default value
       if (currentValue !== null && currentValue !== undefined && currentValue !== '') {
         // If currentValue is a formatted string like "12%", extract the number
@@ -245,7 +245,7 @@ export const validateCellValue = (value, column) => {
 export const formatCellValueForDisplay = (value, column) => {
   if (!column) return value;
 
-  const { dataType } = column;
+  const dataType = column.dataType || column.data_type;
 
   switch (dataType) {
     case 'date':
@@ -407,7 +407,7 @@ export const formatCellValueForDisplay = (value, column) => {
 export const formatCellValueForInput = (value, column) => {
   if (!column) return value;
 
-  const { dataType } = column;
+  const dataType = column.dataType || column.data_type;
 
   switch (dataType) {
     case 'date':
@@ -533,7 +533,7 @@ export const isCellEditable = (column) => {
   if (column.isSystem) return false;
   
   // Formula fields are not editable
-  if (column.dataType === 'formula') return false;
+  if ((column.dataType || column.data_type) === 'formula') return false;
   
   return true;
 };
@@ -569,7 +569,7 @@ export const handleCellValueChange = (newValue, column, setCellValue, onSave) =>
   setCellValue(newValue);
   
   // Auto-save for certain data types
-  if (column && ['checkbox', 'single_select'].includes(column.dataType)) {
+  if (column && ['checkbox', 'single_select'].includes(column.dataType || column.data_type)) {
     if (onSave) {
       onSave();
     }
@@ -587,7 +587,7 @@ export const prepareCellDataForSave = (cellValue, column, record) => {
   const updatedData = { ...record.data };
   
   // Handle URL with protocol
-  if (column.dataType === 'url' && cellValue && cellValue !== '') {
+  if ((column.dataType || column.data_type) === 'url' && cellValue && cellValue !== '') {
     let urlToSave = cellValue;
     
     // Auto-add protocol
@@ -605,7 +605,7 @@ export const prepareCellDataForSave = (cellValue, column, record) => {
     }
     
     updatedData[column.name] = urlToSave;
-  } else if (column.dataType === 'year' && cellValue && cellValue !== '') {
+  } else if ((column.dataType || column.data_type) === 'year' && cellValue && cellValue !== '') {
     // Convert year to number
     const yearValue = Number(cellValue);
     updatedData[column.name] = isNaN(yearValue) ? cellValue : yearValue;
@@ -636,7 +636,7 @@ export const shouldAutoSave = (column) => {
   if (!column) return false;
   
   const autoSaveTypes = ['checkbox', 'single_select'];
-  return autoSaveTypes.includes(column.dataType);
+  return autoSaveTypes.includes(column.dataType || column.data_type);
 };
 
 /**

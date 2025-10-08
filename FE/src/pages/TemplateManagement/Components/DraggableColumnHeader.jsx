@@ -198,11 +198,11 @@ const DraggableColumnHeader = ({
       }}>
         {isColumnCompact(columnWidths, column.id || column._id) ? (
           <div style={compactStyle}>
-            {getDataTypeIcon(column.dataType)}
+            {getDataTypeIcon(column.dataType || column.data_type)}
           </div>
         ) : (
           <>
-            {getDataTypeIcon(column.dataType)}
+            {getDataTypeIcon(column.dataType || column.data_type)}
             <span style={{
               ...normalStyle,
               overflow: 'hidden',

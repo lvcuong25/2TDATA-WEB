@@ -351,26 +351,34 @@ const TableBody = ({
     
     let updatedColumnData;
     
-    if (column.dataType === 'single_select') {
+    if ((column.dataType || column.data_type) === 'single_select') {
       const currentOptions = column.singleSelectConfig?.options || [];
       const updatedOptions = [...currentOptions, newOption.trim()];
       
       updatedColumnData = {
-        ...column,
-        singleSelectConfig: {
-          ...column.singleSelectConfig,
-          options: updatedOptions
+        name: column.name,
+        key: column.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
+        data_type: column.dataType || column.data_type,
+        config: {
+          singleSelectConfig: {
+            ...column.singleSelectConfig,
+            options: updatedOptions
+          }
         }
       };
-    } else if (column.dataType === 'multi_select') {
+    } else if ((column.dataType || column.data_type) === 'multi_select') {
       const currentOptions = column.multiSelectConfig?.options || [];
       const updatedOptions = [...currentOptions, newOption.trim()];
       
       updatedColumnData = {
-        ...column,
-        multiSelectConfig: {
-          ...column.multiSelectConfig,
-          options: updatedOptions
+        name: column.name,
+        key: column.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
+        data_type: column.dataType || column.data_type,
+        config: {
+          multiSelectConfig: {
+            ...column.multiSelectConfig,
+            options: updatedOptions
+          }
         }
       };
     } else {
@@ -378,7 +386,7 @@ const TableBody = ({
     }
     
     updateColumnMutation.mutate({
-      columnId: column._id,
+      columnId: column.id || column._id,
       columnData: updatedColumnData
     });
   };
@@ -679,12 +687,12 @@ const TableBody = ({
                         }
                       } else {
                         // For percent columns, use default value if no value provided
-                        if (column.dataType === 'percent') {
+                        if ((column.dataType || column.data_type) === 'percent') {
                           const cellValue = record.data?.[column.name];
                           value = (cellValue !== null && cellValue !== undefined && cellValue !== '') 
                             ? cellValue 
                             : (column.percentConfig?.defaultValue || 0);
-                        } else if (column.dataType === 'single_select') {
+                        } else if ((column.dataType || column.data_type) === 'single_select') {
                           // For single select columns, use default value if cell is null/undefined (new records)
                           // But if cell is empty string (cleared by user), show empty
                           const cellValue = record.data?.[column.name];
@@ -695,7 +703,7 @@ const TableBody = ({
                             // Existing record - use actual value (including empty string if cleared)
                             value = cellValue;
                           }
-                        } else if (column.dataType === 'multi_select') {
+                        } else if ((column.dataType || column.data_type) === 'multi_select') {
                           // For multi select columns, use default value if cell is null/undefined (new records)
                           // But if cell is empty array (cleared by user), show empty
                           const cellValue = record.data?.[column.name];
@@ -729,7 +737,7 @@ const TableBody = ({
                         }}>
                           {isEditing ? (
                             (() => {
-                              const dataType = column.dataType;
+                              const dataType = column.dataType || column.data_type;
 
                               if (dataType === 'date') {
                                 return (
@@ -1295,7 +1303,7 @@ const TableBody = ({
                           ) : (
                             <div
                               style={{
-                                cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? 'default' : 'pointer',
+                                cursor: column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' ? 'default' : 'pointer',
                                 ...cellContentStyle,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -1305,10 +1313,10 @@ const TableBody = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 boxSizing: 'border-box',
-                                backgroundColor: column.isSystem ? '#fafafa' : (!isCellEditableByPermission(record._id, column._id) ? '#f5f5f5' : 'transparent'),
-                                color: column.isSystem ? '#666' : (!isCellEditableByPermission(record._id, column._id) ? '#999' : '#333'),
+                                backgroundColor: column.isSystem ? '#fafafa' : (!isCellEditableByPermission(record._id, column.id || column._id) ? '#f5f5f5' : 'transparent'),
+                                color: column.isSystem ? '#666' : (!isCellEditableByPermission(record._id, column.id || column._id) ? '#999' : '#333'),
                                 fontStyle: column.isSystem ? 'italic' : 'normal',
-                                cursor: !isCellEditableByPermission(record._id, column._id) ? 'not-allowed' : 'pointer'
+                                cursor: !isCellEditableByPermission(record._id, column.id || column._id) ? 'not-allowed' : 'pointer'
                               }}
                               onContextMenu={(e) => {
                                 e.preventDefault();
@@ -1353,7 +1361,7 @@ const TableBody = ({
                                     menuItem.style.backgroundColor = 'transparent';
                                   });
                                   menuItem.addEventListener('click', () => {
-                                    handleCellPermission(record._id, column._id, column.name);
+                                    handleCellPermission(record._id, column.id || column._id, column.name);
                                     document.body.removeChild(contextMenu);
                                   });
                                   
@@ -1376,11 +1384,11 @@ const TableBody = ({
                                   columnName: column.name,
                                   value,
                                   isSystem: column.isSystem,
-                                  dataType: column.dataType,
-                                  isEditable: isCellEditableByPermission(record._id, column._id)
+                                  dataType: column.dataType || column.data_type,
+                                  isEditable: isCellEditableByPermission(record._id, column.id || column._id)
                                 });
                                 
-                                if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || column.dataType === 'json' || !isCellEditableByPermission(record._id, column._id)) {
+                                if (column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' || (column.dataType || column.data_type) === 'linked_table' || (column.dataType || column.data_type) === 'lookup' || (column.dataType || column.data_type) === 'json' || !isCellEditableByPermission(record._id, column.id || column._id)) {
                                   console.log('🔍 Cell click blocked by conditions');
                                   return;
                                 }
@@ -1388,12 +1396,12 @@ const TableBody = ({
                                 console.log('🔍 Calling handleCellClick...');
                                 handleCellClick(record._id, column.name, value);
                               }}
-                              onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                              onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                              onMouseEnter={column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                              onMouseLeave={column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                             >
-                              {column.dataType === 'datetime' && value ? 
+                              {(column.dataType || column.data_type) === 'datetime' && value ? 
                                 value // Already formatted by formatDateTime
-                                : column.dataType === 'date' && value ? 
+                                : (column.dataType || column.data_type) === 'date' && value ? 
                                 (() => {
                                   try {
                                     const date = new Date(value);
@@ -1402,9 +1410,9 @@ const TableBody = ({
                                     return value;
                                   }
                                 })() 
-                                : column.dataType === "year" ? 
+                                : (column.dataType || column.data_type) === "year" ? 
                                 (value || <span style={{color: "#bfbfbf", fontStyle: "italic"}}>Select year</span>)
-                                : column.dataType === 'checkbox' ?
+                                : (column.dataType || column.data_type) === 'checkbox' ?
                                     (() => {
                                       const isChecked = value === 'true' || value === true;
                                       const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
@@ -1448,7 +1456,7 @@ const TableBody = ({
                                         </div>
                                       );
                                     })()
-                                    : column.dataType === 'single_select' ?
+                                    : (column.dataType || column.data_type) === 'single_select' ?
                                       (() => {
                                         const options = column.singleSelectConfig?.options || [];
                                         const selectedValue = value;
@@ -1471,7 +1479,7 @@ const TableBody = ({
                                           />
                                         );
                                       })()
-                                    : column.dataType === 'multi_select' ?
+                                    : (column.dataType || column.data_type) === 'multi_select' ?
                                       (() => {
                                         const options = column.multiSelectConfig?.options || [];
                                         const selectedValues = Array.isArray(value) ? value : [];
@@ -1555,7 +1563,7 @@ const TableBody = ({
                                           </Select>
                                         );
                                       })()
-                                    : column.dataType === 'currency' && value !== null && value !== undefined ?
+                                    : (column.dataType || column.data_type) === 'currency' && value !== null && value !== undefined ?
                                       (() => {
                                         const config = column.currencyConfig || {
                                           position: 'before',
@@ -1574,14 +1582,14 @@ const TableBody = ({
 
                                         return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
                                       })()
-                                      : column.dataType === 'percent' && column.percentConfig?.displayAsProgress ? (
+                                      : (column.dataType || column.data_type) === 'percent' && column.percentConfig?.displayAsProgress ? (
                                         <ProgressBar 
                                           value={Number(String(value)) || 0} 
                                           max={100}
                                           color="#1890ff"
                                           height="6px"
                                         />
-                                      ) : column.dataType === 'percent' ? (
+                                      ) : (column.dataType || column.data_type) === 'percent' ? (
                                         (() => {
                                           const numValue = Number(String(value)) || 0;
                                           const displayFormat = column.percentConfig?.displayFormat || 'percentage';
@@ -1594,7 +1602,7 @@ const TableBody = ({
                                             return `${numValue}%`;
                                           }
                                         })()
-                                      ) : column.dataType === 'json' ? (
+                                      ) : (column.dataType || column.data_type) === 'json' ? (
                                         (() => {
                                           try {
                                             if (!value || value === '') {
@@ -1633,7 +1641,7 @@ const TableBody = ({
                                             );
                                           }
                                         })()
-                                      ) : column.dataType === 'linked_table' ?
+                                      ) : (column.dataType || column.data_type) === 'linked_table' ?
                                         (() => {
                                           const linkedValue = value;
                                           const isMultiple = column.linkedTableConfig?.allowMultiple;
@@ -1704,7 +1712,7 @@ const TableBody = ({
                                             );
                                           }
                                         })()
-                                      : column.dataType === 'lookup' ? 
+                                      : (column.dataType || column.data_type) === 'lookup' ? 
                                         (() => {
                                           if (isEditing && editingCell.columnName === column.name) {
                                             return (
@@ -1727,7 +1735,7 @@ const TableBody = ({
                                                 fontStyle: 'italic',
                                                 cursor: 'pointer'
                                               }}
-                                              onClick={!isCellEditableByPermission(record._id, column._id) ? undefined : () => handleCellClick(record._id, column.name, value)}
+                                              onClick={!isCellEditableByPermission(record._id, column.id || column._id) ? undefined : () => handleCellClick(record._id, column.name, value)}
                                               >
                                                 Select value...
                                               </div>
@@ -1748,7 +1756,7 @@ const TableBody = ({
                                             const canView = canViewCell(
                                               cellPermissions, 
                                               record._id, 
-                                              column._id, 
+                                              column.id || column._id, 
                                               currentUser, 
                                               userRole
                                             );
@@ -1972,12 +1980,12 @@ const TableBody = ({
                   }
                 } else {
                   // For percent columns, use default value if no value provided
-                  if (column.dataType === 'percent') {
+                  if ((column.dataType || column.data_type) === 'percent') {
                     const cellValue = record.data?.[column.name];
                     value = (cellValue !== null && cellValue !== undefined && cellValue !== '') 
                       ? cellValue 
                       : (column.percentConfig?.defaultValue || 0);
-                  } else if (column.dataType === 'single_select') {
+                  } else if ((column.dataType || column.data_type) === 'single_select') {
                     // For single select columns, use default value if cell is null/undefined (new records)
                     // But if cell is empty string (cleared by user), show empty
                     const cellValue = record.data?.[column.name];
@@ -1988,7 +1996,7 @@ const TableBody = ({
                       // Existing record - use actual value (including empty string if cleared)
                       value = cellValue;
                     }
-                  } else if (column.dataType === 'multi_select') {
+                  } else if ((column.dataType || column.data_type) === 'multi_select') {
                     // For multi select columns, use default value if cell is null/undefined (new records)
                     // But if cell is empty array (cleared by user), show empty
                     const cellValue = record.data?.[column.name];
@@ -2023,7 +2031,7 @@ const TableBody = ({
                   }}>
                     {isEditing ? (
                       (() => {
-                        const dataType = column.dataType;
+                        const dataType = column.dataType || column.data_type;
 
                         if (dataType === 'date') {
                           return (
@@ -2426,7 +2434,7 @@ const TableBody = ({
                     ) : (
                       <div
                         style={{
-                          cursor: column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? 'default' : 'pointer',
+                          cursor: column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' ? 'default' : 'pointer',
                           ...cellContentStyle,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -2436,10 +2444,10 @@ const TableBody = ({
                           display: 'flex',
                           alignItems: 'center',
                           boxSizing: 'border-box',
-                          backgroundColor: column.isSystem ? '#fafafa' : (!isCellEditableByPermission(record._id, column._id) ? '#f5f5f5' : 'transparent'),
-                          color: column.isSystem ? '#666' : (!isCellEditableByPermission(record._id, column._id) ? '#999' : '#333'),
+                          backgroundColor: column.isSystem ? '#fafafa' : (!isCellEditableByPermission(record._id, column.id || column._id) ? '#f5f5f5' : 'transparent'),
+                          color: column.isSystem ? '#666' : (!isCellEditableByPermission(record._id, column.id || column._id) ? '#999' : '#333'),
                           fontStyle: column.isSystem ? 'italic' : 'normal',
-                          cursor: !isCellEditableByPermission(record._id, column._id) ? 'not-allowed' : 'pointer'
+                          cursor: !isCellEditableByPermission(record._id, column.id || column._id) ? 'not-allowed' : 'pointer'
                         }}
                         onContextMenu={(e) => {
                           e.preventDefault();
@@ -2484,7 +2492,7 @@ const TableBody = ({
                               menuItem.style.backgroundColor = 'transparent';
                             });
                             menuItem.addEventListener('click', () => {
-                              handleCellPermission(record._id, column._id, column.name);
+                              handleCellPermission(record._id, column.id || column._id, column.name);
                               document.body.removeChild(contextMenu);
                             });
                             
@@ -2507,11 +2515,11 @@ const TableBody = ({
                             columnName: column.name,
                             value,
                             isSystem: column.isSystem,
-                            dataType: column.dataType,
-                            isEditable: isCellEditableByPermission(record._id, column._id)
+                            dataType: column.dataType || column.data_type,
+                            isEditable: isCellEditableByPermission(record._id, column.id || column._id)
                           });
                           
-                          if (column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' || column.dataType === 'linked_table' || column.dataType === 'lookup' || column.dataType === 'json' || !isCellEditableByPermission(record._id, column._id)) {
+                          if (column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' || (column.dataType || column.data_type) === 'linked_table' || (column.dataType || column.data_type) === 'lookup' || (column.dataType || column.data_type) === 'json' || !isCellEditableByPermission(record._id, column.id || column._id)) {
                             console.log('🔍 Cell click blocked by conditions (grouped)');
                             return;
                           }
@@ -2519,12 +2527,12 @@ const TableBody = ({
                           console.log('🔍 Calling handleCellClick (grouped)...');
                           handleCellClick(record._id, column.name, value);
                         }}
-                        onMouseEnter={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
-                        onMouseLeave={column.isSystem || column.dataType === 'checkbox' || column.dataType === 'single_select' || column.dataType === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
+                        onMouseEnter={column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
+                        onMouseLeave={column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = 'transparent'}
                       >
-                        {column.dataType === 'datetime' && value ? 
+                        {(column.dataType || column.data_type) === 'datetime' && value ? 
                           value // Already formatted by formatDateTime
-                          : column.dataType === 'date' && value ? 
+                          : (column.dataType || column.data_type) === 'date' && value ? 
                           (() => {
                             try {
                               const date = new Date(value);
@@ -2533,9 +2541,9 @@ const TableBody = ({
                               return value;
                             }
                           })() 
-                          : column.dataType === "year" ? 
+                          : (column.dataType || column.data_type) === "year" ? 
                           (value || <span style={{color: "#bfbfbf", fontStyle: "italic"}}>Select year</span>)
-                          : column.dataType === 'url' && value ?
+                          : (column.dataType || column.data_type) === 'url' && value ?
                               (() => {
                                 let displayUrl = value;
 
@@ -2569,7 +2577,7 @@ const TableBody = ({
 
                                 return displayUrl;
                               })()
-                              : column.dataType === 'email' && value ?
+                              : (column.dataType || column.data_type) === 'email' && value ?
                                 <a 
                                   href={`mailto:${value}`} 
                                   style={{ 
@@ -2584,11 +2592,11 @@ const TableBody = ({
                                   <MailOutlined style={{ fontSize: '12px' }} />
                                   {value}
                                 </a>
-                                : column.dataType === 'phone' && value ?
+                                : (column.dataType || column.data_type) === 'phone' && value ?
                                   value
-                                  : column.dataType === 'time' && value ?
+                                  : (column.dataType || column.data_type) === 'time' && value ?
                                     value
-                                    : column.dataType === 'rating' ?
+                                    : (column.dataType || column.data_type) === 'rating' ?
                                       (() => {
                                         const ratingValue = value !== undefined && value !== null && value !== '' ? Number(value) : 0;
                                         const maxStars = column.ratingConfig?.maxStars || 5;
@@ -2669,7 +2677,7 @@ const TableBody = ({
                                           </div>
                                         );
                                       })()
-                                    : column.dataType === 'checkbox' ?
+                                    : (column.dataType || column.data_type) === 'checkbox' ?
                                   (() => {
                                     const isChecked = value === 'true' || value === true;
                                     const config = column.checkboxConfig || { icon: 'check-circle', color: '#52c41a', defaultValue: false };
@@ -2713,7 +2721,7 @@ const TableBody = ({
                                       </div>
                                     );
                                   })()
-                                  : column.dataType === 'single_select' ?
+                                  : (column.dataType || column.data_type) === 'single_select' ?
                                     (() => {
                                       const options = column.singleSelectConfig?.options || [];
                                       const selectedValue = value;
@@ -2736,7 +2744,7 @@ const TableBody = ({
                                         />
                                       );
                                     })()
-                                  : column.dataType === 'multi_select' ?
+                                  : (column.dataType || column.data_type) === 'multi_select' ?
                                     (() => {
                                       const options = column.multiSelectConfig?.options || [];
                                       const selectedValues = Array.isArray(value) ? value : [];
@@ -2820,7 +2828,7 @@ const TableBody = ({
                                         </Select>
                                       );
                                     })()
-                                  : column.dataType === 'currency' && value !== null && value !== undefined ?
+                                  : (column.dataType || column.data_type) === 'currency' && value !== null && value !== undefined ?
                                     (() => {
                                       const config = column.currencyConfig || {
                                           
@@ -2844,14 +2852,14 @@ const TableBody = ({
 
                                       return config.position === 'before' ? `${config.symbol}${formatted}` : `${formatted}${config.symbol}`;
                                     })()
-                                    : column.dataType === 'percent' && column.percentConfig?.displayAsProgress ? (
+                                    : (column.dataType || column.data_type) === 'percent' && column.percentConfig?.displayAsProgress ? (
                                       <ProgressBar 
                                         value={Number(String(value)) || 0} 
                                         max={100}
                                         color="#1890ff"
                                         height="6px"
                                       />
-                                    ) : column.dataType === 'percent' ? (
+                                    ) : (column.dataType || column.data_type) === 'percent' ? (
                                       (() => {
                                         const numValue = Number(String(value)) || 0;
                                         const displayFormat = column.percentConfig?.displayFormat || 'percentage';
@@ -2864,7 +2872,7 @@ const TableBody = ({
                                           return `${numValue}%`;
                                         }
                                       })()
-                                    ) : column.dataType === 'json' ? (
+                                    ) : (column.dataType || column.data_type) === 'json' ? (
                                       (() => {
                                         try {
                                           if (!value || value === '') {
@@ -2903,7 +2911,7 @@ const TableBody = ({
                                           );
                                         }
                                       })()
-                                    ) : column.dataType === 'linked_table' ?
+                                    ) : (column.dataType || column.data_type) === 'linked_table' ?
                                       (() => {
                                         const linkedValue = value;
                                         const isMultiple = column.linkedTableConfig?.allowMultiple;
@@ -3018,7 +3026,7 @@ const TableBody = ({
                                           const canView = canViewCell(
                                             cellPermissions, 
                                             record._id, 
-                                            column._id, 
+                                            column.id || column._id, 
                                             currentUser, 
                                             userRole
                                           );

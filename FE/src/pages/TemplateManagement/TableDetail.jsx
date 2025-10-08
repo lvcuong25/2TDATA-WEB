@@ -720,18 +720,51 @@ const TableDetail = () => {
 
   const tableStructure = tableStructureResponse?.data;
   const table = tableStructure?.table;
-  const columns = tableStructure?.columns || [];
+  const rawColumns = tableStructure?.columns || [];
+  
+  // Transform columns data from API format to frontend format
+  const columns = rawColumns.map(column => {
+    const transformedColumn = { ...column };
+    
+    // Transform config data to match frontend expectations
+    if (column.config) {
+      if (column.config.singleSelectConfig) {
+        transformedColumn.singleSelectConfig = column.config.singleSelectConfig;
+      }
+      if (column.config.multiSelectConfig) {
+        transformedColumn.multiSelectConfig = column.config.multiSelectConfig;
+      }
+      if (column.config.checkboxConfig) {
+        transformedColumn.checkboxConfig = column.config.checkboxConfig;
+      }
+      if (column.config.currencyConfig) {
+        transformedColumn.currencyConfig = column.config.currencyConfig;
+      }
+      if (column.config.percentConfig) {
+        transformedColumn.percentConfig = column.config.percentConfig;
+      }
+      if (column.config.dateConfig) {
+        transformedColumn.dateConfig = column.config.dateConfig;
+      }
+      if (column.config.ratingConfig) {
+        transformedColumn.ratingConfig = column.config.ratingConfig;
+      }
+      if (column.config.linkedTableConfig) {
+        transformedColumn.linkedTableConfig = column.config.linkedTableConfig;
+      }
+      if (column.config.lookupConfig) {
+        transformedColumn.lookupConfig = column.config.lookupConfig;
+      }
+    }
+    
+    return transformedColumn;
+  });
+  
   const allRecords = recordsResponse?.data || [];
 
   // Debug log to check columns data
-  console.log('🔍 TableDetail columns loaded:', columns);
   columns.forEach((column, index) => {
-    console.log(`🔍 Column ${index + 1}:`, {
-      name: column.name,
-      dataType: column.dataType,
-      lookupConfig: column.lookupConfig,
-      lookup_config: column.lookup_config
-    });
+    // Column data loaded
   });
 
   // Ensure all columns have width when columns change
@@ -764,7 +797,7 @@ const TableDetail = () => {
     const handleClickOutside = (event) => {
       if (editingCell) {
         const column = columns.find(col => col.name === editingCell.columnName);
-        if (column && column.dataType === 'multi_select') {
+        if (column && (column.dataType || column.data_type) === 'multi_select') {
           // Check if click is inside multi-select dropdown
           const multiSelectDropdown = event.target.closest('[data-multiselect-dropdown]');
           const multiSelectContainer = event.target.closest('[data-multiselect-container]');
@@ -811,7 +844,7 @@ const TableDetail = () => {
     // Auto-generate name if empty
     let finalName = newColumn.name.trim();
     if (!finalName) {
-      switch (newColumn.dataType) {
+      switch (newColumn.dataType || newColumn.data_type) {
         case 'text':
           finalName = 'Text';
           break;
@@ -890,32 +923,32 @@ const TableDetail = () => {
     };
     
     // Add checkbox configuration if data type is checkbox
-    if (newColumn.dataType === 'checkbox') {
+    if ((newColumn.dataType || newColumn.data_type) === 'checkbox') {
       columnData.config = { ...columnData.config, checkboxConfig: newColumn.checkboxConfig };
     }
     
     // Add single select configuration if data type is single_select
-    if (newColumn.dataType === 'single_select') {
-      columnData.singleSelectConfig = newColumn.singleSelectConfig;
+    if ((newColumn.dataType || newColumn.data_type) === 'single_select') {
+      columnData.config = { ...columnData.config, singleSelectConfig: newColumn.singleSelectConfig };
     }
     
     // Add multi select configuration if data type is multi_select
-    if (newColumn.dataType === 'multi_select') {
-      columnData.multiSelectConfig = newColumn.multiSelectConfig;
+    if ((newColumn.dataType || newColumn.data_type) === 'multi_select') {
+      columnData.config = { ...columnData.config, multiSelectConfig: newColumn.multiSelectConfig };
     }
     
     // Add date configuration if data type is date
-    if (newColumn.dataType === 'date') {
+    if ((newColumn.dataType || newColumn.data_type) === 'date') {
       columnData.dateConfig = newColumn.dateConfig;
     }
 
     // Add formula configuration if data type is formula
-    if (newColumn.dataType === 'formula') {
+    if ((newColumn.dataType || newColumn.data_type) === 'formula') {
       columnData.formulaConfig = newColumn.formulaConfig;
     }
     
     // Add currency configuration if data type is currency
-    if (newColumn.dataType === 'currency') {
+    if ((newColumn.dataType || newColumn.data_type) === 'currency') {
       columnData.currencyConfig = newColumn.currencyConfig;
       // Add default value for currency
       columnData.defaultValue = newColumn.defaultValue !== null && newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0;
@@ -1331,17 +1364,10 @@ const TableDetail = () => {
     // Add lookup configuration if data type is lookup
     if (editingColumn.dataType === 'lookup') {
       columnData.lookupConfig = editingColumn.lookupConfig;
-      console.log('🔍 Frontend: Editing lookup column:', {
-        editingColumn: editingColumn,
-        columnData: columnData,
-        lookupConfig: editingColumn.lookupConfig
-      });
     }
     
-    console.log('🔍 Final columnData being sent to API:', columnData);
-    
     updateColumnMutation.mutate({
-      columnId: editingColumn._id,
+      columnId: editingColumn.id || editingColumn._id,
       columnData
     });
   };
@@ -1398,13 +1424,13 @@ const TableDetail = () => {
     const cellPermissions = cellPermissionsResponse?.data || [];
     
     // Use canEditCell function (imported at top of file)
-    const canEdit = canEditCell(cellPermissions, recordId, column._id, currentUser, userRole);
+    const canEdit = canEditCell(cellPermissions, recordId, column.id || column._id, currentUser, userRole);
     
     
     // console.log('🔍 Permission check result:', {
     //   canEdit,
     //   cellPermissions: cellPermissions?.filter(p => 
-    //     p.recordId === recordId && p.columnId === column._id
+    //     p.recordId === recordId && p.columnId === (column.id || column._id)
     //   ),
     //   userRole,
     //   currentUser: currentUser?._id
@@ -1420,7 +1446,7 @@ const TableDetail = () => {
       console.log('🔍 Cell editing blocked:', {
         canEdit,
         isSystem: column.isSystem,
-        dataType: column.dataType,
+        dataType: column.dataType || column.data_type,
         reason: !canEdit ? 'No permission' : column.isSystem ? 'System field' : 'Checkbox field'
       });
     }
