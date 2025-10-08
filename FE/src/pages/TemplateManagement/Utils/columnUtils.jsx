@@ -131,10 +131,10 @@ export const getColumnDataStyle = (columnWidths, columnId) => {
 export const getResizeHandleStyle = (isResizing, resizingColumn, columnId) => {
   return {
     position: 'absolute',
-    right: '-3px',
+    right: '-2px',
     top: 0,
     bottom: 0,
-    width: '6px',
+    width: '4px',
     cursor: 'col-resize',
     backgroundColor: (isResizing && resizingColumn === columnId) ? '#d9d9d9' : 'transparent',
     zIndex: 10
@@ -165,10 +165,10 @@ export const getNormalHeaderStyle = (column, fieldVisibility) => {
   return {
     fontSize: '13px',
     flex: 1,
-    fontWeight: fieldVisibility[column.id || column._id] === false ? '400' : (column.isSystem ? '400' : '500'),
-    color: fieldVisibility[column.id || column._id] === false ? '#999' : (column.isSystem ? '#52c41a' : '#333'),
+    fontWeight: fieldVisibility[column._id] === false ? '400' : (column.isSystem ? '400' : '500'),
+    color: fieldVisibility[column._id] === false ? '#999' : (column.isSystem ? '#52c41a' : '#333'),
     fontStyle: column.isSystem ? 'italic' : 'normal',
-    textDecoration: fieldVisibility[column.id || column._id] === false ? 'line-through' : 'none'
+    textDecoration: fieldVisibility[column._id] === false ? 'line-through' : 'none'
   };
 };
 
@@ -190,7 +190,7 @@ export const initializeColumnWidths = (tableId) => {
 export const resetColumnWidths = (columns, defaultWidth = 150) => {
   const defaultWidths = {};
   columns.forEach(column => {
-    defaultWidths[column.id || column._id] = defaultWidth;
+    defaultWidths[column._id] = defaultWidth;
   });
   return defaultWidths;
 };
@@ -228,7 +228,7 @@ export const shouldShowCompactContent = (columnWidths, columnId, threshold = 80)
  * @returns {Array} Reordered columns array
  */
 export const reorderColumns = (columns, dragIndex, hoverIndex) => {
-  const result = Array.from(columns).filter(column => column && (column._id || column.id));
+  const result = Array.from(columns).filter(column => column && (column.id || column._id));
   
   // Only swap if indices are different and within bounds
   if (dragIndex !== hoverIndex && 
@@ -248,7 +248,7 @@ export const reorderColumns = (columns, dragIndex, hoverIndex) => {
  */
 export const generateColumnOrders = (columns) => {
   return columns
-    .filter(column => column && (column._id || column.id)) // Filter out undefined/null columns
+    .filter(column => column && (column.id || column._id)) // Filter out undefined/null columns
     .map((column, index) => ({
       columnId: column.id || column._id,
       order: index
@@ -288,8 +288,8 @@ export const applyColumnOrder = (columns, columnOrders) => {
   const orderMap = new Map(columnOrders.map(order => [order.columnId, order.order]));
   
   return columns.sort((a, b) => {
-    const orderA = orderMap.get(a._id) ?? a.order ?? 0;
-    const orderB = orderMap.get(b._id) ?? b.order ?? 0;
+    const orderA = orderMap.get(a.id || a._id) ?? a.order ?? 0;
+    const orderB = orderMap.get(b.id || b._id) ?? b.order ?? 0;
     return orderA - orderB;
   });
 };

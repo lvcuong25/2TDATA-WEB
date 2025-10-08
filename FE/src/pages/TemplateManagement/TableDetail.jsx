@@ -461,6 +461,7 @@ const TableDetail = () => {
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
 
+
   // Column reordering state
   const [columnOrder, setColumnOrder] = useState(() => {
     return loadColumnOrder(tableId);
@@ -732,6 +733,31 @@ const TableDetail = () => {
       lookup_config: column.lookup_config
     });
   });
+
+  // Ensure all columns have width when columns change
+  useEffect(() => {
+    if (columns && Array.isArray(columns) && columns.length > 0) {
+      setColumnWidths(prevWidths => {
+        const currentWidths = { ...prevWidths };
+        let hasNewColumns = false;
+        
+        columns.forEach(column => {
+          const columnId = column.id || column._id;
+          if (columnId && !currentWidths[columnId]) {
+            currentWidths[columnId] = 150; // Default width
+            hasNewColumns = true;
+          }
+        });
+        
+        if (hasNewColumns) {
+          saveColumnWidths(tableId, currentWidths);
+          return currentWidths;
+        }
+        
+        return prevWidths;
+      });
+    }
+  }, [columns, tableId]);
 
   // Handle clicking outside multi-select dropdown and cell selection
   React.useEffect(() => {

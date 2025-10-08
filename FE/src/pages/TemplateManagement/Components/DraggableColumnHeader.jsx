@@ -125,8 +125,8 @@ const DraggableColumnHeader = ({
     }
   ];
 
-  const headerStyle = getColumnHeaderStyle(columnWidths, column._id, column, sortRules, groupRules);
-  const resizeHandleStyle = getResizeHandleStyle(isResizing, resizingColumn, column._id);
+  const headerStyle = getColumnHeaderStyle(columnWidths, column.id || column._id, column, sortRules, groupRules);
+  const resizeHandleStyle = getResizeHandleStyle(isResizing, resizingColumn, column.id || column._id);
   const compactStyle = getCompactHeaderStyle(column);
   const normalStyle = getNormalHeaderStyle(column, fieldVisibility);
 
@@ -142,14 +142,18 @@ const DraggableColumnHeader = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
-        width: getColumnWidthString(columnWidths, column._id),
+        width: getColumnWidthString(columnWidths, column.id || column._id),
         minWidth: '50px',
-        padding: isColumnCompact(columnWidths, column._id) ? '4px' : '8px',
+        maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
+        flexShrink: 0,
+        flexGrow: 0,
+        flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
+        padding: isColumnCompact(columnWidths, column.id || column._id) ? '4px' : '8px',
         borderLeft: isDragOver ? '2px dashed #1890ff' : 'none',
         borderRight: isDragOver ? '2px dashed #1890ff' : '1px solid #d9d9d9',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: isColumnCompact(columnWidths, column._id) ? 'center' : 'space-between',
+        justifyContent: isColumnCompact(columnWidths, column.id || column._id) ? 'center' : 'space-between',
         backgroundColor: isDragOver ? '#e6f7ff' : (column.isSystem ? '#f6ffed' : '#f5f5f5'),
         position: 'relative',
         borderTop: isDragOver ? '2px dashed #1890ff' : (column.isSystem ? '2px solid #52c41a' : 'none'),
@@ -170,7 +174,13 @@ const DraggableColumnHeader = ({
           color: isHovered ? '#1890ff' : '#d9d9d9',
           fontSize: '12px',
           cursor: 'grab',
-          zIndex: 1
+          zIndex: 15,
+          padding: '4px',
+          width: '20px',
+          height: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
         <DragOutlined />
@@ -186,7 +196,7 @@ const DraggableColumnHeader = ({
         maxWidth: 'calc(100% - 40px)', // Account for drag handle and dropdown
         marginLeft: '20px' // Space for drag handle
       }}>
-        {isColumnCompact(columnWidths, column._id) ? (
+        {isColumnCompact(columnWidths, column.id || column._id) ? (
           <div style={compactStyle}>
             {getDataTypeIcon(column.dataType)}
           </div>
@@ -217,7 +227,7 @@ const DraggableColumnHeader = ({
       </div>
 
       {/* Column Actions */}
-      {!isColumnCompact(columnWidths, column._id) && (
+      {!isColumnCompact(columnWidths, column.id || column._id) && (
         <Dropdown
           menu={{ items: columnMenuItems }}
           trigger={['click']}
@@ -241,7 +251,7 @@ const DraggableColumnHeader = ({
       <div
         className="column-resize-handle"
         style={resizeHandleStyle}
-        onMouseDown={(e) => onResizeStart(e, column._id)}
+        onMouseDown={(e) => onResizeStart(e, column.id || column._id)}
       />
     </div>
   );

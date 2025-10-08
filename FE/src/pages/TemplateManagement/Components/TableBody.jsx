@@ -714,9 +714,13 @@ const TableBody = ({
                       const isSelected = isCellSelected(record._id, column.name);
 
                       return (
-                        <div key={column._id} style={{
-                          width: getColumnWidthString(columnWidths, column._id),
+                        <div key={column.id || column._id} style={{
+                          width: getColumnWidthString(columnWidths, column.id || column._id),
                           minWidth: '50px',
+                          maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
+                          flexShrink: 0,
+                          flexGrow: 0,
+                          flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
                           padding: '0',
                           borderRight: '1px solid #d9d9d9',
                           position: 'relative',
@@ -1842,9 +1846,13 @@ const TableBody = ({
                     {visibleColumns.map((column, index) => {
                       const isLastColumn = index === visibleColumns.length - 1;
                       return (
-                      <div key={column._id} style={{
-                        width: getColumnWidthString(columnWidths, column._id),
+                      <div key={column.id || column._id} style={{
+                        width: getColumnWidthString(columnWidths, column.id || column._id),
                         minWidth: '50px',
+                        maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
+                        flexShrink: 0,
+                        flexGrow: 0,
+                        flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
                         padding: '8px',
                       
                       }} />
@@ -2000,9 +2008,13 @@ const TableBody = ({
 
                 const isLastColumn = index === visibleColumns.length - 1;
                 return (
-                  <div key={column._id} style={{
-                    width: getColumnWidthString(columnWidths, column._id),
+                  <div key={column.id || column._id} style={{
+                    width: getColumnWidthString(columnWidths, column.id || column._id),
                     minWidth: '50px',
+                    maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
+                    flexShrink: 0,
+                    flexGrow: 0,
+                    flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
                     padding: '0',
                     borderRight: '1px solid #d9d9d9',
                     position: 'relative',
@@ -3103,9 +3115,13 @@ const TableBody = ({
             {visibleColumns.map((column, index) => {
               const isLastColumn = index === visibleColumns.length - 1;
               return (
-              <div key={column._id} style={{
-                width: getColumnWidthString(columnWidths, column._id),
+              <div key={column.id || column._id} style={{
+                width: getColumnWidthString(columnWidths, column.id || column._id),
                 minWidth: '50px',
+                maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
+                flexShrink: 0,
+                flexGrow: 0,
+                flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
                 padding: '8px',
            
               }} />
