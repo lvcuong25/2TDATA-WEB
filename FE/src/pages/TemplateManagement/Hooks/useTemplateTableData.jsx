@@ -165,7 +165,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       return response.data;
     },
     onSuccess: () => {
-      toast.success('Sample record added successfully');
       queryClient.invalidateQueries(['templateTable', templateId, tableIndex]);
       queryClient.invalidateQueries(['templateRecords', templateId, tableIndex]);
     },
