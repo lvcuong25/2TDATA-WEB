@@ -13,8 +13,6 @@ const TemplateList = () => {
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTemplate, setNewTemplate] = useState({ name: '', description: '' });
-  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: '', description: '', color: '#1890ff' });
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState({ _id: '', name: '', description: '' });
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -23,15 +21,13 @@ const TemplateList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name'); // 'name', 'createdAt', 'usageCount'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
   // Fetch templates
   const { data: templatesResponse, isLoading, error } = useQuery({
-    queryKey: ['templates', searchTerm, selectedCategory],
+    queryKey: ['templates', searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
-      if (selectedCategory !== 'all') params.append('category', selectedCategory);
       
       const response = await axiosInstance.get(`/templates/public?${params}`);
       return response.data;
@@ -40,20 +36,8 @@ const TemplateList = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch categories
-  const { data: categoriesResponse } = useQuery({
-    queryKey: ['template-categories'],
-    queryFn: async () => {
-      const response = await axiosInstance.get('/templates/categories');
-      return response.data;
-    },
-    retry: 2,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-
   // Extract templates array from response
   const templates = Array.isArray(templatesResponse?.data) ? templatesResponse.data : [];
-  const categories = Array.isArray(categoriesResponse?.data) ? categoriesResponse.data : [];
 
   // Create template mutation (Super Admin only)
   const createTemplateMutation = useMutation({
@@ -73,23 +57,6 @@ const TemplateList = () => {
     },
   });
 
-  // Create category mutation (Super Admin only)
-  const createCategoryMutation = useMutation({
-    mutationFn: async (categoryData) => {
-      const response = await axiosInstance.post('/templates/admin/categories', categoryData);
-      return response.data;
-    },
-    onSuccess: () => {
-      toast.success('Category created successfully');
-      setShowCreateCategoryModal(false);
-      setNewCategory({ name: '', description: '', color: '#1890ff' });
-      queryClient.invalidateQueries(['template-categories']);
-    },
-    onError: (error) => {
-      console.error('Error creating category:', error);
-      toast.error(error.response?.data?.message || 'Failed to create category');
-    },
-  });
 
   // Update template mutation (Super Admin only)
   const updateTemplateMutation = useMutation({
@@ -157,10 +124,6 @@ const TemplateList = () => {
     createTemplateMutation.mutate(newTemplate);
   };
 
-  const handleCreateCategory = async (e) => {
-    e.preventDefault();
-    createCategoryMutation.mutate(newCategory);
-  };
 
   const handleEditTemplate = async (e) => {
     e.preventDefault();
@@ -204,10 +167,7 @@ const TemplateList = () => {
       const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (template.description && template.description.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      const matchesCategory = selectedCategory === 'all' || 
-        getCategoryName(template.category).toLowerCase() === selectedCategory.toLowerCase();
-      
-      return matchesSearch && matchesCategory;
+      return matchesSearch;
     });
 
     // Sort templates
@@ -251,24 +211,6 @@ const TemplateList = () => {
     }
   };
 
-  const getCategoryIcon = (category) => {
-    return '📄'; // Default icon for all categories
-  };
-
-  const getCategoryColor = (category) => {
-    if (typeof category === 'string') {
-      const cat = categories.find(c => c.name === category);
-      return cat?.color || '#1890ff';
-    }
-    return category?.color || '#1890ff';
-  };
-
-  const getCategoryName = (category) => {
-    if (typeof category === 'string') {
-      return category;
-    }
-    return category?.name || 'Unknown';
-  };
 
   if (isLoading) {
     return (
@@ -321,22 +263,13 @@ const TemplateList = () => {
             )}
           </div>
           {isSuperAdmin && (
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowCreateCategoryModal(true)}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                disabled={createCategoryMutation.isPending}
-              >
-                {createCategoryMutation.isPending ? 'Creating...' : '+ Tạo Category'}
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                disabled={createTemplateMutation.isPending}
-              >
-                {createTemplateMutation.isPending ? 'Creating...' : '+ Tạo Template'}
-              </button>
-            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              disabled={createTemplateMutation.isPending}
+            >
+              {createTemplateMutation.isPending ? 'Creating...' : '+ Tạo Template'}
+            </button>
           )}
         </div>
 
@@ -357,23 +290,6 @@ const TemplateList = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
-            </div>
-
-            {/* Category Filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Category:</span>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">All Categories</option>
-                {categories.map(category => (
-                  <option key={category._id} value={category.name}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Sort */}
@@ -449,13 +365,7 @@ const TemplateList = () => {
           <h3 className="mt-2 text-sm font-medium text-gray-900">Chưa có template nào</h3>
           <p className="mt-1 text-sm text-gray-500">Bắt đầu bằng cách tạo template đầu tiên của bạn.</p>
           {isSuperAdmin && (
-            <div className="mt-6 flex gap-3 justify-center">
-              <button
-                onClick={() => setShowCreateCategoryModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-              >
-                + Tạo Category
-              </button>
+            <div className="mt-6">
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -511,11 +421,11 @@ const TemplateList = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center">
                         <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <span className="text-2xl">{template.icon || getCategoryIcon(template.category)}</span>
+                          <span className="text-2xl">{template.icon || '📄'}</span>
                         </div>
                         <div className="ml-3">
                           <h3 className="text-lg font-semibold text-gray-900">{template.name}</h3>
-                          <p className="text-sm text-gray-500">{getCategoryName(template.category)}</p>
+                          <p className="text-sm text-gray-500">Template</p>
                         </div>
                       </div>
                       {isSuperAdmin && (
@@ -675,11 +585,11 @@ const TemplateList = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                              <span className="text-lg">{template.icon || getCategoryIcon(template.category)}</span>
+                              <span className="text-lg">{template.icon || '📄'}</span>
                             </div>
                             <div>
                               <div className="text-sm font-medium text-gray-900">{template.name}</div>
-                              <div className="text-sm text-gray-500">{getCategoryName(template.category)}</div>
+                              <div className="text-sm text-gray-500">Template</div>
                             </div>
                           </div>
                         </td>
@@ -742,83 +652,6 @@ const TemplateList = () => {
             </div>
           )}
         </>
-      )}
-
-      {/* Create Category Modal */}
-      {showCreateCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Tạo Category mới</h2>
-            <form onSubmit={handleCreateCategory}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tên Category *
-                </label>
-                <input
-                  type="text"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Ví dụ: Marketing"
-                  required
-                  disabled={createCategoryMutation.isPending}
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mô tả (tùy chọn)
-                </label>
-                <textarea
-                  value={newCategory.description}
-                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Mô tả về category này..."
-                  rows="3"
-                  disabled={createCategoryMutation.isPending}
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Màu sắc
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={newCategory.color}
-                    onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
-                    className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
-                    disabled={createCategoryMutation.isPending}
-                  />
-                  <input
-                    type="text"
-                    value={newCategory.color}
-                    onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="#1890ff"
-                    disabled={createCategoryMutation.isPending}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateCategoryModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                  disabled={createCategoryMutation.isPending}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
-                  disabled={createCategoryMutation.isPending}
-                >
-                  {createCategoryMutation.isPending ? 'Creating...' : 'Tạo Category'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
 
       {/* Edit Template Modal */}

@@ -175,7 +175,6 @@ const TemplateDetail = () => {
             <h1 className="text-3xl font-bold text-gray-900">{template.name}</h1>
             <p className="mt-1 text-gray-600">{template.description}</p>
             <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-              <span>Category: <span className="font-medium text-gray-900">{template.category?.name || 'Unknown'}</span></span>
               <span>Tables: <span className="font-medium text-gray-900">{template.tables?.length || 0}</span></span>
               <span>Uses: <span className="font-medium text-gray-900">{template.usageCount || 0}</span></span>
             </div>
