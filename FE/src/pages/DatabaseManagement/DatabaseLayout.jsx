@@ -347,6 +347,17 @@ const DatabaseLayout = () => {
   const [searchValue, setSearchValue] = useState('');
   const [expandedDatabases, setExpandedDatabases] = useState(new Set());
   const [expandedTables, setExpandedTables] = useState(new Set());
+  const [expandedTemplates, setExpandedTemplates] = useState(new Set());
+  const [activeSection, setActiveSection] = useState('databases'); // 'databases' or 'templates'
+  
+  // Auto-detect active section based on current path
+  useEffect(() => {
+    if (location.pathname.includes('/templates')) {
+      setActiveSection('templates');
+    } else {
+      setActiveSection('databases'); // Default to databases
+    }
+  }, [location.pathname]);
   const [showCreateDatabaseModal, setShowCreateDatabaseModal] = useState(false);
   const [newDatabase, setNewDatabase] = useState({ name: '', description: '' });
   const [showCreateTableModal, setShowCreateTableModal] = useState(false);
@@ -383,12 +394,40 @@ const DatabaseLayout = () => {
   // Share modal states
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareTarget, setShareTarget] = useState({ type: '', name: '', id: '' });
+  
+  // Template modal states
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({ name: '', description: '' });
+  const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState({ _id: '', name: '', description: '' });
+  const [showEditTemplateTableModal, setShowEditTemplateTableModal] = useState(false);
+  const [editingTemplateTable, setEditingTemplateTable] = useState({ templateId: '', tableIndex: -1, name: '', description: '' });
+  const [showCreateTemplateTableModal, setShowCreateTemplateTableModal] = useState(false);
+  const [newTemplateTable, setNewTemplateTable] = useState({ name: '', description: '' });
+  const [currentTemplateId, setCurrentTemplateId] = useState(null);
+  
+  // Context menu states
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+  
+  // Super Admin check
+  const isSuperAdmin = authContext?.isSuperAdmin || false;
 
   // Fetch databases for sidebar
   const { data: databasesResponse } = useQuery({
     queryKey: ['databases'],
     queryFn: async () => {
       const response = await axiosInstance.get('/database/databases');
+      return response.data;
+    },
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch templates count for sidebar
+  const { data: templatesCountResponse } = useQuery({
+    queryKey: ['templates-count'],
+    queryFn: async () => {
+      const response = await axiosInstance.get('/templates/public');
       return response.data;
     },
     retry: 2,
@@ -791,6 +830,82 @@ const DatabaseLayout = () => {
     },
   });
 
+  // Create template mutation
+  const createTemplateMutation = useMutation({
+    mutationFn: async (templateData) => {
+      const response = await axiosInstance.post('/templates/admin', templateData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['templates']);
+      queryClient.invalidateQueries(['templates-count']);
+      setShowCreateTemplateModal(false);
+      setNewTemplate({ name: '', description: '' });
+      toast.success('Template created successfully');
+    },
+    onError: (error) => {
+      console.error('Error creating template:', error);
+      toast.error(error.response?.data?.message || 'Failed to create template');
+    }
+  });
+
+  // Edit template mutation
+  const editTemplateMutation = useMutation({
+    mutationFn: async (templateData) => {
+      const response = await axiosInstance.put(`/templates/admin/${templateData._id}`, {
+        name: templateData.name,
+        description: templateData.description
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['templates']);
+      queryClient.invalidateQueries(['templates-count']);
+      setShowEditTemplateModal(false);
+      setEditingTemplate({ _id: '', name: '', description: '' });
+      toast.success('Template updated successfully');
+    },
+    onError: (error) => {
+      console.error('Error updating template:', error);
+      toast.error(error.response?.data?.message || 'Failed to update template');
+    }
+  });
+
+  // Delete template mutation
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (templateId) => {
+      const response = await axiosInstance.delete(`/templates/admin/${templateId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['templates']);
+      queryClient.invalidateQueries(['templates-count']);
+      toast.success('Template deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Error deleting template:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete template');
+    }
+  });
+
+  // Update template structure mutation (for editing/deleting tables)
+  const updateTemplateStructureMutation = useMutation({
+    mutationFn: async ({ templateId, tables }) => {
+      const response = await axiosInstance.put(`/templates/admin/${templateId}`, { tables });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['templates']);
+      queryClient.invalidateQueries(['templates-count']);
+      queryClient.invalidateQueries(['template']);
+      toast.success('Template table updated successfully');
+    },
+    onError: (error) => {
+      console.error('Error updating template table:', error);
+      toast.error(error.response?.data?.message || 'Failed to update template table');
+    }
+  });
+
   const handleEditView = async (e) => {
     e.preventDefault();
     if (!editingView.name.trim()) {
@@ -799,6 +914,122 @@ const DatabaseLayout = () => {
     }
     editViewMutation.mutate(editingView);
   };
+
+  // Handle create template
+  const handleCreateTemplate = async (e) => {
+    e.preventDefault();
+    if (!newTemplate.name.trim()) {
+      toast.error('Template name is required');
+      return;
+    }
+    createTemplateMutation.mutate(newTemplate);
+  };
+
+  // Handle create template table
+  const handleCreateTemplateTable = async (e) => {
+    e.preventDefault();
+    if (!newTemplateTable.name.trim()) {
+      toast.error('Table name is required');
+      return;
+    }
+    
+    if (!currentTemplateId) {
+      toast.error('Template ID is missing');
+      return;
+    }
+
+    // Fetch current template to get existing tables
+    try {
+      const templateResponse = await axiosInstance.get(`/templates/${currentTemplateId}`);
+      const template = templateResponse.data.data;
+      
+      const updatedTables = [...(template.tables || []), {
+        name: newTemplateTable.name,
+        description: newTemplateTable.description,
+        columns: [],
+        sampleData: []
+      }];
+
+      updateTemplateStructureMutation.mutate({
+        templateId: currentTemplateId,
+        tables: updatedTables
+      });
+
+      setNewTemplateTable({ name: '', description: '' });
+      setShowCreateTemplateTableModal(false);
+      setCurrentTemplateId(null);
+    } catch (error) {
+      console.error('Error creating template table:', error);
+      toast.error('Failed to create template table');
+    }
+  };
+
+  // Handle edit template
+  const handleEditTemplate = async (e) => {
+    e.preventDefault();
+    if (!editingTemplate.name.trim()) {
+      toast.error('Template name is required');
+      return;
+    }
+    editTemplateMutation.mutate(editingTemplate);
+  };
+
+  // Handle edit template table
+  const handleEditTemplateTable = async (e) => {
+    e.preventDefault();
+    if (!editingTemplateTable.name.trim()) {
+      toast.error('Table name is required');
+      return;
+    }
+
+    // Fetch current template to get tables array
+    const templateResponse = await axiosInstance.get(`/templates/${editingTemplateTable.templateId}`);
+    const template = templateResponse.data.data;
+    
+    const updatedTables = [...(template.tables || [])];
+    updatedTables[editingTemplateTable.tableIndex] = {
+      ...updatedTables[editingTemplateTable.tableIndex],
+      name: editingTemplateTable.name,
+      description: editingTemplateTable.description
+    };
+
+    updateTemplateStructureMutation.mutate({
+      templateId: editingTemplateTable.templateId,
+      tables: updatedTables
+    });
+
+    setEditingTemplateTable({ templateId: '', tableIndex: -1, name: '', description: '' });
+    setShowEditTemplateTableModal(false);
+  };
+
+  // Handle context menu
+  const handleContextMenu = (e, type, item, databaseId = '', tableId = '') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+      type,
+      item,
+      databaseId,
+      tableId
+    });
+  };
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClick = () => {
+      if (contextMenu.visible) {
+        setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+      }
+    };
+
+    if (contextMenu.visible) {
+      document.addEventListener('click', handleClick);
+      return () => document.removeEventListener('click', handleClick);
+    }
+  }, [contextMenu.visible]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -897,10 +1128,28 @@ const DatabaseLayout = () => {
     setExpandedTables(newExpanded);
   };
 
+  // Toggle template expansion
+  const toggleTemplate = (templateId) => {
+    const newExpanded = new Set(expandedTemplates);
+    if (newExpanded.has(templateId)) {
+      newExpanded.delete(templateId);
+    } else {
+      newExpanded.add(templateId);
+    }
+    setExpandedTemplates(newExpanded);
+  };
+
   // Get tables for a specific database
   const getTablesForDatabase = (databaseId) => {
     const databaseTables = allTables.find(item => item.databaseId === databaseId);
     return databaseTables ? databaseTables.tables : [];
+  };
+
+  // Get tables for a specific template
+  const getTablesForTemplate = (templateId) => {
+    // This would need to be implemented based on your template API
+    // For now, return empty array - you can implement this later
+    return [];
   };
 
   // Get views for a specific table
@@ -988,7 +1237,7 @@ const DatabaseLayout = () => {
         )}
 
         {/* Create Database Button */}
-        {!collapsed && location.pathname === '/database' && (
+        {!collapsed && location.pathname === '/database' && !location.pathname.includes('/templates') && (
           <div className="p-4 border-b border-gray-200">
             <Button
               type="primary"
@@ -997,6 +1246,49 @@ const DatabaseLayout = () => {
               onClick={() => setShowCreateDatabaseModal(true)}
             >
               Create Database
+            </Button>
+          </div>
+        )}
+
+        {/* Create Template Button - Only for Super Admin */}
+        {!collapsed && location.pathname === '/templates' && isSuperAdmin && (
+          <div className="p-4 border-b border-gray-200">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              className="w-full"
+              onClick={() => setShowCreateTemplateModal(true)}
+            >
+              Create Template
+            </Button>
+          </div>
+        )}
+
+        {/* Create Template Table Button - Only for Super Admin */}
+        {!collapsed && (() => {
+          const isTemplateDetailPage = location.pathname.match(/^\/templates\/[^/]+$/);
+          console.log('🔍 Check Create Table Button:', {
+            pathname: location.pathname,
+            isTemplateDetailPage,
+            isSuperAdmin,
+            collapsed
+          });
+          return isTemplateDetailPage && isSuperAdmin;
+        })() && (
+          <div className="p-4 border-b border-gray-200">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              className="w-full"
+              onClick={() => {
+                const pathParts = location.pathname.split('/');
+                const templateId = pathParts[2];
+                console.log('🔍 Creating table for template:', templateId);
+                setCurrentTemplateId(templateId);
+                setShowCreateTemplateTableModal(true);
+              }}
+            >
+              + Create Table
             </Button>
           </div>
         )}
@@ -1030,7 +1322,10 @@ const DatabaseLayout = () => {
             <Menu.Item
               key="/database"
               icon={<HomeOutlined />}
-              onClick={() => navigate('/database')}
+              onClick={() => {
+                navigate('/database');
+                setActiveSection('databases');
+              }}
               className="mx-2 rounded-lg"
             >
               Overview
@@ -1038,7 +1333,10 @@ const DatabaseLayout = () => {
             <Menu.Item
               key="/templates"
               icon={<AppstoreOutlined />}
-              onClick={() => navigate('/templates')}
+              onClick={() => {
+                navigate('/templates');
+                setActiveSection('templates');
+              }}
               className="mx-2 rounded-lg"
             >
               Templates
@@ -1046,7 +1344,7 @@ const DatabaseLayout = () => {
           </Menu>
 
           {/* Templates Section */}
-          {!collapsed && (
+          {!collapsed && activeSection === 'templates' && (
             <div className="px-4 py-2" style={{ paddingBottom: '20px' }}>
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
                 Templates
@@ -1060,14 +1358,110 @@ const DatabaseLayout = () => {
                     <AppstoreOutlined className="text-blue-500 mr-2" />
                     <span className="text-sm text-gray-700">Template Gallery</span>
                   </div>
-                  <RightOutlined className="text-gray-400 text-xs" />
+                  <div className="flex items-center">
+                    <span className="text-xs text-gray-400 mr-2">
+                      {templatesCountResponse?.data?.length || 0}
+                    </span>
+                    <RightOutlined className="text-gray-400 text-xs" />
+                  </div>
                 </div>
+                
+                {/* Template List */}
+                {templatesCountResponse?.data && templatesCountResponse.data.length > 0 && (
+                  <div className="space-y-1">
+                    {templatesCountResponse.data.map((template) => {
+                      const isExpanded = expandedTemplates.has(template._id || template.id);
+                      const templateTables = getTablesForTemplate(template._id || template.id);
+                      const isActive = location.pathname.includes(`/templates/${template._id || template.id}`);
+                      
+                      return (
+                        <div key={template._id || template.id} className="space-y-1">
+                          {/* Template Item */}
+                          <div
+                            className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                              isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                            }`}
+                            onClick={() => toggleTemplate(template._id || template.id)}
+                            onContextMenu={(e) => handleContextMenu(e, 'template', template)}
+                          >
+                            <AppstoreOutlined className="mr-3" />
+                            <span className="truncate flex-1">{template.name}</span>
+                            <div className="flex items-center">
+                              <span className="text-xs text-gray-400 mr-2">
+                                {template.tables?.length || 0}
+                              </span>
+                              <RightOutlined 
+                                className={`text-xs transition-transform ${
+                                  isExpanded ? 'rotate-90' : ''
+                                }`}
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Tables under this template */}
+                          {isExpanded && (
+                            <div className="ml-6 space-y-1" style={{ maxHeight: 'none', overflow: 'visible' }}>
+                              {template.tables && template.tables.length > 0 ? (
+                                template.tables.map((table, tableIndex) => (
+                                  <div
+                                    key={table._id || table.id || tableIndex}
+                                    className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                                      location.pathname.includes(`/templates/${template._id || template.id}/table/${tableIndex}`)
+                                        ? "bg-blue-50 text-blue-600"
+                                        : "text-gray-600 hover:bg-gray-100"
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/templates/${template._id || template.id}/table/${tableIndex}`);
+                                    }}
+                                    onContextMenu={(e) => handleContextMenu(e, 'template-table', table, template._id || template.id, tableIndex)}
+                                  >
+                                    <AppstoreOutlined className="mr-3" />
+                                    <span className="truncate flex-1">{table.name}</span>
+                                    <div className="flex items-center">
+                                      <span className="text-xs text-gray-400 mr-2">
+                                        {table.records?.length || 0}
+                                      </span>
+                                      <RightOutlined className="text-gray-400 text-xs" />
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-xs text-gray-400 py-2 px-3">
+                                  Chưa có table nào
+                                </div>
+                              )}
+                              
+                              {/* Create Table Button - Only for Super Admin */}
+                              {isSuperAdmin && (
+                                <div className="mt-2">
+                                  <button
+                                    className="w-full text-left text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const templateId = template._id || template.id;
+                                      console.log('🔍 Create table for template:', templateId);
+                                      setCurrentTemplateId(templateId);
+                                      setShowCreateTemplateTableModal(true);
+                                    }}
+                                  >
+                                    + Tạo Table
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {/* Databases Section */}
-          {!collapsed && (
+          {!collapsed && activeSection === 'databases' && (
             <div className="px-4 py-2" style={{ paddingBottom: '20px' }}>
               
               {filteredDatabases.length === 0 ? (
@@ -1089,85 +1483,26 @@ const DatabaseLayout = () => {
                     return (
                       <div key={database._id} className="space-y-1">
                         {/* Database Item */}
-                        <Dropdown
-                          menu={{
-                            items: [
-                              {
-                                key: 'edit',
-                                icon: <EditOutlined />,
-                                label: 'Sửa tên',
-                                onClick: () => {
-                                  setEditingDatabase({
-                                    _id: database._id,
-                                    name: database.name,
-                                    description: database.description || ''
-                                  });
-                                  setShowEditDatabaseModal(true);
-                                }
-                              },
-                              {
-                                key: 'copy',
-                                icon: <CopyOutlined />,
-                                label: 'Copy',
-                                onClick: () => {
-                                  setCopyingDatabase({
-                                    _id: database._id,
-                                    name: `${database.name} - Copy`,
-                                    description: database.description || ''
-                                  });
-                                  setShowCopyDatabaseModal(true);
-                                }
-                              },
-                              {
-                                key: 'share',
-                                icon: <ShareAltOutlined />,
-                                label: 'Chia sẻ',
-                                onClick: () => {
-                                  setShareTarget({
-                                    type: 'database',
-                                    name: database.name,
-                                    id: database._id
-                                  });
-                                  setShowShareModal(true);
-                                }
-                              },
-                              {
-                                key: 'delete',
-                                icon: <DeleteOutlined />,
-                                label: 'Xóa database',
-                                danger: true,
-                                onClick: () => {
-                                  if (window.confirm(`Bạn có chắc muốn xóa database "${database.name}"?`)) {
-                                    deleteDatabaseMutation.mutate(database._id);
-                                  }
-                                }
-                              }
-                            ]
-                          }}
-                          trigger={['contextMenu']}
+                        <div
+                          className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                            isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                          onClick={() => toggleDatabase(database._id)}
+                          onContextMenu={(e) => handleContextMenu(e, 'database', database)}
                         >
-                          <div
-                            className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
-                              isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                            onClick={() => toggleDatabase(database._id)}
-                          >
-                            <DatabaseOutlined className="mr-3" />
-                            <span className="truncate flex-1">{database.name}</span>
-                            <div className="flex items-center">
-                              {databaseTables.length > 0 && (
-                                <span className="text-xs text-gray-400 mr-2">
-                                  {databaseTables.length}
-                                </span>
-                              )}
-                              <RightOutlined 
-                                className={`text-xs transition-transform ${
-                                  isExpanded ? 'rotate-90' : ''
-                                }`}
-                              />
-                            </div>
+                          <DatabaseOutlined className="mr-3" />
+                          <span className="truncate flex-1">{database.name}</span>
+                          <div className="flex items-center">
+                            <span className="text-xs text-gray-400 mr-2">
+                              {databaseTables.length}
+                            </span>
+                            <RightOutlined 
+                              className={`text-xs transition-transform ${
+                                isExpanded ? 'rotate-90' : ''
+                              }`}
+                            />
                           </div>
-                        </Dropdown>
+                        </div>
                         
                         {/* Tables under this database */}
                         {isExpanded && (
@@ -1180,109 +1515,35 @@ const DatabaseLayout = () => {
                                   
                                   return (
                                     <div key={table._id}>
-                                  <Dropdown
-                                    menu={{
-                                      items: [
-                                        {
-                                              key: "edit",
-                                          icon: <EditOutlined />,
-                                              label: "Sửa tên",
-                                          onClick: () => {
-                                            setEditingTable({
-                                              _id: table._id,
-                                              name: table.name,
-                                                  description: table.description || "",
-                                              databaseId: database._id
-                                            });
-                                            setShowEditTableModal(true);
-                                          }
-                                        },
-                                        {
-                                              key: "copy",
-                                          icon: <CopyOutlined />,
-                                              label: "Copy",
-                                          onClick: () => {
-                                            setCopyingTable({
-                                              _id: table._id,
-                                              name: `${table.name} - Copy`,
-                                                  description: table.description || "",
-                                              targetDatabaseId: database._id
-                                            });
-                                            setShowCopyTableModal(true);
-                                          }
-                                        },
-                                        {
-                                              key: "share",
-                                          icon: <ShareAltOutlined />,
-                                              label: "Chia sẻ",
-                                          onClick: () => {
-                                            setSelectedTableForPermission({
-                                              tableId: table._id,
-                                              name: table.name,
-                                              description: table.description || '',
-                                              databaseId: database._id
-                                            });
-                                            setShowPermissionModal(true);
-                                          }
-                                        },
-                                        {
-                                              key: "createView",
-                                              icon: <TableOutlined />,
-                                              label: "Tạo View",
-                                              onClick: () => {
-                                                handleCreateViewClick({
-                                                  type: "table",
-                                                  id: table._id,
-                                                  databaseId: database._id
-                                                });
-                                              }
-                                            },
-                                            {
-                                              key: "delete",
-                                          icon: <DeleteOutlined />,
-                                              label: "Xóa table",
-                                          danger: true,
-                                          onClick: () => {
-                                            if (window.confirm(`Bạn có chắc muốn xóa table "${table.name}"?`)) {
-                                              deleteTableMutation.mutate(table._id);
-                                            }
-                                          }
-                                        }
-                                      ]
+                                  <div
+                                    className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                                      location.pathname.includes(`/table/${table._id}`)
+                                            ? "bg-blue-50 text-blue-600"
+                                            : "text-gray-600 hover:bg-gray-100"
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/database/${database._id}/table/${table._id}`);
                                     }}
-                                        trigger={["contextMenu"]}
+                                    onContextMenu={(e) => handleContextMenu(e, 'table', table, database._id)}
                                   >
-                                    <div
-                                      className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
-                                        location.pathname.includes(`/table/${table._id}`)
-                                              ? "bg-blue-50 text-blue-600"
-                                              : "text-gray-600 hover:bg-gray-100"
-                                      }`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/database/${database._id}/table/${table._id}`);
-                                      }}
-                                    >
-                                      <TableOutlined className="mr-3" />
-                                      <span className="truncate flex-1">{table.name}</span>
-                                          <div className="flex items-center">
-                                            {tableViews.length > 0 && (
-                                              <span className="text-xs text-gray-400 mr-2">
-                                                {tableViews.length}
-                                              </span>
-                                            )}
-                                            <RightOutlined 
-                                              className={`text-xs transition-transform ${
-                                                isTableExpanded ? "rotate-90" : ""
-                                              }`}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleTable(table._id);
-                                              }}
-                                            />
-                                          </div>
-                                    </div>
-                                  </Dropdown>
+                                    <TableOutlined className="mr-3" />
+                                    <span className="truncate flex-1">{table.name}</span>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-gray-400 mr-2">
+                                            {tableViews.length}
+                                          </span>
+                                          <RightOutlined 
+                                            className={`text-xs transition-transform ${
+                                              isTableExpanded ? "rotate-90" : ""
+                                            }`}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              toggleTable(table._id);
+                                            }}
+                                          />
+                                        </div>
+                                  </div>
                                       
                                       {/* Views for this table */}
                                       {isTableExpanded && (
@@ -1316,6 +1577,7 @@ const DatabaseLayout = () => {
                                                     console.log("Navigate to view:", view._id, "type:", view.type);
                                                   }
                                                 }}
+                                                onContextMenu={(e) => handleContextMenu(e, 'view', view, database._id, table._id)}
                                               >
                                                 <div className="mr-3 text-xs">
                                                   {view.type === "grid" && <AppstoreOutlined style={{ color: "#1890ff" }} />}
@@ -1325,38 +1587,6 @@ const DatabaseLayout = () => {
                                                   {view.type === "calendar" && <CalendarOutlined style={{ color: "#f5222d" }} />}
                                                 </div>
                                                 <span className="truncate flex-1">{view.name}</span>
-                                                <div className="flex items-center">
-                                                  <button
-                                                    className="ml-2 p-1 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setEditingView({
-                                                        _id: view._id,
-                                                        name: view.name,
-                                                        description: view.description || '',
-                                                        type: view.type
-                                                      });
-                                                      setShowEditViewModal(true);
-                                                    }}
-                                                    title="Sửa tên view"
-                                                  >
-                                                    <EditOutlined style={{ fontSize: '12px' }} />
-                                                  </button>
-                                                  <button
-                                                    className="ml-1 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      if (window.confirm(`Bạn có chắc muốn xóa view "${view.name}"?`)) {
-                                                        deleteViewMutation.mutate(view._id);
-                                                      }
-                                                    }}
-                                                    title="Xóa view"
-                                                  >
-                                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                                      <path d="M11.354 4.646a.5.5 0 0 0-.708 0L8 7.293 5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0 0-.708z"/>
-                                                    </svg>
-                                                  </button>
-                                                </div>
                                               </div>
                                             ))
                                           ) : (
@@ -2319,6 +2549,541 @@ const DatabaseLayout = () => {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Create Template Modal */}
+      <Modal
+        title="Tạo Template mới"
+        open={showCreateTemplateModal}
+        onCancel={() => setShowCreateTemplateModal(false)}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleCreateTemplate}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>Template Name *</Typography.Text>
+              <Input
+                placeholder="Nhập tên template"
+                value={newTemplate.name}
+                onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
+                style={{ marginTop: 8 }}
+              />
+            </div>
+            <div>
+              <Typography.Text strong>Description</Typography.Text>
+              <Input.TextArea
+                placeholder="Nhập mô tả template"
+                value={newTemplate.description}
+                onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
+                style={{ marginTop: 8 }}
+                rows={3}
+              />
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowCreateTemplateModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={createTemplateMutation.isPending}
+                >
+                  Create Template
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 9999,
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #e8e8e8',
+            minWidth: '200px',
+            padding: '4px 0'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Database Context Menu */}
+          {contextMenu.type === 'database' && (
+            <>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setEditingDatabase({
+                    _id: contextMenu.item._id,
+                    name: contextMenu.item.name,
+                    description: contextMenu.item.description || ''
+                  });
+                  setShowEditDatabaseModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EditOutlined className="mr-2" />
+                Sửa Database
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setCopyingDatabase({
+                    _id: contextMenu.item._id,
+                    name: contextMenu.item.name + ' - Copy',
+                    description: contextMenu.item.description || ''
+                  });
+                  setShowCopyDatabaseModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <CopyOutlined className="mr-2" />
+                Sao chép Database
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setShareTarget({ type: 'database', name: contextMenu.item.name, id: contextMenu.item._id });
+                  setShowShareModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <ShareAltOutlined className="mr-2" />
+                Chia sẻ
+              </div>
+              <div className="border-t border-gray-200 my-1"></div>
+              <div
+                className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
+                onClick={() => {
+                  if (window.confirm(`Bạn có chắc chắn muốn xóa database "${contextMenu.item.name}"?`)) {
+                    deleteDatabaseMutation.mutate(contextMenu.item._id);
+                  }
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <DeleteOutlined className="mr-2" />
+                Xóa Database
+              </div>
+            </>
+          )}
+
+          {/* Table Context Menu */}
+          {contextMenu.type === 'table' && (
+            <>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setEditingTable({
+                    _id: contextMenu.item._id,
+                    name: contextMenu.item.name,
+                    description: contextMenu.item.description || '',
+                    databaseId: contextMenu.databaseId
+                  });
+                  setShowEditTableModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EditOutlined className="mr-2" />
+                Sửa Table
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setCopyingTable({
+                    _id: contextMenu.item._id,
+                    name: contextMenu.item.name + ' - Copy',
+                    description: contextMenu.item.description || '',
+                    targetDatabaseId: contextMenu.databaseId
+                  });
+                  setShowCopyTableModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <CopyOutlined className="mr-2" />
+                Sao chép Table
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setShareTarget({ type: 'table', name: contextMenu.item.name, id: contextMenu.item._id });
+                  setShowShareModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <ShareAltOutlined className="mr-2" />
+                Chia sẻ
+              </div>
+              <div className="border-t border-gray-200 my-1"></div>
+              <div
+                className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
+                onClick={() => {
+                  if (window.confirm(`Bạn có chắc chắn muốn xóa table "${contextMenu.item.name}"?`)) {
+                    deleteTableMutation.mutate(contextMenu.item._id);
+                  }
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <DeleteOutlined className="mr-2" />
+                Xóa Table
+              </div>
+            </>
+          )}
+
+          {/* View Context Menu */}
+          {contextMenu.type === 'view' && (
+            <>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setEditingView({
+                    _id: contextMenu.item._id,
+                    name: contextMenu.item.name,
+                    description: contextMenu.item.description || '',
+                    type: contextMenu.item.type
+                  });
+                  setShowEditViewModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EditOutlined className="mr-2" />
+                Sửa View
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setShareTarget({ type: 'view', name: contextMenu.item.name, id: contextMenu.item._id });
+                  setShowShareModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <ShareAltOutlined className="mr-2" />
+                Chia sẻ
+              </div>
+              <div className="border-t border-gray-200 my-1"></div>
+              <div
+                className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
+                onClick={() => {
+                  if (window.confirm(`Bạn có chắc chắn muốn xóa view "${contextMenu.item.name}"?`)) {
+                    deleteViewMutation.mutate(contextMenu.item._id);
+                  }
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <DeleteOutlined className="mr-2" />
+                Xóa View
+              </div>
+            </>
+          )}
+
+          {/* Template Context Menu */}
+          {contextMenu.type === 'template' && isSuperAdmin && (
+            <>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  navigate(`/templates/${contextMenu.item._id || contextMenu.item.id}`);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EyeOutlined className="mr-2" />
+                Xem Template
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setEditingTemplate({
+                    _id: contextMenu.item._id || contextMenu.item.id,
+                    name: contextMenu.item.name,
+                    description: contextMenu.item.description || ''
+                  });
+                  setShowEditTemplateModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EditOutlined className="mr-2" />
+                Sửa Template
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setShareTarget({ type: 'template', name: contextMenu.item.name, id: contextMenu.item._id || contextMenu.item.id });
+                  setShowShareModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <ShareAltOutlined className="mr-2" />
+                Chia sẻ
+              </div>
+              <div className="border-t border-gray-200 my-1"></div>
+              <div
+                className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
+                onClick={() => {
+                  if (window.confirm(`Bạn có chắc chắn muốn xóa template "${contextMenu.item.name}"?`)) {
+                    deleteTemplateMutation.mutate(contextMenu.item._id || contextMenu.item.id);
+                  }
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <DeleteOutlined className="mr-2" />
+                Xóa Template
+              </div>
+            </>
+          )}
+
+          {/* Template Context Menu for Regular Users */}
+          {contextMenu.type === 'template' && !isSuperAdmin && (
+            <>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  navigate(`/templates/${contextMenu.item._id || contextMenu.item.id}`);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EyeOutlined className="mr-2" />
+                Xem Template
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  // Open modal to create database from template
+                  toast.info('Use template feature - navigate to template detail page');
+                  navigate(`/templates/${contextMenu.item._id || contextMenu.item.id}`);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <CopyOutlined className="mr-2" />
+                Sử dụng Template
+              </div>
+            </>
+          )}
+
+          {/* Template Table Context Menu */}
+          {contextMenu.type === 'template-table' && isSuperAdmin && (
+            <>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  navigate(`/templates/${contextMenu.databaseId}/table/${contextMenu.tableId}`);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EyeOutlined className="mr-2" />
+                Xem Table
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={async () => {
+                  // Find table index in template's tables array
+                  const templateResponse = await axiosInstance.get(`/templates/${contextMenu.databaseId}`);
+                  const template = templateResponse.data.data;
+                  const tableIndex = template.tables?.findIndex(t => 
+                    (t._id || t.id) === (contextMenu.item._id || contextMenu.item.id) ||
+                    t.name === contextMenu.item.name
+                  );
+                  
+                  if (tableIndex !== -1) {
+                    setEditingTemplateTable({
+                      templateId: contextMenu.databaseId,
+                      tableIndex: tableIndex,
+                      name: contextMenu.item.name,
+                      description: contextMenu.item.description || ''
+                    });
+                    setShowEditTemplateTableModal(true);
+                  }
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EditOutlined className="mr-2" />
+                Sửa Table
+              </div>
+              <div className="border-t border-gray-200 my-1"></div>
+              <div
+                className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
+                onClick={async () => {
+                  if (window.confirm(`Bạn có chắc chắn muốn xóa table "${contextMenu.item.name}"?`)) {
+                    // Fetch current template
+                    const templateResponse = await axiosInstance.get(`/templates/${contextMenu.databaseId}`);
+                    const template = templateResponse.data.data;
+                    
+                    // Find and remove the table
+                    const updatedTables = (template.tables || []).filter(t => 
+                      (t._id || t.id) !== (contextMenu.item._id || contextMenu.item.id) &&
+                      t.name !== contextMenu.item.name
+                    );
+                    
+                    // Update template
+                    updateTemplateStructureMutation.mutate({
+                      templateId: contextMenu.databaseId,
+                      tables: updatedTables
+                    });
+                  }
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <DeleteOutlined className="mr-2" />
+                Xóa Table
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Edit Template Modal */}
+      <Modal
+        title="Sửa Template"
+        open={showEditTemplateModal}
+        onCancel={() => setShowEditTemplateModal(false)}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleEditTemplate}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>Tên Template *</Typography.Text>
+              <Input
+                value={editingTemplate.name}
+                onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                placeholder="Ví dụ: CRM System"
+                required
+                size="large"
+              />
+            </div>
+            <div>
+              <Typography.Text strong>Mô tả (tùy chọn)</Typography.Text>
+              <Input.TextArea
+                value={editingTemplate.description}
+                onChange={(e) => setEditingTemplate({ ...editingTemplate, description: e.target.value })}
+                placeholder="Mô tả về template này..."
+                rows={3}
+              />
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowEditTemplateModal(false)}>
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={editTemplateMutation.isPending}
+                >
+                  Cập nhật Template
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Create Template Table Modal */}
+      <Modal
+        title="Tạo Table cho Template"
+        open={showCreateTemplateTableModal}
+        onCancel={() => {
+          setShowCreateTemplateTableModal(false);
+          setNewTemplateTable({ name: '', description: '' });
+          setCurrentTemplateId(null);
+        }}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleCreateTemplateTable}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>Tên Table *</Typography.Text>
+              <Input
+                value={newTemplateTable.name}
+                onChange={(e) => setNewTemplateTable({ ...newTemplateTable, name: e.target.value })}
+                placeholder="Ví dụ: Customers"
+                required
+                size="large"
+              />
+            </div>
+            <div>
+              <Typography.Text strong>Mô tả (tùy chọn)</Typography.Text>
+              <Input.TextArea
+                value={newTemplateTable.description}
+                onChange={(e) => setNewTemplateTable({ ...newTemplateTable, description: e.target.value })}
+                placeholder="Mô tả về table này..."
+                rows={3}
+              />
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => {
+                  setShowCreateTemplateTableModal(false);
+                  setNewTemplateTable({ name: '', description: '' });
+                  setCurrentTemplateId(null);
+                }}>
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={updateTemplateStructureMutation.isPending}
+                >
+                  Tạo Table
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Edit Template Table Modal */}
+      <Modal
+        title="Sửa Template Table"
+        open={showEditTemplateTableModal}
+        onCancel={() => setShowEditTemplateTableModal(false)}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleEditTemplateTable}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>Tên Table *</Typography.Text>
+              <Input
+                value={editingTemplateTable.name}
+                onChange={(e) => setEditingTemplateTable({ ...editingTemplateTable, name: e.target.value })}
+                placeholder="Ví dụ: Customers"
+                required
+                size="large"
+              />
+            </div>
+            <div>
+              <Typography.Text strong>Mô tả (tùy chọn)</Typography.Text>
+              <Input.TextArea
+                value={editingTemplateTable.description}
+                onChange={(e) => setEditingTemplateTable({ ...editingTemplateTable, description: e.target.value })}
+                placeholder="Mô tả về table này..."
+                rows={3}
+              />
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowEditTemplateTableModal(false)}>
+                  Hủy
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={updateTemplateStructureMutation.isPending}
+                >
+                  Cập nhật Table
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
       </Modal>
 
       {/* Permission Modal */}

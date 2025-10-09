@@ -12,11 +12,11 @@ const TemplateList = () => {
   const isSuperAdmin = currentUser?.role === 'super_admin';
   
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newTemplate, setNewTemplate] = useState({ name: '', description: '', category: '' });
+  const [newTemplate, setNewTemplate] = useState({ name: '', description: '' });
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: '', description: '', color: '#1890ff' });
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState({ _id: '', name: '', description: '', category: '' });
+  const [editingTemplate, setEditingTemplate] = useState({ _id: '', name: '', description: '' });
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copyingTemplate, setCopyingTemplate] = useState({ _id: '', name: '', description: '' });
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
@@ -64,7 +64,7 @@ const TemplateList = () => {
     onSuccess: () => {
       toast.success('Template created successfully');
       setShowCreateModal(false);
-      setNewTemplate({ name: '', description: '', category: '' });
+      setNewTemplate({ name: '', description: '' });
       queryClient.invalidateQueries(['templates']);
     },
     onError: (error) => {
@@ -96,15 +96,14 @@ const TemplateList = () => {
     mutationFn: async (templateData) => {
       const response = await axiosInstance.put(`/templates/admin/${templateData._id}`, {
         name: templateData.name,
-        description: templateData.description,
-        category: templateData.category
+        description: templateData.description
       });
       return response.data;
     },
     onSuccess: () => {
       toast.success('Template updated successfully');
       setShowEditModal(false);
-      setEditingTemplate({ _id: '', name: '', description: '', category: '' });
+      setEditingTemplate({ _id: '', name: '', description: '' });
       queryClient.invalidateQueries(['templates']);
     },
     onError: (error) => {
@@ -527,8 +526,7 @@ const TemplateList = () => {
                               setEditingTemplate({
                                 _id: template.id || template._id,
                                 name: template.name,
-                                description: template.description || '',
-                                category: template.category?._id || template.category || ''
+                                description: template.description || ''
                               });
                               setShowEditModal(true);
                             }}
@@ -705,12 +703,11 @@ const TemplateList = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditingTemplate({
-                                    _id: template.id || template._id,
-                                    name: template.name,
-                                    description: template.description || '',
-                                    category: template.category?._id || template.category || ''
-                                  });
+                                setEditingTemplate({
+                                  _id: template.id || template._id,
+                                  name: template.name,
+                                  description: template.description || ''
+                                });
                                   setShowEditModal(true);
                                 }}
                                 className="text-blue-600 hover:text-blue-800 p-1"
@@ -844,25 +841,6 @@ const TemplateList = () => {
                   disabled={updateTemplateMutation.isPending}
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
-                <select
-                  value={editingTemplate.category}
-                  onChange={(e) => setEditingTemplate({ ...editingTemplate, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                  disabled={updateTemplateMutation.isPending}
-                >
-                  <option value="">Chọn category...</option>
-                  {categories.map(category => (
-                    <option key={category._id} value={category._id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Mô tả (tùy chọn)
@@ -917,25 +895,6 @@ const TemplateList = () => {
                   required
                   disabled={createTemplateMutation.isPending}
                 />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
-                <select
-                  value={newTemplate.category}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                  disabled={createTemplateMutation.isPending}
-                >
-                  <option value="">Chọn category...</option>
-                  {categories.map(category => (
-                    <option key={category._id} value={category._id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">

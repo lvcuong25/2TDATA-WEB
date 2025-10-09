@@ -137,13 +137,6 @@ const TableTemplate = sequelize.define('TableTemplate', {
     type: DataTypes.TEXT,
     defaultValue: ''
   },
-  category: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      notEmpty: true
-    }
-  },
   icon: {
     type: DataTypes.STRING,
     defaultValue: '📋'
@@ -199,9 +192,6 @@ const TableTemplate = sequelize.define('TableTemplate', {
     {
       unique: true,
       fields: ['name']
-    },
-    {
-      fields: ['category']
     },
     {
       fields: ['created_by']

@@ -19,6 +19,7 @@ import routerOrganization from "./routerOrganization.js";
 import routerDatabase from "./routerDatabase.js";
 import testRouter from "./testRouter.js";
 import tableTemplateRouter from "./tableTemplateRouter.js";
+import templateCompleteRoutes from "../routes/templateCompleteRoutes.js";
 import routerOrder from "./orderRouter.js";
 import routerCell from "./routerCell.js";
 import basesRouter from "./bases.routes.js";
@@ -66,6 +67,7 @@ router.get("/", (req, res) => {
       iframe: "/api/iframe",
       iframe_n8n: "/api/iframe/n8n/upsert",
       database: "/api/database",
+      templates: "/api/templates",
     },
   });
 });
@@ -110,6 +112,7 @@ router.use("/database", membersRouter);
 router.use("/database", baseRolesRouter);
 router.use("/database", tableRoutesSimple); // Simple PostgreSQL routes for testing (fallback)
 router.use("/database", routerDatabase); // Database routes with permission checks
-router.use("/templates", tableTemplateRouter); // Template routes
+router.use("/templates", tableTemplateRouter); // Old template routes (legacy)
+router.use("/api/templates", templateCompleteRoutes); // New complete template routes
 router.use("/test", testRouter);
 export default router;
