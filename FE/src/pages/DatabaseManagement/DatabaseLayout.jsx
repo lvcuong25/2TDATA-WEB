@@ -792,6 +792,20 @@ const DatabaseLayout = () => {
       setNewView({ name: '', description: '', type: '', tableId: '' });
       queryClient.invalidateQueries(['allViews']);
       queryClient.refetchQueries(['allViews']);
+      
+      // Auto expand the table to show the new view
+      if (newView.tableId) {
+        setExpandedTables(prev => new Set([...prev, newView.tableId]));
+        
+        // Also expand the database if needed
+        const allTables = allTablesResponse || [];
+        const tableData = allTables.find(item => 
+          item.tables.some(table => table._id === newView.tableId)
+        );
+        if (tableData) {
+          setExpandedDatabases(prev => new Set([...prev, tableData.databaseId]));
+        }
+      }
     },
     onError: (error) => {
       console.error('Error creating view:', error);
@@ -2659,6 +2673,16 @@ const DatabaseLayout = () => {
                 <ShareAltOutlined className="mr-2" />
                 Chia sẻ
               </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  handleCreateViewClick({ type: 'database', id: contextMenu.item._id, databaseId: contextMenu.item._id });
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <PlusOutlined className="mr-2" />
+                Tạo View
+              </div>
               <div className="border-t border-gray-200 my-1"></div>
               <div
                 className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
@@ -2720,6 +2744,16 @@ const DatabaseLayout = () => {
               >
                 <ShareAltOutlined className="mr-2" />
                 Chia sẻ
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  handleCreateViewClick({ type: 'table', id: contextMenu.item._id, databaseId: contextMenu.databaseId });
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <PlusOutlined className="mr-2" />
+                Tạo View
               </div>
               <div className="border-t border-gray-200 my-1"></div>
               <div
@@ -2822,6 +2856,16 @@ const DatabaseLayout = () => {
                 <ShareAltOutlined className="mr-2" />
                 Chia sẻ
               </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  handleCreateViewClick({ type: 'template', id: contextMenu.item._id || contextMenu.item.id, databaseId: contextMenu.item._id || contextMenu.item.id });
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <PlusOutlined className="mr-2" />
+                Tạo View
+              </div>
               <div className="border-t border-gray-200 my-1"></div>
               <div
                 className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
@@ -2862,6 +2906,16 @@ const DatabaseLayout = () => {
               >
                 <CopyOutlined className="mr-2" />
                 Sử dụng Template
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  handleCreateViewClick({ type: 'template', id: contextMenu.item._id || contextMenu.item.id, databaseId: contextMenu.item._id || contextMenu.item.id });
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <PlusOutlined className="mr-2" />
+                Tạo View
               </div>
             </>
           )}
@@ -2904,6 +2958,16 @@ const DatabaseLayout = () => {
               >
                 <EditOutlined className="mr-2" />
                 Sửa Table
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  handleCreateViewClick({ type: 'template-table', id: contextMenu.item._id || contextMenu.item.id, databaseId: contextMenu.databaseId });
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <PlusOutlined className="mr-2" />
+                Tạo View
               </div>
               <div className="border-t border-gray-200 my-1"></div>
               <div
