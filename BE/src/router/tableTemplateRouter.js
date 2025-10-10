@@ -23,7 +23,8 @@ import {
   getTemplateRecords,
   updateTemplateRecord,
   deleteTemplateRecord,
-  deleteMultipleTemplateRecords
+  deleteMultipleTemplateRecords,
+  getTemplateLinkedTableData
 } from '../controllers/tableTemplateController.js';
 import { requireAuthWithCookie } from '../middlewares/requireAuthWithCookie.js';
 
@@ -60,5 +61,8 @@ router.put('/admin/:templateId/tables/:tableIndex/records/:recordId', requireAut
 // Bulk delete route - MUST come before :recordId routes
 router.delete('/admin/:templateId/tables/:tableIndex/records/bulk', requireAuthWithCookie, deleteMultipleTemplateRecords);
 router.delete('/admin/:templateId/tables/:tableIndex/records/:recordId', requireAuthWithCookie, deleteTemplateRecord);
+
+// Template column linked data route
+router.get('/columns/:columnId/linked-data', requireAuthWithCookie, getTemplateLinkedTableData);
 
 export default router;

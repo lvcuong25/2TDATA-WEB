@@ -24,38 +24,52 @@ const LinkedTableSelectModal = ({
 
   // Fetch linked table data
   const { data: linkedData, isLoading, error, refetch } = useQuery({
-    queryKey: ['linkedTableData', column?._id, column?.linkedTableConfig?.linkedTableId, searchValue, currentPage, pageSize, refreshKey],
+    queryKey: ['linkedTableData', column?._id, column?.id, column?.linkedTableConfig?.linkedTableId, searchValue, currentPage, pageSize, refreshKey],
     queryFn: async () => {
       if (!column || !column.linkedTableConfig?.linkedTableId) {
         safeLog('❌ LinkedTableSelectModal: Missing column or linkedTableId', {
-          column: column ? { _id: column._id, name: column.name } : null,
+          column: column ? { _id: column._id, id: column.id, name: column.name } : null,
           linkedTableId: column?.linkedTableConfig?.linkedTableId
         });
         return { data: { options: [], totalCount: 0 } };
       }
 
-      safeLog('🔍 LinkedTableSelectModal: Fetching data for linkedTableId:', column.linkedTableConfig.linkedTableId);
-      safeLog('🔍 Query key:', ['linkedTableData', column._id, column.linkedTableConfig.linkedTableId, searchValue, currentPage, pageSize, refreshKey]);
+      // Determine if this is database or template mode
+      const columnId = column._id || column.id;
+      const isTemplateMode = !column._id && column.id;
+      
+      if (!columnId) {
+        safeLog('⚠️ LinkedTableSelectModal: No column ID available');
+        return { data: { options: [], totalCount: 0 } };
+      }
+
+      safeLog('🔍 LinkedTableSelectModal: Fetching data', {
+        mode: isTemplateMode ? 'template' : 'database',
+        columnId,
+        linkedTableId: column.linkedTableConfig.linkedTableId
+      });
 
       const params = new URLSearchParams();
       if (searchValue) params.append('search', searchValue);
       params.append('limit', pageSize.toString());
       params.append('page', currentPage.toString());
 
-      const response = await axiosInstance.get(
-        `/database/columns/${column._id}/linked-data?${params.toString()}`
-      );
+      // Use different API endpoint based on mode
+      const apiUrl = isTemplateMode 
+        ? `/templates/columns/${columnId}/linked-data?${params.toString()}`
+        : `/database/columns/${columnId}/linked-data?${params.toString()}`;
+
+      const response = await axiosInstance.get(apiUrl);
       
       safeLog('✅ LinkedTableSelectModal: API Response:', {
+        mode: isTemplateMode ? 'template' : 'database',
         linkedTableId: column.linkedTableConfig.linkedTableId,
-        response: response.data,
-        options: response.data?.data?.options || [],
-        linkedTableColumns: response.data?.data?.linkedTableColumns || []
+        optionsCount: response.data?.data?.options?.length || 0
       });
       
       return response.data;
     },
-    enabled: visible && !!column && !!column.linkedTableConfig?.linkedTableId,
+    enabled: visible && !!column && !!column.linkedTableConfig?.linkedTableId && !!(column._id || column.id),
     staleTime: 0, // Always fetch fresh data when linkedTableId changes
     refetchOnMount: true,
     refetchOnWindowFocus: false,

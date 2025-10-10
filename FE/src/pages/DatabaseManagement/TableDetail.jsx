@@ -706,7 +706,58 @@ const TableDetail = () => {
 
   const tableStructure = tableStructureResponse?.data;
   const table = tableStructure?.table;
-  const columns = tableStructure?.columns || [];
+  const rawColumns = tableStructure?.columns || [];
+  
+  // Transform columns data from API format to frontend format
+  const columns = rawColumns.map(column => {
+    const transformedColumn = { ...column };
+    
+    // Transform config data to match frontend expectations
+    if (column.config) {
+      if (column.config.singleSelectConfig) {
+        transformedColumn.singleSelectConfig = column.config.singleSelectConfig;
+      }
+      if (column.config.multiSelectConfig) {
+        transformedColumn.multiSelectConfig = column.config.multiSelectConfig;
+      }
+      if (column.config.checkboxConfig) {
+        transformedColumn.checkboxConfig = column.config.checkboxConfig;
+      }
+      if (column.config.currencyConfig) {
+        transformedColumn.currencyConfig = column.config.currencyConfig;
+      }
+      if (column.config.percentConfig) {
+        transformedColumn.percentConfig = column.config.percentConfig;
+      }
+      if (column.config.dateConfig) {
+        transformedColumn.dateConfig = column.config.dateConfig;
+      }
+      if (column.config.formulaConfig) {
+        transformedColumn.formulaConfig = column.config.formulaConfig;
+      }
+      if (column.config.urlConfig) {
+        transformedColumn.urlConfig = column.config.urlConfig;
+      }
+      if (column.config.phoneConfig) {
+        transformedColumn.phoneConfig = column.config.phoneConfig;
+      }
+      if (column.config.timeConfig) {
+        transformedColumn.timeConfig = column.config.timeConfig;
+      }
+      if (column.config.ratingConfig) {
+        transformedColumn.ratingConfig = column.config.ratingConfig;
+      }
+      if (column.config.linkedTableConfig) {
+        transformedColumn.linkedTableConfig = column.config.linkedTableConfig;
+      }
+      if (column.config.lookupConfig) {
+        transformedColumn.lookupConfig = column.config.lookupConfig;
+      }
+    }
+    
+    return transformedColumn;
+  });
+  
   const allRecords = recordsResponse?.data || [];
 
   // Debug log to check columns data
@@ -1106,29 +1157,29 @@ const TableDetail = () => {
       name: column.name,
       dataType: column.dataType,
       defaultValue: column.defaultValue !== undefined ? column.defaultValue : (column.dataType === 'currency' ? 0 : null),
-      checkboxConfig: column.checkboxConfig || {
+      checkboxConfig: column.checkboxConfig || column.config?.checkboxConfig || {
         icon: 'check-circle',
         color: '#52c41a',
         defaultValue: false
       },
-      singleSelectConfig: column.singleSelectConfig || {
+      singleSelectConfig: column.singleSelectConfig || column.config?.singleSelectConfig || {
         options: [],
         defaultValue: ''
       },
-      multiSelectConfig: column.multiSelectConfig || {
+      multiSelectConfig: column.multiSelectConfig || column.config?.multiSelectConfig || {
         options: [],
         defaultValue: []
       },
-      dateConfig: column.dateConfig || {
+      dateConfig: column.dateConfig || column.config?.dateConfig || {
         format: 'DD/MM/YYYY'
       },
-      formulaConfig: column.formulaConfig || {
+      formulaConfig: column.formulaConfig || column.config?.formulaConfig || {
         formula: '',
         resultType: 'number',
         dependencies: [],
         description: ''
       },
-      currencyConfig: column.currencyConfig || {
+      currencyConfig: column.currencyConfig || column.config?.currencyConfig || {
         currency: 'USD',
         symbol: '$',
         position: 'before',
@@ -1136,33 +1187,33 @@ const TableDetail = () => {
         thousandsSeparator: ',',
         decimalSeparator: '.'
       },
-      percentConfig: column.percentConfig || {
+      percentConfig: column.percentConfig || column.config?.percentConfig || {
         displayFormat: 'percentage',
         displayAsProgress: false,
         defaultValue: 0
       },
-      urlConfig: column.urlConfig || {
+      urlConfig: column.urlConfig || column.config?.urlConfig || {
         protocol: 'https'
       },
-      phoneConfig: column.phoneConfig || {
+      phoneConfig: column.phoneConfig || column.config?.phoneConfig || {
         // Phone doesn't need special config, but we include it for consistency
       },
-      timeConfig: column.timeConfig || {
+      timeConfig: column.timeConfig || column.config?.timeConfig || {
         format: '24'
       },
-      ratingConfig: column.ratingConfig || {
+      ratingConfig: column.ratingConfig || column.config?.ratingConfig || {
         maxStars: 5,
         icon: 'star',
         color: '#faad14',
         defaultValue: 0
       },
-      linkedTableConfig: column.linkedTableConfig || {
+      linkedTableConfig: column.linkedTableConfig || column.config?.linkedTableConfig || {
         linkedTableId: null,
         allowMultiple: false,
         defaultValue: null,
         filterRules: []
       },
-      lookupConfig: column.lookupConfig || column.lookup_config || {
+      lookupConfig: column.lookupConfig || column.lookup_config || column.config?.lookupConfig || {
         linkedTableId: null,
         lookupColumnId: null,
         linkedTableName: null,

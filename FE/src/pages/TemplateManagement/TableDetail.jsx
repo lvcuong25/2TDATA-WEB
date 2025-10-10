@@ -748,6 +748,18 @@ const TableDetail = () => {
       if (column.config.dateConfig) {
         transformedColumn.dateConfig = column.config.dateConfig;
       }
+      if (column.config.formulaConfig) {
+        transformedColumn.formulaConfig = column.config.formulaConfig;
+      }
+      if (column.config.urlConfig) {
+        transformedColumn.urlConfig = column.config.urlConfig;
+      }
+      if (column.config.phoneConfig) {
+        transformedColumn.phoneConfig = column.config.phoneConfig;
+      }
+      if (column.config.timeConfig) {
+        transformedColumn.timeConfig = column.config.timeConfig;
+      }
       if (column.config.ratingConfig) {
         transformedColumn.ratingConfig = column.config.ratingConfig;
       }
@@ -941,24 +953,24 @@ const TableDetail = () => {
     
     // Add date configuration if data type is date
     if ((newColumn.dataType || newColumn.data_type) === 'date') {
-      columnData.dateConfig = newColumn.dateConfig;
+      columnData.config = { ...columnData.config, dateConfig: newColumn.dateConfig };
     }
 
     // Add formula configuration if data type is formula
     if ((newColumn.dataType || newColumn.data_type) === 'formula') {
-      columnData.formulaConfig = newColumn.formulaConfig;
+      columnData.config = { ...columnData.config, formulaConfig: newColumn.formulaConfig };
     }
     
     // Add currency configuration if data type is currency
     if ((newColumn.dataType || newColumn.data_type) === 'currency') {
-      columnData.currencyConfig = newColumn.currencyConfig;
+      columnData.config = { ...columnData.config, currencyConfig: newColumn.currencyConfig };
       // Add default value for currency
       columnData.defaultValue = newColumn.defaultValue !== null && newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0;
     }
     
     // Add percent configuration if data type is percent
     if (newColumn.dataType === 'percent') {
-      columnData.percentConfig = newColumn.percentConfig;
+      columnData.config = { ...columnData.config, percentConfig: newColumn.percentConfig };
       // safeLog('Frontend: Sending percent config:', {
       //   newColumn: newColumn,
       //   percentConfig: newColumn.percentConfig,
@@ -968,7 +980,7 @@ const TableDetail = () => {
     
     // Add URL configuration if data type is url
     if (newColumn.dataType === 'url') {
-      columnData.urlConfig = newColumn.urlConfig;
+      columnData.config = { ...columnData.config, urlConfig: newColumn.urlConfig };
       // safeLog('Frontend: Sending URL config:', {
       //   newColumn: newColumn,
       //   urlConfig: newColumn.urlConfig,
@@ -978,6 +990,7 @@ const TableDetail = () => {
     
     // Phone data type doesn't need special config
     if (newColumn.dataType === 'phone') {
+      columnData.config = { ...columnData.config, phoneConfig: newColumn.phoneConfig };
       // safeLog('Frontend: Sending phone column:', {
       //   newColumn: newColumn,
       //   columnData: columnData
@@ -986,7 +999,7 @@ const TableDetail = () => {
     
     // Time data type doesn't need special config
     if (newColumn.dataType === 'time') {
-      columnData.timeConfig = newColumn.timeConfig;
+      columnData.config = { ...columnData.config, timeConfig: newColumn.timeConfig };
       // safeLog('Frontend: Sending time column:', {
       //   newColumn: newColumn,
       //   columnData: columnData
@@ -995,7 +1008,7 @@ const TableDetail = () => {
     
     // Rating data type doesn't need special config
     if (newColumn.dataType === 'rating') {
-      columnData.ratingConfig = newColumn.ratingConfig;
+      columnData.config = { ...columnData.config, ratingConfig: newColumn.ratingConfig };
       // safeLog('Frontend: Sending rating column:', {
       //   newColumn: newColumn,
       //   columnData: columnData,
@@ -1005,7 +1018,7 @@ const TableDetail = () => {
     
     // Add linked table configuration if data type is linked_table
     if (newColumn.dataType === 'linked_table') {
-      columnData.linkedTableConfig = newColumn.linkedTableConfig;
+      columnData.config = { ...columnData.config, linkedTableConfig: newColumn.linkedTableConfig };
       // safeLog('Frontend: Sending linked_table column:', {
       //   newColumn: newColumn,
       //   columnData: columnData,
@@ -1015,7 +1028,7 @@ const TableDetail = () => {
     
     // Add lookup configuration if data type is lookup
     if (newColumn.dataType === 'lookup') {
-      columnData.lookupConfig = newColumn.lookupConfig;
+      columnData.config = { ...columnData.config, lookupConfig: newColumn.lookupConfig };
       // safeLog('Frontend: Sending lookup column:', {
       //   newColumn: newColumn,
       //   columnData: columnData,
@@ -1182,35 +1195,37 @@ const TableDetail = () => {
     console.log('🔍 handleEditColumn called with column:', column);
     console.log('🔍 Column lookupConfig:', column.lookupConfig);
     console.log('🔍 Column lookup_config:', column.lookup_config);
+    console.log('🔍 Column linkedTableConfig:', column.linkedTableConfig);
+    console.log('🔍 Column config?.linkedTableConfig:', column.config?.linkedTableConfig);
 
     setEditingColumn({ 
       _id: column.id,
       name: column.name,
       dataType: column.data_type || column.dataType,
       defaultValue: column.default_value !== undefined ? column.default_value : (column.data_type === 'currency' ? 0 : null),
-      checkboxConfig: column.checkboxConfig || {
+      checkboxConfig: column.checkboxConfig || column.config?.checkboxConfig || {
         icon: 'check-circle',
         color: '#52c41a',
         defaultValue: false
       },
-      singleSelectConfig: column.singleSelectConfig || {
+      singleSelectConfig: column.singleSelectConfig || column.config?.singleSelectConfig || {
         options: [],
         defaultValue: ''
       },
-      multiSelectConfig: column.multiSelectConfig || {
+      multiSelectConfig: column.multiSelectConfig || column.config?.multiSelectConfig || {
         options: [],
         defaultValue: []
       },
-      dateConfig: column.dateConfig || {
+      dateConfig: column.dateConfig || column.config?.dateConfig || {
         format: 'DD/MM/YYYY'
       },
-      formulaConfig: column.formulaConfig || {
+      formulaConfig: column.formulaConfig || column.config?.formulaConfig || {
         formula: '',
         resultType: 'number',
         dependencies: [],
       description: '' 
       },
-      currencyConfig: column.currencyConfig || {
+      currencyConfig: column.currencyConfig || column.config?.currencyConfig || {
         currency: 'USD',
         symbol: '$',
         position: 'before',
@@ -1218,33 +1233,33 @@ const TableDetail = () => {
         thousandsSeparator: ',',
         decimalSeparator: '.'
       },
-      percentConfig: column.percentConfig || {
+      percentConfig: column.percentConfig || column.config?.percentConfig || {
         displayFormat: 'percentage',
         displayAsProgress: false,
         defaultValue: 0
       },
-      urlConfig: column.urlConfig || {
+      urlConfig: column.urlConfig || column.config?.urlConfig || {
         protocol: 'https'
       },
-      phoneConfig: column.phoneConfig || {
+      phoneConfig: column.phoneConfig || column.config?.phoneConfig || {
         // Phone doesn't need special config, but we include it for consistency
       },
-      timeConfig: column.timeConfig || {
+      timeConfig: column.timeConfig || column.config?.timeConfig || {
         format: '24'
       },
-      ratingConfig: column.ratingConfig || {
+      ratingConfig: column.ratingConfig || column.config?.ratingConfig || {
         maxStars: 5,
         icon: 'star',
         color: '#faad14',
         defaultValue: 0
       },
-      linkedTableConfig: column.linkedTableConfig || {
+      linkedTableConfig: column.linkedTableConfig || column.config?.linkedTableConfig || {
         linkedTableId: null,
         allowMultiple: false,
         defaultValue: null,
         filterRules: []
       },
-      lookupConfig: column.lookupConfig || column.lookup_config || {
+      lookupConfig: column.lookupConfig || column.lookup_config || column.config?.lookupConfig || {
         linkedTableId: null,
         lookupColumnId: null,
         linkedTableName: null,
@@ -1334,6 +1349,7 @@ const TableDetail = () => {
     
     // Phone data type doesn't need special config
     if (editingColumn.dataType === 'phone') {
+      columnData.config = { ...columnData.config, phoneConfig: editingColumn.phoneConfig };
       // safeLog('Frontend: Editing phone column:', {
       //   editingColumn: editingColumn,
       //   columnData: columnData
@@ -1342,7 +1358,7 @@ const TableDetail = () => {
     
     // Time data type doesn't need special config
     if (editingColumn.dataType === 'time') {
-      columnData.timeConfig = editingColumn.timeConfig;
+      columnData.config = { ...columnData.config, timeConfig: editingColumn.timeConfig };
       // safeLog('Frontend: Editing time column:', {
       //   editingColumn: editingColumn,
       //   columnData: columnData
@@ -1351,7 +1367,7 @@ const TableDetail = () => {
     
     // Rating data type doesn't need special config
     if (editingColumn.dataType === 'rating') {
-      columnData.ratingConfig = editingColumn.ratingConfig;
+      columnData.config = { ...columnData.config, ratingConfig: editingColumn.ratingConfig };
       // safeLog('Frontend: Editing rating column:', {
       //   editingColumn: editingColumn,
       //   columnData: columnData,
@@ -1361,7 +1377,7 @@ const TableDetail = () => {
     
     // Add linked table configuration if data type is linked_table
     if (editingColumn.dataType === 'linked_table') {
-      columnData.linkedTableConfig = editingColumn.linkedTableConfig;
+      columnData.config = { ...columnData.config, linkedTableConfig: editingColumn.linkedTableConfig };
       // safeLog('Frontend: Editing linked_table column:', {
       //   editingColumn: editingColumn,
       //   columnData: columnData,
@@ -1371,7 +1387,7 @@ const TableDetail = () => {
     
     // Add lookup configuration if data type is lookup
     if (editingColumn.dataType === 'lookup') {
-      columnData.lookupConfig = editingColumn.lookupConfig;
+      columnData.config = { ...columnData.config, lookupConfig: editingColumn.lookupConfig };
     }
     
     updateColumnMutation.mutate({
@@ -1975,7 +1991,7 @@ const TableDetail = () => {
             addColumnPosition={addColumnPosition}
             columns={columns}
             loading={addColumnMutation.isPending}
-            currentTableId={tableId}
+            currentTableId={table?.id}
             currentDatabaseId={templateId}
           />
 
@@ -1991,7 +2007,7 @@ const TableDetail = () => {
             setEditingColumn={setEditingColumn}
             columns={columns}
             loading={updateColumnMutation.isPending}
-            currentTableId={tableId}
+            currentTableId={table?.id}
             currentDatabaseId={templateId || null}
           />
 

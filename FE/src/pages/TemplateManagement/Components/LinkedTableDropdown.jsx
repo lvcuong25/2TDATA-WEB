@@ -91,49 +91,46 @@ const LinkedTableDropdown = ({
 
   // Fetch linked table data
   const { data: linkedData, isLoading, error } = useQuery({
-    queryKey: ['linkedTableData', column._id, searchValue, linkedTableConfig?.linkedTableId],
+    queryKey: ['linkedTableData', column._id, column.id, searchValue, linkedTableConfig?.linkedTableId],
     queryFn: async () => {
-      // If columns are not configured, fetch records directly from the linked table
-      if (!linkedTableConfig?.linkedColumnId || !linkedTableConfig?.displayColumnId) {
-        if (!linkedTableConfig?.linkedTableId) {
-          return { options: [], totalCount: 0 };
-        }
-        
-        // Fetch records directly from the linked table
-        const params = new URLSearchParams();
-        if (searchValue) params.append('search', searchValue);
-        params.append('limit', '50');
-        
-        const response = await axiosInstance.get(
-          `/database/tables/${linkedTableConfig.linkedTableId}/records?${params.toString()}`
-        );
-        
-        // Transform records to options format
-        const records = response.data.data || [];
-        const options = records.map((record, index) => ({
-          value: record._id, // Use record ID as value
-          label: record.data?.name || record.data?.title || `Record ${index + 1}`, // Use name/title or fallback
-          recordId: record._id
-        }));
-        
-        return {
-          options,
-          totalCount: response.data.totalCount || records.length,
-          linkedTable: { _id: linkedTableConfig.linkedTableId, name: 'Linked Table' }
-        };
-      }
+      // Determine if this is database or template mode
+      const columnId = column._id || column.id;
+      const isTemplateMode = !column._id && column.id;
       
-      // If columns are configured, use the existing API
+      if (!columnId) {
+        console.log('⚠️ LinkedTableDropdown: No column ID available');
+        return { options: [], totalCount: 0 };
+      }
+
+      if (!linkedTableConfig?.linkedTableId) {
+        return { options: [], totalCount: 0 };
+      }
+
+      console.log('🔍 LinkedTableDropdown: Fetching data', {
+        mode: isTemplateMode ? 'template' : 'database',
+        columnId,
+        linkedTableId: linkedTableConfig.linkedTableId
+      });
+
       const params = new URLSearchParams();
       if (searchValue) params.append('search', searchValue);
       params.append('limit', '50');
       
-      const response = await axiosInstance.get(
-        `/database/columns/${column._id}/linked-data?${params.toString()}`
-      );
+      // Use different API endpoint based on mode
+      const apiUrl = isTemplateMode 
+        ? `/templates/columns/${columnId}/linked-data?${params.toString()}`
+        : `/database/columns/${columnId}/linked-data?${params.toString()}`;
+      
+      const response = await axiosInstance.get(apiUrl);
+      
+      console.log('✅ LinkedTableDropdown: API Response', {
+        mode: isTemplateMode ? 'template' : 'database',
+        optionsCount: response.data?.data?.options?.length || 0
+      });
+      
       return response.data.data;
     },
-    enabled: !!column._id && !!linkedTableConfig?.linkedTableId,
+    enabled: !!(column._id || column.id) && !!linkedTableConfig?.linkedTableId,
     staleTime: 30000, // Cache for 30 seconds
   });
 

@@ -17,23 +17,26 @@ const LinkedTableConfig = ({
 }) => {
   const [selectedTableId, setSelectedTableId] = useState(config?.linkedTableId || null);
 
-  // Fetch available tables from current database only
+  // Fetch available tables from current template
   const { data: tablesData, isLoading: isLoadingTables, error: tablesError } = useQuery({
-    queryKey: ['availableTables', currentDatabaseId],
+    queryKey: ['availableTemplateTables', currentDatabaseId],
     queryFn: async () => {
       if (!currentDatabaseId) {
-        console.log('❌ No currentDatabaseId provided');
+        console.log('❌ No templateId provided');
         return { data: [] };
       }
       
-      console.log('🔍 Fetching tables from current database:', currentDatabaseId);
+      console.log('🔍 Fetching tables from template:', currentDatabaseId);
       try {
-        const response = await axiosInstance.get(`/database/databases/${currentDatabaseId}/tables`);
-        console.log('✅ Tables API response:', response);
-        console.log('✅ Tables data:', response.data);
-        return response.data;
+        // For template, currentDatabaseId is actually templateId
+        const response = await axiosInstance.get(`/templates/${currentDatabaseId}`);
+        console.log('✅ Template API response:', response);
+        console.log('✅ Template tables:', response.data.data.tables);
+        
+        // Return tables in the same format as database API
+        return { data: response.data.data.tables || [] };
       } catch (error) {
-        console.error('❌ Error fetching tables:', error);
+        console.error('❌ Error fetching template tables:', error);
         console.error('❌ Error response:', error.response);
         throw error;
       }
@@ -44,10 +47,12 @@ const LinkedTableConfig = ({
   // Use availableTables prop if provided, otherwise use fetched data
   const allTables = availableTables.length > 0 ? availableTables : (tablesData?.data || []);
   
-  // Filter tables - exclude current table only (API already filters by database)
+  // Filter tables - exclude current table only
   const filteredTables = allTables.filter(table => {
+    // Template tables use 'id' field, database tables use '_id'
+    const tableId = table.id || table._id;
     // Exclude current table
-    return table._id !== currentTableId;
+    return tableId !== currentTableId;
   });
 
   // Debug logging
@@ -55,29 +60,34 @@ const LinkedTableConfig = ({
     availableTables,
     tablesData,
     allTables,
+    'allTables.length': allTables.length,
     filteredTables,
+    'filteredTables.length': filteredTables.length,
     currentTableId,
+    'typeof currentTableId': typeof currentTableId,
     currentDatabaseId,
     isLoadingTables,
     tablesError
   });
 
   // Detailed debug for each table
-  console.log('🔍 All Tables Details (from current database):');
+  console.log('🔍 All Tables Details (from current template/database):');
   allTables.forEach((table, index) => {
+    const tableId = table.id || table._id;
     console.log(`Table ${index + 1}:`, {
-      id: table._id,
+      id: tableId,
       name: table.name,
       databaseId: table.databaseId,
       currentTableId,
-      isCurrentTable: table._id === currentTableId
+      isCurrentTable: tableId === currentTableId
     });
   });
 
   console.log('🔍 Filtered Tables Details:');
   filteredTables.forEach((table, index) => {
+    const tableId = table.id || table._id;
     console.log(`Filtered Table ${index + 1}:`, {
-      id: table._id,
+      id: tableId,
       name: table.name,
       databaseId: table.databaseId
     });
@@ -89,7 +99,8 @@ const LinkedTableConfig = ({
     setSelectedTableId(tableId);
     
     // Find the selected table to get its name
-    const selectedTable = filteredTables.find(table => table._id === tableId);
+    // Template tables use 'id' field, database tables use '_id'
+    const selectedTable = filteredTables.find(table => (table.id || table._id) === tableId);
     const linkedTableName = selectedTable ? selectedTable.name : null;
     
     // Update config - include both tableId and tableName
@@ -119,7 +130,8 @@ const LinkedTableConfig = ({
   };
 
   // Get selected table info
-  const selectedTable = filteredTables.find(table => table._id === selectedTableId);
+  // Template tables use 'id' field, database tables use '_id'
+  const selectedTable = filteredTables.find(table => (table.id || table._id) === selectedTableId);
 
   return (
     <div style={{ 
@@ -171,8 +183,9 @@ const LinkedTableConfig = ({
               >
                 {filteredTables.map(table => {
                   console.log('Rendering table option:', table);
+                  const tableId = table.id || table._id;
                   return (
-                    <Option key={table._id} value={table._id}>
+                    <Option key={tableId} value={tableId}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <DatabaseOutlined style={{ color: '#13c2c2' }} />
                         <span>{table.name}</span>

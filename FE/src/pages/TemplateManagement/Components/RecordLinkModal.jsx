@@ -42,19 +42,27 @@ const RecordLinkModal = ({
       }
 
       console.log('RecordLinkModal: Fetching records for linkedTableId:', linkedTableConfig.linkedTableId);
-      console.log('RecordLinkModal: Column exists:', !!column?._id);
+      
+      // Determine if this is database or template mode
+      const columnId = column?._id || column?.id;
+      const isTemplateMode = !column?._id && column?.id;
+      
+      console.log('RecordLinkModal: Mode:', isTemplateMode ? 'template' : column?._id ? 'database' : 'none', 'Column ID:', columnId);
 
       const params = new URLSearchParams();
       if (searchValue) params.append('search', searchValue);
       params.append('limit', pageSize);
-      params.append('offset', (currentPage - 1) * pageSize);
+      params.append('page', currentPage);
       
-      // If column exists, use the column API, otherwise fetch directly from table
-      if (column?._id) {
-        console.log('RecordLinkModal: Using column API for column:', column._id);
-        const response = await axiosInstance.get(
-          `/database/columns/${column._id}/linked-data?${params.toString()}`
-        );
+      // If column exists, use the column API
+      if (columnId) {
+        // Use different API endpoint based on mode
+        const apiUrl = isTemplateMode 
+          ? `/templates/columns/${columnId}/linked-data?${params.toString()}`
+          : `/database/columns/${columnId}/linked-data?${params.toString()}`;
+        
+        console.log('RecordLinkModal: Using column API:', apiUrl);
+        const response = await axiosInstance.get(apiUrl);
         
         console.log('RecordLinkModal: Column API response:', response.data);
         

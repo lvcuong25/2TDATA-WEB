@@ -4,6 +4,40 @@ import TemplateCategory from '../model/TemplateCategory.js';
 import Database from '../model/Database.js';
 import { Table, Column, Record, TemplateRecord } from '../models/postgres/index.js';
 import User from '../model/User.js';
+import exprEvalEngine from '../utils/exprEvalEngine.js';
+
+// Calculate formula columns for template records
+const calculateFormulaColumnsForTemplate = (records, columns) => {
+  return records.map(record => {
+    const recordData = { ...record.data };
+    
+    // Find all formula columns
+    const formulaColumns = columns.filter(col => col.data_type === 'formula');
+    
+    // Calculate each formula
+    formulaColumns.forEach(formulaColumn => {
+      try {
+        const formula = formulaColumn.config?.formulaConfig?.formula;
+        if (formula) {
+          const formulaValue = exprEvalEngine.evaluateFormula(
+            formula,
+            recordData,
+            columns
+          );
+          recordData[formulaColumn.name] = formulaValue;
+        }
+      } catch (error) {
+        console.error(`Error evaluating formula for column ${formulaColumn.name}:`, error);
+        recordData[formulaColumn.name] = null;
+      }
+    });
+    
+    return {
+      ...record,
+      data: recordData
+    };
+  });
+};
 
 // Get all public templates (for regular users)
 export const getPublicTemplates = async (req, res, next) => {
@@ -1153,15 +1187,20 @@ export const addTemplateRecord = async (req, res, next) => {
       created_by: String(req.user._id)
     });
     
+    // Format and calculate formula
+    const formattedRecord = {
+      _id: newRecord.id,
+      data: newRecord.data,
+      created_at: newRecord.created_at,
+      updated_at: newRecord.updated_at
+    };
+    
+    const enhancedRecords = calculateFormulaColumnsForTemplate([formattedRecord], table.columns);
+    
     res.status(201).json({
       success: true,
       message: 'Sample record added successfully',
-      data: {
-        _id: newRecord.id,
-        data: newRecord.data,
-        created_at: newRecord.created_at,
-        updated_at: newRecord.updated_at
-      }
+      data: enhancedRecords[0]
     });
   } catch (error) {
     next(error);
@@ -1232,9 +1271,12 @@ export const getTemplateRecords = async (req, res, next) => {
       updated_at: record.updated_at
     }));
     
+    // Calculate formula columns for all records
+    const enhancedRecords = calculateFormulaColumnsForTemplate(formattedRecords, table.columns);
+    
     res.status(200).json({
       success: true,
-      data: formattedRecords
+      data: enhancedRecords
     });
   } catch (error) {
     next(error);
@@ -1310,15 +1352,20 @@ export const updateTemplateRecord = async (req, res, next) => {
       data: { ...record.data, ...updateData }
     });
     
+    // Format and calculate formula
+    const formattedRecord = {
+      _id: record.id,
+      data: record.data,
+      created_at: record.created_at,
+      updated_at: record.updated_at
+    };
+    
+    const enhancedRecords = calculateFormulaColumnsForTemplate([formattedRecord], table.columns);
+    
     res.status(200).json({
       success: true,
       message: 'Record updated successfully',
-      data: {
-        _id: record.id,
-        data: record.data,
-        created_at: record.created_at,
-        updated_at: record.updated_at
-      }
+      data: enhancedRecords[0]
     });
   } catch (error) {
     next(error);
@@ -1471,10 +1518,154 @@ export const deleteMultipleTemplateRecords = async (req, res, next) => {
       message: `${deletedCount} record(s) deleted successfully`,
       data: {
         deletedCount,
-        recordIds: recordIds
+      recordIds: recordIds
+    }
+  });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get linked table data for template columns
+export const getTemplateLinkedTableData = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { search, limit = 50, page = 1 } = req.query;
+
+    // Find the column in template
+    const column = await TemplateColumn.findByPk(columnId);
+
+    if (!column) {
+      return res.status(404).json({ message: 'Template column not found' });
+    }
+
+    if (column.data_type !== 'linked_table') {
+      return res.status(400).json({ message: 'Column is not a linked table type' });
+    }
+
+    if (!column.config || !column.config.linkedTableConfig || !column.config.linkedTableConfig.linkedTableId) {
+      return res.status(400).json({ message: 'Linked table configuration not found' });
+    }
+
+    const linkedTableId = column.config.linkedTableConfig.linkedTableId;
+
+    // Get the linked template table
+    const linkedTable = await TemplateTable.findByPk(linkedTableId);
+
+    if (!linkedTable) {
+      return res.status(404).json({ message: 'Linked template table not found' });
+    }
+
+    // Get columns of the linked table
+    const linkedTableColumns = await TemplateColumn.findAll({
+      where: { template_table_id: linkedTableId },
+      order: [['order', 'ASC']]
+    });
+
+    // TemplateRecord uses template_id + table_index, not template_table_id
+    // We need to find the table_index for this table
+    const allTablesInTemplate = await TemplateTable.findAll({
+      where: { template_id: linkedTable.template_id },
+      order: [['order', 'ASC']]
+    });
+    
+    // Find the index of the linked table
+    const tableIndex = allTablesInTemplate.findIndex(t => t.id === linkedTableId);
+    
+    if (tableIndex === -1) {
+      return res.status(404).json({ message: 'Linked table index not found' });
+    }
+
+    // Get sample records from the linked table
+    let whereClause = { 
+      template_id: linkedTable.template_id,
+      table_index: tableIndex
+    };
+    
+    // Apply search filter if provided
+    if (search) {
+      // Search in the data JSONB field
+      whereClause = {
+        ...whereClause,
+        data: {
+          [Op.or]: linkedTableColumns.map(col => ({
+            [col.name]: { [Op.iLike]: `%${search}%` }
+          }))
+        }
+      };
+    }
+
+    // Get records with pagination
+    const offset = (page - 1) * limit;
+    const records = await TemplateRecord.findAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      offset: offset,
+      order: [['created_at', 'DESC']]
+    });
+
+    const totalCount = await TemplateRecord.count({ 
+      where: { 
+        template_id: linkedTable.template_id,
+        table_index: tableIndex
+      } 
+    });
+
+    // Transform records to options format
+    const options = records.map((record, index) => {
+      let label = `Record ${index + 1}`;
+      
+      if (record.data && Object.keys(record.data).length > 0) {
+        // Use displayColumnId from config if available
+        const displayColumnId = column.config.linkedTableConfig?.displayColumnId;
+        const displayColumn = linkedTableColumns.find(col => col.id === displayColumnId);
+        
+        if (displayColumn && record.data[displayColumn.name]) {
+          label = String(record.data[displayColumn.name]);
+        } else {
+          // Get the first column that has data
+          const firstColumn = linkedTableColumns[0];
+          if (firstColumn && record.data[firstColumn.name]) {
+            label = String(record.data[firstColumn.name]);
+          } else {
+            // Fallback to any available data
+            const dataKeys = Object.keys(record.data);
+            const firstDataKey = dataKeys.find(key => record.data[key] && String(record.data[key]).trim());
+            if (firstDataKey) {
+              label = String(record.data[firstDataKey]);
+            }
+          }
+        }
+      }
+      
+      return {
+        value: record.id,
+        label: String(label),
+        recordId: record.id,
+        data: record.data
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        options,
+        totalCount,
+        linkedTable: {
+          _id: linkedTable.id,
+          name: linkedTable.name,
+          id: linkedTable.id
+        },
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          id: col.id,
+          name: col.name,
+          data_type: col.data_type,
+          key: col.key
+        }))
       }
     });
   } catch (error) {
-    next(error);
+    console.error('Error fetching template linked table data:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
