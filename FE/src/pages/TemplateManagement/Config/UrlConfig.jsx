@@ -17,12 +17,6 @@ const UrlConfig = ({
 
   const handleConfigChange = (key, value) => {
     const newConfig = { ...defaultConfig, [key]: value };
-    console.log('UrlConfig: handleConfigChange:', {
-      key,
-      value,
-      defaultConfig,
-      newConfig
-    });
     onChange(newConfig);
   };
 

@@ -49,7 +49,6 @@ const LinkedTableTabs = ({
   // Handle expand record
   const handleExpandRecord = (e) => {
     e.stopPropagation();
-    console.log('Expand record');
   };
 
   return (

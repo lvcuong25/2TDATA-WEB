@@ -58,10 +58,6 @@ const EditColumnModal = ({
 }) => {
   if (!editingColumn) return null;
 
-  // Debug log to check column data
-  console.log('🔍 EditColumnModal received editingColumn:', editingColumn);
-  console.log('🔍 Lookup config:', editingColumn.lookupConfig);
-
   return (
     <Modal
       title="Chỉnh sửa cột"
@@ -430,7 +426,6 @@ const EditColumnModal = ({
                 defaultValue: editingColumn.defaultValue !== undefined ? editingColumn.defaultValue : 0
               }}
               onChange={(config) => {
-                console.log('Edit CurrencyConfig onChange:', config);
                 const { defaultValue, ...currencyConfig } = config;
                 setEditingColumn({
                   ...editingColumn,

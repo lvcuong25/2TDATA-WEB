@@ -285,13 +285,6 @@ export const formatCellValueForDisplay = (value, column) => {
       // Use default value if no value provided
       const displayValue = (value !== null && value !== undefined && value !== '') ? value : (column.percentConfig?.defaultValue || 0);
       
-      console.log('Percent display debug:', {
-        value,
-        percentConfig: column.percentConfig,
-        defaultValue: column.percentConfig?.defaultValue,
-        displayValue
-      });
-      
       // Always display something if we have a displayValue
       if (displayValue !== null && displayValue !== undefined) {
         const numValue = Number(displayValue);

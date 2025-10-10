@@ -171,8 +171,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       const sortRulesParam = sortRules.length > 0 ? JSON.stringify(sortRules) : undefined;
       const filterRulesParam = isFilterActive && filterRules.length > 0 ? JSON.stringify(filterRules) : undefined;
       
-      console.log('🔄 Frontend: Fetching records with sortRules:', sortRules);
-      console.log('🔄 Frontend: sortRulesParam:', sortRulesParam);
       
       const response = await axiosInstance.get(`/database/tables/${tableId}/records`, {
         params: {

@@ -107,33 +107,26 @@ const EditRecordModal = ({
                 formValues[key] = today.hour(parseInt(timeParts[0])).minute(parseInt(timeParts[1])).second(0);
               } else {
                 formValues[key] = value;
-                console.log('🔍 Time conversion failed for:', key, 'keeping original:', value);
               }
             } catch {
               formValues[key] = value;
-              console.log('🔍 Time conversion failed for:', key, 'keeping original:', value);
             }
           } else {
             formValues[key] = value;
-            console.log('🔍 Regular field:', key, '=', value);
           }
         } else {
           formValues[key] = value;
-          console.log('🔍 Non-string field:', key, '=', value);
         }
       });
       
-      console.log('🔍 Final formValues:', formValues);
       
       // Force set form values with a delay to ensure form is ready
       setTimeout(() => {
         form.setFieldsValue(formValues);
-        console.log('🔍 Form values set with timeout');
         
         // Also try to set individual fields
         Object.entries(formValues).forEach(([key, value]) => {
           form.setFieldValue(key, value);
-          console.log('🔍 Set individual field:', key, '=', value);
         });
       }, 100);
     }
@@ -165,7 +158,6 @@ const EditRecordModal = ({
   const addCommentMutation = useMutation({
     mutationFn: async (commentData) => {
       const recordId = record._id || record.id;
-      console.log('🔍 Adding comment for record:', recordId);
       const response = await axiosInstance.post(`/database/records/${recordId}/comments`, {
         text: commentData.text,
         recordId: recordId,
@@ -187,10 +179,8 @@ const EditRecordModal = ({
   // Fetch comments mutation
   const fetchCommentsMutation = useMutation({
     mutationFn: async () => {
-      console.log('🔍 Fetching comments for record:', record._id, record.id);
       const recordId = record._id || record.id;
       const response = await axiosInstance.get(`/database/records/${recordId}/comments`);
-      console.log('🔍 Comments response:', response.data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -283,24 +273,8 @@ const EditRecordModal = ({
 
   const handleSubmit = async (values) => {
     try {
-      console.log('🔍 handleSubmit called with:', {
-        values,
-        record,
-        recordKeys: Object.keys(record || {}),
-        recordId: record?._id || record?.id,
-        hasRecordId: !!(record?._id || record?.id),
-        recordIdType: typeof (record?._id || record?.id)
-      });
-
       // Get record ID - try multiple possible locations
       const recordId = record?._id || record?.id || record?.dataValues?.id || record?.dataValues?._id;
-      console.log('🔍 Record ID extraction:', {
-        recordId,
-        recordIdType: typeof recordId,
-        recordIdValue: recordId,
-        dataValuesId: record?.dataValues?.id,
-        dataValuesUnderscoreId: record?.dataValues?._id
-      });
       
       if (!recordId) {
         console.error('🔍 No record ID found:', {
@@ -332,7 +306,6 @@ const EditRecordModal = ({
         }
       });
 
-      console.log('🔍 Submitting with recordId:', recordId, 'data:', processedValues);
 
       await updateRecordMutation.mutateAsync({
         recordId: recordId,
@@ -581,14 +554,6 @@ const EditRecordModal = ({
                  })
                  ?.map((column, index) => {
                   const { name, dataType, isRequired, description } = column;
-                  
-                  // Debug logging for form fields
-                  console.log('🔍 Rendering form field:', {
-                    name,
-                    dataType,
-                    isRequired,
-                    recordDataValue: record?.data?.[name]
-                  });
                   
                 return (
                   <div key={column._id || index} className="mb-6">

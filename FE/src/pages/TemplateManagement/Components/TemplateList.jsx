@@ -158,7 +158,6 @@ const TemplateList = ({
   const handleCopySubmit = async (values) => {
     try {
       // Mock copy operation
-      console.log('Copying template:', selectedTemplate.id, values);
       message.success('Template copied successfully');
       setCopyModalVisible(false);
     } catch (error) {
@@ -171,7 +170,6 @@ const TemplateList = ({
   const handleExportTemplate = async (template) => {
     try {
       // Mock export operation
-      console.log('Exporting template:', template.id);
       message.success('Template exported successfully');
     } catch (error) {
       console.error('Error exporting template:', error);
@@ -190,7 +188,6 @@ const TemplateList = ({
       onOk: async () => {
         try {
           // Mock delete operation
-          console.log('Deleting template:', template.id);
           message.success('Template deleted successfully');
         } catch (error) {
           console.error('Error deleting template:', error);
@@ -228,7 +225,7 @@ const TemplateList = ({
             </Button>
             <Button 
               icon={<ImportOutlined />}
-              onClick={() => console.log('Import templates')}
+              onClick={() => {}}
             >
               Import
             </Button>

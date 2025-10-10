@@ -123,10 +123,6 @@ const CreateRecordModal = ({
         }
       });
 
-      // Debug: Log the processed values
-      console.log('Form values:', values);
-      console.log('Processed values:', processedValues);
-
       await createRecordMutation.mutateAsync({
         tableId,
         data: processedValues

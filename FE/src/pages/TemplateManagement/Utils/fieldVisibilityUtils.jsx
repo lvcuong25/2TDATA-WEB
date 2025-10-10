@@ -69,21 +69,6 @@ export const getVisibleColumns = (columns, fieldVisibility, showSystemFields, co
     if (columnPermissions && user && userRole) {
       // Use imported permission check function
       const hasPermission = canViewColumn(columnPermissions, column._id, user, userRole);
-      console.log(`🚨 Column ${column.name} (${column._id}): hasPermission=${hasPermission}, userRole=${userRole}`);
-      
-      // Find relevant permissions for this column
-      const columnPerms = columnPermissions.filter(perm => perm.columnId === column._id);
-      console.log(`🚨 Column ${column.name} permissions:`, columnPerms.map(p => ({
-        targetType: p.targetType,
-        canView: p.canView,
-        canEdit: p.canEdit,
-        userId: p.userId?._id,
-        role: p.role
-      })));
-      
-      if (columnPerms.length > 0) {
-        console.log(`🚨 Column ${column.name} will be ${hasPermission ? 'VISIBLE' : 'HIDDEN'} due to permissions`);
-      }
       
       return hasPermission;
     }

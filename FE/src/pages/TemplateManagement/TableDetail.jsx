@@ -118,10 +118,6 @@ const TableDetail = () => {
   const { templateId, tableIndex } = useParams();
   const tableId = `${templateId}_${tableIndex}`; // Create unique tableId for template
   
-  // CRITICAL DEBUG LOG - This should always show
-  console.log('🚨🚨🚨 TABLEDETAIL COMPONENT LOADED 🚨🚨🚨');
-  console.log('🚨🚨🚨 TEMPLATEID:', templateId, 'TABLEINDEX:', tableIndex, 'TABLEID:', tableId);
-  
   // Check if templateId is undefined
   if (!templateId || templateId === 'undefined') {
     return (
@@ -1192,12 +1188,6 @@ const TableDetail = () => {
   };
 
   const handleEditColumn = (column) => {
-    console.log('🔍 handleEditColumn called with column:', column);
-    console.log('🔍 Column lookupConfig:', column.lookupConfig);
-    console.log('🔍 Column lookup_config:', column.lookup_config);
-    console.log('🔍 Column linkedTableConfig:', column.linkedTableConfig);
-    console.log('🔍 Column config?.linkedTableConfig:', column.config?.linkedTableConfig);
-
     setEditingColumn({ 
       _id: column.id,
       name: column.name,
@@ -1411,7 +1401,6 @@ const TableDetail = () => {
   };
 
   const handleCellClick = (recordId, columnName, currentValue) => {
-    console.log('🔍 CELL CLICKED!', { recordId, columnName, currentValue });
     
     // If clicking on the same cell that's already being edited, ignore
     if (editingCell && editingCell.recordId === recordId && editingCell.columnName === columnName) {
@@ -1462,17 +1451,9 @@ const TableDetail = () => {
     
     // Always allow editing for template management
     if (canEdit) {
-      console.log('🔍 Starting cell editing...');
       const { editingCell: newEditingCell, cellValue: newCellValue } = initializeCellEditing(recordId, columnName, currentValue, column);
       setEditingCell(newEditingCell);
       setCellValue(newCellValue);
-    } else {
-      console.log('🔍 Cell editing blocked:', {
-        canEdit,
-        isSystem: column.isSystem,
-        dataType: column.dataType || column.data_type,
-        reason: !canEdit ? 'No permission' : column.isSystem ? 'System field' : 'Checkbox field'
-      });
     }
   };
 
@@ -1484,14 +1465,6 @@ const TableDetail = () => {
 
     const column = columns.find(col => col.name === editingCell.columnName);
     const updatedData = prepareCellDataForSave(cellValue, column, record);
-
-    console.log('🔍 SAVING CELL DATA:', {
-      recordId: editingCell.recordId,
-      columnName: editingCell.columnName,
-      cellValue,
-      updatedData,
-      originalRecord: record
-    });
 
     updateRecordMutation.mutate({
       recordId: editingCell.recordId,
@@ -1582,9 +1555,7 @@ const TableDetail = () => {
   };
 
   const handleUpdateSortRule = (index, field, order) => {
-    console.log('🔄 Frontend: handleUpdateSortRule called:', { index, field, order });
     const newRules = updateSortRule(sortRules, index, field, order);
-    console.log('🔄 Frontend: New sort rules:', newRules);
     setSortRules(newRules);
   };
 

@@ -287,8 +287,6 @@ const TableBody = ({
   canAddData,
   canEditData
 }) => {
-  // Debug userRole
-  console.log('🚨 TABLEBODY userRole:', userRole, 'type:', typeof userRole);
   // State for linked table modal
   const [linkedTableModal, setLinkedTableModal] = useState({
     visible: false,
@@ -746,7 +744,6 @@ const TableBody = ({
                                     value={formatDateForInput(cellValue)}
                                     onChange={(e) => {
                                       if (!canEditCurrentCell()) {
-                                        console.log('🔍 Permission denied: Cannot edit date cell');
                                         return;
                                       }
                                       setCellValue(e.target.value);
@@ -785,7 +782,6 @@ const TableBody = ({
                                     value={cellValue}
                                     onChange={(e) => {
                                       if (!canEditCurrentCell()) {
-                                        console.log('🔍 Permission denied: Cannot edit percent cell');
                                         return;
                                       }
                                       setCellValue(e.target.value);
@@ -824,7 +820,6 @@ const TableBody = ({
                                     value={cellValue}
                                     onChange={(e) => {
                                       if (!canEditCurrentCell()) {
-                                        console.log('🔍 Permission denied: Cannot edit number/currency cell');
                                         return;
                                       }
                                       setCellValue(e.target.value);
@@ -905,7 +900,6 @@ const TableBody = ({
                                     value={cellValue}
                                     onChange={(e) => {
                                       if (!canEditCurrentCell()) {
-                                        console.log('🔍 Permission denied: Cannot edit email cell');
                                         return;
                                       }
                                       setCellValue(e.target.value);
@@ -930,7 +924,6 @@ const TableBody = ({
                                     value={cellValue}
                                     onChange={(e) => {
                                       if (!canEditCurrentCell()) {
-                                        console.log('🔍 Permission denied: Cannot edit phone cell');
                                         return;
                                       }
                                       setCellValue(e.target.value);
@@ -972,7 +965,6 @@ const TableBody = ({
                                     value={cellValue}
                                     onChange={(e) => {
                                       if (!canEditCurrentCell()) {
-                                        console.log('🔍 Permission denied: Cannot edit time cell');
                                         return;
                                       }
                                       setCellValue(e.target.value);
@@ -1117,7 +1109,6 @@ const TableBody = ({
                                       value={cellValue}
                                       onChange={(e) => {
                                         if (!canEditCurrentCell()) {
-                                          console.log('🔍 Permission denied: Cannot edit rating cell');
                                           return;
                                         }
                                         setCellValue(e.target.value);
@@ -1267,7 +1258,6 @@ const TableBody = ({
                                     value={cellValue}
                                     onChange={(e) => {
                                       if (!canEditCurrentCell()) {
-                                        console.log('🔍 Permission denied: Cannot edit text cell');
                                         return;
                                       }
                                       setCellValue(e.target.value);
@@ -1379,21 +1369,10 @@ const TableBody = ({
                                 setTimeout(() => document.addEventListener('click', removeMenu), 0);
                               }}
                               onClick={() => {
-                                console.log('🔍 CELL ONCLICK TRIGGERED!', {
-                                  recordId: record._id,
-                                  columnName: column.name,
-                                  value,
-                                  isSystem: column.isSystem,
-                                  dataType: column.dataType || column.data_type,
-                                  isEditable: isCellEditableByPermission(record._id, column.id || column._id)
-                                });
-                                
                                 if (column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' || (column.dataType || column.data_type) === 'linked_table' || (column.dataType || column.data_type) === 'lookup' || (column.dataType || column.data_type) === 'json' || !isCellEditableByPermission(record._id, column.id || column._id)) {
-                                  console.log('🔍 Cell click blocked by conditions');
                                   return;
                                 }
                                 
-                                console.log('🔍 Calling handleCellClick...');
                                 handleCellClick(record._id, column.name, value);
                               }}
                               onMouseEnter={column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
@@ -2043,10 +2022,9 @@ const TableBody = ({
                             <Input
                               type="date"
                               value={formatDateForInput(cellValue)}
-                              onChange={(e) => {
-                                if (!canEditCurrentCell()) {
-                                  console.log('🔍 Permission denied: Cannot edit date cell (grouped)');
-                                  return;
+                                  onChange={(e) => {
+                                    if (!canEditCurrentCell()) {
+                                      return;
                                 }
                                 setCellValue(e.target.value);
                               }}
@@ -2082,10 +2060,9 @@ const TableBody = ({
                               type="number"
                               step={dataType === 'currency' ? "0.01" : undefined}
                               value={cellValue}
-                              onChange={(e) => {
-                                if (!canEditCurrentCell()) {
-                                  console.log('🔍 Permission denied: Cannot edit number/currency cell (grouped)');
-                                  return;
+                                  onChange={(e) => {
+                                    if (!canEditCurrentCell()) {
+                                      return;
                                 }
                                 setCellValue(e.target.value);
                               }}
@@ -2120,10 +2097,9 @@ const TableBody = ({
                             <Input
                               type="email"
                               value={cellValue}
-                              onChange={(e) => {
-                                if (!canEditCurrentCell()) {
-                                  console.log('🔍 Permission denied: Cannot edit email cell (grouped)');
-                                  return;
+                                  onChange={(e) => {
+                                    if (!canEditCurrentCell()) {
+                                      return;
                                 }
                                 setCellValue(e.target.value);
                               }}
@@ -2156,10 +2132,9 @@ const TableBody = ({
                             <Input
                               type="tel"
                               value={cellValue}
-                              onChange={(e) => {
-                                if (!canEditCurrentCell()) {
-                                  console.log('🔍 Permission denied: Cannot edit phone cell (grouped)');
-                                  return;
+                                  onChange={(e) => {
+                                    if (!canEditCurrentCell()) {
+                                      return;
                                 }
                                 setCellValue(e.target.value);
                               }}
@@ -2200,7 +2175,6 @@ const TableBody = ({
                               value={cellValue}
                               onChange={(e) => {
                                 if (!canEditCurrentCell()) {
-                                  console.log('🔍 Permission denied: Cannot edit time cell (grouped)');
                                   return;
                                 }
                                 setCellValue(e.target.value);
@@ -2401,10 +2375,9 @@ const TableBody = ({
                           return (
                             <Input
                               value={cellValue}
-                              onChange={(e) => {
-                                if (!canEditCurrentCell()) {
-                                  console.log('🔍 Permission denied: Cannot edit text cell (grouped)');
-                                  return;
+                                  onChange={(e) => {
+                                    if (!canEditCurrentCell()) {
+                                      return;
                                 }
                                 setCellValue(e.target.value);
                               }}
@@ -2515,21 +2488,10 @@ const TableBody = ({
                           setTimeout(() => document.addEventListener('click', removeMenu), 0);
                         }}
                         onClick={() => {
-                          console.log('🔍 CELL ONCLICK TRIGGERED (GROUPED)!', {
-                            recordId: record._id,
-                            columnName: column.name,
-                            value,
-                            isSystem: column.isSystem,
-                            dataType: column.dataType || column.data_type,
-                            isEditable: isCellEditableByPermission(record._id, column.id || column._id)
-                          });
-                          
                           if (column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' || (column.dataType || column.data_type) === 'linked_table' || (column.dataType || column.data_type) === 'lookup' || (column.dataType || column.data_type) === 'json' || !isCellEditableByPermission(record._id, column.id || column._id)) {
-                            console.log('🔍 Cell click blocked by conditions (grouped)');
                             return;
                           }
                           
-                          console.log('🔍 Calling handleCellClick (grouped)...');
                           handleCellClick(record._id, column.name, value);
                         }}
                         onMouseEnter={column.isSystem || (column.dataType || column.data_type) === 'checkbox' || (column.dataType || column.data_type) === 'single_select' || (column.dataType || column.data_type) === 'multi_select' ? undefined : (e) => e.target.style.backgroundColor = '#f5f5f5'}
@@ -2553,30 +2515,18 @@ const TableBody = ({
                                 let displayUrl = value;
 
 
-                                // Debug log
-                                console.log('TableBody URL Debug:', {
-                                  columnName: column.name,
-                                  value,
-                                  urlConfig: column.urlConfig,
-                                  hasUrlConfig: !!column.urlConfig,
-                                  protocol: column.urlConfig?.protocol
-                                });
-
                                 // Auto-add protocol
                                 if (!value.startsWith('http://') && !value.startsWith('https://')) {
                                   if (column.urlConfig && column.urlConfig.protocol && column.urlConfig.protocol !== 'none') {
                                     // Use the configured protocol
                                     const protocol = column.urlConfig.protocol;
                                     displayUrl = `${protocol}://${String(value)}`;
-                                    console.log('Using configured protocol:', protocol, '→', displayUrl);
                                   } else if (column.urlConfig && column.urlConfig.protocol === 'none') {
                                     // Don't add protocol, keep original value
                                     displayUrl = String(value);
-                                    console.log('Protocol is none, keeping original value:', displayUrl);
                                   } else if (!column.urlConfig) {
                                     // Fallback for old columns without urlConfig
                                     displayUrl = `https://${String(value)}`;
-                                    console.log('Using fallback protocol: https →', displayUrl);
                                   }
                                 }
 
@@ -2608,15 +2558,6 @@ const TableBody = ({
                                         const icon = column.ratingConfig?.icon || 'star';
                                         const color = column.ratingConfig?.color || '#faad14';
                                         const allowHalf = true; // Always allow half stars
-                                        
-                                        console.log('TableBody: Displaying rating', {
-                                          columnName: column.name,
-                                          ratingValue,
-                                          maxStars,
-                                          icon,
-                                          color,
-                                          ratingConfig: column.ratingConfig
-                                        });
                                         
                                         const iconMap = {
                                           star: { filled: <StarFilled />, outline: <StarOutlined /> },
@@ -3174,7 +3115,6 @@ const TableBody = ({
         visible={linkedTableModal.visible}
         onCancel={() => setLinkedTableModal({ visible: false, column: null, record: null })}
         onSelect={(selectedData) => {
-          console.log('Selected linked table data:', selectedData);
         }}
         column={linkedTableModal.column}
         record={linkedTableModal.record}

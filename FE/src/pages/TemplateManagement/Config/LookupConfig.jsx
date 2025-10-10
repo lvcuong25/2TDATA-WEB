@@ -17,11 +17,6 @@ import axiosInstance from '../../../axios/axiosInstance';
 const { Option } = Select;
 
 const LookupConfig = ({ config, onChange, currentTableId, currentDatabaseId, availableTables = [] }) => {
-  // Debug log to check config
-  console.log('🔍 LookupConfig received config:', config);
-  console.log('🔍 LookupConfig currentTableId:', currentTableId);
-  console.log('🔍 LookupConfig currentDatabaseId:', currentDatabaseId);
-  
   const [selectedTableId, setSelectedTableId] = useState(config?.linkedTableId || null);
   const [selectedColumnId, setSelectedColumnId] = useState(config?.lookupColumnId || null);
 

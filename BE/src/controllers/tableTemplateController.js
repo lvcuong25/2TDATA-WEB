@@ -42,13 +42,9 @@ const calculateFormulaColumnsForTemplate = (records, columns) => {
 // Calculate lookup columns for template records
 const calculateLookupColumnsForTemplate = async (records, columns, templateId, tableIndex) => {
   try {
-    console.log(`🔍 Starting lookup calculation for template ${templateId}, table ${tableIndex} with ${records.length} records`);
-    
     const lookupColumns = columns.filter(col => col.data_type === 'lookup' && col.config?.lookupConfig);
-    console.log(`📋 Found ${lookupColumns.length} lookup columns:`, lookupColumns.map(col => col.name));
     
     if (lookupColumns.length === 0) {
-      console.log('⚠️ No lookup columns found, returning original records');
       return records;
     }
     
@@ -80,7 +76,6 @@ const calculateLookupColumnsForTemplate = async (records, columns, templateId, t
           // Get the linked record ID from the linked_table column
           const linkedTableValue = enhancedRecord.data?.[linkedColumn.name];
           if (!linkedTableValue || !linkedTableValue.recordId) {
-            console.log(`No linked record for ${lookupColumn.name} in record ${record._id}`);
             continue;
           }
           
@@ -135,8 +130,6 @@ const calculateLookupColumnsForTemplate = async (records, columns, templateId, t
           if (!enhancedRecord.data) enhancedRecord.data = {};
           enhancedRecord.data[lookupColumn.name] = displayValue;
           
-          console.log(`✅ Calculated lookup for ${lookupColumn.name}: ${displayValue?.label || 'null'}`);
-          
         } catch (error) {
           console.error(`Error calculating lookup for column ${lookupColumn.name}:`, error);
           if (!enhancedRecord.data) enhancedRecord.data = {};
@@ -147,7 +140,6 @@ const calculateLookupColumnsForTemplate = async (records, columns, templateId, t
       return enhancedRecord;
     }));
     
-    console.log(`✅ Lookup calculation completed for ${enhancedRecords.length} records`);
     return enhancedRecords;
     
   } catch (error) {

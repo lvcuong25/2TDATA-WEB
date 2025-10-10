@@ -20,11 +20,9 @@ const LinkedTableConfigSimple = ({
     queryKey: ['availableTables', currentTableId],
     queryFn: async () => {
       if (!currentTableId) {
-        console.log('❌ No currentTableId provided');
         return { data: [] };
       }
       
-      console.log('🔍 Fetching tables from current database for table:', currentTableId);
       try {
         // For now, we'll need to get databaseId from tableId
         // This is a simplified version - in real implementation, you'd need to pass databaseId
@@ -34,7 +32,6 @@ const LinkedTableConfigSimple = ({
         
         // Now fetch tables from that database
         const tablesResponse = await axiosInstance.get(`/database/databases/${databaseId}/tables`);
-        console.log('✅ Tables API response:', tablesResponse.data);
         return tablesResponse.data;
       } catch (error) {
         console.error('❌ Error fetching tables:', error);
@@ -51,7 +48,6 @@ const LinkedTableConfigSimple = ({
   const filteredTables = allTables.filter(table => table._id !== currentTableId);
 
   // Debug logging
-  console.log('LinkedTableConfigSimple Debug:', {
     tablesData,
     allTables,
     filteredTables,
@@ -62,7 +58,6 @@ const LinkedTableConfigSimple = ({
 
   // Handle table selection
   const handleTableChange = (tableId) => {
-    console.log('LinkedTableConfigSimple handleTableChange:', { tableId, config });
     setSelectedTableId(tableId);
     
     // Update config - only require tableId
@@ -74,7 +69,6 @@ const LinkedTableConfigSimple = ({
       filterRules: config?.filterRules || []
     };
     
-    console.log('LinkedTableConfigSimple newConfig:', newConfig);
     onChange(newConfig);
   };
 
@@ -143,7 +137,6 @@ const LinkedTableConfigSimple = ({
                 }
               >
                 {filteredTables.map(table => {
-                  console.log('Rendering table option:', table);
                   return (
                     <Option key={table._id} value={table._id}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -18,8 +18,6 @@ const { Option } = Select;
 
 const RatingConfig = ({ ratingConfig, setRatingConfig }) => {
   const currentConfig = ratingConfig || { maxStars: 5, allowHalf: false, icon: 'star', color: '#faad14', defaultValue: 0 };
-  
-  console.log('RatingConfig: currentConfig', currentConfig);
 
   const iconOptions = [
     { value: 'star', label: 'Star', icon: <StarOutlined />, filled: <StarFilled /> },
@@ -39,7 +37,6 @@ const RatingConfig = ({ ratingConfig, setRatingConfig }) => {
   ];
 
   const handleConfigChange = (key, value) => {
-    console.log('RatingConfig: handleConfigChange', { key, value, currentConfig });
     setRatingConfig({
       ...currentConfig,
       [key]: value

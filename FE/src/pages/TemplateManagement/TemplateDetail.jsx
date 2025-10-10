@@ -12,9 +12,6 @@ const TemplateDetail = () => {
   const { currentUser } = useAuth();
   const isSuperAdmin = currentUser?.role === 'super_admin';
   
-  // Debug log
-  console.log('🔍 TemplateDetail - templateId:', templateId);
-  
   // Check if templateId is undefined
   if (!templateId || templateId === 'undefined') {
     return (

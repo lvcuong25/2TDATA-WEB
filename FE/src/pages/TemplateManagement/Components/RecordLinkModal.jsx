@@ -37,17 +37,14 @@ const RecordLinkModal = ({
     queryKey: ['linkedTableRecords', linkedTableConfig?.linkedTableId, searchValue, currentPage],
     queryFn: async () => {
       if (!linkedTableConfig?.linkedTableId) {
-        console.log('RecordLinkModal: No linkedTableId provided');
         return { records: [], totalCount: 0 };
       }
 
-      console.log('RecordLinkModal: Fetching records for linkedTableId:', linkedTableConfig.linkedTableId);
       
       // Determine if this is database or template mode
       const columnId = column?._id || column?.id;
       const isTemplateMode = !column?._id && column?.id;
       
-      console.log('RecordLinkModal: Mode:', isTemplateMode ? 'template' : column?._id ? 'database' : 'none', 'Column ID:', columnId);
 
       const params = new URLSearchParams();
       if (searchValue) params.append('search', searchValue);
@@ -61,10 +58,8 @@ const RecordLinkModal = ({
           ? `/templates/columns/${columnId}/linked-data?${params.toString()}`
           : `/database/columns/${columnId}/linked-data?${params.toString()}`;
         
-        console.log('RecordLinkModal: Using column API:', apiUrl);
         const response = await axiosInstance.get(apiUrl);
         
-        console.log('RecordLinkModal: Column API response:', response.data);
         
         return {
           records: response.data.data?.options?.map(option => option.record) || [],
@@ -73,12 +68,10 @@ const RecordLinkModal = ({
         };
       } else {
         // Fetch directly from the linked table
-        console.log('RecordLinkModal: Fetching directly from table:', linkedTableConfig.linkedTableId);
         const response = await axiosInstance.get(
           `/database/tables/${linkedTableConfig.linkedTableId}/records?${params.toString()}`
         );
         
-        console.log('RecordLinkModal: Table API response:', response.data);
         
         return {
           records: response.data.data || [],
@@ -136,19 +129,15 @@ const RecordLinkModal = ({
   const getRecordDisplayText = (record, index) => {
     const data = record.data || {};
     
-    console.log('RecordLinkModal: Processing record:', record);
-    console.log('RecordLinkModal: Record data:', data);
     
     // Get all available fields from the record
     const fields = Object.keys(data);
-    console.log('RecordLinkModal: Available fields:', fields);
     
     // Use the first 3 available fields, or fallback to generic names
     const text1 = fields.length > 0 ? (data[fields[0]] || `Field 1`) : `Record ${index + 1}`;
     const text2 = fields.length > 1 ? (data[fields[1]] || `Field 2`) : (fields.length > 0 ? data[fields[0]] : `Record ${index + 1}`);
     const text3 = fields.length > 2 ? (data[fields[2]] || `Field 3`) : (fields.length > 1 ? data[fields[1]] : `Record ${index + 1}`);
     
-    console.log('RecordLinkModal: Generated texts:', { text1, text2, text3 });
     
     return {
       text1: String(text1).length > 20 ? String(text1).substring(0, 20) + '...' : String(text1),

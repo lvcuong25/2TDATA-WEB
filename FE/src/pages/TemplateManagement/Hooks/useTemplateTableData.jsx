@@ -176,9 +176,7 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
 
   const updateRecordMutation = useMutation({
     mutationFn: async ({ recordId, data }) => {
-      console.log('🔍 MUTATION: Updating record:', { recordId, data, templateId, tableIndex });
       const response = await axiosInstance.put(`/templates/admin/${templateId}/tables/${tableIndex}/records/${recordId}`, data);
-      console.log('🔍 MUTATION: Response received:', response.data);
       return response.data;
     },
     onSuccess: () => {

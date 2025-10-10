@@ -41,9 +41,6 @@ const LinkedTableDropdown = ({
   const [recordLinkModalVisible, setRecordLinkModalVisible] = useState(false);
   
   // Debug logging
-  console.log('LinkedTableDropdown - column:', column);
-  console.log('LinkedTableDropdown - linkedTableConfig:', linkedTableConfig);
-  console.log('LinkedTableDropdown - record:', record);
 
   // Helper function to normalize value based on allowMultiple setting
   
@@ -98,7 +95,6 @@ const LinkedTableDropdown = ({
       const isTemplateMode = !column._id && column.id;
       
       if (!columnId) {
-        console.log('⚠️ LinkedTableDropdown: No column ID available');
         return { options: [], totalCount: 0 };
       }
 
@@ -106,7 +102,6 @@ const LinkedTableDropdown = ({
         return { options: [], totalCount: 0 };
       }
 
-      console.log('🔍 LinkedTableDropdown: Fetching data', {
         mode: isTemplateMode ? 'template' : 'database',
         columnId,
         linkedTableId: linkedTableConfig.linkedTableId
@@ -123,7 +118,6 @@ const LinkedTableDropdown = ({
       
       const response = await axiosInstance.get(apiUrl);
       
-      console.log('✅ LinkedTableDropdown: API Response', {
         mode: isTemplateMode ? 'template' : 'database',
         optionsCount: response.data?.data?.options?.length || 0
       });
@@ -148,16 +142,12 @@ const LinkedTableDropdown = ({
 
   // Handle selection change - FIXED VERSION
   const handleChange = (selectedValue) => {
-    console.log('LinkedTableDropdown handleChange called with:', selectedValue);
-    console.log('Record ID:', record?._id);
-    console.log('updateRecordMutation available:', !!updateRecordMutation);
     
     // If we have access to the record and updateRecordMutation, use them directly
     if (record && updateRecordMutation && record._id) {
       const updatedData = { ...record.data };
       updatedData[column.name] = selectedValue;
 
-      console.log('Calling updateRecordMutation with:', {
         recordId: record._id,
         data: updatedData
       });
@@ -168,7 +158,6 @@ const LinkedTableDropdown = ({
       });
     } else if (onChange) {
       // Fallback to onChange callback
-      console.log('Using onChange callback');
       onChange(selectedValue);
     } else {
       console.warn('No way to update record - missing record, updateRecordMutation, or onChange');
@@ -253,8 +242,6 @@ const LinkedTableDropdown = ({
 
     // Handle record link modal confirm - FIXED VERSION
   const handleRecordLinkConfirm = (selectedRecords) => {
-    console.log('LinkedTableDropdown handleRecordLinkConfirm called with:', selectedRecords);
-    console.log('Record ID:', record?._id);
     
     // Ensure selectedRecords is always an array
     const selectedArray = Array.isArray(selectedRecords) ? selectedRecords : 
@@ -270,14 +257,12 @@ const LinkedTableDropdown = ({
     const recordIds = selectedArray.map(record => record && record._id ? record._id : record);
     const finalValue = linkedTableConfig.allowMultiple ? recordIds : recordIds[0];
     
-    console.log('Final value to save:', finalValue);
     
     // If we have access to the record and updateRecordMutation, use them directly
     if (record && updateRecordMutation && record._id) {
       const updatedData = { ...record.data };
       updatedData[column.name] = finalValue;
 
-      console.log('Calling updateRecordMutation with:', {
         recordId: record._id,
         data: updatedData
       });
@@ -288,7 +273,6 @@ const LinkedTableDropdown = ({
       });
     } else if (onChange) {
       // Fallback to onChange callback
-      console.log('Using onChange callback');
       onChange(finalValue);
     }
     
@@ -327,7 +311,6 @@ const LinkedTableDropdown = ({
   const shouldShowTabInterface = linkedTableConfig?.linkedTableId;
   
   // Debug logging
-  console.log('LinkedTableDropdown Debug:', {
     linkedTableConfig,
     shouldShowTabInterface,
     hasLinkedTableId: !!linkedTableConfig?.linkedTableId,

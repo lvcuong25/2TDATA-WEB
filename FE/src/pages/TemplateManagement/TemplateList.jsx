@@ -395,8 +395,6 @@ const TemplateList = () => {
                   key={template.id || template._id}
                   className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => {
-                    console.log('🔍 Template data:', template);
-                    console.log('🔍 Template ID:', template._id || template.id);
                     if (isSuperAdmin) {
                       // Super Admin: Click vào template để edit
                       const templateId = template._id || template.id;
@@ -560,8 +558,6 @@ const TemplateList = () => {
                         key={template.id || template._id}
                         className="hover:bg-gray-50 cursor-pointer"
                         onClick={() => {
-                          console.log('🔍 Template data (second click):', template);
-                          console.log('🔍 Template ID (second click):', template._id || template.id);
                           if (isSuperAdmin) {
                             // Super Admin: Click vào template để edit
                             const templateId = template._id || template.id;

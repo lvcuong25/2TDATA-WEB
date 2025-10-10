@@ -429,9 +429,7 @@ const AddColumnModal = ({
                 defaultValue: newColumn.defaultValue !== undefined ? newColumn.defaultValue : 0
               }}
               onChange={(config) => {
-                console.log('CurrencyConfig onChange:', config);
                 const { defaultValue, ...currencyConfig } = config;
-                console.log('Setting defaultValue:', defaultValue);
                 setNewColumn({
                   ...newColumn,
                   currencyConfig: currencyConfig,
@@ -466,10 +464,6 @@ const AddColumnModal = ({
             <UrlConfig
               config={newColumn.urlConfig}
               onChange={(config) => {
-                console.log('AddColumnModal: UrlConfig onChange:', {
-                  currentUrlConfig: newColumn.urlConfig,
-                  newConfig: config
-                });
                 setNewColumn({
                   ...newColumn,
                   urlConfig: config

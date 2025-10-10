@@ -22,16 +22,12 @@ const LinkedTableConfig = ({
     queryKey: ['availableTemplateTables', currentDatabaseId],
     queryFn: async () => {
       if (!currentDatabaseId) {
-        console.log('❌ No templateId provided');
         return { data: [] };
       }
       
-      console.log('🔍 Fetching tables from template:', currentDatabaseId);
       try {
         // For template, currentDatabaseId is actually templateId
         const response = await axiosInstance.get(`/templates/${currentDatabaseId}`);
-        console.log('✅ Template API response:', response);
-        console.log('✅ Template tables:', response.data.data.tables);
         
         // Return tables in the same format as database API
         return { data: response.data.data.tables || [] };
@@ -55,47 +51,8 @@ const LinkedTableConfig = ({
     return tableId !== currentTableId;
   });
 
-  // Debug logging
-  console.log('🔍 LinkedTableConfig Debug:', {
-    availableTables,
-    tablesData,
-    allTables,
-    'allTables.length': allTables.length,
-    filteredTables,
-    'filteredTables.length': filteredTables.length,
-    currentTableId,
-    'typeof currentTableId': typeof currentTableId,
-    currentDatabaseId,
-    isLoadingTables,
-    tablesError
-  });
-
-  // Detailed debug for each table
-  console.log('🔍 All Tables Details (from current template/database):');
-  allTables.forEach((table, index) => {
-    const tableId = table.id || table._id;
-    console.log(`Table ${index + 1}:`, {
-      id: tableId,
-      name: table.name,
-      databaseId: table.databaseId,
-      currentTableId,
-      isCurrentTable: tableId === currentTableId
-    });
-  });
-
-  console.log('🔍 Filtered Tables Details:');
-  filteredTables.forEach((table, index) => {
-    const tableId = table.id || table._id;
-    console.log(`Filtered Table ${index + 1}:`, {
-      id: tableId,
-      name: table.name,
-      databaseId: table.databaseId
-    });
-  });
-
   // Handle table selection
   const handleTableChange = (tableId) => {
-    console.log('LinkedTableConfig handleTableChange:', { tableId, config });
     setSelectedTableId(tableId);
     
     // Find the selected table to get its name
@@ -113,7 +70,6 @@ const LinkedTableConfig = ({
       filterRules: config?.filterRules || []
     };
     
-    console.log('LinkedTableConfig newConfig:', newConfig);
     onChange(newConfig);
   };
 
@@ -182,7 +138,6 @@ const LinkedTableConfig = ({
                 }
               >
                 {filteredTables.map(table => {
-                  console.log('Rendering table option:', table);
                   const tableId = table.id || table._id;
                   return (
                     <Option key={tableId} value={tableId}>
