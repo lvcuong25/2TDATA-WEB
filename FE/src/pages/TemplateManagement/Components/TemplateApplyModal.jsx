@@ -66,7 +66,6 @@ const TemplateApplyModal = ({
       setSelectedDatabase('');
       setApplyMode('create');
     } catch (error) {
-      console.error('Error applying template:', error);
       message.error('Failed to apply template');
     }
   };

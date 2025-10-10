@@ -34,7 +34,6 @@ const LinkedTableConfigSimple = ({
         const tablesResponse = await axiosInstance.get(`/database/databases/${databaseId}/tables`);
         return tablesResponse.data;
       } catch (error) {
-        console.error('❌ Error fetching tables:', error);
         throw error;
       }
     },

@@ -53,7 +53,6 @@ const LookupConfig = ({ config, onChange, currentTableId, currentDatabaseId, ava
         const response = await axiosInstance.get(`/database/tables/${selectedTableId}/columns`);
         return response.data;
       } catch (error) {
-        console.error('Error fetching columns:', error);
         return { data: [] };
       }
     },

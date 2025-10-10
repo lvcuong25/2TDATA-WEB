@@ -100,7 +100,6 @@ const CreateRecordModal = ({
       onSuccess?.(data);
     },
     onError: (error) => {
-      console.error('Error creating record:', error);
       message.error(error.response?.data?.message || 'Failed to create record');
     },
   });

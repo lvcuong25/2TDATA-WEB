@@ -52,7 +52,6 @@ const TemplateList = () => {
       queryClient.invalidateQueries(['templates']);
     },
     onError: (error) => {
-      console.error('Error creating template:', error);
       toast.error(error.response?.data?.message || 'Failed to create template');
     },
   });
@@ -74,7 +73,6 @@ const TemplateList = () => {
       queryClient.invalidateQueries(['templates']);
     },
     onError: (error) => {
-      console.error('Error updating template:', error);
       toast.error(error.response?.data?.message || 'Failed to update template');
     },
   });
@@ -90,7 +88,6 @@ const TemplateList = () => {
       queryClient.invalidateQueries(['templates']);
     },
     onError: (error) => {
-      console.error('Error deleting template:', error);
       toast.error('Failed to delete template');
     },
   });
@@ -114,7 +111,6 @@ const TemplateList = () => {
       navigate(`/database/${data.data.databaseId}`);
     },
     onError: (error) => {
-      console.error('Error copying template:', error);
       toast.error(error.response?.data?.message || 'Failed to create database from template');
     },
   });
@@ -399,7 +395,6 @@ const TemplateList = () => {
                       // Super Admin: Click vào template để edit
                       const templateId = template._id || template.id;
                       if (!templateId) {
-                        console.error('❌ Template ID is missing:', template);
                         return;
                       }
                       navigate(`/templates/${templateId}`);
@@ -562,7 +557,6 @@ const TemplateList = () => {
                             // Super Admin: Click vào template để edit
                             const templateId = template._id || template.id;
                             if (!templateId) {
-                              console.error('❌ Template ID is missing (second click):', template);
                               return;
                             }
                             navigate(`/templates/${templateId}`);

@@ -679,7 +679,6 @@ const TableDetail = () => {
       // Invalidate and refetch table structure to get updated order
       queryClient.invalidateQueries(['template', templateId]);
     } catch (error) {
-      console.error('Error reordering columns:', error);
       // Revert local changes on error
       const originalOrder = loadColumnOrder(tableId);
       setColumnOrder(originalOrder);
@@ -1070,7 +1069,6 @@ const TableDetail = () => {
         });
       })
       .catch(error => {
-        console.error('Error creating column at position:', error);
         // Fallback to regular add column
         addColumnMutation.mutate(columnData);
       });
@@ -2167,7 +2165,6 @@ const TableDetail = () => {
                       // console.log('Test column permissions result:', result);
                       // addDebugLog(`Test column permissions result: ${JSON.stringify(result)}`);
                     } catch (error) {
-                      console.error('Test column permissions error:', error);
                       // addDebugLog(`Test column permissions error: ${error.message}`);
                     }
                   }}
@@ -2192,7 +2189,6 @@ const TableDetail = () => {
                       // console.log('Test record permissions result:', result);
                       // addDebugLog(`Test record permissions result: ${JSON.stringify(result)}`);
                     } catch (error) {
-                      console.error('Test record permissions error:', error);
                       // addDebugLog(`Test record permissions error: ${error.message}`);
                     }
                   }}
@@ -2217,7 +2213,6 @@ const TableDetail = () => {
                       // console.log('Test cell permissions result:', result);
                       // addDebugLog(`Test cell permissions result: ${JSON.stringify(result)}`);
                     } catch (error) {
-                      console.error('Test cell permissions error:', error);
                       // addDebugLog(`Test cell permissions error: ${error.message}`);
                     }
                   }}
@@ -2256,7 +2251,6 @@ const TableDetail = () => {
                         // addDebugLog(`✅ Created ${result.data.createdPermissions} cell permissions! Now try editing cells.`);
                       }
                     } catch (error) {
-                      console.error('Create cell permissions error:', error);
                       // addDebugLog(`Create cell permissions error: ${error.message}`);
                     }
                   }}

@@ -120,7 +120,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       // console.log('Group preference saved successfully');
     },
     onError: (error) => {
-      console.error('Error saving group preference:', error);
     },
   });
 
@@ -147,7 +146,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       // console.log('Field preference saved successfully');
     },
     onError: (error) => {
-      console.error('Error saving field preference:', error);
     },
   });
 
@@ -209,7 +207,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       }
     },
     onError: (error) => {
-      console.error('Error adding column:', error);
       toast.error(error.response?.data?.message || 'Không thể thêm cột');
     },
   });
@@ -229,7 +226,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       queryClient.invalidateQueries(['tableRecords', tableId]);
     },
     onError: (error) => {
-      console.error('Error adding record:', error);
       // toast.error(error.response?.data?.message || 'Failed to add record');
     },
   });
@@ -249,7 +245,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       queryClient.invalidateQueries(['tableRecords', tableId]);
     },
     onError: (error) => {
-      console.error('Error updating record:', error);
       // toast.error(error.response?.data?.message || 'Failed to update record');
     },
   });
@@ -265,7 +260,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       queryClient.invalidateQueries(['tableRecords', tableId]);
     },
     onError: (error) => {
-      console.error('Error deleting record:', error);
       // toast.error(error.response?.data?.message || 'Failed to delete record');
     },
   });
@@ -285,7 +279,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       queryClient.invalidateQueries(['tableRecords', tableId]);
     },
     onError: (error) => {
-      console.error('Error deleting records:', error);
       // toast.error(error.response?.data?.message || 'Failed to delete records');
     },
   });
@@ -303,7 +296,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       queryClient.invalidateQueries(['tableRecords', tableId]);
     },
     onError: (error) => {
-      console.error('Error deleting all records:', error);
       // toast.error(error.response?.data?.message || 'Failed to delete all records');
     },
   });
@@ -325,7 +317,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       }
     },
     onError: (error) => {
-      console.error('Error updating column:', error);
       toast.error(error.response?.data?.message || 'Không thể cập nhật cột');
     },
   });
@@ -342,7 +333,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
       queryClient.invalidateQueries(['records', tableId]);
     },
     onError: (error) => {
-      console.error('Error deleting column:', error);
       toast.error(error.response?.data?.message || 'Không thể xóa cột');
     },
   });
@@ -399,7 +389,6 @@ export const useTableData = (tableId, databaseId, sortRules, filterRules, isFilt
         // console.log(`🔍 Database members response:`, response.data);
         return response.data;
       } catch (error) {
-        console.error(`🔍 Database members API error:`, error);
         // If still getting permission error, try test route as fallback
         if (error.response?.data?.error === 'no_manage_permission') {
           // console.log(`🔍 Trying test route as fallback...`);

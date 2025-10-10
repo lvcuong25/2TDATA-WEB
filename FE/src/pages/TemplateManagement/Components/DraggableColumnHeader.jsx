@@ -117,7 +117,6 @@ const DraggableColumnHeader = ({
       onClick: () => {
         const columnId = column.id || column._id;
         if (!columnId) {
-          console.error('❌ Column ID is undefined!');
           return;
         }
         handleDeleteColumn(columnId, column.name);

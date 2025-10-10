@@ -149,7 +149,6 @@ const EditRecordModal = ({
       onCancel();
     },
     onError: (error) => {
-      console.error('Error updating record:', error);
       message.error(error.response?.data?.message || 'Failed to update record');
     },
   });
@@ -171,7 +170,6 @@ const EditRecordModal = ({
       message.success('Comment added successfully!');
     },
     onError: (error) => {
-      console.error('Error adding comment:', error);
       message.error('Failed to add comment. Please try again.');
     }
   });
@@ -187,8 +185,7 @@ const EditRecordModal = ({
       setComments(data || []);
     },
     onError: (error) => {
-      console.error('Error fetching comments:', error);
-      // Don't show error message for fetch, just log it
+      // Don't show error message for fetch
     }
   });
 
@@ -207,7 +204,6 @@ const EditRecordModal = ({
       message.success('Comment updated successfully!');
     },
     onError: (error) => {
-      console.error('Error updating comment:', error);
       message.error('Failed to update comment. Please try again.');
     }
   });
@@ -223,7 +219,6 @@ const EditRecordModal = ({
       message.success('Comment deleted successfully!');
     },
     onError: (error) => {
-      console.error('Error deleting comment:', error);
       message.error('Failed to delete comment. Please try again.');
     }
   });
@@ -277,15 +272,6 @@ const EditRecordModal = ({
       const recordId = record?._id || record?.id || record?.dataValues?.id || record?.dataValues?._id;
       
       if (!recordId) {
-        console.error('🔍 No record ID found:', {
-          record,
-          recordKeys: Object.keys(record || {}),
-          dataValuesKeys: Object.keys(record?.dataValues || {}),
-          hasId: 'id' in (record || {}),
-          hasUnderscoreId: '_id' in (record || {}),
-          hasDataValuesId: 'id' in (record?.dataValues || {}),
-          hasDataValuesUnderscoreId: '_id' in (record?.dataValues || {})
-        });
         message.error('Record ID not found');
         return;
       }
@@ -313,7 +299,6 @@ const EditRecordModal = ({
       });
     } catch (error) {
       // Error is handled by mutation
-      console.error('🔍 handleSubmit error:', error);
     }
   };
 

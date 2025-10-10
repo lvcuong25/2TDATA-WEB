@@ -70,7 +70,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       queryClient.invalidateQueries(['template', templateId]);
     },
     onError: (error) => {
-      console.error('Error updating template:', error);
       toast.error(error.response?.data?.message || 'Failed to update template');
     },
   });
@@ -87,7 +86,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       modalCallbacks?.onAddColumnSuccess?.();
     },
     onError: (error) => {
-      console.error('Error adding column:', error);
       toast.error(error.response?.data?.message || 'Failed to add column');
     },
   });
@@ -104,7 +102,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       modalCallbacks?.onEditColumnSuccess?.();
     },
     onError: (error) => {
-      console.error('Error updating column:', error);
       toast.error(error.response?.data?.message || 'Failed to update column');
     },
   });
@@ -120,7 +117,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       queryClient.invalidateQueries(['templateTable', templateId, tableIndex]);
     },
     onError: (error) => {
-      console.error('Error deleting column:', error);
       toast.error(error.response?.data?.message || 'Failed to delete column');
     },
   });
@@ -138,7 +134,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       queryClient.invalidateQueries(['templateTable', templateId, tableIndex]);
     },
     onError: (error) => {
-      console.error('Error reordering columns:', error);
       toast.error(error.response?.data?.message || 'Failed to reorder columns');
     },
   });
@@ -169,7 +164,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       queryClient.invalidateQueries(['templateRecords', templateId, tableIndex]);
     },
     onError: (error) => {
-      console.error('Error adding record:', error);
       toast.error(error.response?.data?.message || 'Failed to add record');
     },
   });
@@ -183,7 +177,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       queryClient.invalidateQueries(['templateRecords', templateId, tableIndex]);
     },
     onError: (error) => {
-      console.error('Error updating record:', error);
       toast.error(error.response?.data?.message || 'Failed to update record');
     },
   });
@@ -198,7 +191,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       queryClient.invalidateQueries(['templateRecords', templateId, tableIndex]);
     },
     onError: (error) => {
-      console.error('Error deleting record:', error);
       toast.error(error.response?.data?.message || 'Failed to delete record');
     },
   });
@@ -217,7 +209,6 @@ export const useTemplateTableData = (templateId, tableIndex, context, modalCallb
       setSelectedRowKeys([]);
     },
     onError: (error) => {
-      console.error('Error deleting records:', error);
       toast.error(error.response?.data?.message || 'Failed to delete records');
     },
   });

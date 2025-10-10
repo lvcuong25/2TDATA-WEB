@@ -65,7 +65,6 @@ const TemplateCreateModal = ({
       setSelectedCategory('');
       setIsPublic(true);
     } catch (error) {
-      console.error('Error creating template:', error);
       message.error('Failed to create template');
     }
   };

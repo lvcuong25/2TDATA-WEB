@@ -259,7 +259,6 @@ export const formatCellValueForDisplay = (value, column) => {
               : date.toLocaleString();
           }
         } catch (e) {
-          console.error('Error formatting date:', e);
         }
       }
       return value || '';
@@ -422,7 +421,6 @@ export const formatCellValueForInput = (value, column) => {
             }
           }
         } catch (e) {
-          console.error('Error formatting date for input:', e);
         }
       }
       return '';
@@ -695,7 +693,6 @@ export const formatCellValueForExport = (value, column) => {
             return date.toISOString();
           }
         } catch (e) {
-          console.error('Error formatting date for export:', e);
         }
       }
       return '';

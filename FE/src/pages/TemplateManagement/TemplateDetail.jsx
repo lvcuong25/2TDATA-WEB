@@ -59,7 +59,6 @@ const TemplateDetail = () => {
       queryClient.invalidateQueries(['template', templateId]);
     },
     onError: (error) => {
-      console.error('Error updating template:', error);
       toast.error(error.response?.data?.message || 'Failed to update template');
     },
   });

@@ -32,8 +32,6 @@ const LinkedTableConfig = ({
         // Return tables in the same format as database API
         return { data: response.data.data.tables || [] };
       } catch (error) {
-        console.error('❌ Error fetching template tables:', error);
-        console.error('❌ Error response:', error.response);
         throw error;
       }
     },

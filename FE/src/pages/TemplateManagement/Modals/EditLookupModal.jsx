@@ -77,7 +77,6 @@ const EditLookupModal = ({
       onCancel();
     },
     onError: (error) => {
-      console.error('Error updating lookup value:', error);
       message.error(error.response?.data?.message || 'Failed to update lookup value');
     }
   });
@@ -110,7 +109,6 @@ const EditLookupModal = ({
       const values = await form.validateFields();
       updateLookupMutation.mutate(values.lookupValue);
     } catch (error) {
-      console.error('Form validation failed:', error);
     }
   };
 

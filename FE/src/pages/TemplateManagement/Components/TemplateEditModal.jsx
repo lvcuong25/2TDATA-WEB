@@ -83,7 +83,6 @@ const TemplateEditModal = ({
       setSelectedCategory('');
       setIsPublic(true);
     } catch (error) {
-      console.error('Error updating template:', error);
       message.error('Failed to update template');
     }
   };

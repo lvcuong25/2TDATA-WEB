@@ -161,7 +161,6 @@ const TemplateList = ({
       message.success('Template copied successfully');
       setCopyModalVisible(false);
     } catch (error) {
-      console.error('Error copying template:', error);
       message.error('Failed to copy template');
     }
   };
@@ -172,7 +171,6 @@ const TemplateList = ({
       // Mock export operation
       message.success('Template exported successfully');
     } catch (error) {
-      console.error('Error exporting template:', error);
       message.error('Failed to export template');
     }
   };
@@ -190,7 +188,6 @@ const TemplateList = ({
           // Mock delete operation
           message.success('Template deleted successfully');
         } catch (error) {
-          console.error('Error deleting template:', error);
           message.error('Failed to delete template');
         }
       }
