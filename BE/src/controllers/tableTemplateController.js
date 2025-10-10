@@ -39,6 +39,123 @@ const calculateFormulaColumnsForTemplate = (records, columns) => {
   });
 };
 
+// Calculate lookup columns for template records
+const calculateLookupColumnsForTemplate = async (records, columns, templateId, tableIndex) => {
+  try {
+    console.log(`🔍 Starting lookup calculation for template ${templateId}, table ${tableIndex} with ${records.length} records`);
+    
+    const lookupColumns = columns.filter(col => col.data_type === 'lookup' && col.config?.lookupConfig);
+    console.log(`📋 Found ${lookupColumns.length} lookup columns:`, lookupColumns.map(col => col.name));
+    
+    if (lookupColumns.length === 0) {
+      console.log('⚠️ No lookup columns found, returning original records');
+      return records;
+    }
+    
+    // Calculate lookup values for each record
+    const enhancedRecords = await Promise.all(records.map(async record => {
+      const enhancedRecord = { ...record };
+      
+      // Calculate each lookup column
+      for (const lookupColumn of lookupColumns) {
+        try {
+          const lookupConfig = lookupColumn.config?.lookupConfig;
+          
+          if (!lookupConfig || !lookupConfig.linkedTableId || !lookupConfig.lookupColumnId) {
+            console.warn(`Invalid lookup config for column ${lookupColumn.name}`);
+            continue;
+          }
+          
+          // Find the linked_table column that this lookup depends on
+          const linkedColumn = columns.find(col => 
+            col.data_type === 'linked_table' && 
+            col.config?.linkedTableConfig?.linkedTableId === lookupConfig.linkedTableId
+          );
+          
+          if (!linkedColumn) {
+            console.warn(`No linked table column found for lookup ${lookupColumn.name}`);
+            continue;
+          }
+          
+          // Get the linked record ID from the linked_table column
+          const linkedTableValue = enhancedRecord.data?.[linkedColumn.name];
+          if (!linkedTableValue || !linkedTableValue.recordId) {
+            console.log(`No linked record for ${lookupColumn.name} in record ${record._id}`);
+            continue;
+          }
+          
+          // Get the linked template table to find its table_index
+          const linkedTemplateTable = await TemplateTable.findByPk(lookupConfig.linkedTableId);
+          if (!linkedTemplateTable) {
+            console.warn(`Linked template table not found: ${lookupConfig.linkedTableId}`);
+            continue;
+          }
+          
+          // Get all tables in template to find table index
+          const allTablesInTemplate = await TemplateTable.findAll({
+            where: { template_id: linkedTemplateTable.template_id },
+            order: [['order', 'ASC']]
+          });
+          
+          const linkedTableIndex = allTablesInTemplate.findIndex(t => t.id === lookupConfig.linkedTableId);
+          if (linkedTableIndex === -1) {
+            console.warn(`Linked table index not found for ${lookupConfig.linkedTableId}`);
+            continue;
+          }
+          
+          // Get the linked record from TemplateRecord
+          const linkedRecord = await TemplateRecord.findByPk(linkedTableValue.recordId);
+          if (!linkedRecord) {
+            console.warn(`Linked record not found: ${linkedTableValue.recordId}`);
+            continue;
+          }
+          
+          // Get the lookup column from the linked table
+          const lookupColumnInLinkedTable = await TemplateColumn.findByPk(lookupConfig.lookupColumnId);
+          if (!lookupColumnInLinkedTable) {
+            console.warn(`Lookup column not found in linked table: ${lookupConfig.lookupColumnId}`);
+            continue;
+          }
+          
+          // Extract the value from the linked record
+          const lookupValue = linkedRecord.data?.[lookupColumnInLinkedTable.name];
+          
+          // Create proper lookup display value
+          let displayValue = null;
+          if (lookupValue && String(lookupValue).trim()) {
+            displayValue = {
+              value: linkedRecord.id,
+              label: String(lookupValue),
+              sourceField: lookupColumnInLinkedTable.name,
+              sourceData: linkedRecord.data
+            };
+          }
+          
+          // Add calculated value to record data
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[lookupColumn.name] = displayValue;
+          
+          console.log(`✅ Calculated lookup for ${lookupColumn.name}: ${displayValue?.label || 'null'}`);
+          
+        } catch (error) {
+          console.error(`Error calculating lookup for column ${lookupColumn.name}:`, error);
+          if (!enhancedRecord.data) enhancedRecord.data = {};
+          enhancedRecord.data[lookupColumn.name] = null;
+        }
+      }
+      
+      return enhancedRecord;
+    }));
+    
+    console.log(`✅ Lookup calculation completed for ${enhancedRecords.length} records`);
+    return enhancedRecords;
+    
+  } catch (error) {
+    console.error('Error calculating lookup columns for template:', error);
+    return records;
+  }
+};
+
 // Get all public templates (for regular users)
 export const getPublicTemplates = async (req, res, next) => {
   try {
@@ -1272,7 +1389,10 @@ export const getTemplateRecords = async (req, res, next) => {
     }));
     
     // Calculate formula columns for all records
-    const enhancedRecords = calculateFormulaColumnsForTemplate(formattedRecords, table.columns);
+    let enhancedRecords = calculateFormulaColumnsForTemplate(formattedRecords, table.columns);
+    
+    // Calculate lookup columns for all records
+    enhancedRecords = await calculateLookupColumnsForTemplate(enhancedRecords, table.columns, templateId, tableIndexNum);
     
     res.status(200).json({
       success: true,
@@ -1666,6 +1786,150 @@ export const getTemplateLinkedTableData = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching template linked table data:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+// Get lookup data for template columns
+export const getTemplateLookupData = async (req, res) => {
+  try {
+    const { columnId } = req.params;
+    const { search = '', page = 1, limit = 10 } = req.query;
+
+    // Get the column
+    const column = await TemplateColumn.findByPk(columnId);
+
+    if (!column) {
+      return res.status(404).json({ message: 'Template column not found' });
+    }
+
+    // Check if it's a lookup column
+    if (column.data_type !== 'lookup') {
+      return res.status(400).json({ message: 'Column is not a lookup type' });
+    }
+
+    const lookupConfig = column.config?.lookupConfig;
+    if (!lookupConfig || !lookupConfig.linkedTableId || !lookupConfig.lookupColumnId) {
+      return res.status(400).json({ message: 'Lookup configuration not found' });
+    }
+
+    // Get the linked template table
+    const linkedTable = await TemplateTable.findByPk(lookupConfig.linkedTableId);
+    if (!linkedTable) {
+      return res.status(404).json({ message: 'Linked template table not found' });
+    }
+
+    // Get the lookup column
+    const lookupColumn = await TemplateColumn.findByPk(lookupConfig.lookupColumnId);
+    if (!lookupColumn) {
+      return res.status(404).json({ message: 'Lookup column not found' });
+    }
+
+    // Get all tables in template to find table index
+    const allTablesInTemplate = await TemplateTable.findAll({
+      where: { template_id: linkedTable.template_id },
+      order: [['order', 'ASC']]
+    });
+    
+    const tableIndex = allTablesInTemplate.findIndex(t => t.id === lookupConfig.linkedTableId);
+    
+    if (tableIndex === -1) {
+      return res.status(404).json({ message: 'Linked table index not found' });
+    }
+
+    // Build where clause for records
+    let whereClause = { 
+      template_id: linkedTable.template_id,
+      table_index: tableIndex
+    };
+    
+    // Apply search filter if provided
+    if (search && search.trim()) {
+      // Search in the specific lookup column
+      whereClause = {
+        ...whereClause,
+        data: {
+          [lookupColumn.name]: { [Op.iLike]: `%${search.trim()}%` }
+        }
+      };
+    }
+
+    // Calculate pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Fetch records with pagination
+    const records = await TemplateRecord.findAll({
+      where: whereClause,
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: offset
+    });
+
+    // Get total count
+    const totalCount = await TemplateRecord.count({ 
+      where: { 
+        template_id: linkedTable.template_id,
+        table_index: tableIndex
+      } 
+    });
+
+    // Get columns of the linked table for display
+    const linkedTableColumns = await TemplateColumn.findAll({
+      where: { template_table_id: lookupConfig.linkedTableId },
+      order: [['order', 'ASC']]
+    });
+
+    // Transform records into options
+    const options = records.map((record, index) => {
+      // Create a display label from the specific lookup column
+      let label = `Record ${index + 1}`;
+      
+      // Try lookup column first
+      const lookupValue = record.data?.[lookupColumn.name];
+      if (lookupValue && String(lookupValue).trim()) {
+        label = String(lookupValue);
+      } else {
+        // Fallback: use any available data
+        const data = record.data || {};
+        const dataKeys = Object.keys(data);
+        const firstDataKey = dataKeys.find(key => data[key] && String(data[key]).trim());
+        if (firstDataKey) {
+          label = String(data[firstDataKey]);
+        }
+      }
+
+      return {
+        value: record.id,
+        label: String(label),
+        data: record.data
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        options,
+        totalCount,
+        linkedTable: {
+          _id: linkedTable.id,
+          name: linkedTable.name,
+          id: linkedTable.id
+        },
+        lookupColumn: {
+          id: lookupColumn.id,
+          name: lookupColumn.name,
+          data_type: lookupColumn.data_type
+        },
+        linkedTableColumns: linkedTableColumns.map(col => ({
+          id: col.id,
+          name: col.name,
+          data_type: col.data_type,
+          key: col.key
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching template lookup data:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };

@@ -24,7 +24,8 @@ import {
   updateTemplateRecord,
   deleteTemplateRecord,
   deleteMultipleTemplateRecords,
-  getTemplateLinkedTableData
+  getTemplateLinkedTableData,
+  getTemplateLookupData
 } from '../controllers/tableTemplateController.js';
 import { requireAuthWithCookie } from '../middlewares/requireAuthWithCookie.js';
 
@@ -64,5 +65,8 @@ router.delete('/admin/:templateId/tables/:tableIndex/records/:recordId', require
 
 // Template column linked data route
 router.get('/columns/:columnId/linked-data', requireAuthWithCookie, getTemplateLinkedTableData);
+
+// Template column lookup data route
+router.get('/columns/:columnId/lookup-data', requireAuthWithCookie, getTemplateLookupData);
 
 export default router;

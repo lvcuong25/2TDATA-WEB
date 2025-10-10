@@ -1773,6 +1773,11 @@ const TableBody = ({
                                               );
                                             }
                                             
+                                            // Handle lookup/linked_table objects
+                                            if (typeof value === 'object' && value !== null && value.label) {
+                                              return String(value.label);
+                                            }
+                                            
                                             return formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''));
                                           })()
                               }
@@ -3041,6 +3046,11 @@ const TableBody = ({
                                                 }} 
                                               />
                                             );
+                                          }
+                                          
+                                          // Handle lookup/linked_table objects
+                                          if (typeof value === 'object' && value !== null && value.label) {
+                                            return String(value.label);
                                           }
                                           
                                           return formatCellValueForDisplay ? formatCellValueForDisplay(value, column) : (typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value || ''));
