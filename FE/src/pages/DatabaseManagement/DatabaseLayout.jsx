@@ -2920,7 +2920,7 @@ const DatabaseLayout = () => {
             </>
           )}
 
-          {/* Template Table Context Menu */}
+          {/* Template Table Context Menu for Super Admin */}
           {contextMenu.type === 'template-table' && isSuperAdmin && (
             <>
               <div
@@ -2995,6 +2995,32 @@ const DatabaseLayout = () => {
               >
                 <DeleteOutlined className="mr-2" />
                 Xóa Table
+              </div>
+            </>
+          )}
+
+          {/* Template Table Context Menu for All Users */}
+          {contextMenu.type === 'template-table' && !isSuperAdmin && (
+            <>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  navigate(`/templates/${contextMenu.databaseId}/table/${contextMenu.tableId}`);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EyeOutlined className="mr-2" />
+                Xem Table
+              </div>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  handleCreateViewClick({ type: 'template-table', id: contextMenu.item._id || contextMenu.item.id, databaseId: contextMenu.databaseId });
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <PlusOutlined className="mr-2" />
+                Tạo View
               </div>
             </>
           )}
