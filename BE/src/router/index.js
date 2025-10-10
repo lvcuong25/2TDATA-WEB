@@ -93,7 +93,6 @@ router.use(columnsReadRouter);
 router.use("/tables", tableRouter);
 router.use("/postgres", postgresRoutes); // PostgreSQL routes for data models
 
-router.use("/database", tableRoutesSimple); // Simple PostgreSQL routes for testing - ENABLED
 
 router.use(columnPermsRouter);
 router.use(rolesPermsRouter);
