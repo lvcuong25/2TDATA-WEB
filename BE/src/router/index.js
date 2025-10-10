@@ -17,7 +17,7 @@ import adminRouter from "./adminRouter.js";
 
 import routerOrganization from "./routerOrganization.js";
 import routerDatabase from "./routerDatabase.js";
-import testRouter from "./testRouter.js";
+// import testRouter from "./testRouter.js"; // File deleted
 import tableTemplateRouter from "./tableTemplateRouter.js";
 import templateCompleteRoutes from "../routes/templateCompleteRoutes.js";
 import routerOrder from "./orderRouter.js";
@@ -114,5 +114,5 @@ router.use("/database", tableRoutesSimple); // Simple PostgreSQL routes for test
 router.use("/database", routerDatabase); // Database routes with permission checks
 router.use("/templates", tableTemplateRouter); // Old template routes (legacy)
 router.use("/api/templates", templateCompleteRoutes); // New complete template routes
-router.use("/test", testRouter);
+// router.use("/test", testRouter); // File deleted
 export default router;

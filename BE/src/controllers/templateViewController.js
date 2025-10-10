@@ -1,6 +1,8 @@
 import { TemplateMetadata } from '../models/Template.js';
 import { TemplateStructure, TemplateTable, TemplateColumn } from '../models/Template.js';
 import { hybridDbManager } from '../config/hybrid-db.js';
+import { TableTemplate, TemplateTable as LegacyTemplateTable } from '../model/TableTemplate.js';
+import { randomUUID } from 'crypto';
 
 /**
  * TEMPLATE VIEW CONTROLLER
@@ -16,17 +18,100 @@ import { hybridDbManager } from '../config/hybrid-db.js';
 // Create template view
 export const createTemplateView = async (req, res, next) => {
   try {
-    const { template_id, name, description, view_type, config } = req.body;
+    console.log('🚀 CREATE TEMPLATE VIEW CALLED!');
+    console.log('📝 Request body:', req.body);
+    console.log('📝 Request params:', req.params);
+    
+    const { templateId, tableIndex, name, type, description, config, isDefault, isPublic } = req.body;
 
-    if (!template_id || !name || !view_type) {
+    if (!templateId || tableIndex === undefined || !name || !type) {
+      console.log('❌ Missing required fields');
       return res.status(400).json({
         success: false,
-        message: 'Template ID, name, and view type are required'
+        message: 'Template ID, table index, name, and type are required'
       });
     }
 
-    // Verify template exists
-    const template = await TemplateMetadata.findById(template_id);
+    // Check if UUID (PostgreSQL) or ObjectId (MongoDB)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateId);
+
+    if (isUUID) {
+      // Legacy: PostgreSQL template
+      const template = await TableTemplate.findByPk(templateId, {
+        include: [{
+          model: LegacyTemplateTable,
+          as: 'tables'
+        }]
+      });
+
+      if (!template) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template not found'
+        });
+      }
+
+      // Check permission (super admin only)
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only super admins can modify templates'
+        });
+      }
+
+      // Get tables array
+      const tables = template.tables || [];
+      const index = parseInt(tableIndex);
+      if (index < 0 || index >= tables.length) {
+        return res.status(404).json({
+          success: false,
+          message: 'Table not found'
+        });
+      }
+
+      // Create new view
+      const newView = {
+        _id: randomUUID(),
+        name,
+        type,
+        description: description || '',
+        config: config || {},
+        isDefault: isDefault || false,
+        isPublic: isPublic || false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // Add view to table
+      const tableData = tables[index].toJSON();
+      console.log('📋 Current table data:', tableData);
+      console.log('📋 Current views:', tableData.views);
+      if (!tableData.views) {
+        tableData.views = [];
+      }
+      tableData.views.push(newView);
+      console.log('📋 Views after push:', tableData.views);
+      console.log('📋 New view:', newView);
+
+      // Update table
+      try {
+        const updateResult = await tables[index].update({ views: tableData.views });
+        console.log('✅ Table updated successfully:', updateResult.toJSON());
+        console.log('✅ Updated views:', updateResult.views);
+      } catch (updateError) {
+        console.error('❌ Error updating table views:', updateError);
+        throw updateError;
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: 'Template view created successfully',
+        data: newView
+      });
+    }
+
+    // MongoDB template
+    const template = await TemplateMetadata.findById(templateId);
     if (!template) {
       return res.status(404).json({
         success: false,
@@ -34,29 +119,51 @@ export const createTemplateView = async (req, res, next) => {
       });
     }
 
-    // Check permission
-    if (template.created_by.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    // Check permission (super admin only)
+    if (req.user.role !== 'super_admin') {
       return res.status(403).json({
         success: false,
-        message: 'Access denied'
+        message: 'Only super admins can modify templates'
       });
     }
 
-    // TODO: Implement template view creation
-    // This would involve creating view configurations in the template structure
+    // Get tables array
+    const tables = template.tables || [];
+    const index = parseInt(tableIndex);
+    if (index < 0 || index >= tables.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Table not found'
+      });
+    }
 
-    res.status(201).json({
+    // Create new view
+    const newView = {
+      _id: randomUUID(),
+      name,
+      type,
+      description: description || '',
+      config: config || {},
+      isDefault: isDefault || false,
+      isPublic: isPublic || false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    // Add view to table
+    if (!tables[index].views) {
+      tables[index].views = [];
+    }
+    tables[index].views.push(newView);
+
+    // Update template
+    template.tables = tables;
+    await template.save();
+
+    return res.status(201).json({
       success: true,
       message: 'Template view created successfully',
-      data: {
-        template_id,
-        name,
-        description,
-        view_type,
-        config,
-        created_by: req.user._id,
-        created_at: new Date()
-      }
+      data: newView
     });
   } catch (error) {
     next(error);
@@ -66,11 +173,53 @@ export const createTemplateView = async (req, res, next) => {
 // Get template views
 export const getTemplateViews = async (req, res, next) => {
   try {
-    const { template_id } = req.params;
-    const { page = 1, limit = 20, sort_by = 'created_at', sort_order = 'desc' } = req.query;
+    const { templateId, tableIndex } = req.params;
 
-    // Verify template exists
-    const template = await TemplateMetadata.findById(template_id);
+    // Check if UUID (PostgreSQL) or ObjectId (MongoDB)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateId);
+
+    if (isUUID) {
+      // Legacy: PostgreSQL template
+      const template = await TableTemplate.findByPk(templateId, {
+        include: [{
+          model: LegacyTemplateTable,
+          as: 'tables'
+        }]
+      });
+
+      if (!template) {
+        return res.status(404).json({
+          success: false,
+          message: 'Template not found'
+        });
+      }
+
+      // Get tables array
+      const tables = template.tables || [];
+      console.log('📊 GET: Total tables:', tables.length);
+      const index = parseInt(tableIndex);
+      console.log('📊 GET: Requested table index:', index);
+      if (index < 0 || index >= tables.length) {
+        return res.status(404).json({
+          success: false,
+          message: 'Table not found'
+        });
+      }
+
+      console.log('📊 GET: Table at index', index, ':', tables[index].toJSON ? tables[index].toJSON() : tables[index]);
+      // Get views for this table
+      const views = tables[index].views || [];
+      console.log('📊 GET: Views for table', index, ':', views);
+      console.log('📊 GET: Views length:', views.length);
+
+      return res.json({
+        success: true,
+        data: views
+      });
+    }
+
+    // MongoDB template
+    const template = await TemplateMetadata.findById(templateId);
     if (!template) {
       return res.status(404).json({
         success: false,
@@ -78,18 +227,22 @@ export const getTemplateViews = async (req, res, next) => {
       });
     }
 
-    // TODO: Implement template views retrieval
-    // This would involve getting view configurations from the template structure
+    // Get tables array
+    const tables = template.tables || [];
+    const index = parseInt(tableIndex);
+    if (index < 0 || index >= tables.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Table not found'
+      });
+    }
+
+    // Get views for this table
+    const views = tables[index].views || [];
 
     res.json({
       success: true,
-      data: [],
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: 0,
-        pages: 0
-      }
+      data: views
     });
   } catch (error) {
     next(error);
