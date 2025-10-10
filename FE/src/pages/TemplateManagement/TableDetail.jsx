@@ -1078,17 +1078,20 @@ const TableDetail = () => {
     
     const emptyData = {};
     columns.forEach(column => {
-      if (column.dataType === 'checkbox') {
+      if ((column.dataType || column.data_type) === 'checkbox') {
         // Use default value from checkbox configuration
         const config = column.checkboxConfig || { defaultValue: false };
         emptyData[column.name] = config.defaultValue;
-      } else if (column.dataType === 'single_select') {
+      } else if ((column.dataType || column.data_type) === 'single_select') {
         // For single select, use null so display logic can show default value
         emptyData[column.name] = null;
-      } else if (column.dataType === 'date') {
+      } else if ((column.dataType || column.data_type) === 'multi_select') {
+        // For multi select, use null so display logic can show default value
+        emptyData[column.name] = null;
+      } else if ((column.dataType || column.data_type) === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
-      } else if (column.dataType === 'currency') {
+      } else if ((column.dataType || column.data_type) === 'currency') {
         // Use default value for currency type
         emptyData[column.name] = column.defaultValue !== null && column.defaultValue !== undefined ? column.defaultValue : 0;
       } else {
@@ -1112,24 +1115,20 @@ const TableDetail = () => {
     
     const emptyData = {};
     visibleColumns.forEach(column => {
-      if (column.dataType === 'checkbox') {
+      if ((column.dataType || column.data_type) === 'checkbox') {
         // Use default value from checkbox configuration
         const config = column.checkboxConfig || { defaultValue: false };
         emptyData[column.name] = config.defaultValue;
-      } else if (column.dataType === 'single_select') {
+      } else if ((column.dataType || column.data_type) === 'single_select') {
         // For single select, use null so display logic can show default value
         emptyData[column.name] = null;
-      } else if (column.dataType === 'multi_select') {
-        // Use default values from multi select configuration
-        const config = column.multiSelectConfig || { defaultValue: [] };
-        
-        
-        emptyData[column.name] = config.defaultValue;
-        
-      } else if (column.dataType === 'date') {
+      } else if ((column.dataType || column.data_type) === 'multi_select') {
+        // For multi select, use null so display logic can show default value
+        emptyData[column.name] = null;
+      } else if ((column.dataType || column.data_type) === 'date') {
         // For date type, leave empty for now (user will select date)
         emptyData[column.name] = '';
-      } else if (column.dataType === 'currency') {
+      } else if ((column.dataType || column.data_type) === 'currency') {
         // Use default value for currency type
         emptyData[column.name] = column.defaultValue !== null && column.defaultValue !== undefined ? column.defaultValue : 0;
       } else {
