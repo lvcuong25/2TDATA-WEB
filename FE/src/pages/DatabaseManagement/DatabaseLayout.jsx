@@ -813,12 +813,42 @@ const DatabaseLayout = () => {
     },
   });
 
+  // Create template view mutation
+  const createTemplateViewMutation = useMutation({
+    mutationFn: async (viewData) => {
+      const response = await axiosInstance.post(`/templates/${viewData.templateId}/views`, {
+        templateId: viewData.templateId,
+        tableIndex: viewData.tableIndex,
+        name: viewData.name,
+        type: viewData.type,
+        description: viewData.description,
+        config: {},
+        isDefault: false,
+        isPublic: false
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success(`"${newView.name}" created successfully!`);
+      setShowCreateViewModal(false);
+      setNewView({ name: '', description: '', type: '', tableId: '' });
+      queryClient.invalidateQueries(['templates']);
+      queryClient.invalidateQueries(['templates-count']);
+    },
+    onError: (error) => {
+      console.error('Error creating template view:', error);
+      toast.error(error.response?.data?.message || 'Failed to create template view');
+    },
+  });
+
   const handleCreateView = async (e) => {
     e.preventDefault();
     if (!newView.name.trim()) {
       toast.error('View name is required');
       return;
     }
+    
+    // Only handle database views now
     createViewMutation.mutate(newView);
   };
 
@@ -2856,16 +2886,6 @@ const DatabaseLayout = () => {
                 <ShareAltOutlined className="mr-2" />
                 Chia sẻ
               </div>
-              <div
-                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
-                onClick={() => {
-                  handleCreateViewClick({ type: 'template', id: contextMenu.item._id || contextMenu.item.id, databaseId: contextMenu.item._id || contextMenu.item.id });
-                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
-                }}
-              >
-                <PlusOutlined className="mr-2" />
-                Tạo View
-              </div>
               <div className="border-t border-gray-200 my-1"></div>
               <div
                 className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
@@ -2906,16 +2926,6 @@ const DatabaseLayout = () => {
               >
                 <CopyOutlined className="mr-2" />
                 Sử dụng Template
-              </div>
-              <div
-                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
-                onClick={() => {
-                  handleCreateViewClick({ type: 'template', id: contextMenu.item._id || contextMenu.item.id, databaseId: contextMenu.item._id || contextMenu.item.id });
-                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
-                }}
-              >
-                <PlusOutlined className="mr-2" />
-                Tạo View
               </div>
             </>
           )}
@@ -2959,16 +2969,6 @@ const DatabaseLayout = () => {
                 <EditOutlined className="mr-2" />
                 Sửa Table
               </div>
-              <div
-                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
-                onClick={() => {
-                  handleCreateViewClick({ type: 'template-table', id: contextMenu.item._id || contextMenu.item.id, databaseId: contextMenu.databaseId });
-                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
-                }}
-              >
-                <PlusOutlined className="mr-2" />
-                Tạo View
-              </div>
               <div className="border-t border-gray-200 my-1"></div>
               <div
                 className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
@@ -3011,16 +3011,6 @@ const DatabaseLayout = () => {
               >
                 <EyeOutlined className="mr-2" />
                 Xem Table
-              </div>
-              <div
-                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
-                onClick={() => {
-                  handleCreateViewClick({ type: 'template-table', id: contextMenu.item._id || contextMenu.item.id, databaseId: contextMenu.databaseId });
-                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
-                }}
-              >
-                <PlusOutlined className="mr-2" />
-                Tạo View
               </div>
             </>
           )}
