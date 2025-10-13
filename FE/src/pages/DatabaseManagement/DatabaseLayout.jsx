@@ -72,6 +72,180 @@ const customScrollbarStyles = `
 `;
 
 
+// Template View Type Dropdown Component
+const TemplateViewTypeDropdown = ({ visible, position, onClose, onSelectViewType }) => {
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    if (visible) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [visible, onClose]);
+
+  const viewTypes = [
+    {
+      key: 'grid',
+      label: 'Grid',
+      icon: <AppstoreOutlined style={{ color: '#1890ff' }} />,
+      description: 'Hiển thị dữ liệu dạng bảng'
+    },
+    {
+      key: 'form',
+      label: 'Form',
+      icon: <FormOutlined style={{ color: '#722ed1' }} />,
+      description: 'Tạo form nhập liệu'
+    },
+    {
+      key: 'gallery',
+      label: 'Gallery',
+      icon: <PictureOutlined style={{ color: '#eb2f96' }} />,
+      description: 'Hiển thị dữ liệu dạng thư viện ảnh'
+    },
+    {
+      key: 'kanban',
+      label: 'Kanban',
+      icon: <BarsOutlined style={{ color: '#fa8c16' }} />,
+      description: 'Quản lý công việc theo bảng'
+    },
+    {
+      key: 'calendar',
+      label: 'Calendar',
+      icon: <CalendarOutlined style={{ color: '#f5222d' }} />,
+      description: 'Hiển thị dữ liệu theo lịch'
+    }
+  ];
+
+  if (!visible) {
+    console.log('TemplateViewTypeDropdown: Not visible');
+    return null;
+  }
+
+  console.log('TemplateViewTypeDropdown: Rendering with position:', position);
+
+  return (
+    <div
+      ref={dropdownRef}
+      style={{
+        position: 'fixed',
+        left: position.x,
+        top: position.y,
+        zIndex: 9999,
+        background: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+        border: '1px solid #f0f0f0',
+        padding: '16px',
+        width: 320,
+        minHeight: 'auto'
+      }}
+    >
+      <div style={{ marginBottom: '12px' }}>
+        <Typography.Title level={5} style={{ margin: 0, color: '#262626' }}>
+          Tạo Template View mới
+        </Typography.Title>
+        <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+          Chọn loại view để tạo
+        </Typography.Text>
+      </div>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {viewTypes.map((viewType) => (
+          <div
+            key={viewType.key}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '16px',
+              borderRadius: '8px',
+              border: '1px solid #f0f0f0',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              background: 'white'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = viewType.key === 'grid' ? '#1890ff' :
+                                                viewType.key === 'form' ? '#722ed1' :
+                                                viewType.key === 'gallery' ? '#eb2f96' :
+                                                viewType.key === 'kanban' ? '#fa8c16' :
+                                                '#f5222d';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#f0f0f0';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectViewType(viewType.key);
+              onClose();
+            }}
+          >
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '16px',
+                background: '#f8f9fa',
+                border: '1px solid #e9ecef'
+              }}
+            >
+              <span style={{ color: '#6c757d', fontSize: '20px' }}>
+                {viewType.icon}
+              </span>
+            </div>
+            
+            <div style={{ flex: 1 }}>
+              <div style={{ 
+                fontWeight: 600, 
+                fontSize: '16px',
+                color: '#262626',
+                marginBottom: '4px'
+              }}>
+                {viewType.label}
+              </div>
+              <div style={{ 
+                fontSize: '13px',
+                color: '#8c8c8c',
+                lineHeight: '1.4'
+              }}>
+                {viewType.description}
+              </div>
+            </div>
+            
+            <Button
+              type="text"
+              shape="circle"
+              size="small"
+              icon={<PlusOutlined />}
+              style={{
+                width: '32px',
+                height: '32px',
+                color: '#6c757d'
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // View Type Dropdown Component
 const ViewTypeDropdown = ({ visible, position, onClose, onSelectViewType }) => {
   const dropdownRef = useRef(null);
@@ -348,6 +522,7 @@ const DatabaseLayout = () => {
   const [expandedDatabases, setExpandedDatabases] = useState(new Set());
   const [expandedTables, setExpandedTables] = useState(new Set());
   const [expandedTemplates, setExpandedTemplates] = useState(new Set());
+  const [expandedTemplateTables, setExpandedTemplateTables] = useState(new Set());
   const [activeSection, setActiveSection] = useState('databases'); // 'databases' or 'templates'
   
   // Auto-detect active section based on current path
@@ -405,6 +580,15 @@ const DatabaseLayout = () => {
   const [showCreateTemplateTableModal, setShowCreateTemplateTableModal] = useState(false);
   const [newTemplateTable, setNewTemplateTable] = useState({ name: '', description: '' });
   const [currentTemplateId, setCurrentTemplateId] = useState(null);
+  
+  // Template view states
+  const [showCreateTemplateViewModal, setShowCreateTemplateViewModal] = useState(false);
+  const [newTemplateView, setNewTemplateView] = useState({ name: '', description: '', type: '', templateId: '', tableIndex: -1 });
+  const [showEditTemplateViewModal, setShowEditTemplateViewModal] = useState(false);
+  const [editingTemplateView, setEditingTemplateView] = useState({ _id: '', name: '', description: '', type: '', templateId: '', tableIndex: -1 });
+  const [showTemplateViewTypeDropdown, setShowTemplateViewTypeDropdown] = useState(false);
+  const [templateViewDropdownPosition, setTemplateViewDropdownPosition] = useState({ x: 0, y: 0 });
+  const [selectedTemplateContext, setSelectedTemplateContext] = useState({ templateId: '', tableIndex: -1 });
   
   // Context menu states
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
@@ -816,9 +1000,7 @@ const DatabaseLayout = () => {
   // Create template view mutation
   const createTemplateViewMutation = useMutation({
     mutationFn: async (viewData) => {
-      const response = await axiosInstance.post(`/templates/${viewData.templateId}/views`, {
-        templateId: viewData.templateId,
-        tableIndex: viewData.tableIndex,
+      const response = await axiosInstance.post(`/templates/${viewData.templateId}/tables/${viewData.tableIndex}/views`, {
         name: viewData.name,
         type: viewData.type,
         description: viewData.description,
@@ -829,15 +1011,54 @@ const DatabaseLayout = () => {
       return response.data;
     },
     onSuccess: () => {
-      toast.success(`"${newView.name}" created successfully!`);
-      setShowCreateViewModal(false);
-      setNewView({ name: '', description: '', type: '', tableId: '' });
+      toast.success(`"${newTemplateView.name}" created successfully!`);
+      setShowCreateTemplateViewModal(false);
+      setNewTemplateView({ name: '', description: '', type: '', templateId: '', tableIndex: -1 });
       queryClient.invalidateQueries(['templates']);
       queryClient.invalidateQueries(['templates-count']);
     },
     onError: (error) => {
       console.error('Error creating template view:', error);
       toast.error(error.response?.data?.message || 'Failed to create template view');
+    },
+  });
+
+  // Edit template view mutation
+  const editTemplateViewMutation = useMutation({
+    mutationFn: async (viewData) => {
+      const response = await axiosInstance.put(`/templates/${viewData.templateId}/tables/${viewData.tableIndex}/views/${viewData._id}`, {
+        name: viewData.name,
+        description: viewData.description
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success(`"${editingTemplateView.name}" updated successfully!`);
+      setShowEditTemplateViewModal(false);
+      setEditingTemplateView({ _id: '', name: '', description: '', type: '', templateId: '', tableIndex: -1 });
+      queryClient.invalidateQueries(['templates']);
+      queryClient.invalidateQueries(['templates-count']);
+    },
+    onError: (error) => {
+      console.error('Error updating template view:', error);
+      toast.error(error.response?.data?.message || 'Failed to update template view');
+    },
+  });
+
+  // Delete template view mutation
+  const deleteTemplateViewMutation = useMutation({
+    mutationFn: async ({ templateId, tableIndex, viewId }) => {
+      const response = await axiosInstance.delete(`/templates/${templateId}/tables/${tableIndex}/views/${viewId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Template view deleted successfully");
+      queryClient.invalidateQueries(['templates']);
+      queryClient.invalidateQueries(['templates-count']);
+    },
+    onError: (error) => {
+      console.error("Error deleting template view:", error);
+      toast.error(error.response?.data?.message || "Failed to delete template view");
     },
   });
 
@@ -850,6 +1071,62 @@ const DatabaseLayout = () => {
     
     // Only handle database views now
     createViewMutation.mutate(newView);
+  };
+
+  // Template view handlers
+  const handleCreateTemplateViewClick = (templateId, tableIndex) => {
+    console.log('handleCreateTemplateViewClick called with:', { templateId, tableIndex });
+    
+    // Position popup in the top area, below the header
+    const x = 300; // Left margin to avoid sidebar
+    const y = 100; // Below header
+    
+    setTemplateViewDropdownPosition({ x, y });
+    setSelectedTemplateContext({ templateId, tableIndex });
+    setShowTemplateViewTypeDropdown(true);
+    console.log('Template view dropdown should be visible now');
+  };
+
+  const handleSelectTemplateViewType = (viewType) => {
+    console.log('Selected template view type:', viewType, 'for context:', selectedTemplateContext);
+
+    // Generate unique name
+    const baseName = viewType.charAt(0).toUpperCase() + viewType.slice(1);
+    const viewName = `${baseName} View`;
+
+    // Set up new template view data and show modal
+    setNewTemplateView({
+      name: viewName,
+      description: `Auto-generated ${viewType} view`,
+      type: viewType,
+      templateId: selectedTemplateContext.templateId,
+      tableIndex: selectedTemplateContext.tableIndex
+    });
+    setShowCreateTemplateViewModal(true);
+    setShowTemplateViewTypeDropdown(false);
+  };
+
+  const handleCloseTemplateViewDropdown = () => {
+    setShowTemplateViewTypeDropdown(false);
+    setSelectedTemplateContext({ templateId: '', tableIndex: -1 });
+  };
+
+  const handleCreateTemplateView = async (e) => {
+    e.preventDefault();
+    if (!newTemplateView.name.trim()) {
+      toast.error('Template view name is required');
+      return;
+    }
+    createTemplateViewMutation.mutate(newTemplateView);
+  };
+
+  const handleEditTemplateView = async (e) => {
+    e.preventDefault();
+    if (!editingTemplateView.name.trim()) {
+      toast.error('Template view name is required');
+      return;
+    }
+    editTemplateViewMutation.mutate(editingTemplateView);
   };
 
   // Edit view mutation
@@ -1183,6 +1460,17 @@ const DatabaseLayout = () => {
     setExpandedTemplates(newExpanded);
   };
 
+  // Toggle template table expansion
+  const toggleTemplateTable = (templateTableKey) => {
+    const newExpanded = new Set(expandedTemplateTables);
+    if (newExpanded.has(templateTableKey)) {
+      newExpanded.delete(templateTableKey);
+    } else {
+      newExpanded.add(templateTableKey);
+    }
+    setExpandedTemplateTables(newExpanded);
+  };
+
   // Get tables for a specific database
   const getTablesForDatabase = (databaseId) => {
     const databaseTables = allTables.find(item => item.databaseId === databaseId);
@@ -1208,6 +1496,13 @@ const DatabaseLayout = () => {
     }
     
     return views;
+  };
+
+  // Get views for a specific template table
+  const getViewsForTemplateTable = (templateId, tableIndex) => {
+    // For now, return empty array - template views will be fetched from API
+    // This can be enhanced later to cache template views
+    return [];
   };
 
   return (
@@ -1446,30 +1741,112 @@ const DatabaseLayout = () => {
                           {isExpanded && (
                             <div className="ml-6 space-y-1" style={{ maxHeight: 'none', overflow: 'visible' }}>
                               {template.tables && template.tables.length > 0 ? (
-                                template.tables.map((table, tableIndex) => (
-                                  <div
-                                    key={table._id || table.id || tableIndex}
-                                    className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
-                                      location.pathname.includes(`/templates/${template._id || template.id}/table/${tableIndex}`)
-                                        ? "bg-blue-50 text-blue-600"
-                                        : "text-gray-600 hover:bg-gray-100"
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/templates/${template._id || template.id}/table/${tableIndex}`);
-                                    }}
-                                    onContextMenu={(e) => handleContextMenu(e, 'template-table', table, template._id || template.id, tableIndex)}
-                                  >
-                                    <AppstoreOutlined className="mr-3" />
-                                    <span className="truncate flex-1">{table.name}</span>
-                                    <div className="flex items-center">
-                                      <span className="text-xs text-gray-400 mr-2">
-                                        {table.records?.length || 0}
-                                      </span>
-                                      <RightOutlined className="text-gray-400 text-xs" />
+                                template.tables.map((table, tableIndex) => {
+                                  const templateTableKey = `${template._id || template.id}-${tableIndex}`;
+                                  const isTableExpanded = expandedTemplateTables.has(templateTableKey);
+                                  const tableViews = getViewsForTemplateTable(template._id || template.id, tableIndex);
+                                  
+                                  return (
+                                    <div key={table._id || table.id || tableIndex}>
+                                      <div
+                                        className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                                          location.pathname.includes(`/templates/${template._id || template.id}/table/${tableIndex}`)
+                                            ? "bg-blue-50 text-blue-600"
+                                            : "text-gray-600 hover:bg-gray-100"
+                                        }`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(`/templates/${template._id || template.id}/table/${tableIndex}`);
+                                        }}
+                                        onContextMenu={(e) => handleContextMenu(e, 'template-table', table, template._id || template.id, tableIndex)}
+                                      >
+                                        <AppstoreOutlined className="mr-3" />
+                                        <span className="truncate flex-1">{table.name}</span>
+                                        <div className="flex items-center">
+                                          <span className="text-xs text-gray-400 mr-2">
+                                            {tableViews.length}
+                                          </span>
+                                          <RightOutlined 
+                                            className={`text-xs transition-transform ${
+                                              isTableExpanded ? "rotate-90" : ""
+                                            }`}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              toggleTemplateTable(templateTableKey);
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Views for this template table */}
+                                      {isTableExpanded && (
+                                        <div className="ml-6 space-y-1" style={{ maxHeight: 'none', overflow: 'visible' }}>
+                                          {tableViews.length > 0 ? (
+                                            tableViews.map((view) => (
+                                              <div
+                                                key={view._id}
+                                                className={`flex items-center px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ml-6 ${
+                                                  location.pathname.includes(`/templates/${template._id || template.id}/table/${tableIndex}/view/${view._id}`) || 
+                                                  location.pathname.includes(`/templates/${template._id || template.id}/table/${tableIndex}/grid/${view._id}`) ||
+                                                  location.pathname.includes(`/templates/${template._id || template.id}/table/${tableIndex}/kanban/${view._id}`) ||
+                                                  location.pathname.includes(`/templates/${template._id || template.id}/table/${tableIndex}/calendar/${view._id}`) ||
+                                                  location.pathname.includes(`/templates/${template._id || template.id}/table/${tableIndex}/gallery/${view._id}`)
+                                                    ? "bg-green-50 text-green-600"
+                                                    : "text-gray-500 hover:bg-gray-50"
+                                                }`}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  if (view.type === 'form') {
+                                                    navigate(`/templates/${template._id || template.id}/table/${tableIndex}/view/${view._id}`);
+                                                  } else if (view.type === 'grid') {
+                                                    navigate(`/templates/${template._id || template.id}/table/${tableIndex}/grid/${view._id}`);
+                                                  } else if (view.type === 'kanban') {
+                                                    navigate(`/templates/${template._id || template.id}/table/${tableIndex}/kanban/${view._id}`);
+                                                  } else if (view.type === 'calendar') {
+                                                    navigate(`/templates/${template._id || template.id}/table/${tableIndex}/calendar/${view._id}`);
+                                                  } else if (view.type === 'gallery') {
+                                                    navigate(`/templates/${template._id || template.id}/table/${tableIndex}/gallery/${view._id}`);
+                                                  } else {
+                                                    console.log("Navigate to template view:", view._id, "type:", view.type);
+                                                  }
+                                                }}
+                                                onContextMenu={(e) => handleContextMenu(e, 'template-view', view, template._id || template.id, `${tableIndex}-${view._id}`)}
+                                              >
+                                                <div className="mr-3 text-xs">
+                                                  {view.type === "grid" && <AppstoreOutlined style={{ color: "#1890ff" }} />}
+                                                  {view.type === "form" && <FormOutlined style={{ color: "#722ed1" }} />}
+                                                  {view.type === "gallery" && <PictureOutlined style={{ color: "#eb2f96" }} />}
+                                                  {view.type === "kanban" && <BarsOutlined style={{ color: "#fa8c16" }} />}
+                                                  {view.type === "calendar" && <CalendarOutlined style={{ color: "#f5222d" }} />}
+                                                </div>
+                                                <span className="truncate flex-1">{view.name}</span>
+                                              </div>
+                                            ))
+                                          ) : (
+                                            <div className="text-xs text-gray-400 py-2 px-3 ml-6">
+                                              Chưa có view nào
+                                            </div>
+                                          )}
+                                          
+                                          {/* Create View Button - Only for Super Admin */}
+                                          {isSuperAdmin && (
+                                            <div className="mt-2">
+                                              <button
+                                                className="w-full text-left text-green-600 hover:text-green-700 hover:bg-green-50 px-3 py-2 rounded-lg transition-colors text-sm font-medium"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleCreateTemplateViewClick(template._id || template.id, tableIndex);
+                                                }}
+                                              >
+                                                + Tạo View
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
-                                  </div>
-                                ))
+                                  );
+                                })
                               ) : (
                                 <div className="text-xs text-gray-400 py-2 px-3">
                                   Chưa có table nào
@@ -2399,6 +2776,14 @@ const DatabaseLayout = () => {
         onSelectViewType={handleSelectViewType}
       />
 
+      {/* Template View Type Dropdown */}
+      <TemplateViewTypeDropdown
+        visible={showTemplateViewTypeDropdown}
+        position={templateViewDropdownPosition}
+        onClose={handleCloseTemplateViewDropdown}
+        onSelectViewType={handleSelectTemplateViewType}
+      />
+
       {/* Share Modal - Google Docs Style */}
       <Modal
         title={
@@ -2969,6 +3354,16 @@ const DatabaseLayout = () => {
                 <EditOutlined className="mr-2" />
                 Sửa Table
               </div>
+              <div
+                className="px-4 py-2 hover:bg-green-50 cursor-pointer flex items-center text-green-600"
+                onClick={() => {
+                  handleCreateTemplateViewClick(contextMenu.databaseId, parseInt(contextMenu.tableId));
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <PlusOutlined className="mr-2" />
+                Tạo Template View
+              </div>
               <div className="border-t border-gray-200 my-1"></div>
               <div
                 className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
@@ -3011,6 +3406,48 @@ const DatabaseLayout = () => {
               >
                 <EyeOutlined className="mr-2" />
                 Xem Table
+              </div>
+            </>
+          )}
+
+          {/* Template View Context Menu */}
+          {contextMenu.type === 'template-view' && isSuperAdmin && (
+            <>
+              <div
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center"
+                onClick={() => {
+                  setEditingTemplateView({
+                    _id: contextMenu.item._id,
+                    name: contextMenu.item.name,
+                    description: contextMenu.item.description || '',
+                    type: contextMenu.item.type,
+                    templateId: contextMenu.databaseId,
+                    tableIndex: parseInt(contextMenu.tableId.split('-')[0])
+                  });
+                  setShowEditTemplateViewModal(true);
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <EditOutlined className="mr-2" />
+                Sửa Template View
+              </div>
+              <div className="border-t border-gray-200 my-1"></div>
+              <div
+                className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-red-600"
+                onClick={() => {
+                  if (window.confirm(`Bạn có chắc chắn muốn xóa template view "${contextMenu.item.name}"?`)) {
+                    const tableIndex = parseInt(contextMenu.tableId.split('-')[0]);
+                    deleteTemplateViewMutation.mutate({
+                      templateId: contextMenu.databaseId,
+                      tableIndex: tableIndex,
+                      viewId: contextMenu.item._id
+                    });
+                  }
+                  setContextMenu({ visible: false, x: 0, y: 0, type: '', item: null, databaseId: '', tableId: '' });
+                }}
+              >
+                <DeleteOutlined className="mr-2" />
+                Xóa Template View
               </div>
             </>
           )}
@@ -3159,6 +3596,160 @@ const DatabaseLayout = () => {
                   loading={updateTemplateStructureMutation.isPending}
                 >
                   Cập nhật Table
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Create Template View Modal */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {newTemplateView.type === 'grid' && <AppstoreOutlined style={{ color: '#1890ff' }} />}
+            {newTemplateView.type === 'form' && <FormOutlined style={{ color: '#722ed1' }} />}
+            {newTemplateView.type === 'gallery' && <PictureOutlined style={{ color: '#eb2f96' }} />}
+            {newTemplateView.type === 'kanban' && <BarsOutlined style={{ color: '#fa8c16' }} />}
+            {newTemplateView.type === 'calendar' && <CalendarOutlined style={{ color: '#f5222d' }} />}
+            <span>Create Template {newTemplateView.type ? newTemplateView.type.charAt(0).toUpperCase() + newTemplateView.type.slice(1) : ''} View</span>
+          </div>
+        }
+        open={showCreateTemplateViewModal}
+        onCancel={() => setShowCreateTemplateViewModal(false)}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleCreateTemplateView}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>View Name *</Typography.Text>
+              <Input
+                value={newTemplateView.name}
+                onChange={(e) => setNewTemplateView({ ...newTemplateView, name: e.target.value })}
+                placeholder="Enter view name"
+                required
+                size="large"
+              />
+            </div>
+            <div>
+              <Button
+                type="text"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  // Toggle description field
+                  if (newTemplateView.description) {
+                    setNewTemplateView({ ...newTemplateView, description: '' });
+                  } else {
+                    setNewTemplateView({ ...newTemplateView, description: `Auto-generated ${newTemplateView.type} view` });
+                  }
+                }}
+                style={{ 
+                  padding: '4px 8px',
+                  height: 'auto',
+                  color: '#1890ff'
+                }}
+              >
+                Add description
+              </Button>
+              {newTemplateView.description && (
+                <Input.TextArea
+                  value={newTemplateView.description}
+                  onChange={(e) => setNewTemplateView({ ...newTemplateView, description: e.target.value })}
+                  placeholder="Enter view description"
+                  rows={3}
+                  style={{ marginTop: '8px' }}
+                />
+              )}
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowCreateTemplateViewModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={createTemplateViewMutation.isPending}
+                >
+                  Create view
+                </Button>
+              </Space>
+            </Row>
+          </Space>
+        </form>
+      </Modal>
+
+      {/* Edit Template View Modal */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {editingTemplateView.type === 'grid' && <AppstoreOutlined style={{ color: '#1890ff' }} />}
+            {editingTemplateView.type === 'form' && <FormOutlined style={{ color: '#722ed1' }} />}
+            {editingTemplateView.type === 'gallery' && <PictureOutlined style={{ color: '#eb2f96' }} />}
+            {editingTemplateView.type === 'kanban' && <BarsOutlined style={{ color: '#fa8c16' }} />}
+            {editingTemplateView.type === 'calendar' && <CalendarOutlined style={{ color: '#f5222d' }} />}
+            <span>Edit Template {editingTemplateView.type ? editingTemplateView.type.charAt(0).toUpperCase() + editingTemplateView.type.slice(1) : ''} View</span>
+          </div>
+        }
+        open={showEditTemplateViewModal}
+        onCancel={() => setShowEditTemplateViewModal(false)}
+        footer={null}
+        width={500}
+      >
+        <form onSubmit={handleEditTemplateView}>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <div>
+              <Typography.Text strong>View Name *</Typography.Text>
+              <Input
+                value={editingTemplateView.name}
+                onChange={(e) => setEditingTemplateView({ ...editingTemplateView, name: e.target.value })}
+                placeholder="Enter view name"
+                required
+                size="large"
+              />
+            </div>
+            <div>
+              <Button
+                type="text"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  // Toggle description field
+                  if (editingTemplateView.description) {
+                    setEditingTemplateView({ ...editingTemplateView, description: '' });
+                  } else {
+                    setEditingTemplateView({ ...editingTemplateView, description: `Auto-generated ${editingTemplateView.type} view` });
+                  }
+                }}
+                style={{ 
+                  padding: '4px 8px',
+                  height: 'auto',
+                  color: '#1890ff'
+                }}
+              >
+                Add description
+              </Button>
+              {editingTemplateView.description && (
+                <Input.TextArea
+                  value={editingTemplateView.description}
+                  onChange={(e) => setEditingTemplateView({ ...editingTemplateView, description: e.target.value })}
+                  placeholder="Enter view description"
+                  rows={3}
+                  style={{ marginTop: '8px' }}
+                />
+              )}
+            </div>
+            <Row justify="end">
+              <Space>
+                <Button onClick={() => setShowEditTemplateViewModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={editTemplateViewMutation.isPending}
+                >
+                  Update view
                 </Button>
               </Space>
             </Row>
