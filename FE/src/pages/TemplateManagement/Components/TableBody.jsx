@@ -356,6 +356,35 @@ const TableBody = ({
           newCell.focus();
         }
       }, 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      // Move to same column in next row
+      const allRecords = groupedData.groups.flatMap(group => group.records);
+      const ungroupedRecords = groupedData.ungroupedRecords || [];
+      const totalRecords = allRecords.length + ungroupedRecords.length;
+      
+      if (recordIndex < totalRecords - 1) {
+        // Move to same column in next row
+        setFocusedCell({ rowIndex: recordIndex + 1, columnIndex: columnIndex });
+        
+        setTimeout(() => {
+          const newCell = document.querySelector(`[data-cell-id="${recordIndex + 1}-${columnIndex}"]`);
+          if (newCell) {
+            newCell.focus();
+          } else {
+            // Try to find the cell by scrolling through all cells
+            const allCells = document.querySelectorAll('[data-cell-id]');
+            for (let cell of allCells) {
+              const cellId = cell.getAttribute('data-cell-id');
+              if (cellId === `${recordIndex + 1}-${columnIndex}`) {
+                cell.focus();
+                break;
+              }
+            }
+          }
+        }, 0);
+      }
     }
   };
 
