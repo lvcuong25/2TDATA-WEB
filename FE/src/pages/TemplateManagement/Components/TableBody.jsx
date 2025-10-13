@@ -303,6 +303,61 @@ const TableBody = ({
   // State for hovered row
   const [hoveredRow, setHoveredRow] = useState(null);
 
+  // State for cell navigation
+  const [focusedCell, setFocusedCell] = useState({ rowIndex: -1, columnIndex: -1 });
+
+  // Handle cell navigation with Tab key
+  const handleCellKeyDown = (e, recordIndex, columnIndex) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      
+      const totalColumns = visibleColumns.length;
+      let newRowIndex = recordIndex;
+      let newColumnIndex = columnIndex;
+      
+      if (e.shiftKey) {
+        // Shift + Tab: move to previous cell
+        if (columnIndex > 0) {
+          newColumnIndex = columnIndex - 1;
+        } else {
+          // Move to last column of previous row
+          const allRecords = groupedData.groups.flatMap(group => group.records);
+          if (recordIndex > 0) {
+            newRowIndex = recordIndex - 1;
+            newColumnIndex = totalColumns - 1;
+          } else {
+            // Stay at current position if at first cell
+            return;
+          }
+        }
+      } else {
+        // Tab: move to next cell
+        if (columnIndex < totalColumns - 1) {
+          newColumnIndex = columnIndex + 1;
+        } else {
+          // Move to first column of next row
+          const allRecords = groupedData.groups.flatMap(group => group.records);
+          if (recordIndex < allRecords.length - 1) {
+            newRowIndex = recordIndex + 1;
+            newColumnIndex = 0;
+          } else {
+            // Stay at current position if at last cell
+            return;
+          }
+        }
+      }
+      
+      setFocusedCell({ rowIndex: newRowIndex, columnIndex: newColumnIndex });
+      
+      // Focus the new cell
+      setTimeout(() => {
+        const newCell = document.querySelector(`[data-cell-id="${newRowIndex}-${newColumnIndex}"]`);
+        if (newCell) {
+          newCell.focus();
+        }
+      }, 0);
+    }
+  };
 
   // Format datetime to YYYY-MM-DD HH:MM format
   const formatDateTime = (dateString) => {
@@ -583,15 +638,19 @@ const TableBody = ({
                 </div>
 
                 {/* Group Records */}
-                {isExpanded && group.records.map((record, index) => (
-                  <div key={record._id} style={{
-                    display: 'flex',
-                    borderBottom: '1px solid #f0f0f0',
-                    backgroundColor: 'white',
-                    ...rowHeightStyle
-                  }}
-                    onContextMenu={(e) => handleContextMenu(e, record._id)}
-                  >
+                {isExpanded && group.records.map((record, recordIndexInGroup) => {
+                  // Calculate global record index for this record
+                  const globalRecordIndex = groupedData.groups.slice(0, groupIndex).reduce((acc, g) => acc + g.records.length, 0) + recordIndexInGroup;
+                  
+                  return (
+                    <div key={record._id} style={{
+                      display: 'flex',
+                      borderBottom: '1px solid #f0f0f0',
+                      backgroundColor: 'white',
+                      ...rowHeightStyle
+                    }}
+                      onContextMenu={(e) => handleContextMenu(e, record._id)}
+                    >
                     {/* Checkbox and Index */}
                     <div 
                       style={{
@@ -718,21 +777,36 @@ const TableBody = ({
                       }
                       const isEditing = isCellEditing(editingCell, record._id, column.name);
                       const isSelected = isCellSelected(record._id, column.name);
+                      const isFocused = focusedCell.rowIndex === globalRecordIndex && focusedCell.columnIndex === index;
 
                       return (
-                        <div key={column.id || column._id} style={{
-                          width: getColumnWidthString(columnWidths, column.id || column._id),
-                          minWidth: '50px',
-                          maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
-                          flexShrink: 0,
-                          flexGrow: 0,
-                          flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
-                          padding: '0',
-                          borderRight: '1px solid #d9d9d9',
-                          position: 'relative',
-                          ...cellContentStyle,
-                          boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : 'none'
-                        }}>
+                        <div 
+                          key={column.id || column._id} 
+                          data-cell-id={`${globalRecordIndex}-${index}`}
+                          tabIndex={0}
+                          onKeyDown={(e) => handleCellKeyDown(e, globalRecordIndex, index)}
+                          onFocus={() => {
+                            setFocusedCell({ rowIndex: globalRecordIndex, columnIndex: index });
+                            // Auto edit when focusing on editable cell
+                            if (!column.isSystem && isCellEditableByPermission(record._id, column.id || column._id)) {
+                              handleCellClick(record._id, column.name, value);
+                            }
+                          }}
+                          style={{
+                            width: getColumnWidthString(columnWidths, column.id || column._id),
+                            minWidth: '50px',
+                            maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
+                            flexShrink: 0,
+                            flexGrow: 0,
+                            flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
+                            padding: '0',
+                            borderRight: '1px solid #d9d9d9',
+                            position: 'relative',
+                            ...cellContentStyle,
+                            boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : (isFocused ? 'inset 0 0 0 2px #1890ff' : 'none'),
+                            outline: 'none'
+                          }}
+                        >
                           {isEditing ? (
                             (() => {
                               const dataType = column.dataType || column.data_type;
@@ -1791,7 +1865,8 @@ const TableBody = ({
                       padding: '8px'
                     }} />
                   </div>
-                ))}
+                );
+              })}
 
                 {/* Add New Record to Group */}
                 {isExpanded && (
@@ -1860,18 +1935,23 @@ const TableBody = ({
                   </div>
                 )}
               </div>
-            );
-          })}
+              );
+            })}
 
           {/* Ungrouped Records */}
-          {groupedData.ungroupedRecords.map((record, index) => (
-            <div key={record._id} style={{
-              display: 'flex',
-              borderBottom: '1px solid #f0f0f0',
-              ...rowHeightStyle
-            }}
-              onContextMenu={(e) => handleContextMenu(e, record._id)}
-            >
+          {groupedData.ungroupedRecords.map((record, recordIndex) => {
+            // Calculate global record index for ungrouped records
+            const totalGroupedRecords = groupedData.groups.reduce((acc, group) => acc + group.records.length, 0);
+            const globalRecordIndex = totalGroupedRecords + recordIndex;
+            
+            return (
+              <div key={record._id} style={{
+                display: 'flex',
+                borderBottom: '1px solid #f0f0f0',
+                ...rowHeightStyle
+              }}
+                onContextMenu={(e) => handleContextMenu(e, record._id)}
+              >
               {/* Checkbox and Index */}
               <div 
                 style={{
@@ -1917,7 +1997,7 @@ const TableBody = ({
                   }}
                     className="index-number"
                   >
-                    {index + 1}
+                    {recordIndex + 1}
                   </span>
                 </div>
                 <Tooltip title="Chỉnh sửa bản ghi">
@@ -1997,21 +2077,35 @@ const TableBody = ({
                 }
                 const isEditing = editingCell?.recordId === record._id && editingCell?.columnName === column.name;
                 const isSelected = isCellSelected(record._id, column.name);
+                const isFocused = focusedCell.rowIndex === globalRecordIndex && focusedCell.columnIndex === index;
 
                 const isLastColumn = index === visibleColumns.length - 1;
                 return (
-                  <div key={column.id || column._id} style={{
-                    width: getColumnWidthString(columnWidths, column.id || column._id),
-                    minWidth: '50px',
-                    maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
-                    flexShrink: 0,
-                    flexGrow: 0,
-                    flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
-                    padding: '0',
+                  <div 
+                    key={column.id || column._id} 
+                    data-cell-id={`${globalRecordIndex}-${index}`}
+                    tabIndex={0}
+                    onKeyDown={(e) => handleCellKeyDown(e, globalRecordIndex, index)}
+                    onFocus={() => {
+                      setFocusedCell({ rowIndex: globalRecordIndex, columnIndex: index });
+                      // Auto edit when focusing on editable cell
+                      if (!column.isSystem && isCellEditableByPermission(record._id, column.id || column._id)) {
+                        handleCellClick(record._id, column.name, value);
+                      }
+                    }}
+                    style={{
+                      width: getColumnWidthString(columnWidths, column.id || column._id),
+                      minWidth: '50px',
+                      maxWidth: getColumnWidthString(columnWidths, column.id || column._id),
+                      flexShrink: 0,
+                      flexGrow: 0,
+                      flexBasis: getColumnWidthString(columnWidths, column.id || column._id),
+                      padding: '0',
                     borderRight: '1px solid #d9d9d9',
                     position: 'relative',
                     ...cellContentStyle,
-                    boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : 'none'
+                    boxShadow: isSelected ? 'inset 0 0 0 2px #1890ff' : (isFocused ? 'inset 0 0 0 2px #1890ff' : 'none'),
+                    outline: 'none'
                   }}>
                     {isEditing ? (
                       (() => {
@@ -3028,7 +3122,8 @@ const TableBody = ({
                 padding: '8px'
               }} />
             </div>
-          ))}
+            );
+          })}
 
           {/* Add Row Footer */}
           <div style={{
