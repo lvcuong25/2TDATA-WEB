@@ -387,6 +387,36 @@ const TableBody = ({
             }
           }
         }, 0);
+      } else {
+        // At last row - add new row and focus on same column
+        handleAddRow();
+        
+        // Force re-render by updating focused cell state
+        setFocusedCell({ rowIndex: totalRecords, columnIndex: columnIndex });
+        
+        // Use requestAnimationFrame to ensure DOM is updated before focusing
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const newRowIndex = totalRecords; // New row will be at this index
+            const newCell = document.querySelector(`[data-cell-id="${newRowIndex}-${columnIndex}"]`);
+            if (newCell) {
+              newCell.focus();
+            } else {
+              // Try alternative approach: find the last row and focus on the same column
+              const allCells = document.querySelectorAll('[data-cell-id]');
+              for (let cell of allCells) {
+                const cellId = cell.getAttribute('data-cell-id');
+                if (cellId && cellId.startsWith(`${newRowIndex}-`)) {
+                  const cellColumnIndex = parseInt(cellId.split('-')[1]);
+                  if (cellColumnIndex === columnIndex) {
+                    cell.focus();
+                    break;
+                  }
+                }
+              }
+            }
+          });
+        });
       }
     }
   };
